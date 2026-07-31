@@ -1,0 +1,142 @@
+@startuml Arquitectura_SISGOST
+' ============================================================
+' SISGOST - Sistema de Gestion y Seguimiento de Soporte Tecnico
+' Arquitectura propuesta de la solucion - Gestion de Equipos
+'
+' Actualiza a Arquitectura_Componentes.png y a la infografia
+' ejecutiva (7075dd0e...png), que mostraban:
+'  - a Direccion y al Usuario Final como usuarios del sistema
+'    (ya no lo son: Direccion queda fuera y el Usuario Final
+'    solo responde el formulario externo);
+'  - un flujo de 4 pasos que empezaba en la asignacion (el flujo
+'    vigente inicia en el Inventario de Hardware e incluye
+'    Expediente tecnico, Expediente unico y garantia).
+'
+' La pila propuesta se conserva: Angular 21 + API REST Java 21 /
+' Spring Boot + Oracle + AD/LDAP. El prototipo actual implementa
+' solo el frontend con datos simulados.
+' ============================================================
+
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF4FB
+  BorderColor #2F6F9F
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F8FBFF
+  BorderColor #2F6F9F
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #F4F0FA
+  BorderColor #6C3483
+}
+skinparam cloud {
+  BackgroundColor #F4F9F4
+  BorderColor #1E8449
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F39C12
+  FontSize 10
+}
+
+title SISGOST — Gestión de Equipos\nArquitectura de la solución propuesta
+
+actor "Usuarios del sistema\nEnc. de Soporte · Téc. de Soporte\nEnc. de Hardware · Téc. de Hardware\nAdministrador" as USUARIOS
+actor "Usuario Final\n(externo: solo formulario\nde conformidad)" as UF
+
+package "Cliente" {
+  component "Frontend Web\nAngular 21" as FRONT
+  component "Formulario externo\nde conformidad\n(enlace público, sin sesión)" as FORM
+}
+
+package "Backend — API REST (Java 21 / Spring Boot)" {
+
+  component "Controladores REST\nEntrada de solicitudes" as REST
+  component "Autenticación y roles\n(permisos por módulo)" as AUTHC
+
+  package "Flujo principal del proceso" {
+    component "Inventario de Hardware\n(ingreso con fecha,\nhora, usuario y rol)" as C1
+    component "Expediente técnico\ny Preparación F0288\n(firma técnica simulada→digital)" as C2
+    component "Asignación y\nExpediente único\n(consolida todo el proceso)" as C3
+    component "Configuración F0302\n(firma del técnico\nque configuró)" as C4
+    component "Entrega, conformidad\ny firma del usuario final" as C5
+    component "Servicio de garantía\n(casos y comentarios;\nreglas vigente / vencida)" as C6
+  }
+
+  package "Componentes transversales" {
+    component "Auditoría y trazabilidad\npor equipo / nº de inventario" as T1
+    component "Firmas y documentos\n(F0288, F0302, constancia\nde entrega, reporte final)" as T2
+    component "Reportes PDF\ny descargas" as T3
+  }
+
+  component "Repositorios\nSpring Data JPA" as REPO
+}
+
+cloud "Directorio Activo\nActive Directory / LDAP" as AD
+database "Base de datos\nOracle" as ORA
+component "Documento PDF\n(F0288 / F0302 / constancia\nde entrega / reporte final,\ncon firmas incluidas)" as PDF
+
+' ---------- Flujo principal ----------
+USUARIOS --> FRONT : usa el sistema\n(según su rol)
+UF --> FORM : responde conformidad\n(no entra al sistema)
+FRONT --> REST : HTTPS / JSON
+FORM --> REST : HTTPS / JSON
+REST --> AUTHC : valida sesión\ny permisos
+AUTHC --> AD : consulta usuario\ninstitucional
+REST --> C1
+C1 --> C2 : equipo con ET\ny F0288
+C2 --> C3 : equipo Preparado
+C3 --> C4 : Expediente único\ncreado (Enc. Soporte)
+C4 --> C5 : F0302 firmado
+C5 --> C6 : aceptado ⇒\ngarantía vigente
+
+' ---------- Apoyo transversal ----------
+C1 ..> T1
+C2 ..> T1
+C3 ..> T1
+C4 ..> T1
+C5 ..> T1
+C6 ..> T1
+C2 ..> T2
+C4 ..> T2
+C5 ..> T2
+T2 --> T3 : genera documentos\ncon firmas
+T3 --> PDF
+T1 --> REPO
+T2 --> REPO
+REPO --> ORA : persiste vía JDBC
+
+note right of C5
+  Si el usuario final acepta: firma de
+  conformidad (nombre, correo, fecha y
+  hora) asociada al Expediente único,
+  a la constancia de entrega y al
+  F0302. Si marca «No estoy conforme»,
+  no se genera firma.
+end note
+
+note right of T1
+  Trazabilidad principal por equipo /
+  número de inventario, desde el
+  ingreso al inventario hasta los
+  casos de garantía, incluidas las
+  descargas de documentos.
+end note
+
+note bottom of FRONT
+  El prototipo actual implementa este
+  frontend con datos simulados (JSON en
+  memoria); backend, Oracle y AD/LDAP
+  son la propuesta de implementación.
+end note
+
+legend bottom
+  Flecha continua = flujo principal del proceso · Flecha punteada = registro o apoyo transversal
+end legend
+
+@enduml

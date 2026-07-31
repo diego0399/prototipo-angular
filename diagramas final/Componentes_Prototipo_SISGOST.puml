@@ -1,0 +1,159 @@
+@startuml Componentes_Prototipo_SISGOST
+' ============================================================
+' SISGOST - Sistema de Gestion y Seguimiento de Soporte Tecnico
+' Diagrama de componentes del PROTOTIPO Angular 21
+'
+' Nuevo diagrama (2026-07-19): el diagrama de componentes
+' anterior (Arquitectura_Componentes.png) describia la solucion
+' propuesta con backend Java/Spring/Oracle; este describe lo que
+' realmente existe hoy: prototipo Angular standalone, sin
+' backend ni base de datos, con datos mock en JSON y estado en
+' memoria (DataService). Todo lo "generado" (documentos, firmas,
+' descargas) es simulado en el navegador.
+'
+' Actualizacion 2026-07-22 (ronda 15, Gestion de Equipos):
+'  - Inventario de Hardware: el ingreso ya NO solicita unidad
+'    responsable.
+'  - Cronometros F0288/F0302 en DataService (iniciarPreparacion,
+'    cerrarPreparacion, iniciarConfiguracion, cerrarConfiguracion)
+'    con tiempo total, nivel de complejidad y observacion.
+'  - Trazabilidad incluye el Historial tecnico del equipo con
+'    pestanas (Resumen, F0288, F0302, Asignaciones, Garantia,
+'    Documentos, Trazabilidad).
+'  - Panel ejecutivo muestra tiempos promedio, cronometros en
+'    curso y complejidad por rol.
+'
+' Actualizacion 2026-07-22 (ronda 16, ciclo multiple de equipo):
+'  - DataService: ciclo multiple (varios Ingresos a Hardware,
+'    Expedientes tecnicos y Asignaciones por equipo, con
+'    responsableOperativo, puedeCrearNuevoExpedienteTecnico y
+'    registrarDescargo).
+'  - Inventario de Hardware (M04) muestra el responsable
+'    operativo (informativo, derivado del tipo) y el resumen de
+'    ingresos/descargos del equipo.
+'  - Trazabilidad (M13) suma las pestanas Ingresos a Hardware y
+'    Descargos al Historial tecnico del equipo.
+'  - Guia del proceso (M02) pasa de 10 a 13 pasos (Descargo,
+'    Reingreso y Nueva preparacion, si aplican).
+'  - Nuevo modulo M15 Descargo de equipo (cierra la asignacion
+'    vigente; origina un reingreso segun la accion posterior).
+'  - Semillas JSON: de 13 a 15 archivos (ingresos-hardware.json,
+'    descargos.json).
+' ============================================================
+
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam componentStyle rectangle
+skinparam component {
+  BackgroundColor #EAF4FB
+  BorderColor #2F6F9F
+  FontSize 11
+}
+skinparam package {
+  BackgroundColor #F8FBFF
+  BorderColor #2F6F9F
+  FontSize 12
+}
+skinparam database {
+  BackgroundColor #FDF6EC
+  BorderColor #B9770E
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F39C12
+  FontSize 10
+}
+
+title SISGOST — Gestión de Equipos\nDiagrama de componentes del prototipo Angular
+
+package "Prototipo Angular 21 (standalone components + signals)" {
+
+  component "App / Router\n(rutas lazy por módulo)" as ROUTER
+  component "Shell / Layout\n(menú lateral por etapas,\nmarca SISGOST)" as SHELL
+  component "Auth mock\n(sesión por rol:\nwcarranza, mmartinez, bmejia,\ncgonzalez, scruz, sadmin)" as AUTH
+  component "permisos.ts\n(NAVEGACION: fuente única\nde menú y guard de rutas)" as PERMISOS
+  component "Guard de rutas\n(Acceso restringido)" as GUARD
+
+  component "DataService\n(estado en memoria, mutaciones,\nvisibilidad por rol *Visibles(),\nfirmasDeProceso, garantiaVencida,\npuedeComentarCaso, cronómetros\nF0288/F0302 con tiempo y complejidad,\nhistorial por equipo, ciclo múltiple:\nresponsableOperativo,\npuedeCrearNuevoExpedienteTecnico,\nregistrarDescargo)" as DATA
+
+  database "Semillas JSON\n(public/assets/data,\n15 archivos: equipos,\nexpedientes, F0288, F0302,\nconformidades, garantías,\ndocumentos, usuarios,\ningresos-hardware, descargos…)" as JSON
+
+  package "Módulos por etapa del proceso" {
+    component "Panel ejecutivo\n(dinámico por rol, con tiempos\npromedio y complejidad)" as M01
+    component "Guía del proceso\n(stepper 13 pasos —flujo completo\ndel equipo—, estado real por equipo)" as M02
+    component "Solicitudes" as M03
+    component "Inventario de Hardware\n(ingreso con fecha/usuario,\nresponsable operativo informativo,\nsin unidad responsable)" as M04
+    component "Expediente técnico\n(EXP-PT-AAAA-####,\nvarios ciclos por reingreso)" as M05
+    component "Preparación · F0288\n(cronómetro Iniciar/Finalizar,\ncierre con complejidad,\nradio Sí/No en equipo usado)" as M06
+    component "Asignación de equipo\n(vigente; se cierra con un Descargo)" as M07
+    component "Expediente único\n(EXP-AAAA-####,\nincluye Reporte final)" as M08
+    component "Configuración · F0302\n(cronómetro Iniciar/Finalizar,\ncierre con complejidad)" as M09
+    component "Entrega y aceptación" as M10
+    component "Servicio de garantía\n(casos + comentarios,\nreglas vigente/vencida)" as M11
+    component "Generador de documentos\n(Firmas registradas,\nVer / Descargar)" as M12
+    component "Trazabilidad\n(eje por equipo / nº de inventario;\nHistorial técnico del equipo con\npestañas, incl. Ingresos y Descargos)" as M13
+    component "Administración\n(solo Administrador)" as M14
+    component "Descargo de equipo\n(cierra la asignación vigente;\nreingreso condicional a Hardware)" as M15
+  }
+
+  package "Simulaciones del prototipo" {
+    component "Firma simulada\n(F0288 / F0302 / conformidad:\nnombre, rol, fecha, hora)" as SIM1
+    component "Generación de documentos\n(vista previa con firmas)" as SIM2
+    component "Descarga simulada\n(archivo de texto vía Blob,\nregistra evento de trazabilidad)" as SIM3
+  }
+}
+
+component "Formulario externo\nde conformidad\n(enlace público con token,\nsin inicio de sesión)" as FORM
+
+actor "Usuario Final\n(externo)" as UF
+
+' ---------- Relaciones ----------
+ROUTER --> SHELL
+SHELL --> AUTH
+ROUTER --> GUARD
+GUARD --> PERMISOS
+SHELL --> PERMISOS : menú lateral\npor rol
+
+M01 --> DATA
+M02 --> DATA
+M02 --> PERMISOS : accesos rápidos\nsegún rol
+M03 --> DATA
+M04 --> DATA
+M05 --> DATA
+M06 --> DATA
+M07 --> DATA
+M08 --> DATA
+M09 --> DATA
+M10 --> DATA
+M11 --> DATA
+M12 --> DATA
+M13 --> DATA
+M14 --> DATA
+M15 --> DATA
+
+DATA --> JSON : carga inicial\n(HTTP GET)
+M06 ..> SIM1 : al generar F0288
+M09 ..> SIM1 : al generar F0302
+M12 ..> SIM2
+M12 ..> SIM3
+UF --> FORM
+FORM --> DATA : responderConformidad\n(acepta → firma simulada;\nno conforme → sin firma)
+
+note bottom of JSON
+  Sin backend, base de datos ni API:
+  las mutaciones viven en memoria
+  durante la sesión del navegador.
+  Las semillas dan el estado inicial
+  de la demostración.
+end note
+
+note bottom of DATA
+  Las firmas del Generador de
+  documentos se DERIVAN de los datos
+  del proceso (firmasDeProceso), no se
+  almacenan aparte: nunca se
+  desincronizan de F0288 / F0302 /
+  conformidad / entrega.
+end note
+
+@enduml

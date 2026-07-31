@@ -1,0 +1,351 @@
+@startuml CasosDeUso_SISGOST
+' ============================================================
+' SISGOST - Sistema de Gestion y Seguimiento de Soporte Tecnico
+' Diagrama de casos de uso - Gestion de Equipos
+'
+' Actualizado segun el prototipo Angular (2026-07-19, ronda de
+' diagramas). Reemplaza a los tres diagramas parciales
+' CasosDeUso_01/02/03 (asignacion, preparacion, entrega), que
+' quedaron desactualizados: aquellos mostraban a Direccion y al
+' Usuario Final como actores internos y no incluian Inventario,
+' Expediente tecnico, Expediente unico, garantia ni firmas.
+'
+' Reglas reflejadas (las del prototipo, sin logica nueva):
+'  - Direccion NO es usuario del sistema (el memorando llega de
+'    fuera; lo registra el Encargado de Soporte).
+'  - Usuario Final NO entra al sistema: solo responde el
+'    formulario externo de conformidad.
+'  - Tecnicos: solo tareas asignadas o donde participaron.
+'  - Encargados: informacion global segun su area.
+'  - Solo Encargado de Soporte crea el Expediente unico.
+'  - Administracion: exclusiva del Administrador.
+'
+' Actualizacion 2026-07-22 (ronda 15, Gestion de Equipos):
+'  - El ingreso al Inventario de Hardware ya NO solicita unidad
+'    responsable (nota en UC04).
+'  - Cronometros F0288/F0302: al iniciar la preparacion o la
+'    configuracion corre un cronometro; al finalizar se registran
+'    tiempo total, nivel de complejidad y observacion tecnica
+'    (UC20 y UC21, incluidos por UC06 y UC10).
+'  - Nuevo caso de uso: Consultar Historial tecnico del equipo
+'    con pestanas (UC22).
+'
+' Actualizacion 2026-07-22 (ronda 16, ciclo multiple de equipo):
+'  - Un equipo puede tener varios ingresos a Hardware a lo largo
+'    de su vida (inicial + reingresos) y, por lo tanto, varios
+'    ciclos de Expediente tecnico / Preparacion F0288.
+'  - Nuevo caso de uso: Registrar ingreso a Hardware, inicial o
+'    reingreso (UC23).
+'  - Nuevo caso de uso: Registrar descargo de equipo, que cierra
+'    la asignacion vigente y puede originar un reingreso segun la
+'    accion posterior elegida (UC24).
+'  - Nuevo caso de uso: Consultar Ingresos a Hardware y Descargos
+'    (2 pestanas nuevas del Historial tecnico, UC25).
+'  - Direccion sigue sin ser actor: el Tecnico de Soporte solo
+'    tiene una Direccion asignada como dato de usuario.
+'
+' Actualizacion 2026-07-28 (sincronizacion con rondas 17 y nueva
+' regla de Descargo):
+'  - UC24 (Registrar descargo): el actor que registra es el
+'    Tecnico de Soporte (no Encargado de Soporte/Hardware, como
+'    decia el diagrama desde la ronda 16). Encargado de Soporte
+'    pasa a <<supervisa>> (solo consulta); Encargado de Hardware ya
+'    no esta asociado a UC24 (sin acceso al modulo).
+'  - Nueva precondicion en UC24: la asignacion vigente debe tener
+'    aceptacion del usuario final y garantia habilitada antes de
+'    poder descargar (antes no se validaba).
+'  - UC24 tambien cierra como historico todo el ciclo anterior del
+'    equipo (Expediente tecnico, F0288, Expediente unico, F0302,
+'    Garantia) — corregido en la ronda 17, no reflejado hasta ahora
+'    en este diagrama.
+'  - Se elimina de la nota de UC24 el atajo de "Preparar para
+'    reasignacion" que dejaba el equipo disponible sin nuevo F0288:
+'    la ronda 17 lo quito: ahora se comporta como las demas
+'    acciones que no reingresan automaticamente.
+' ============================================================
+
+left to right direction
+skinparam shadowing false
+skinparam actorStyle awesome
+skinparam usecase {
+  BackgroundColor #EAF4FB
+  BorderColor #2F6F9F
+  FontSize 12
+}
+skinparam rectangle {
+  BackgroundColor White
+  BorderColor #2F6F9F
+}
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F39C12
+  FontSize 10
+}
+
+title SISGOST — Gestión de Equipos\nDiagrama de casos de uso
+
+actor "Encargado de Soporte\n(Carlos González)" as EncSop
+actor "Técnico de Soporte\n(Wendy Carranza /\nMateo Martínez)" as TecSop
+actor "Encargado de Hardware\n(Samuel Cruz)" as EncHw
+actor "Técnico de Hardware\n(Balmore Mejía)" as TecHw
+actor "Administrador SISGOST" as Admin
+actor "Usuario Final\n(externo, sin acceso\nal sistema)" as UF
+
+rectangle "SISGOST — Gestión de Equipos" {
+
+  package "Entrada y disponibilidad" {
+    usecase "Consultar panel ejecutivo\n(contenido según rol)" as UC01
+    usecase "Consultar guía del proceso\n(13 pasos con estado real:\nflujo completo del equipo)" as UC02
+    usecase "Consultar solicitudes\n(memorando / requerimiento)" as UC03
+    usecase "Ingresar equipo al\nInventario de Hardware" as UC04
+    usecase "Registrar reingreso a Hardware\n(tras un descargo o manual)" as UC23
+  }
+
+  package "Preparación técnica" {
+    usecase "Crear Expediente técnico\n(EXP-PT-AAAA-####, del equipo)" as UC05
+    usecase "Completar preparación F0288\n(inicia con cronómetro)" as UC06
+    usecase "Registrar tiempo y complejidad\nde la preparación\n(cronómetro F0288)" as UC20
+    usecase "Generar F0288 firmado\n(firma simulada del técnico\nque preparó)" as UC07
+  }
+
+  package "Asignación y configuración" {
+    usecase "Asignar equipo preparado\na usuario final" as UC08
+    usecase "Crear Expediente único\n(EXP-AAAA-####)" as UC09
+    usecase "Completar configuración F0302\n(inicia con cronómetro)" as UC10
+    usecase "Registrar tiempo y complejidad\nde la configuración\n(cronómetro F0302)" as UC21
+    usecase "Generar F0302 firmado\n(firma simulada del técnico\nque configuró)" as UC11
+  }
+
+  package "Cierre y auditoría" {
+    usecase "Gestionar entrega\ny aceptación" as UC12
+    usecase "Responder formulario\nexterno de conformidad" as UC13
+    usecase "Generar firma de conformidad\n(simulada, solo si acepta)" as UC14
+    usecase "Gestionar casos de garantía\n(abrir / dar seguimiento / cerrar)" as UC15
+    usecase "Agregar comentarios\na casos de garantía" as UC16
+    usecase "Consultar trazabilidad\npor equipo / nº de inventario" as UC17
+    usecase "Consultar Historial técnico\ndel equipo (pestañas)" as UC22
+    usecase "Registrar descargo de equipo\n(cierra la asignación vigente)" as UC24
+    usecase "Consultar Ingresos a Hardware\ny Descargos del equipo" as UC25
+    usecase "Generar y descargar\ndocumentos con firmas" as UC18
+  }
+
+  package "Sistema" {
+    usecase "Administrar usuarios\ny catálogos" as UC19
+  }
+}
+
+' ---------- Relaciones include ----------
+UC06 ..> UC20 : <<include>>\ncronómetro al iniciar\ny al finalizar
+UC06 ..> UC07 : <<include>>\nal cerrar la preparación
+UC10 ..> UC21 : <<include>>\ncronómetro al iniciar\ny al finalizar
+UC10 ..> UC11 : <<include>>\nal cerrar la configuración
+UC13 ..> UC14 : <<include>>\nsolo si el usuario acepta
+UC24 ..> UC23 : <<extend>>\nsegún la acción posterior\nelegida (ver nota)
+UC22 ..> UC25 : <<include>>\npestañas Ingresos y Descargos
+
+' ---------- Encargado de Soporte (visión global de Soporte) ----------
+EncSop --> UC01
+EncSop --> UC02
+EncSop --> UC03
+EncSop --> UC04
+EncSop --> UC05
+EncSop --> UC08
+EncSop --> UC09
+EncSop --> UC12
+EncSop --> UC15
+EncSop --> UC16
+EncSop --> UC17
+EncSop --> UC22
+EncSop --> UC23
+EncSop ..> UC24 : <<supervisa>>\nno registra (ver nota)
+EncSop --> UC25
+EncSop --> UC18
+
+' ---------- Técnico de Soporte (solo donde participa) ----------
+TecSop --> UC01
+TecSop --> UC02
+TecSop --> UC06
+TecSop --> UC10
+TecSop --> UC12
+TecSop --> UC15
+TecSop --> UC16
+TecSop --> UC17
+TecSop --> UC18
+TecSop --> UC24
+
+' ---------- Encargado de Hardware (solo su área) ----------
+EncHw --> UC01
+EncHw --> UC02
+EncHw --> UC03
+EncHw --> UC04
+EncHw --> UC05
+EncHw --> UC08
+EncHw --> UC17
+EncHw --> UC22
+EncHw --> UC23
+EncHw --> UC25
+EncHw --> UC18
+
+' ---------- Técnico de Hardware (solo equipos que prepara) ----------
+TecHw --> UC01
+TecHw --> UC02
+TecHw --> UC06
+TecHw --> UC16
+TecHw --> UC17
+TecHw --> UC18
+
+' ---------- Administrador ----------
+Admin --> UC01
+Admin --> UC02
+Admin --> UC17
+Admin --> UC22
+Admin --> UC23
+Admin --> UC24
+Admin --> UC25
+Admin --> UC19
+
+' ---------- Usuario Final (solo formulario externo) ----------
+UF --> UC13
+
+' ---------- Notas de reglas de negocio ----------
+note right of UC09
+  Exclusivo del Encargado de Soporte.
+  Consolida solicitud, equipo, ET,
+  F0288, F0302, entrega, firmas,
+  documentos y garantía. Incluye el
+  Reporte final de auditoría.
+end note
+
+note right of UC06
+  El F0288 lo completa el técnico que
+  prepara el equipo (Hardware o
+  Soporte, según el caso). El Técnico
+  de Soporte solo ve un F0288 si
+  participó en esa preparación.
+end note
+
+note right of UC16
+  El Técnico de Hardware solo participa
+  en casos de equipos que él preparó
+  (F0288): consulta y comenta; no abre
+  ni cierra casos. Comentar exige caso
+  Abierto / En revisión y garantía
+  vigente; caso cerrado o garantía
+  vencida = solo consulta.
+end note
+
+note right of UC13
+  El Usuario Final no entra al sistema:
+  recibe un enlace externo. Si acepta,
+  se captura su firma simulada (nombre,
+  correo, fecha y hora). Si marca
+  «No estoy conforme», no se genera
+  firma de aceptación.
+end note
+
+note right of UC18
+  Descargas según permisos: Hardware
+  solo F0288; Téc. de Soporte el F0302
+  donde participó y la constancia de
+  entrega solo si fue responsable;
+  Reporte final: Encargado de Soporte.
+  Cada descarga queda en trazabilidad.
+end note
+
+note bottom of UC03
+  El memorando lo emite Dirección FUERA
+  del sistema; el Encargado de Soporte
+  lo registra y gestiona. Dirección no
+  es usuario de SISGOST.
+end note
+
+note bottom of UC04
+  El ingreso NO solicita unidad
+  responsable: el equipo solo entra al
+  Inventario de Hardware y queda
+  Pendiente de preparación, No asignado
+  y sin Expediente técnico. Se registran
+  fecha, hora, usuario y rol de ingreso.
+end note
+
+note right of UC20
+  Al presionar «Iniciar preparación» /
+  «Iniciar configuración» corre un
+  cronómetro visible. Al finalizar se
+  guardan fecha y hora de inicio y fin,
+  tiempo total, nivel de complejidad
+  (Sin complejidad / Baja / Media / Alta)
+  y, si hubo complejidad, el detalle
+  obligatorio; todo queda en el
+  historial y en la trazabilidad.
+end note
+
+note right of UC22
+  Historial técnico del equipo con
+  pestañas: Resumen · Ingresos a
+  Hardware · Preparaciones F0288 ·
+  Configuraciones F0302 · Asignaciones ·
+  Garantía · Documentos · Trazabilidad ·
+  Descargos. Nunca sobrescribe
+  registros: conserva cada ingreso,
+  preparación, configuración, asignación
+  y descargo histórico.
+end note
+
+note right of UC24
+  Lo registra el Técnico de Soporte
+  asignado al equipo (v9, corrección
+  ronda 17: antes decía Encargados).
+  Solo ve/descarga equipos de su
+  asignación operativa. El Encargado
+  de Soporte solo supervisa/consulta
+  (ve todos los descargos, no
+  registra); el Encargado de
+  Hardware, el Técnico de Hardware y
+  el Usuario Final no acceden a este
+  caso de uso.
+  Requiere que la asignación vigente
+  ya tenga aceptación del usuario
+  final y garantía habilitada (v9,
+  2026-07-28): no se puede descargar
+  un equipo "Pendiente de aceptación"
+  ni "No conforme".
+  El descargo cierra la asignación
+  vigente del equipo (queda en el
+  historial, no se borra) y cierra
+  como histórico todo el ciclo
+  anterior (Expediente técnico,
+  F0288, Expediente único, F0302,
+  Garantía, si existían — v9,
+  corrección ronda 17: ninguno se
+  reutiliza). Según la acción
+  posterior elegida, puede además
+  originar un reingreso (UC23):
+  · Reingresar a Hardware → sí reingresa
+  · Enviar a nueva preparación → sí reingresa
+  · Preparar para reasignación → no
+    reingresa automáticamente (v9,
+    corrección ronda 17: ya NO deja el
+    equipo disponible de inmediato;
+    como las dos opciones siguientes,
+    espera un reingreso explícito)
+  · Dejar pendiente de revisión → no
+  · Marcar como no disponible → no
+  El encargado destino (Encargado de
+  Hardware o de Soporte) se calcula
+  según el tipo de equipo: CPU/Desktop
+  → Hardware, Laptop → Soporte.
+end note
+
+note bottom of UC23
+  Cada reingreso habilita, desde
+  «Crear Expediente técnico», un nuevo
+  ciclo de Expediente técnico y
+  Preparación F0288 para el mismo
+  equipo — el ciclo anterior queda
+  intacto en el historial. El primer
+  ingreso (inicial) ya se registra
+  automáticamente al ejecutar UC04.
+end note
+
+@enduml
