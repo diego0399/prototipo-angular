@@ -94,6 +94,7 @@ export interface EquipoCatalogoInstitucional {
 /** Desenlace de una consulta a la base institucional simulada. */
 export type ResultadoConsultaInventario = 'Formato inválido' | 'No encontrado' | 'Encontrado' | 'Ya registrado';
 
+<<<<<<< HEAD
 /** Desenlace de una fila dentro de la vista previa del ingreso múltiple. */
 export type ResultadoFilaLote = 'Listo para ingresar' | 'No encontrado' | 'Formato inválido' | 'Ya registrado';
 
@@ -108,6 +109,8 @@ export interface FilaValidacionLote {
   ficha?: EquipoCatalogoInstitucional;
 }
 
+=======
+>>>>>>> origin/main
 /**
  * Respuesta de `consultarBaseInstitucional`. `equipo` viene con datos solo cuando el número
  * existe en el catálogo; en «No encontrado» y «Formato inválido» queda vacío a propósito para
@@ -251,8 +254,11 @@ export interface ExpedienteTecnico {
   /** Creado · En preparación · Preparado · Cerrado (cerrado por un Descargo: ya no reutilizable). */
   estado: 'Creado' | 'En preparación' | 'Preparado' | 'Cerrado';
   fecha: string;
+<<<<<<< HEAD
   /** Prioridad informativa para ordenar los pendientes por preparar de un técnico. 'Normal' si no se indica. */
   prioridad?: 'Normal' | 'Alta';
+=======
+>>>>>>> origin/main
 }
 
 export interface AnexoExpediente {
@@ -277,10 +283,13 @@ export interface ChecklistItem {
   estado: 'Realizado' | 'Pendiente' | 'No solicitado' | 'No aplica';
   evidencia: string | null;
   nota: string;
+<<<<<<< HEAD
   /** Código del catálogo de software (`SoftwareCatalogo.codigo`), solo en ítems que instalan un software controlado (p. ej. «Instalación de Windows» → SOFT-001). */
   codigoSoftware?: string;
   /** Versión elegida entre `SoftwareCatalogo.versionesPermitidas`, cuando `codigoSoftware` aplica. */
   versionSeleccionada?: string;
+=======
+>>>>>>> origin/main
 }
 
 export interface ChecklistSeccion {
@@ -373,6 +382,7 @@ export interface VerificacionFalla {
   observaciones: string;
 }
 
+<<<<<<< HEAD
 /** Desenlace de la búsqueda de un accesorio en la base institucional simulada. */
 export type ResultadoConsultaAccesorio = 'Encontrado' | 'No encontrado' | 'Formato inválido' | 'No corresponde al equipo';
 
@@ -407,6 +417,13 @@ export interface AccesorioVerificado {
   serie: string;
   estadoFisico: string;
   observacion: string;
+=======
+export type EstadoAccesorio = 'Pendiente' | 'Verificado' | 'Reemplazado' | 'No aplica';
+
+export interface AccesorioVerificado {
+  nombre: string;
+  estado: EstadoAccesorio;
+>>>>>>> origin/main
 }
 
 /** Verificación de accesorios del F0288 (equipo usado): detalle visible solo con respuesta «Sí». */
@@ -416,6 +433,7 @@ export interface VerificacionAccesorios {
   observaciones: string;
 }
 
+<<<<<<< HEAD
 /**
  * Etapa del proceso en la que se usa un software del catálogo. Sustituye a los antiguos
  * indicadores `aplicaF0288`/`aplicaF0302`: el control es por etapa, no por tipo de equipo.
@@ -458,6 +476,8 @@ export interface SoftwareCatalogo {
   ultimaActualizacion: string;
 }
 
+=======
+>>>>>>> origin/main
 /** Checklist F0288, identificado por el código del expediente técnico (pertenece al equipo). */
 export interface PreparacionF0288 {
   expedienteTecnico: string;
@@ -485,10 +505,13 @@ export interface SoftwareF0302 {
   version: string;
   estado: string;
   evidencia: string | null;
+<<<<<<< HEAD
   /** Código del catálogo de software, cuando el ítem proviene de `SoftwareCatalogo` (controla las versiones permitidas). */
   codigoSoftware?: string;
   /** Categoría del catálogo (para agrupar y para el checkbox «Seleccionar todo» por categoría). */
   categoria?: string;
+=======
+>>>>>>> origin/main
 }
 
 export interface ConfiguracionF0302 {

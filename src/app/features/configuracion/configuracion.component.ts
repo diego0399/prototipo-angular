@@ -1,7 +1,11 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+<<<<<<< HEAD
 import { ConfiguracionF0302, Cronometro, NivelComplejidad, RespuestaSiNo, SoftwareF0302, TipoFallaF0302 } from '../../core/models/models';
+=======
+import { ConfiguracionF0302, Cronometro, NivelComplejidad, RespuestaSiNo, TipoFallaF0302 } from '../../core/models/models';
+>>>>>>> origin/main
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -14,10 +18,13 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent],
   styles: `
     .sw-row td .chk { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
+<<<<<<< HEAD
     .cat-row td { background: var(--surface-2); font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--tx-3); padding: 7px 10px; }
     .cat-row .sec-selall { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; cursor: pointer; float: right; text-transform: none; letter-spacing: normal; }
     .cat-row .sec-selall input { width: 15px; height: 15px; accent-color: var(--navy-800); cursor: pointer; }
     .sw-row select.control { max-width: 150px; }
+=======
+>>>>>>> origin/main
     .crono-card { border-left: 4px solid var(--line-strong); }
     .crono-card.corriendo { border-left-color: var(--gold-500); }
     .c-titulo { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tx-3); }
@@ -163,6 +170,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
           <div class="card-body table-wrap">
             <table class="tbl">
               <thead><tr><th style="width:44px;"></th><th>Software</th><th>Versión</th><th>Evidencia</th><th>Estado</th></tr></thead>
+<<<<<<< HEAD
               @for (cat of categoriasSoftware(c); track cat) {
                 <tbody>
                   <tr class="cat-row">
@@ -203,6 +211,23 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   }
                 </tbody>
               }
+=======
+              <tbody>
+                @for (s of c.software; track s.nombre) {
+                  <tr class="sw-row">
+                    <td>
+                      <input class="chk" type="checkbox" [checked]="s.estado === 'Realizado'"
+                        [disabled]="c.estado === 'Completada'"
+                        (change)="marcar(c.expediente, s.nombre, $event)" />
+                    </td>
+                    <td class="main-cell">{{ s.nombre }}</td>
+                    <td class="mono">{{ s.version }}</td>
+                    <td>@if (s.evidencia) { <span class="chip">{{ s.evidencia }}</span> } @else { <span class="muted">—</span> }</td>
+                    <td><ui-badge [estado]="s.estado" /></td>
+                  </tr>
+                }
+              </tbody>
+>>>>>>> origin/main
             </table>
             @if (c.softwareOculto.length > 0) {
               <details class="acc subtle mt-2">
@@ -693,6 +718,7 @@ export class ConfiguracionComponent {
 
   protected marcar(id: string, nombre: string, ev: Event): void {
     const checked = (ev.target as HTMLInputElement).checked;
+<<<<<<< HEAD
     const u = this.auth.usuario();
     this.data.marcarSoftwareF0302(id, nombre, checked ? 'Realizado' : 'Pendiente', `${u?.nombre} — ${u?.rol}`);
   }
@@ -729,6 +755,9 @@ export class ConfiguracionComponent {
     const version = (ev.target as HTMLSelectElement).value;
     const u = this.auth.usuario();
     this.data.seleccionarVersionSoftwareF0302(c.expediente, nombre, version, `${u?.nombre} — ${u?.rol}`);
+=======
+    this.data.marcarSoftwareF0302(id, nombre, checked ? 'Realizado' : 'Pendiente');
+>>>>>>> origin/main
   }
 
   protected generar(id: string): void {

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 Initial chunk files | Names                        |  Raw size | Estimated transfer size
 chunk-WBHEHGMT.js   | -                            | 163.46 kB |                47.48 kB
 chunk-XGXEM2IA.js   | -                            |  94.12 kB |                18.86 kB
@@ -31,5 +32,43 @@ chunk-VZYWES7C.js   | -                            |  13.25 kB |                
 
 Application bundle generation complete. [4.590 seconds] - 2026-08-02T18:29:09.740Z
 
+=======
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-WBHEHGMT.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m163.46 kB[39m[2m | [22m               [36m47.48 kB[39m
+[32mchunk-U6GGKI23.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m88.79 kB[39m[2m | [22m               [36m22.43 kB[39m
+[32mchunk-OZ4L6TEJ.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m78.18 kB[39m[2m | [22m               [36m15.85 kB[39m
+[32mstyles-Z675L23S.css[39m[2m | [22m[2mstyles[22m                      [2m | [22m [36m16.40 kB[39m[2m | [22m                [36m3.71 kB[39m
+[32mmain-7KKSP3ZL.js[39m   [2m | [22m[2mmain[22m                        [2m | [22m [36m14.41 kB[39m[2m | [22m                [36m4.30 kB[39m
+[32mchunk-ILY3MMGH.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m5.75 kB[39m[2m | [22m                [36m1.77 kB[39m
+[32mchunk-YCUK5Y7X.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m4.27 kB[39m[2m | [22m                [36m1.36 kB[39m
+[32mchunk-BQSQYYHH.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m1.84 kB[39m[2m | [22m              [36m586 bytes[39m
+[32mchunk-XPKMCCDA.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m511 bytes[39m[2m | [22m              [36m511 bytes[39m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m               [2m | [22m[1m373.62 kB[22m[2m | [22m               [1m97.99 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-LBXGONQH.js[39m  [2m | [22m[2mtrazabilidad-component[22m      [2m | [22m [36m49.69 kB[39m[2m | [22m               [36m10.87 kB[39m
+[32mchunk-7ROSA77P.js[39m  [2m | [22m[2mexpediente-unico-component[22m  [2m | [22m [36m40.73 kB[39m[2m | [22m               [36m10.05 kB[39m
+[32mchunk-WOAEMSC4.js[39m  [2m | [22m[2minventario-component[22m        [2m | [22m [36m38.37 kB[39m[2m | [22m                [36m9.19 kB[39m
+[32mchunk-O32NBBD4.js[39m  [2m | [22m[2mpreparacion-component[22m       [2m | [22m [36m35.82 kB[39m[2m | [22m                [36m8.84 kB[39m
+[32mchunk-FHT4CZ6Z.js[39m  [2m | [22m[2mconfiguracion-component[22m     [2m | [22m [36m35.15 kB[39m[2m | [22m                [36m9.29 kB[39m
+[32mchunk-FEY74Y3Q.js[39m  [2m | [22m[2mdashboard-component[22m         [2m | [22m [36m32.38 kB[39m[2m | [22m                [36m7.54 kB[39m
+[32mchunk-DAHTYT2F.js[39m  [2m | [22m[2mentrega-component[22m           [2m | [22m [36m26.63 kB[39m[2m | [22m                [36m6.89 kB[39m
+[32mchunk-DAOUUXZB.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m26.15 kB[39m[2m | [22m                [36m5.90 kB[39m
+[32mchunk-KUHLL2WG.js[39m  [2m | [22m[2mdocumentos-component[22m        [2m | [22m [36m25.77 kB[39m[2m | [22m                [36m6.69 kB[39m
+[32mchunk-QOUTBXR5.js[39m  [2m | [22m[2mexpediente-tecnico-component[22m[2m | [22m [36m20.12 kB[39m[2m | [22m                [36m5.83 kB[39m
+[32mchunk-NRJKRJL2.js[39m  [2m | [22m[2mgarantia-component[22m          [2m | [22m [36m20.02 kB[39m[2m | [22m                [36m5.30 kB[39m
+[32mchunk-I3BFONMZ.js[39m  [2m | [22m[2masignacion-component[22m        [2m | [22m [36m18.67 kB[39m[2m | [22m                [36m5.37 kB[39m
+[32mchunk-3N5I3G4X.js[39m  [2m | [22m[2mguia-component[22m              [2m | [22m [36m13.40 kB[39m[2m | [22m                [36m4.18 kB[39m
+[32mchunk-U7KNNTPV.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m13.25 kB[39m[2m | [22m                [36m2.87 kB[39m
+[32mchunk-3FCOJP5J.js[39m  [2m | [22m[2mconformidad-component[22m       [2m | [22m [36m12.95 kB[39m[2m | [22m                [36m4.04 kB[39m
+[2m...and 7 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [8.889 seconds] - 2026-07-30T16:17:58.619Z
+
+[1m[33m[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mangular:styles/component:css;15779485b5f67821904ce34bf05f2e975f74347585ed60b5652509a38c318730;C:/projects/claude/analisis/prototipo-angular/src/app/core/layout/shell.component.ts exceeded maximum budget. Budget 4.00 kB was not met by 328 bytes with a total of 4.33 kB.[0m
+
+[39m[22m
+>>>>>>> origin/main
 Output location: C:\projects\claude\analisis\prototipo-angular\dist\prototipo-angular
 

@@ -1,7 +1,11 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
+<<<<<<< HEAD
 nueva sesión sin perder información. Última actualización: **2 de agosto de 2026 (ronda 29)**.
+=======
+nueva sesión sin perder información. Última actualización: **28 de julio de 2026 (ronda 21)**.
+>>>>>>> origin/main
 
 ---
 
@@ -1168,6 +1172,7 @@ Expediente único.
       limpio en **8.889 s**, con la advertencia preexistente de presupuesto CSS de
       `shell.component.ts` como único aviso.
 
+<<<<<<< HEAD
 25. **Ingreso masivo de inventario, regla del Expediente técnico (Hardware por defecto),
     búsqueda de técnicos con carga laboral y tooltip de pendientes** (2026-07-30, mismo día que
     la ronda 24, pedido en 4 partes).
@@ -1585,6 +1590,8 @@ Expediente único.
       **Sigue sin recorrido manual de clics en navegador** (misma limitación de entorno de rondas
       anteriores): las reglas se verificaron por compilación, revisión de código y smoke test HTTP.
 
+=======
+>>>>>>> origin/main
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -1622,6 +1629,7 @@ UI real.
 
 # 15. Cambios pendientes
 
+<<<<<<< HEAD
 * **Nuevo pendiente (ronda 29)**: recorrido manual en navegador del formulario reordenado del
   Catálogo de software — en particular el constructor de versiones permitidas (agregar, quitar,
   que la vigente se sincronice), el bloqueo de «Tipo de licencia» hasta responder «Sí», el modal
@@ -1639,6 +1647,8 @@ UI real.
   en las rutas principales), más el trazado manual de cada caso de prueba contra la lógica real
   del código, pero sin clics reales sobre la UI (sin Chromium/Playwright disponibles en esta
   sesión, misma limitación que rondas anteriores).
+=======
+>>>>>>> origin/main
 * Ninguno bloqueante para el build: confirmado limpio en la ronda 21 (`npx ng build`, 3 s) tras
   los cambios de las rondas 20 y 21 juntas (validación de Descargo + quitar «Memorando» de la
   interfaz).
@@ -1684,6 +1694,7 @@ UI real.
 
 # 16. Última instrucción pendiente
 
+<<<<<<< HEAD
 La instrucción de la ronda 26 (2026-07-30: quitar la regla «laptop nueva → Soporte», Hardware
 prepara todo por defecto, más técnicos de Hardware, y modal de detalle del técnico junto al
 tooltip ya existente) fue **completada** y verificada con `npx ng build` limpio (ver entrada 26).
@@ -1694,6 +1705,8 @@ carga laboral y tooltip de pendientes por preparar) fue **completada** y verific
 build` limpio (ver entrada 25). Antes de esta, la ronda 24 (reserva de IP en F0302) y las rondas
 22-23 (reingreso explícito y consulta a base institucional) — ver esas entradas para el detalle.
 
+=======
+>>>>>>> origin/main
 La instrucción de la ronda 21 (2026-07-28, misma sesión que la ronda 20: quitar «Memorando» de
 la interfaz visible y unificar en «Requerimiento de Laptop» / «Requerimiento de CPU», sin tocar
 la regla de negocio ni agregar guías/tooltips) fue **completada** y verificada con `npx ng
@@ -1737,11 +1750,15 @@ sección 3):
   descripción/dirección; ExpedienteTecnico solo-equipo; Garantia con casos, fechaAceptacion e
   inventario; PreparacionF0288 por código de ET; ronda 16: `IngresoHardware` + `MotivoIngreso`,
   `Descargo` + `MotivoDescargo` + `AccionPosteriorDescargo`, `Asignacion.vigente`,
+<<<<<<< HEAD
   `UsuarioSistema.direccionAsignada`). **Ronda 27**: se quitó `EstadoAccesorio` y el
   `AccesorioVerificado` viejo (`{nombre; estado}`); nuevos `AccesorioCatalogoInstitucional`,
   `ResultadoConsultaAccesorio`, `AccesorioVerificado` (checkbox `seleccionado` + ficha de
   búsqueda), `SoftwareCatalogo`; `ChecklistItem` suma `codigoSoftware?`/`versionSeleccionada?`;
   `SoftwareF0302` suma `codigoSoftware?`/`categoria?`.
+=======
+  `UsuarioSistema.direccionAsignada`).
+>>>>>>> origin/main
 * `src/app/core/services/data.service.ts` — almacén y toda la lógica simulada (estados
   derivados de inventario, crearExpedienteTecnico + plantilla F0288, asignarEquipo con
   validaciones, crearExpedienteUnico + plantilla F0302, conformidad → garantía automática,
@@ -1782,6 +1799,7 @@ sección 3):
   rellenando desde la ronda 16 al vincular cada expediente con el ingreso que lo originó. No
   se tocó ninguna otra función ni la UI: el resto de la cadena (badge, alerta, catálogo,
   evento de trazabilidad de la ronda 18) ya dependía de `puedeCrearNuevoExpedienteTecnico`.
+<<<<<<< HEAD
   **Ronda 27**: `generarRangoInventario` corregida (ver entrada 27) y `registrarRangoGenerado`
   nuevo; `validarLoteInventario` con parámetro `origen`; `softwareCatalogoDe` /
   `softwareAplicable`; `seleccionarAccesorio` / `escribirNumeroAccesorio` /
@@ -1790,6 +1808,8 @@ sección 3):
   `marcarCategoriaSoftwareF0302` / `seleccionarVersionSoftwareF0302` (F0302); `cerrarPreparacion`
   exige accesorios marcados con resultado «Encontrado»; `crearExpedienteUnico` arma el software
   de F0302 desde `softwareAplicable` en vez de una lista fija.
+=======
+>>>>>>> origin/main
 * `src/app/core/services/auth.service.ts` — sesión simulada + helpers `esTecnico` /
   `esEncargado` / `esHardware` para la regla de visibilidad.
 * `src/app/core/services/caso-activo.service.ts` — recuerda el último caso elegido para
@@ -1819,10 +1839,14 @@ sección 3):
   último descargo). **Ronda 18**: el botón «Crear Expediente técnico» (tabla y modal) y la
   alerta del detalle pasan de `!expTecnicoDeEquipo(...)` a `puedeCrearNuevoExpedienteTecnico(...)`
   — antes quedaban ocultos para un equipo reingresado con un ET ya `'Cerrado'`; la alerta ahora
+<<<<<<< HEAD
   distingue «nunca tuvo ET» de «reingresó, expediente anterior histórico». **Ronda 27**: modal
   «Ingreso múltiple» con modo «Generar por rango» corregido (llama a la nueva firma de
   `generarRangoInventario`, muestra el error exacto devuelto y registra
   `registrarRangoGenerado`).
+=======
+  distingue «nunca tuvo ET» de «reingresó, expediente anterior histórico».
+>>>>>>> origin/main
 * `src/app/features/asignacion/asignacion.component.ts` — asignación con equipos preparados.
 * `src/app/features/descargo/descargo.component.ts` — **nuevo (ronda 16; rol corregido en la
   ronda 17)**: registra el Descargo de un equipo (selector vía «Buscar equipo asignado»,
@@ -1846,11 +1870,15 @@ sección 3):
   verificaciones, el cierre y el botón de finalizar quedan **ocultos hasta iniciar el
   cronómetro** (antes eran editables desde el primer momento); ronda 17: si la preparación
   quedó `'Cerrada'` por un descargo, se muestra un aviso distinto («quedó cerrada…») en vez
+<<<<<<< HEAD
   del genérico «Debe iniciar…». **Ronda 27**: la tarjeta «Verificación de falla y accesorios» se
   separó en dos tarjetas propias; los accesorios pasan de `<select>` de estado a checkbox +
   búsqueda por número de inventario (autocompleta marca/modelo/serie/estado si «Encontrado»,
   muestra el mensaje exacto si no); checkbox «Seleccionar todo» por sección del checklist
   (tri-estado) y selector de versión para «Instalación de Windows» limitado al catálogo.
+=======
+  del genérico «Debe iniciar…».
+>>>>>>> origin/main
 * `src/app/features/trazabilidad/trazabilidad.component.ts` — **eje principal por equipo**:
   vista resumen con buscador y filtros, modal **«Historial técnico del equipo»** con **9
   pestañas desde la ronda 16** (Resumen · Ingresos a Hardware · Preparaciones F0288 ·
@@ -1863,17 +1891,25 @@ sección 3):
   columnas de la pestaña Ingresos a Hardware rediseñadas a `N.º ingreso | Fecha ingreso |
   Motivo | Estado | Expediente técnico | F0288 | Acción` (`estadoIngreso`/`f0288DeIngreso`,
   nuevos, derivan Estado/F0288 del Expediente técnico y la Preparación F0288 asociados a cada
+<<<<<<< HEAD
   ingreso; «Acción» salta a la pestaña Preparaciones F0288). **Ronda 27**: la pestaña
   Preparaciones F0288 suma un resumen «N de N accesorio(s) verificado(s)» por fila
   (`accesoriosResumen`, nuevo) cuando la preparación es de equipo usado.
+=======
+  ingreso; «Acción» salta a la pestaña Preparaciones F0288).
+>>>>>>> origin/main
 * `src/app/features/configuracion/configuracion.component.ts` — F0302 con modal «Buscar
   configuración F0302» y (ronda 15) **cronómetro «Iniciar configuración» + cierre con
   complejidad** («Finalizar configuración y generar F0302»); ronda 16: mismo gating del
   checklist que F0288 (oculto hasta iniciar el cronómetro) + «Dirección del técnico» en Datos
   de instalación; ronda 17: aviso distinto si la configuración quedó `'Cerrada'` por un
+<<<<<<< HEAD
   descargo. **Ronda 27**: la tabla de software se agrupa por categoría con fila de cabecera y
   checkbox «Seleccionar todo» propio (tri-estado); cada software del catálogo muestra un
   selector de versión limitado a `versionesPermitidas`.
+=======
+  descargo.
+>>>>>>> origin/main
 * `src/app/features/entrega-aceptacion/entrega.component.ts` y
   `src/app/features/formulario-conformidad/conformidad.component.ts` — entrega y formulario
   externo; ambos muestran la **firma de conformidad simulada del usuario final** al aceptar
@@ -1885,23 +1921,35 @@ sección 3):
   y modo limitado del Técnico de Hardware (consulta + comentarios).
 * `src/app/features/generador-documentos/documentos.component.ts` — documentos por proceso
   con «Firmas registradas» (`firmasDeProceso`), fila «Entrega y aceptación (constancia)»,
+<<<<<<< HEAD
   vistas previas con firmas y **descarga de texto simulado con firmas incluidas**. **Ronda 27**:
   sección «Accesorios verificados» (Verificado/No seleccionado por accesorio) en la vista previa
   y en el `.txt` descargado del F0288, tanto en modo Soporte como en modo Hardware.
+=======
+  vistas previas con firmas y **descarga de texto simulado con firmas incluidas**.
+>>>>>>> origin/main
 * `src/app/features/guia-proceso/guia.component.ts` — **Guía del proceso** (stepper de **13
   pasos desde la ronda 16** — suma Descargo, Reingreso a Hardware y Nueva preparación, «si
   aplica» — con estado real por equipo y accesos rápidos por rol).
 * `src/app/shared/ui.ts` (badges/tooltip/modal/pipe marcaModelo) y `src/app/shared/icon.ts`
+<<<<<<< HEAD
   (ronda 16: ícono nuevo `undo` para Descargo). **Ronda 27**: `estadoKind` suma «no encontrado» /
   «formato inválido» / «no corresponde» → `danger` y «encontrado» → `ok` (para los badges de
   resultado de búsqueda de accesorio).
+=======
+  (ronda 16: ícono nuevo `undo` para Descargo).
+>>>>>>> origin/main
 * `src/styles.css` — sistema de diseño global (tokens, sin overflow horizontal).
 * `src/app/app.routes.ts` — rutas (incluye `inventario-hardware`, `guia-proceso` y, desde la
   ronda 16, `descargo`).
 * `src/app/core/config/permisos.ts` — ronda 16: entrada `/descargo` (grupo «Cierre y
   auditoría»); **ronda 17**: roles corregidos a `tec-soporte · enc-soporte · admin` (antes
   `enc-soporte · enc-hardware · admin`).
+<<<<<<< HEAD
 * `public/assets/data/*.json` — **17 archivos** de datos semilla coherentes con el flujo final
+=======
+* `public/assets/data/*.json` — **15 archivos** de datos semilla coherentes con el flujo final
+>>>>>>> origin/main
   (con horas de firmas, `firmaUsuarioFinal`, constancias de entrega y `CASO-2026-0002`; desde
   la ronda 15: `equipos.json` sin `unidadResponsable` y cronómetro + cierre con complejidad en
   las preparaciones y configuraciones completadas; **ronda 16**: `ingresos-hardware.json` y
@@ -1912,11 +1960,14 @@ sección 3):
   en Wendy Carranza y Mateo Martínez; **ronda 17**: `EXP-PT-2026-0093` y su F0288 pasan a
   `'Cerrado'`/`'Cerrada'`; `SOL-2026-0150` y `DESC-2026-0001` ahora reflejan a Wendy Carranza
   — Técnico de Soporte como técnico de configuración y como quien registró el descargo).
+<<<<<<< HEAD
   **Ronda 27**: suman 2 archivos nuevos de solo lectura (17 en total) —
   `catalogo-software.json` (7 filas SOFT-001…SOFT-007) y `accesorios-institucionales.json` (10
   fichas: CPU 0001/0002 × Monitor/Teclado/Mouse, Laptop 0001/0002 × Mouse/Maletín) — ambos
   cargados en `cargar()` igual que el catálogo institucional de equipos, nunca persistidos ni
   reseteados.
+=======
+>>>>>>> origin/main
 * `README.md` — documentación completa (flujo, reglas, guion de demo de 14 pasos; no
   actualizado en las rondas 16/17 — pendiente cosmético, ver sección 15).
 

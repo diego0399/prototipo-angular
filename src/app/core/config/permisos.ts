@@ -26,9 +26,13 @@ export const NAVEGACION: NavGrupo[] = [
       // Guía del proceso: apoyo para la demostración del flujo completo; cada rol ve solo sus accesos.
       { ruta: '/guia-proceso', icono: 'map', titulo: 'Guía del proceso' },
       { ruta: '/solicitudes', icono: 'inbox', titulo: 'Solicitudes', roles: ['enc-soporte', 'enc-hardware', 'admin'] },
+<<<<<<< HEAD
       { ruta: '/inventario-hardware', icono: 'box', titulo: 'Inventario de Hardware', roles: ['enc-soporte', 'enc-hardware', 'admin'] },
       // Catálogo de software: mismos permisos que Inventario de Hardware (catálogo global administrado por Encargados/Administrador).
       { ruta: '/catalogo-software', icono: 'layers', titulo: 'Catálogo de software', roles: ['enc-soporte', 'enc-hardware', 'admin'] }
+=======
+      { ruta: '/inventario-hardware', icono: 'box', titulo: 'Inventario de Hardware', roles: ['enc-soporte', 'enc-hardware', 'admin'] }
+>>>>>>> origin/main
     ]
   },
   {

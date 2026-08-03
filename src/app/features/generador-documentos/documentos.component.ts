@@ -274,6 +274,7 @@ interface FilaDoc {
                 @case ('Reporte final') { Contenido: consolidación del expediente único — solicitud, asignación, expediente técnico, F0288, F0302, conformidad del usuario final, garantía y trazabilidad — con las firmas capturadas durante el proceso. }
               }
             </p>
+<<<<<<< HEAD
             @if (f.tipo === 'F0288' && accesoriosDoc(); as accs) {
               <div class="mt-2">
                 <b>Accesorios verificados</b>
@@ -285,6 +286,8 @@ interface FilaDoc {
                 </dl>
               </div>
             }
+=======
+>>>>>>> origin/main
             <div class="dp-firmas">
               @for (fp of firmasDe(f); track fp.rotulo) {
                 <div class="dp-f">
@@ -325,6 +328,7 @@ interface FilaDoc {
               <dt>Generado</dt><dd>{{ docTecVer()?.fecha }} por {{ docTecVer()?.generadoPor }}</dd>
             </dl>
             <p class="small muted mt-2">Contenido: checklist digital de preparación técnica completado dentro de SISGOST, con evidencias verificadas y firma del técnico que preparó.</p>
+<<<<<<< HEAD
             @if (accesoriosDeTec(t); as accs) {
               <div class="mt-2">
                 <b>Accesorios verificados</b>
@@ -336,6 +340,8 @@ interface FilaDoc {
                 </dl>
               </div>
             }
+=======
+>>>>>>> origin/main
             <div class="dp-firmas">
               <div class="dp-f">
                 <div class="f-cap">Técnico que preparó el equipo</div>
@@ -422,6 +428,7 @@ export class DocumentosComponent {
     return eq ? `${eq.marca} ${eq.modelo} · inventario ${eq.inventario}` : '—';
   }
 
+<<<<<<< HEAD
   /** Preparación F0288 del proceso seleccionado (modo Soporte): aporta los accesorios verificados al documento. */
   protected readonly prep = computed(() => {
     const x = this.expediente();
@@ -435,6 +442,8 @@ export class DocumentosComponent {
     return va?.respuesta === 'Sí' ? va.accesorios : undefined;
   });
 
+=======
+>>>>>>> origin/main
   protected readonly filas = computed<FilaDoc[]>(() => {
     const x = this.expediente();
     if (!x) return [];
@@ -531,7 +540,10 @@ export class DocumentosComponent {
       `Usuario final: ${s?.destinatario ?? '—'} — ${s?.unidadDestino ?? ''}`,
       `Generado: ${f.doc.fecha} por ${f.doc.generadoPor}`,
       `Huella de integridad: ${f.doc.hash}`,
+<<<<<<< HEAD
       ...this.lineasAccesorios(f.tipo === 'F0288' ? this.accesoriosDoc() : undefined),
+=======
+>>>>>>> origin/main
       '',
       'FIRMAS INCLUIDAS EN EL DOCUMENTO',
       '-'.repeat(60),
@@ -548,6 +560,7 @@ export class DocumentosComponent {
     this.toast.ok('Documento descargado', `${f.nombre} se descargó incluyendo las firmas capturadas.`);
   }
 
+<<<<<<< HEAD
   /** Sección «Accesorios verificados» del documento F0288 descargado (vacía si no aplica al equipo). */
   private lineasAccesorios(accesorios: { nombre: string; seleccionado: boolean; numeroInventario: string }[] | undefined): string[] {
     if (!accesorios) return [];
@@ -559,6 +572,8 @@ export class DocumentosComponent {
     ];
   }
 
+=======
+>>>>>>> origin/main
   private descargarTexto(nombre: string, contenido: string): void {
     const url = URL.createObjectURL(new Blob([contenido], { type: 'text/plain;charset=utf-8' }));
     const a = document.createElement('a');
@@ -605,12 +620,15 @@ export class DocumentosComponent {
     return this.data.preparacionPorCodigo(t.codigo)?.firma;
   }
 
+<<<<<<< HEAD
   /** Accesorios verificados del F0288 (modo Hardware), solo cuando la respuesta fue «Sí» (equipo usado). */
   protected accesoriosDeTec(t: ExpedienteTecnico) {
     const va = this.data.preparacionPorCodigo(t.codigo)?.verificacionAccesorios;
     return va?.respuesta === 'Sí' ? va.accesorios : undefined;
   }
 
+=======
+>>>>>>> origin/main
   protected descargarTec(t: ExpedienteTecnico): void {
     const d = this.data.documentoF0288DeExpTecnico(t.codigo);
     if (!d) return;
@@ -624,7 +642,10 @@ export class DocumentosComponent {
       `Unidad responsable: ${t.unidadResponsable}`,
       `Generado: ${d.fecha} por ${d.generadoPor}`,
       `Huella de integridad: ${d.hash}`,
+<<<<<<< HEAD
       ...this.lineasAccesorios(this.accesoriosDeTec(t)),
+=======
+>>>>>>> origin/main
       '',
       'FIRMA INCLUIDA EN EL DOCUMENTO',
       '-'.repeat(60),
