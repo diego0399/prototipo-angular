@@ -84,6 +84,12 @@ import { BadgeComponent } from '../../shared/ui';
                 <dt>Nombre del equipo</dt><dd>{{ nombreEquipo(c) }}</dd>
                 <dt>Reserva de IP</dt><dd>{{ reservaIP(c) }}</dd>
                 <dt>IP reservada</dt><dd>{{ ipReservada(c) }}</dd>
+                @if (reservaIP(c) === 'Sí') {
+                  <dt>MAC del equipo</dt><dd>{{ macEquipo(c) }}</dd>
+                  <dt>Solicitud de reserva de IP</dt><dd>{{ estadoSolicitudIP(c) }}</dd>
+                } @else if (reservaIP(c) === 'No') {
+                  <dt>Justificación de no reserva</dt><dd>{{ justificacionIP(c) }}</dd>
+                }
                 @if (validacionIP(c); as v) { <dt>Reserva validada por</dt><dd>{{ v }}</dd> }
                 <dt>Entregado por</dt><dd>{{ c.tecnicoEntrega }}</dd>
               </dl>
@@ -231,6 +237,16 @@ export class ConformidadComponent {
     if (requiere === 'No') return 'No aplica';
     if (requiere !== 'Sí') return '—';
     return (c.ipReservada || this.datosF0302(c)?.ipReservada || '').trim() || '—';
+  }
+  protected macEquipo(c: Conformidad): string {
+    return (c.macEquipo || this.datosF0302(c)?.macEquipo || '').trim() || '—';
+  }
+  /** Estado de la solicitud enviada al Departamento de Servidores para reservar la IP. */
+  protected estadoSolicitudIP(c: Conformidad): string {
+    return c.estadoSolicitudIP || this.datosF0302(c)?.estadoSolicitudIP || '—';
+  }
+  protected justificacionIP(c: Conformidad): string {
+    return (c.justificacionSinReservaIP || this.datosF0302(c)?.justificacionSinReservaIP || '').trim() || '—';
   }
   /** Quién validó la reserva en el modal previo al envío y cuándo; vacío si el dato no se guardó. */
   protected validacionIP(c: Conformidad): string {

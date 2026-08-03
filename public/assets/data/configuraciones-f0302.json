@@ -35,7 +35,12 @@
       "requiereReservaIP": "Sí",
       "ipReservada": "192.168.10.45",
       "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
-      "ipValidadaEl": "2026-07-06 15:12"
+      "ipValidadaEl": "2026-07-06 15:12",
+      "macEquipo": "00:1A:2B:03:BA:E2",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "Enviada",
+      "correoReservaEnviado": "Sí",
+      "fechaSolicitudIP": "2026-07-06 15:12"
     },
     "software": [
       {
@@ -182,7 +187,12 @@
       "sistemaOperativo": "Windows 11 Professional",
       "arquitectura": "64 bits",
       "requiereReservaIP": "",
-      "ipReservada": ""
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
     },
     "software": [
       {
@@ -279,7 +289,12 @@
       "requiereReservaIP": "No",
       "ipReservada": "",
       "ipValidadaPor": "Mateo Martínez — Técnico de Soporte",
-      "ipValidadaEl": "2025-12-02 09:40"
+      "ipValidadaEl": "2025-12-02 09:40",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "El equipo utilizará IP dinámica.",
+      "estadoSolicitudIP": "No aplica",
+      "correoReservaEnviado": "No",
+      "fechaSolicitudIP": ""
     },
     "software": [
       {

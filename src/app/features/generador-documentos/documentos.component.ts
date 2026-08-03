@@ -263,6 +263,13 @@ interface FilaDoc {
                 <dt>¿Requiere reserva de IP?</dt>
                 <dd>{{ c.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad' }}</dd>
                 <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(c) }}</dd>
+                @if (c.datos.requiereReservaIP === 'Sí') {
+                  <dt>MAC del equipo</dt><dd class="mono">{{ c.datos.macEquipo || 'Sin registrar' }}</dd>
+                  <dt>Solicitud de reserva de IP</dt>
+                  <dd>{{ data.textoEstadoSolicitudIP(c) }}@if (c.datos.fechaSolicitudIP) { · correo simulado a Servidores el {{ c.datos.fechaSolicitudIP }}}</dd>
+                } @else if (c.datos.requiereReservaIP === 'No') {
+                  <dt>Justificación de no reserva</dt><dd>{{ c.datos.justificacionSinReservaIP || 'Sin registrar' }}</dd>
+                }
                 @if (c.datos.ipValidadaPor) {
                   <dt>Reserva validada por</dt><dd>{{ c.datos.ipValidadaPor }} · {{ c.datos.ipValidadaEl }}</dd>
                 }
@@ -647,6 +654,14 @@ export class DocumentosComponent {
         ? [`Nombre del equipo: ${this.conf()!.datos.nombrePC}`,
            `¿Requiere reserva de IP?: ${this.conf()!.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad'}`,
            `IP reservada: ${this.data.textoIPReservada(this.conf())}`,
+           ...(this.conf()!.datos.requiereReservaIP === 'Sí'
+             ? [`MAC del equipo: ${this.conf()!.datos.macEquipo || 'Sin registrar'}`,
+                `Solicitud de reserva de IP: ${this.data.textoEstadoSolicitudIP(this.conf())}`
+                  + (this.conf()!.datos.fechaSolicitudIP
+                    ? ` · correo simulado al Departamento de Servidores el ${this.conf()!.datos.fechaSolicitudIP}` : '')]
+             : this.conf()!.datos.requiereReservaIP === 'No'
+               ? [`Justificación de no reserva: ${this.conf()!.datos.justificacionSinReservaIP || 'Sin registrar'}`]
+               : []),
            ...(this.conf()!.datos.ipValidadaPor
              ? [`Reserva validada por: ${this.conf()!.datos.ipValidadaPor} · ${this.conf()!.datos.ipValidadaEl}`]
              : [])]

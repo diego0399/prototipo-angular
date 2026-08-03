@@ -218,6 +218,10 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               <dt>Nombre del equipo</dt><dd class="mono">{{ data.nombreEquipoActual(e.inventario) || '—' }}</dd>
               <dt>Reserva de IP</dt><dd>{{ data.reservaIPEquipo(e.inventario).requiere || '—' }}</dd>
               <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(ultimaConfig(e)) }}</dd>
+              <dt>MAC del equipo</dt><dd class="mono">{{ macDe(e) || 'Sin registrar' }}</dd>
+              @if (data.reservaIPEquipo(e.inventario).requiere === 'Sí') {
+                <dt>Solicitud de reserva de IP</dt><dd>{{ data.textoEstadoSolicitudIP(ultimaConfig(e)) }}</dd>
+              }
               <dt>Usuario final asignado</dt><dd>{{ data.asignacionDeEquipo(e.inventario)?.usuarioFinal || '—' }}</dd>
               <dt>Expediente único asociado</dt><dd>{{ expUnicoTxt(e) || '—' }}</dd>
               <dt>Observaciones</dt><dd>{{ e.observaciones || 'Sin observaciones' }}</dd>
@@ -897,6 +901,11 @@ export class InventarioHardwareComponent {
   /** Configuración F0302 más reciente del equipo: de ahí salen el nombre del equipo y la reserva de IP. */
   protected ultimaConfig(e: Equipo) {
     return this.data.configuracionesDeEquipo(e.inventario)[0];
+  }
+
+  /** MAC vigente: la registrada al solicitar la reserva de IP o, si no hay, la del registro institucional. */
+  protected macDe(e: Equipo): string {
+    return (this.ultimaConfig(e)?.datos.macEquipo ?? '').trim() || (e.mac ?? '');
   }
 
   protected tecnicoPreparo(e: Equipo): string {

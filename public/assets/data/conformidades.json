@@ -22,7 +22,10 @@
     "requiereReservaIP": "Sí",
     "ipReservada": "192.168.10.45",
     "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
-    "ipValidadaEl": "2026-07-06 15:12"
+    "ipValidadaEl": "2026-07-06 15:12",
+    "macEquipo": "00:1A:2B:03:BA:E2",
+    "justificacionSinReservaIP": "",
+    "estadoSolicitudIP": "Enviada"
   },
   {
     "token": "CONF-2026-0139-B7K1",
@@ -46,7 +49,10 @@
     "firmaUsuarioFinal": "C. Escobar",
     "nombreEquipo": "CNR-RC-L0871",
     "requiereReservaIP": "No",
-    "ipReservada": ""
+    "ipReservada": "",
+    "macEquipo": "",
+    "justificacionSinReservaIP": "El requerimiento no solicita reserva de IP.",
+    "estadoSolicitudIP": "No aplica"
   },
   {
     "token": "CONF-2025-0210-J4M9",
@@ -72,6 +78,9 @@
     "requiereReservaIP": "No",
     "ipReservada": "",
     "ipValidadaPor": "Mateo Martínez — Técnico de Soporte",
-    "ipValidadaEl": "2025-12-02 09:40"
+    "ipValidadaEl": "2025-12-02 09:40",
+    "macEquipo": "",
+    "justificacionSinReservaIP": "El equipo utilizará IP dinámica.",
+    "estadoSolicitudIP": "No aplica"
   }
 ]

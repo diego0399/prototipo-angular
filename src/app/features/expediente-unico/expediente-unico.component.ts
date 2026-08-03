@@ -311,6 +311,12 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
             <div><div class="d-k">Nombre del equipo</div><div class="d-v mono">{{ configDe(x)?.datos?.nombrePC || '—' }}</div></div>
             <div><div class="d-k">Reserva de IP</div><div class="d-v">{{ configDe(x)?.datos?.requiereReservaIP || '—' }}</div></div>
             <div><div class="d-k">IP reservada</div><div class="d-v mono">{{ data.textoIPReservada(configDe(x)) }}</div></div>
+            @if (configDe(x)?.datos?.requiereReservaIP === 'Sí') {
+              <div><div class="d-k">MAC del equipo</div><div class="d-v mono">{{ configDe(x)?.datos?.macEquipo || 'Sin registrar' }}</div></div>
+              <div><div class="d-k">Solicitud de reserva de IP</div><div class="d-v">{{ data.textoEstadoSolicitudIP(configDe(x)) }}</div></div>
+            } @else if (configDe(x)?.datos?.requiereReservaIP === 'No') {
+              <div><div class="d-k">Justificación de no reserva</div><div class="d-v">{{ configDe(x)?.datos?.justificacionSinReservaIP || 'Sin registrar' }}</div></div>
+            }
             <div><div class="d-k">Usuario final</div><div class="d-v">{{ solicitudDe(x)?.destinatario || '—' }}</div></div>
             <div><div class="d-k">Técnico de configuración</div><div class="d-v">{{ tecnicoConfigDe(x) }}</div></div>
             <div><div class="d-k">Última actualización</div><div class="d-v mono">{{ ultimaActualizacion(x) }}</div></div>
@@ -363,6 +369,12 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                   <dt>Nombre del equipo</dt><dd class="mono">{{ configDe(x)?.datos?.nombrePC || '—' }}</dd>
                   <dt>Reserva de IP</dt><dd>{{ configDe(x)?.datos?.requiereReservaIP || '—' }}</dd>
                   <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(configDe(x)) }}</dd>
+                  @if (configDe(x)?.datos?.requiereReservaIP === 'Sí') {
+                    <dt>MAC del equipo</dt><dd class="mono">{{ configDe(x)?.datos?.macEquipo || 'Sin registrar' }}</dd>
+                    <dt>Solicitud de reserva de IP</dt><dd>{{ data.textoEstadoSolicitudIP(configDe(x)) }}</dd>
+                  } @else if (configDe(x)?.datos?.requiereReservaIP === 'No') {
+                    <dt>Justificación de no reserva</dt><dd>{{ configDe(x)?.datos?.justificacionSinReservaIP || 'Sin registrar' }}</dd>
+                  }
                   <dt>Usuario final</dt><dd>{{ solicitudDe(x)?.destinatario }} — {{ solicitudDe(x)?.unidadDestino }}</dd>
                   <dt>Correo institucional</dt><dd>{{ solicitudDe(x)?.correoDestinatario }}</dd>
                 </dl>
@@ -632,8 +644,8 @@ export class ExpedienteUnicoComponent {
       const texto = [
         x.codigoUnico, x.expediente, x.estado, x.resumenEstado, this.faseDe(x),
         s ? this.data.tipoRequerimientoTexto(s) : '', s?.equipoInventario, s?.destinatario, s?.correoDestinatario, s?.unidadDestino,
-        // El expediente también se busca por el nombre del equipo y por su IP reservada.
-        c?.datos.nombrePC, c?.datos.ipReservada,
+        // El expediente también se busca por el nombre del equipo, su IP reservada y su MAC.
+        c?.datos.nombrePC, c?.datos.ipReservada, c?.datos.macEquipo,
         this.equipoDe(x), this.asignacionDe(x)?.responsablesFase?.tecnicoConfiguracion,
         g?.estado, ...(g?.casos.map((c) => c.codigo) ?? [])
       ].filter(Boolean).join(' ').toLowerCase();

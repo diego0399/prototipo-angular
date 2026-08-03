@@ -291,9 +291,18 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   <span class="alert-ico">i</span>
                   <span>Aún no se ha enviado el formulario de conformidad para esta entrega.</span>
                 </div>
-                <button class="btn btn-primary mt-2" (click)="enviar(e.expediente)" [disabled]="!e.f0302Generado">
-                  Enviar formulario de conformidad
-                </button>
+                <!-- La validación de la reserva de IP se hace en el modal de Configuración F0302:
+                     desde aquí se envía solo cuando ya quedó completa. -->
+                @if (faltaValidacionIP(e.expediente); as falta) {
+                  <p class="small muted mt-2">{{ falta }}</p>
+                  <a class="btn btn-primary mt-1" routerLink="/configuracion" (click)="casoActivo.seleccionar(e.expediente)">
+                    Validar reserva de IP en Configuración F0302
+                  </a>
+                } @else {
+                  <button class="btn btn-primary mt-2" (click)="enviar(e.expediente)" [disabled]="!e.f0302Generado">
+                    Enviar formulario de conformidad
+                  </button>
+                }
                 @if (!e.f0302Generado) {
                   <p class="small muted mt-1">Se habilita al generar el F0302.</p>
                 }
@@ -327,7 +336,7 @@ export class EntregaComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
-  private readonly casoActivo = inject(CasoActivoService);
+  protected readonly casoActivo = inject(CasoActivoService);
 
   protected seleccion = signal('');
   protected buscarAbierto = signal(false);
@@ -428,6 +437,16 @@ export class EntregaComponent {
     if (this.correccionActiva()) return 'Registrar la corrección realizada y finalizarla.';
     if (this.correccionLista()) return 'Reenviar el formulario de aceptación (nuevo intento).';
     return 'Clasificar la corrección y evaluar si requiere un nuevo Expediente técnico.';
+  }
+
+  /**
+   * Mensaje de la validación de reserva de IP que falta, si falta alguna. El modal que la resuelve
+   * vive en Configuración F0302, así que desde aquí se enlaza en lugar de ofrecer un envío que se
+   * bloquearía de todos modos.
+   */
+  protected faltaValidacionIP(id: string): string {
+    const m = this.data.validarEnvioConformidad(id);
+    return m && /reserva de IP|IP reservada|MAC del equipo|justificar/i.test(m) ? m : '';
   }
 
   protected enviar(id: string): void {

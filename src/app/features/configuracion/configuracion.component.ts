@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
   ConfiguracionF0302, Cronometro, MotivoSoftwareF0302, NivelComplejidad, RespuestaSiNo,
-  SoftwareCatalogo, SoftwareF0302, TipoFallaF0302
+  SoftwareCatalogo, SoftwareF0302, SolicitudReservaIP, TipoFallaF0302
 } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
@@ -35,6 +35,8 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
     .c-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px 18px; flex: 1; min-width: 260px; }
     .c-grid .d-k { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tx-3); }
     .c-grid .d-v { font-size: 13px; color: var(--navy-900); margin-top: 2px; }
+    .correo-sim { margin: 8px 0 0; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; font-family: var(--mono, monospace); font-size: 12px; line-height: 1.55; color: var(--navy-900); white-space: pre-wrap; }
+    .chip-btn { cursor: pointer; white-space: normal; text-align: left; font-family: var(--font); }
     .radio-line { display: flex; gap: 18px; align-items: center; }
     .radio-line label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--navy-900); }
     .radio-line input[type='radio'] { width: 17px; height: 17px; accent-color: var(--navy-800); cursor: pointer; }
@@ -143,6 +145,12 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 @if (c.datos.requiereReservaIP) {
                   <dt>Reserva de IP</dt><dd>{{ c.datos.requiereReservaIP }}</dd>
                   <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(c) }}</dd>
+                  @if (c.datos.requiereReservaIP === 'Sí') {
+                    <dt>MAC del equipo</dt><dd class="mono">{{ c.datos.macEquipo || 'Sin registrar' }}</dd>
+                    <dt>Solicitud de reserva de IP</dt><dd>{{ data.textoEstadoSolicitudIP(c) }}</dd>
+                  } @else {
+                    <dt>Justificación de no reserva</dt><dd>{{ c.datos.justificacionSinReservaIP || 'Sin registrar' }}</dd>
+                  }
                 }
                 <dt>Tipo de servicio</dt><dd>{{ c.datos.tipoServicio }}</dd>
               </dl>
@@ -360,6 +368,15 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 @if (c.datos.requiereReservaIP) {
                   <dt>Reserva de IP</dt><dd>{{ c.datos.requiereReservaIP }}</dd>
                   <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(c) }}</dd>
+                  @if (c.datos.requiereReservaIP === 'Sí') {
+                    <dt>MAC del equipo</dt><dd class="mono">{{ c.datos.macEquipo || 'Sin registrar' }}</dd>
+                    <dt>Solicitud de reserva de IP</dt><dd>{{ data.textoEstadoSolicitudIP(c) }}</dd>
+                    @if (c.datos.fechaSolicitudIP) {
+                      <dt>Correo simulado a Servidores</dt><dd>Enviado el {{ c.datos.fechaSolicitudIP }}</dd>
+                    }
+                  } @else {
+                    <dt>Justificación de no reserva</dt><dd>{{ c.datos.justificacionSinReservaIP || 'Sin registrar' }}</dd>
+                  }
                   @if (c.datos.ipValidadaPor) {
                     <dt>Validada por</dt><dd>{{ c.datos.ipValidadaPor }} · {{ c.datos.ipValidadaEl }}</dd>
                   }
@@ -669,10 +686,67 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   <span class="hint">Formato xxx.xxx.xxx.xxx (por ejemplo 192.168.10.45).</span>
                 }
               </div>
+              <div class="field">
+                <label>MAC del equipo <span class="req">*</span></label>
+                <input class="control mono" [ngModel]="macVal()" (ngModelChange)="macVal.set($event)" placeholder="00:1A:2B:3C:4D:5E" />
+                @if (macVal().trim() && !data.macValida(macVal())) {
+                  <span class="hint" style="color: var(--danger, #c0392b);">La MAC del equipo no tiene un formato válido.</span>
+                } @else if (origenMac(c)) {
+                  <span class="hint">Tomada del {{ origenMac(c).toLowerCase() }}. Puede corregirla si no coincide con el equipo.</span>
+                } @else {
+                  <span class="hint">El equipo no trae MAC registrada: digítela. Formatos 00:1A:2B:3C:4D:5E o 00-1A-2B-3C-4D-5E.</span>
+                }
+              </div>
+
+              <!-- Solicitud simulada al Departamento de Servidores: sin ella no se envía el formulario -->
+              <div class="card mt-2">
+                <div class="card-head">
+                  <div>
+                    <h3>Solicitud de reserva de IP</h3>
+                    <p class="sub">Correo simulado al Departamento de Servidores; el prototipo no envía correo real</p>
+                  </div>
+                  <ui-badge [estado]="data.textoEstadoSolicitudIP(c)" />
+                </div>
+                <div class="card-body">
+                  @if (correo(c); as m) {
+                    <dl class="dl">
+                      <dt>Para</dt><dd>{{ m.para }}</dd>
+                      <dt>Asunto</dt><dd>{{ m.asunto }}</dd>
+                    </dl>
+                    <pre class="correo-sim">{{ m.cuerpo }}</pre>
+                  } @else {
+                    <span class="hint">Complete la IP y la MAC con formato válido para armar la solicitud.</span>
+                  }
+                  @if (c.datos.estadoSolicitudIP === 'Enviada') {
+                    <div class="alert ok mt-2">
+                      <span class="alert-ico">✓</span>
+                      <span>Solicitud enviada de forma simulada el {{ c.datos.fechaSolicitudIP }}. Ya puede enviar el formulario de conformidad.</span>
+                    </div>
+                  } @else {
+                    <button class="btn btn-primary mt-2" (click)="enviarSolicitudIP(c)">Enviar solicitud de reserva de IP</button>
+                    <span class="hint">Obligatoria: el formulario de conformidad no se envía mientras la solicitud esté pendiente.</span>
+                  }
+                </div>
+              </div>
             } @else if (ipReq() === 'No') {
-              <span class="hint">El formulario registrará «Reserva de IP: No · IP reservada: No aplica».</span>
+              <div class="field">
+                <label>Justificación de no reserva de IP <span class="req">*</span></label>
+                <textarea class="control" rows="2" [ngModel]="justVal()" (ngModelChange)="justVal.set($event)"
+                  placeholder="Indique por qué el equipo no requiere reserva de IP."></textarea>
+                @if (!justVal().trim()) {
+                  <span class="hint">Indique por qué el equipo no requiere reserva de IP.</span>
+                } @else {
+                  <span class="hint">Quedará en el F0302, el expediente único, el formulario de conformidad y la trazabilidad.</span>
+                }
+              </div>
+              <div class="row" style="flex-wrap: wrap; gap: 6px;">
+                @for (j of data.justificacionesSinReservaIP; track j) {
+                  <button class="chip chip-btn" (click)="justVal.set(j)">{{ j }}</button>
+                }
+              </div>
+              <span class="hint">El formulario registrará «Reserva de IP: No · IP reservada: No aplica · Solicitud de reserva de IP: No aplica».</span>
             } @else {
-              <span class="hint">Responda Sí o No. Con «Sí», la IP reservada es obligatoria para enviar el formulario.</span>
+              <span class="hint">Responda Sí o No. Con «Sí» se piden la IP y la MAC del equipo; con «No», la justificación.</span>
             }
             <div class="alert mt-2">
               <span class="alert-ico">i</span>
@@ -809,6 +883,8 @@ export class ConfiguracionComponent {
   protected nombrePC = signal('');
   protected ipReq = signal<RespuestaSiNo>('');
   protected ipVal = signal('');
+  protected macVal = signal('');
+  protected justVal = signal('');
   /** Últimos datos cargados en el formulario; evita repisar lo que el técnico está escribiendo. */
   private ipCargada = '';
   /** Modal de confirmación previo al envío del formulario de conformidad. */
@@ -853,14 +929,39 @@ export class ConfiguracionComponent {
       this.ipCargada = clave;
       this.ipReq.set(c?.datos.requiereReservaIP ?? '');
       this.ipVal.set(c?.datos.ipReservada ?? '');
+      this.macVal.set(c ? this.data.macSugeridaF0302(c.expediente) : '');
+      this.justVal.set(c?.datos.justificacionSinReservaIP ?? '');
       this.nombrePC.set(c?.datos.nombrePC ?? '');
     });
   }
 
-  /** «No requiere» limpia la IP: el expediente registrará «No aplica». */
+  /** «No requiere» limpia la IP y la MAC: lo que queda por registrar es la justificación. */
   protected cambiarNoRequiere(): void {
     this.ipReq.set('No');
     this.ipVal.set('');
+  }
+
+  /** De dónde salió la MAC que muestra el modal: del inventario institucional o digitada aquí. */
+  protected origenMac(c: ConfiguracionF0302): string {
+    return this.data.origenMacF0302(c.expediente);
+  }
+
+  /** Vista previa del correo simulado con lo que el técnico está escribiendo (aún sin guardar). */
+  protected correo(c: ConfiguracionF0302): SolicitudReservaIP | null {
+    return this.data.solicitudReservaIP(c.expediente, this.ipVal(), this.macVal());
+  }
+
+  /**
+   * Guarda la reserva y simula el envío del correo al Departamento de Servidores. Sin este envío
+   * el formulario de conformidad no se habilita.
+   */
+  protected enviarSolicitudIP(c: ConfiguracionF0302): void {
+    if (!this.guardarIP(c, true)) return;
+    const u = this.auth.usuario();
+    const r = this.data.registrarSolicitudReservaIP(c.expediente, `${u?.nombre} — ${u?.rol}`);
+    if (typeof r === 'string') { this.toast.error('No se pudo enviar la solicitud de reserva', r); return; }
+    this.toast.ok('Solicitud de reserva de IP enviada de forma simulada al Departamento de Servidores.',
+      `IP ${r.ip} · MAC ${r.mac} · equipo ${r.nombreEquipo} (${r.inventario}). Quedó registrada en el expediente y en la trazabilidad; el prototipo no envía correo real.`);
   }
 
   /** Guarda el nombre del equipo digitado. Devuelve true si quedó registrado. */
@@ -884,14 +985,15 @@ export class ConfiguracionComponent {
     const anterior = c.datos.requiereReservaIP ?? '';
     const anteriorIP = (c.datos.ipReservada ?? '').trim();
     const u = this.auth.usuario();
-    const error = this.data.registrarReservaIP(c.expediente, `${u?.nombre} — ${u?.rol}`, this.ipReq(), this.ipVal());
+    const error = this.data.registrarReservaIP(c.expediente, `${u?.nombre} — ${u?.rol}`,
+      this.ipReq(), this.ipVal(), this.macVal(), this.justVal());
     if (error) {
       this.toast.error('No se puede registrar la reserva de IP', error);
       return false;
     }
     if (silencioso) return true;
     if (this.ipReq() === 'No') {
-      this.toast.ok('Reserva de IP registrada', `El equipo ${c.datos.nombrePC} no requiere reserva de IP; el expediente registrará «IP reservada: No aplica».`);
+      this.toast.ok('Reserva de IP registrada', `El equipo ${c.datos.nombrePC} no requiere reserva de IP; el expediente registrará «IP reservada: No aplica» con la justificación del técnico.`);
     } else if (anterior === 'Sí' && anteriorIP && anteriorIP !== this.ipVal().trim()) {
       this.toast.ok('IP reservada actualizada', `La reserva del equipo ${c.datos.nombrePC} pasó de ${anteriorIP} a ${this.ipVal().trim()}; el cambio quedó en la trazabilidad.`);
     } else {
@@ -1159,6 +1261,9 @@ export class ConfiguracionComponent {
     this.nombrePC.set(c.datos.nombrePC ?? '');
     this.ipReq.set(c.datos.requiereReservaIP ?? '');
     this.ipVal.set(c.datos.ipReservada ?? '');
+    // La MAC llega autocompletada desde el registro institucional del equipo cuando lo trae.
+    this.macVal.set(this.data.macSugeridaF0302(c.expediente));
+    this.justVal.set(c.datos.justificacionSinReservaIP ?? '');
     this.confirmarAbierto.set(true);
     const u = this.auth.usuario();
     this.data.registrarAperturaModalConformidad(c.expediente, `${u?.nombre} — ${u?.rol}`);

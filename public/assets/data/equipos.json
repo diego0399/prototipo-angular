@@ -14,7 +14,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-22",
     "horaIngreso": "08:45",
-    "ingresadoPor": "Carlos González — Encargado de Soporte"
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "mac": "00:1A:2B:04:C4:05"
   },
   {
     "inventario": "2201-1215-2026",
@@ -31,7 +32,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-21",
     "horaIngreso": "09:10",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:04:BF:16"
   },
   {
     "inventario": "2201-1212-2026",
@@ -48,7 +50,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-21",
     "horaIngreso": "11:30",
-    "ingresadoPor": "Carlos González — Encargado de Soporte"
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "mac": "00:1A:2B:04:BC:27"
   },
   {
     "inventario": "2201-1211-2026",
@@ -65,7 +68,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-20",
     "horaIngreso": "10:20",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:04:BB:38"
   },
   {
     "inventario": "2201-1210-2026",
@@ -82,7 +86,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-20",
     "horaIngreso": "14:05",
-    "ingresadoPor": "Carlos González — Encargado de Soporte"
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "mac": "00:1A:2B:04:BA:49"
   },
   {
     "inventario": "2201-1300-2026",
@@ -99,7 +104,8 @@
     "expediente": "SOL-2026-0150",
     "fechaIngreso": "2026-05-04",
     "horaIngreso": "09:00",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:05:14:5A"
   },
   {
     "inventario": "2201-0918-2022",
@@ -116,7 +122,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-08",
     "horaIngreso": "09:40",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:96:6B"
   },
   {
     "inventario": "2201-0922-2023",
@@ -133,7 +140,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-10",
     "horaIngreso": "11:15",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:9A:7C"
   },
   {
     "inventario": "2201-1150-2025",
@@ -150,7 +158,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-01",
     "horaIngreso": "08:50",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:04:7E:8D"
   },
   {
     "inventario": "2201-0899-2023",
@@ -167,7 +176,8 @@
     "expediente": "",
     "fechaIngreso": "2026-06-12",
     "horaIngreso": "10:05",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:83:9E"
   },
   {
     "inventario": "2201-1201-2026",
@@ -184,7 +194,8 @@
     "expediente": "",
     "fechaIngreso": "2026-07-06",
     "horaIngreso": "14:20",
-    "ingresadoPor": "Carlos González — Encargado de Soporte"
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "mac": "00:1A:2B:04:B1:AF"
   },
   {
     "inventario": "2201-1187-2026",
@@ -218,7 +229,8 @@
     "expediente": "SOL-2026-0144",
     "fechaIngreso": "2026-06-18",
     "horaIngreso": "10:45",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:04:4A:D1"
   },
   {
     "inventario": "2201-0954-2023",
@@ -235,7 +247,8 @@
     "expediente": "SOL-2026-0141",
     "fechaIngreso": "2026-06-20",
     "horaIngreso": "08:35",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:BA:E2"
   },
   {
     "inventario": "2201-0871-2024",
@@ -252,7 +265,8 @@
     "expediente": "SOL-2026-0139",
     "fechaIngreso": "2026-06-10",
     "horaIngreso": "15:10",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:67:F3"
   },
   {
     "inventario": "2201-1041-2026",
@@ -269,7 +283,8 @@
     "expediente": "SOL-2026-0132",
     "fechaIngreso": "2026-06-02",
     "horaIngreso": "09:00",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:04:11:04"
   },
   {
     "inventario": "2201-0703-2021",
@@ -286,7 +301,8 @@
     "expediente": "",
     "fechaIngreso": "2025-12-05",
     "horaIngreso": "10:30",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:02:BF:15"
   },
   {
     "inventario": "2201-0788-2022",
@@ -303,6 +319,7 @@
     "expediente": "SOL-2025-0210",
     "fechaIngreso": "2025-11-18",
     "horaIngreso": "09:20",
-    "ingresadoPor": "Samuel Cruz — Encargado de Hardware"
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "mac": "00:1A:2B:03:14:26"
   }
 ]

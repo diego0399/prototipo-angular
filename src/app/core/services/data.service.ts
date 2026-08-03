@@ -5,10 +5,10 @@ import {
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
   DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, FilaValidacionLote,
-  EstadoAsignacionEquipo, EstadoPreparacionEquipo, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  EstadoAsignacionEquipo, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
   FirmaProceso, Garantia, IngresoHardware, IntentoAceptacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
-  SoftwareF0302, SoftwareHeredadoF0288,
+  SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP,
   TipoComentarioCaso, TipoCorreccion, TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
@@ -834,8 +834,22 @@ export class DataService {
       // simplemente no está. Se descarta al rehidratar para que ninguna foto anterior lo reviva.
       const { softwareOculto, ...resto } = c as ConfiguracionF0302 & { softwareOculto?: unknown };
       void softwareOculto;
+      // Estado de la solicitud de reserva en fotos anteriores a la regla: «No aplica» cuando el
+      // equipo no requiere reserva y «Pendiente de envío» cuando sí, porque en ellas nunca se envió
+      // la solicitud simulada a Servidores. No se da por enviada una solicitud que no existió; si
+      // el expediente ya estaba finalizado, el modal permite completarla (nunca se registró).
+      const requiere = resto.datos?.requiereReservaIP ?? '';
       return {
         ...resto,
+        datos: {
+          ...resto.datos,
+          macEquipo: resto.datos?.macEquipo ?? '',
+          justificacionSinReservaIP: resto.datos?.justificacionSinReservaIP ?? '',
+          estadoSolicitudIP: resto.datos?.estadoSolicitudIP
+            ?? (requiere === 'Sí' ? 'Pendiente de envío' : requiere === 'No' ? 'No aplica' : ''),
+          correoReservaEnviado: resto.datos?.correoReservaEnviado ?? '',
+          fechaSolicitudIP: resto.datos?.fechaSolicitudIP ?? ''
+        },
         software: (resto.software ?? []).map((s) => ({
           ...s,
           origen: s.origen ?? (this.esActividadConfiguracion(s.nombre) ? 'Configuración' as const : 'F0302' as const),
@@ -2020,9 +2034,16 @@ export class DataService {
           puesto: 'Según registro de RRHH',
           sistemaOperativo: eq?.sistemaOperativo || 'Windows 11 Pro',
           arquitectura: 'x64',
-          // La reserva de IP la responde el técnico dentro del checklist F0302, antes de finalizar.
+          // La reserva de IP no forma parte del checklist F0302: se pregunta en el modal previo al
+          // envío del formulario de conformidad, junto con la MAC y la solicitud a Servidores.
           requiereReservaIP: '',
-          ipReservada: ''
+          ipReservada: '',
+          // La MAC se autocompleta desde el registro institucional del equipo cuando lo trae.
+          macEquipo: this.equipoDe(asig.equipoInventario)?.mac ?? '',
+          justificacionSinReservaIP: '',
+          estadoSolicitudIP: '',
+          correoReservaEnviado: '',
+          fechaSolicitudIP: ''
         },
         software,
         // Las capturas de Antivirus y OCS Inventory son evidencia del F0288 y el F0302 las hereda
@@ -2857,10 +2878,69 @@ export class DataService {
   // en el checklist F0302, se valida antes de finalizar y viaja al documento, al historial
   // técnico y a la trazabilidad.
 
+  /**
+   * Justificaciones frecuentes de no reserva. Son atajos para no teclear: el técnico puede elegir
+   * una o escribir la suya, pero el campo nunca queda vacío.
+   */
+  readonly justificacionesSinReservaIP: string[] = [
+    'El equipo utilizará IP dinámica.',
+    'El equipo no estará conectado de forma permanente a la red institucional.',
+    'El requerimiento no solicita reserva de IP.',
+    'La unidad solicitante no requiere IP fija.',
+    'Otro motivo justificado.'
+  ];
+
   /** Formato xxx.xxx.xxx.xxx con octetos de 0 a 255 (192.168.10.999 y abc.def.1.2 no pasan). */
   ipValida(ip: string): boolean {
     const partes = ip.trim().split('.');
     return partes.length === 4 && partes.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255);
+  }
+
+  /**
+   * Formato de MAC: seis pares hexadecimales separados por `:` o por `-`, sin mezclar separadores
+   * (`00:1A:2B:3C:4D:5E` y `00-1A-2B-3C-4D-5E` son válidas).
+   */
+  macValida(mac: string): boolean {
+    const valor = (mac ?? '').trim();
+    return /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(valor)
+      || /^([0-9A-Fa-f]{2}-){5}[0-9A-Fa-f]{2}$/.test(valor);
+  }
+
+  /** La MAC se guarda en mayúsculas para que no queden dos escrituras del mismo dato. */
+  private macNormalizada(mac: string): string {
+    return (mac ?? '').trim().toUpperCase();
+  }
+
+  /**
+   * MAC que el modal muestra autocompletada: la que ya quedó en la configuración F0302 o, si no
+   * hay, la del registro institucional del equipo. Devuelve '' cuando el equipo no la trae y el
+   * técnico debe digitarla.
+   */
+  macSugeridaF0302(id: string): string {
+    const c = this.configuracionDe(id);
+    const guardada = this.macNormalizada(c?.datos.macEquipo ?? '');
+    if (guardada) return guardada;
+    return this.macNormalizada(this.equipoDe(c?.datos.inventario ?? '')?.mac ?? '');
+  }
+
+  /** De dónde salió la MAC que se muestra: del inventario institucional o digitada en el modal. */
+  origenMacF0302(id: string): string {
+    const c = this.configuracionDe(id);
+    const delEquipo = this.macNormalizada(this.equipoDe(c?.datos.inventario ?? '')?.mac ?? '');
+    const guardada = this.macNormalizada(c?.datos.macEquipo ?? '');
+    if (delEquipo && (!guardada || guardada === delEquipo)) return 'Registro institucional del equipo';
+    return guardada ? 'Digitada en la validación previa a conformidad' : '';
+  }
+
+  /**
+   * Estado de la solicitud de reserva ante el Departamento de Servidores, listo para mostrar:
+   * «No aplica», «Pendiente de envío», «Enviada» o, mientras la reserva no se haya respondido,
+   * «Pendiente de validación antes de conformidad».
+   */
+  textoEstadoSolicitudIP(c: Pick<ConfiguracionF0302, 'datos'> | undefined): string {
+    if (!c?.datos.requiereReservaIP) return 'Pendiente de validación antes de conformidad';
+    if (c.datos.requiereReservaIP === 'No') return 'No aplica';
+    return c.datos.estadoSolicitudIP || 'Pendiente de envío';
   }
 
   /**
@@ -2916,9 +2996,14 @@ export class DataService {
    * la respuesta, falta la IP, formato incorrecto o IP duplicada. Los mensajes hablan del envío del
    * formulario de conformidad porque es el único punto donde se captura la reserva.
    */
-  validarReservaIP(inventario: string, requiere: RespuestaSiNo, ip: string): string | null {
+  validarReservaIP(inventario: string, requiere: RespuestaSiNo, ip: string, mac = '', justificacion = ''): string | null {
     if (!requiere) return 'Indique si el equipo requiere reserva de IP antes de enviar el formulario de conformidad.';
-    if (requiere === 'No') return null;
+    // Con «No» el dato que falta es el motivo: sin él, el expediente no explicaría por qué el
+    // equipo quedó sin IP fija y el formulario de conformidad no puede enviarse.
+    if (requiere === 'No') {
+      return justificacion.trim() ? null
+        : 'Debe justificar por qué no se reservó IP antes de enviar el formulario de conformidad.';
+    }
     const valor = ip.trim();
     if (!valor) return 'Debe ingresar la IP reservada antes de enviar el formulario de conformidad.';
     if (!this.ipValida(valor)) return 'La IP ingresada no tiene un formato válido.';
@@ -2927,6 +3012,10 @@ export class DataService {
       return 'La IP ingresada ya se encuentra registrada en otro equipo activo. ' +
         `Verifique la reserva antes de continuar (equipo ${otra.datos.inventario} · ${otra.datos.nombrePC}).`;
     }
+    // La MAC identifica al equipo en la solicitud a Servidores: sin ella la reserva no puede pedirse.
+    const dir = mac.trim();
+    if (!dir) return 'Debe ingresar la MAC del equipo para solicitar la reserva de IP.';
+    if (!this.macValida(dir)) return 'La MAC del equipo no tiene un formato válido.';
     return null;
   }
 
@@ -2937,32 +3026,50 @@ export class DataService {
    *
    * Devuelve null si se guardó (o si no hubo cambio), o el mensaje de validación.
    */
-  registrarReservaIP(id: string, usuario: string, requiere: RespuestaSiNo, ip: string): string | null {
+  registrarReservaIP(id: string, usuario: string, requiere: RespuestaSiNo, ip: string,
+    mac = '', justificacion = ''): string | null {
     const c = this.configuracionDe(id);
     if (!c) return 'No se encontró la configuración indicada.';
+    const macNueva = requiere === 'Sí' ? this.macNormalizada(mac) : '';
+    const justNueva = requiere === 'No' ? justificacion.trim() : '';
     // Reconfirmar en el modal lo mismo que ya estaba guardado no es un cambio: se acepta sin tocar
     // nada, para que el envío del formulario no se trabe por «no puede modificarse».
     const igual = (c.datos.requiereReservaIP ?? '') === requiere
-      && (c.datos.ipReservada ?? '').trim() === (requiere === 'Sí' ? ip.trim() : '');
-    if (igual) return this.validarReservaIP(c.datos.inventario, requiere, ip);
-    // En una configuración finalizada solo se admite COMPLETAR la reserva que nunca se registró
-    // (expedientes anteriores a la regla); de lo contrario el proceso quedaría trabado: no podría
-    // enviarse el formulario de conformidad por falta del dato ni corregirse por estar cerrado.
-    if (c.estado === 'Completada' && (c.datos.requiereReservaIP ?? '')) {
-      return 'La configuración ya fue finalizada; la reserva de IP no puede modificarse.';
+      && (c.datos.ipReservada ?? '').trim() === (requiere === 'Sí' ? ip.trim() : '')
+      && this.macNormalizada(c.datos.macEquipo ?? '') === macNueva
+      && (c.datos.justificacionSinReservaIP ?? '').trim() === justNueva;
+    if (igual) return this.validarReservaIP(c.datos.inventario, requiere, ip, mac, justificacion);
+    // La reserva se captura DESPUÉS de finalizar el F0302, así que «Completada» no puede ser el
+    // punto de congelación: mientras el formulario de conformidad no se haya enviado, el técnico
+    // todavía puede corregir la IP, la MAC o la justificación —de lo contrario un dato mal digitado
+    // dejaría el proceso trabado—. Una vez enviado el formulario, el dato queda congelado en él.
+    if (this.conformidades().some((x) => x.expediente === id)) {
+      return 'El formulario de conformidad ya fue enviado; la reserva de IP no puede modificarse.';
     }
     if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
     if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
-    const error = this.validarReservaIP(c.datos.inventario, requiere, ip);
+    const error = this.validarReservaIP(c.datos.inventario, requiere, ip, mac, justificacion);
     if (error) return error;
 
     const anteriorReq = c.datos.requiereReservaIP ?? '';
     const anteriorIP = (c.datos.ipReservada ?? '').trim();
+    const anteriorMac = this.macNormalizada(c.datos.macEquipo ?? '');
+    const anteriorJust = (c.datos.justificacionSinReservaIP ?? '').trim();
     const nuevaIP = requiere === 'Sí' ? ip.trim() : '';
+    // Si la IP o la MAC cambian, la solicitud que se envió a Servidores dejó de corresponder a
+    // estos datos: vuelve a «Pendiente de envío» y hay que enviarla de nuevo.
+    const solicitudVigente = requiere === 'Sí'
+      && c.datos.estadoSolicitudIP === 'Enviada' && anteriorIP === nuevaIP && anteriorMac === macNueva;
+    const estadoSolicitud: EstadoSolicitudReservaIP = requiere === 'No'
+      ? 'No aplica' : solicitudVigente ? 'Enviada' : 'Pendiente de envío';
     const sello = `${this.hoy()} ${this.hora().slice(0, 5)}`;
     this.actualizarConfiguracionActiva(id, (x) => ({
       ...x, datos: {
         ...x.datos, requiereReservaIP: requiere, ipReservada: nuevaIP,
+        macEquipo: macNueva, justificacionSinReservaIP: justNueva,
+        estadoSolicitudIP: estadoSolicitud,
+        correoReservaEnviado: solicitudVigente ? (x.datos.correoReservaEnviado ?? 'Sí') : 'No',
+        fechaSolicitudIP: solicitudVigente ? (x.datos.fechaSolicitudIP ?? '') : '',
         ipValidadaPor: usuario, ipValidadaEl: sello
       }
     }));
@@ -2970,40 +3077,141 @@ export class DataService {
     const ref = {
       modulo: 'Configuración F0302', estadoAnterior: anteriorReq ? `Reserva de IP: ${anteriorReq}` : 'Sin reserva de IP registrada',
       inventario: c.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico,
-      usuarioFinal: c.datos.asignadoA, nombreEquipo: c.datos.nombrePC, ipReservada: nuevaIP || 'No aplica'
+      usuarioFinal: c.datos.asignadoA, nombreEquipo: c.datos.nombrePC, ipReservada: nuevaIP || 'No aplica',
+      mac: macNueva || 'No aplica', justificacion: justNueva, estadoSolicitudIP: estadoSolicitud
     };
     if (anteriorReq !== requiere) {
-      this.registrarEvento(id, usuario, `Reserva de IP respondida en modal de conformidad: ${requiere}`,
+      this.registrarEvento(id, usuario, `Reserva de IP marcada como ${requiere}`,
         `Reserva de IP: ${requiere}`,
         `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}). ` +
-          (requiere === 'Sí' ? `IP reservada: ${nuevaIP}.` : 'El equipo no requiere reserva de IP: se registra «IP reservada: No aplica».') +
+          (requiere === 'Sí'
+            ? `IP reservada: ${nuevaIP} · MAC: ${macNueva} · Solicitud de reserva de IP: ${estadoSolicitud}.`
+            : 'El equipo no requiere reserva de IP: se registra «IP reservada: No aplica» y la justificación del técnico.') +
           ` Validada por ${usuario} el ${sello}.`,
         false, ref);
     }
+    if (requiere === 'No' && justNueva !== anteriorJust) {
+      this.registrarEvento(id, usuario, 'Justificación de no reserva registrada', 'Reserva de IP: No',
+        `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}) · Justificación: «${justNueva}» · ` +
+          `Registrada por ${usuario} el ${sello}.`, false,
+        { ...ref, estadoAnterior: anteriorJust ? `Justificación: ${anteriorJust}` : 'Sin justificación registrada' });
+    }
     if (requiere === 'Sí' && nuevaIP !== anteriorIP) {
       this.registrarEvento(id, usuario,
-        anteriorIP
-          ? `IP reservada actualizada en modal de conformidad: ${anteriorIP} → ${nuevaIP}`
-          : `IP reservada registrada en modal de conformidad: ${nuevaIP}`,
+        anteriorIP ? `IP reservada actualizada: ${anteriorIP} → ${nuevaIP}` : `IP reservada registrada: ${nuevaIP}`,
         `Reserva de IP: Sí`,
         `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}) para ${c.datos.asignadoA} · ` +
           `Validada por ${usuario} el ${sello}.`, false,
         { ...ref, estadoAnterior: anteriorIP ? `IP reservada: ${anteriorIP}` : 'Sin IP reservada' });
     }
+    if (requiere === 'Sí' && macNueva !== anteriorMac) {
+      this.registrarEvento(id, usuario, `MAC del equipo registrada: ${macNueva}`, 'Reserva de IP: Sí',
+        `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}) · Origen del dato: ` +
+          `${this.origenMacF0302(id) || 'Digitada en la validación previa a conformidad'} · ` +
+          `Se usará en la solicitud de reserva al Departamento de Servidores.`, false,
+        { ...ref, estadoAnterior: anteriorMac ? `MAC: ${anteriorMac}` : 'Sin MAC registrada' });
+    }
     return null;
+  }
+
+  /**
+   * Arma el correo simulado de solicitud de reserva de IP con los datos del expediente. Se usa
+   * tanto para la vista previa del modal como para dejar el cuerpo registrado tras el envío.
+   * Devuelve null si la configuración no tiene los datos mínimos (reserva «Sí», IP y MAC).
+   */
+  solicitudReservaIP(id: string, ipManual?: string, macManual?: string): SolicitudReservaIP | null {
+    const c = this.configuracionDe(id);
+    if (!c) return null;
+    // Con valores explícitos arma la vista previa de lo que el técnico está escribiendo en el modal,
+    // antes de guardarlo; sin ellos, la solicitud tal como quedó registrada en el expediente.
+    const previa = ipManual !== undefined || macManual !== undefined;
+    if (!previa && c.datos.requiereReservaIP !== 'Sí') return null;
+    const ip = (ipManual ?? c.datos.ipReservada ?? '').trim();
+    const mac = this.macNormalizada(macManual ?? c.datos.macEquipo ?? '');
+    if (!this.ipValida(ip) || !this.macValida(mac)) return null;
+    const eq = this.equipoDe(c.datos.inventario);
+    const s: SolicitudReservaIP = {
+      para: 'Departamento de Servidores',
+      asunto: 'Solicitud de reserva de IP para equipo institucional',
+      nombreEquipo: c.datos.nombrePC || 'Sin registrar',
+      inventario: c.datos.inventario,
+      tipoEquipo: eq?.tipo === 'Desktop' ? 'CPU' : (eq?.tipo ?? '—'),
+      mac, ip,
+      usuarioFinal: c.datos.asignadoA,
+      expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico ?? '—',
+      tecnico: c.datos.ipValidadaPor || c.tecnico,
+      fecha: c.datos.fechaSolicitudIP || `${this.hoy()} ${this.hora().slice(0, 5)}`,
+      cuerpo: ''
+    };
+    s.cuerpo = [
+      'Se solicita la reserva de la siguiente dirección IP para el equipo institucional:',
+      '',
+      `Nombre del equipo: ${s.nombreEquipo}`,
+      `Número de inventario: ${s.inventario}`,
+      `Tipo de equipo: ${s.tipoEquipo}`,
+      `MAC del equipo: ${s.mac}`,
+      `IP solicitada: ${s.ip}`,
+      `Usuario final asignado: ${s.usuarioFinal}`,
+      `Expediente único: ${s.expedienteUnico}`,
+      `Técnico solicitante: ${s.tecnico}`,
+      `Fecha de solicitud: ${s.fecha}`,
+      '',
+      'Favor gestionar la reserva correspondiente.'
+    ].join('\n');
+    return s;
+  }
+
+  /**
+   * Simula el envío del correo de solicitud de reserva al Departamento de Servidores: el prototipo
+   * no envía correo real, registra el envío simulado en el expediente y en la trazabilidad y deja
+   * la solicitud en estado «Enviada», que es lo que habilita el envío del formulario de conformidad.
+   *
+   * Devuelve la solicitud enviada o el mensaje de la regla que la impide.
+   */
+  registrarSolicitudReservaIP(id: string, usuario: string): SolicitudReservaIP | string {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
+    if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
+    const error = this.validarReservaIP(c.datos.inventario, c.datos.requiereReservaIP ?? '',
+      c.datos.ipReservada ?? '', c.datos.macEquipo ?? '', c.datos.justificacionSinReservaIP ?? '');
+    if (error) return error;
+    if (c.datos.requiereReservaIP === 'No') {
+      return 'El equipo no requiere reserva de IP: no hay solicitud que enviar al Departamento de Servidores.';
+    }
+    if (c.datos.estadoSolicitudIP === 'Enviada') {
+      return 'La solicitud de reserva de IP ya fue enviada al Departamento de Servidores para esta IP y esta MAC.';
+    }
+    const sello = `${this.hoy()} ${this.hora().slice(0, 5)}`;
+    this.actualizarConfiguracionActiva(id, (x) => ({
+      ...x, datos: { ...x.datos, estadoSolicitudIP: 'Enviada', correoReservaEnviado: 'Sí', fechaSolicitudIP: sello }
+    }));
+    const solicitud = this.solicitudReservaIP(id);
+    if (!solicitud) return 'No se pudo armar la solicitud de reserva de IP con los datos del expediente.';
+    this.registrarEvento(id, usuario, 'Solicitud simulada de reserva de IP enviada a Servidores', c.estado,
+      `Para: ${solicitud.para} · Asunto: ${solicitud.asunto} · Equipo ${solicitud.inventario} ` +
+        `(${solicitud.nombreEquipo}) · MAC: ${solicitud.mac} · IP solicitada: ${solicitud.ip} · ` +
+        `Envío simulado: el prototipo no envía correo real.`, false,
+      { modulo: 'Configuración F0302', estadoAnterior: 'Solicitud de reserva de IP: Pendiente de envío',
+        inventario: c.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico,
+        usuarioFinal: c.datos.asignadoA, nombreEquipo: c.datos.nombrePC, ipReservada: solicitud.ip,
+        mac: solicitud.mac, estadoSolicitudIP: 'Enviada' });
+    return solicitud;
   }
 
   /** Deja constancia de que el técnico abrió el modal de validación previo al envío del formulario. */
   registrarAperturaModalConformidad(id: string, usuario: string): void {
     const c = this.configuracionDe(id);
     if (!c) return;
-    this.registrarEvento(id, usuario, 'Modal de IP abierto antes de enviar conformidad', c.estado,
+    this.registrarEvento(id, usuario, 'Modal de validación de reserva de IP abierto', c.estado,
       `Formulario: F0302 · Nombre del equipo: ${c.datos.nombrePC || 'Sin registrar'} · ` +
-        `Reserva de IP: ${c.datos.requiereReservaIP || 'Sin responder'} · IP reservada: ${this.textoIPReservada(c)}`,
+        `Reserva de IP: ${c.datos.requiereReservaIP || 'Sin responder'} · IP reservada: ${this.textoIPReservada(c)} · ` +
+        `Solicitud de reserva de IP: ${this.textoEstadoSolicitudIP(c)}`,
       false,
       { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
-        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
+        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c),
+        mac: this.macSugeridaF0302(id) || 'Sin registrar', estadoSolicitudIP: this.textoEstadoSolicitudIP(c) });
   }
 
   /** Reserva de IP vigente del equipo: la de su configuración F0302 más reciente. */
@@ -3316,10 +3524,13 @@ export class DataService {
     }
     const requiere = c.datos.requiereReservaIP ?? '';
     if (!requiere) return 'Indique si el equipo requiere reserva de IP antes de enviar el formulario de conformidad.';
-    if (requiere === 'No') return null;
-    const ip = (c.datos.ipReservada ?? '').trim();
-    if (!ip) return 'Debe ingresar la IP reservada antes de enviar el formulario de conformidad.';
-    if (!this.ipValida(ip)) return 'La IP ingresada no tiene un formato válido.';
+    // Con «No» basta la justificación; con «Sí» hacen falta IP, MAC y la solicitud ya enviada.
+    const falta = this.validarReservaIP(c.datos.inventario, requiere, c.datos.ipReservada ?? '',
+      c.datos.macEquipo ?? '', c.datos.justificacionSinReservaIP ?? '');
+    if (falta) return falta;
+    if (requiere === 'Sí' && c.datos.estadoSolicitudIP !== 'Enviada') {
+      return 'Debe completar y enviar la solicitud de reserva de IP antes de enviar el formulario de conformidad.';
+    }
     return null;
   }
 
@@ -3336,17 +3547,19 @@ export class DataService {
       const motivo = bloqueo ?? 'No se encontró el proceso o su configuración F0302.';
       if (c) {
         // El bloqueo también deja rastro: es un intento de avanzar el flujo sin un dato del expediente.
-        const porIP = /reserva de IP|IP reservada|formato válido/i.test(motivo);
+        const porIP = /reserva de IP|IP reservada|MAC del equipo|formato válido|justificar/i.test(motivo);
         this.registrarEvento(id, usuario,
           porIP
-            ? 'Formulario de conformidad bloqueado por falta de IP'
+            ? 'Formulario de conformidad bloqueado por falta de validación de IP'
             : 'Formulario de conformidad bloqueado por falta del nombre del equipo',
           c.estado,
           `${motivo} Formulario: F0302 · No se envió el formulario, no se inició el conteo de aceptación, ` +
             'no se habilitó la respuesta del usuario final ni la garantía y no se cerró la entrega.', false,
           { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
             expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
-            nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
+            nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c),
+            mac: this.macNormalizada(c.datos.macEquipo ?? '') || 'Sin registrar',
+            estadoSolicitudIP: this.textoEstadoSolicitudIP(c) });
       }
       return motivo;
     }
@@ -3355,10 +3568,16 @@ export class DataService {
     this.registrarEvento(id, usuario, 'Reserva de IP validada antes de enviar conformidad',
       c.estado, `Formulario: F0302 · Nombre del equipo: ${c.datos.nombrePC} · Reserva de IP: ${c.datos.requiereReservaIP} · ` +
         `IP reservada: ${this.textoIPReservada(c)}` +
+        (c.datos.requiereReservaIP === 'Sí'
+          ? ` · MAC: ${this.macNormalizada(c.datos.macEquipo ?? '')} · Solicitud de reserva de IP: ${this.textoEstadoSolicitudIP(c)}`
+          : ` · Justificación: «${c.datos.justificacionSinReservaIP ?? ''}»`) +
         (dlp ? ` · ${dlp.nombre}: ${dlp.estado}${dlp.evidencia ? ` · Evidencia: ${dlp.evidencia}` : ''}` : ''), false,
       { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
-        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
+        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c),
+        mac: this.macNormalizada(c.datos.macEquipo ?? '') || 'No aplica',
+        justificacion: c.datos.justificacionSinReservaIP ?? '',
+        estadoSolicitudIP: this.textoEstadoSolicitudIP(c) });
 
     const existente = this.conformidades().find((x) => x.expediente === id);
     const vence = new Date();
@@ -3370,6 +3589,9 @@ export class DataService {
               // El reenvío vuelve a congelar los datos del F0302: pudieron completarse después del primer envío.
               nombreEquipo: c.datos.nombrePC, requiereReservaIP: c.datos.requiereReservaIP ?? '',
               ipReservada: (c.datos.ipReservada ?? '').trim(),
+              macEquipo: this.macNormalizada(c.datos.macEquipo ?? ''),
+              justificacionSinReservaIP: c.datos.justificacionSinReservaIP ?? '',
+              estadoSolicitudIP: this.textoEstadoSolicitudIP(c) as EstadoSolicitudReservaIP,
               ipValidadaPor: c.datos.ipValidadaPor ?? '', ipValidadaEl: c.datos.ipValidadaEl ?? '' }
           : x))
       );
@@ -3403,6 +3625,9 @@ export class DataService {
       nombreEquipo: c.datos.nombrePC,
       requiereReservaIP: c.datos.requiereReservaIP ?? '',
       ipReservada: (c.datos.ipReservada ?? '').trim(),
+      macEquipo: this.macNormalizada(c.datos.macEquipo ?? ''),
+      justificacionSinReservaIP: c.datos.justificacionSinReservaIP ?? '',
+      estadoSolicitudIP: this.textoEstadoSolicitudIP(c) as EstadoSolicitudReservaIP,
       ipValidadaPor: c.datos.ipValidadaPor ?? '',
       ipValidadaEl: c.datos.ipValidadaEl ?? ''
     };

@@ -397,9 +397,11 @@
     "expedienteUnico": "EXP-2026-0002",
     "nombreEquipo": "CNR-IGN-D0954",
     "hora": "15:10",
-    "accion": "Modal de IP abierto antes de enviar conformidad",
+    "accion": "Modal de validación de reserva de IP abierto",
     "usuarioFinal": "J. Portillo",
-    "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sin responder · IP reservada: —"
+    "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sin responder · IP reservada: —",
+    "mac": "00:1A:2B:03:BA:E2",
+    "estadoSolicitudIP": "Pendiente de validación antes de conformidad"
   },
   {
     "expediente": "SOL-2026-0141",
@@ -412,9 +414,11 @@
     "expedienteUnico": "EXP-2026-0002",
     "nombreEquipo": "CNR-IGN-D0954",
     "hora": "15:12",
-    "accion": "Reserva de IP respondida en modal de conformidad: Sí",
+    "accion": "Reserva de IP marcada como Sí",
     "ipReservada": "192.168.10.45",
-    "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954). IP reservada: 192.168.10.45."
+    "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954). IP reservada: 192.168.10.45.",
+    "mac": "00:1A:2B:03:BA:E2",
+    "estadoSolicitudIP": "Pendiente de envío"
   },
   {
     "expediente": "SOL-2026-0141",
@@ -427,9 +431,45 @@
     "expedienteUnico": "EXP-2026-0002",
     "nombreEquipo": "CNR-IGN-D0954",
     "hora": "15:12",
-    "accion": "IP reservada registrada en modal de conformidad: 192.168.10.45",
+    "accion": "IP reservada registrada: 192.168.10.45",
     "ipReservada": "192.168.10.45",
     "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954) para J. Portillo."
+  },
+  {
+    "expediente": "SOL-2026-0141",
+    "fecha": "2026-07-06",
+    "hora": "15:12",
+    "usuario": "Wendy Carranza — Técnico de Soporte",
+    "accion": "MAC del equipo registrada: 00:1A:2B:03:BA:E2",
+    "estado": "Reserva de IP: Sí",
+    "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954) · Origen del dato: Registro institucional del equipo · Se usará en la solicitud de reserva al Departamento de Servidores.",
+    "hito": false,
+    "modulo": "Configuración F0302",
+    "inventario": "2201-0954-2023",
+    "expedienteUnico": "EXP-2026-0002",
+    "nombreEquipo": "CNR-IGN-D0954",
+    "ipReservada": "192.168.10.45",
+    "mac": "00:1A:2B:03:BA:E2",
+    "estadoSolicitudIP": "Pendiente de envío",
+    "estadoAnterior": "Sin MAC registrada"
+  },
+  {
+    "expediente": "SOL-2026-0141",
+    "fecha": "2026-07-06",
+    "hora": "15:12",
+    "usuario": "Wendy Carranza — Técnico de Soporte",
+    "accion": "Solicitud simulada de reserva de IP enviada a Servidores",
+    "estado": "Completada",
+    "observacion": "Para: Departamento de Servidores · Asunto: Solicitud de reserva de IP para equipo institucional · Equipo 2201-0954-2023 (CNR-IGN-D0954) · MAC: 00:1A:2B:03:BA:E2 · IP solicitada: 192.168.10.45 · Envío simulado: el prototipo no envía correo real.",
+    "hito": false,
+    "modulo": "Configuración F0302",
+    "inventario": "2201-0954-2023",
+    "expedienteUnico": "EXP-2026-0002",
+    "nombreEquipo": "CNR-IGN-D0954",
+    "ipReservada": "192.168.10.45",
+    "mac": "00:1A:2B:03:BA:E2",
+    "estadoSolicitudIP": "Enviada",
+    "estadoAnterior": "Solicitud de reserva de IP: Pendiente de envío"
   },
   {
     "expediente": "SOL-2026-0141",
@@ -445,7 +485,9 @@
     "accion": "Reserva de IP validada antes de enviar conformidad",
     "usuarioFinal": "J. Portillo",
     "ipReservada": "192.168.10.45",
-    "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45 · Agente DLP: Realizado · Evidencia: captura-dlp-instalado.png"
+    "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45 · MAC: 00:1A:2B:03:BA:E2 · Solicitud de reserva de IP: Enviada · Agente DLP: Realizado · Evidencia: captura-dlp-instalado.png",
+    "mac": "00:1A:2B:03:BA:E2",
+    "estadoSolicitudIP": "Enviada"
   },
   {
     "expediente": "SOL-2026-0141",
@@ -516,6 +558,44 @@
     "expedienteTecnico": "EXP-PT-2025-0038",
     "expedienteUnico": "EXP-2025-0025",
     "usuarioFinal": "R. Campos — Registro de la Propiedad"
+  },
+  {
+    "expediente": "SOL-2025-0210",
+    "fecha": "2025-12-02",
+    "hora": "09:40:00",
+    "usuario": "Mateo Martínez — Técnico de Soporte",
+    "accion": "Reserva de IP marcada como No",
+    "estado": "Reserva de IP: No",
+    "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-RPRH-D0788). El equipo no requiere reserva de IP: se registra «IP reservada: No aplica» y la justificación del técnico. Validada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
+    "hito": false,
+    "modulo": "Configuración F0302",
+    "inventario": "2201-0788-2022",
+    "expedienteUnico": "EXP-2025-0025",
+    "usuarioFinal": "R. Campos",
+    "nombreEquipo": "CNR-RPRH-D0788",
+    "ipReservada": "No aplica",
+    "justificacion": "El equipo utilizará IP dinámica.",
+    "estadoSolicitudIP": "No aplica",
+    "estadoAnterior": "Sin reserva de IP registrada"
+  },
+  {
+    "expediente": "SOL-2025-0210",
+    "fecha": "2025-12-02",
+    "hora": "09:40:20",
+    "usuario": "Mateo Martínez — Técnico de Soporte",
+    "accion": "Justificación de no reserva registrada",
+    "estado": "Reserva de IP: No",
+    "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-RPRH-D0788) · Justificación: «El equipo utilizará IP dinámica.» · Registrada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
+    "hito": false,
+    "modulo": "Configuración F0302",
+    "inventario": "2201-0788-2022",
+    "expedienteUnico": "EXP-2025-0025",
+    "usuarioFinal": "R. Campos",
+    "nombreEquipo": "CNR-RPRH-D0788",
+    "ipReservada": "No aplica",
+    "justificacion": "El equipo utilizará IP dinámica.",
+    "estadoSolicitudIP": "No aplica",
+    "estadoAnterior": "Sin justificación registrada"
   },
   {
     "expediente": "SOL-2025-0210",

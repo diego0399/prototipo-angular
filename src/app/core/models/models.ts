@@ -56,6 +56,12 @@ export interface Equipo {
   ram: string;
   disco: string;
   sistemaOperativo: string;
+  /**
+   * Dirección MAC física del equipo, tal como figura en el registro institucional. Es el origen
+   * preferente del dato al solicitar la reserva de IP al Departamento de Servidores: si el equipo
+   * la trae, el modal la muestra autocompletada y el técnico no la teclea.
+   */
+  mac?: string;
   observaciones: string;
   expediente: string;
   /** Registro automático del ingreso al Inventario de Hardware. */
@@ -593,6 +599,35 @@ export interface SoftwareHeredadoF0288 {
   expedienteTecnico: string;
 }
 
+/**
+ * Estado de la solicitud de reserva de IP ante el Departamento de Servidores. Es el dato que
+ * decide si el formulario de conformidad puede enviarse: con «Sí» a la reserva, solo «Enviada»
+ * habilita el envío.
+ */
+export type EstadoSolicitudReservaIP = 'No aplica' | 'Pendiente de envío' | 'Enviada';
+
+/**
+ * Correo simulado que SISGOST envía al Departamento de Servidores para pedir la reserva de una IP.
+ * El prototipo no envía correo real: se arma con los datos del expediente, se muestra en pantalla y
+ * queda registrado como envío simulado en el expediente y la trazabilidad.
+ */
+export interface SolicitudReservaIP {
+  para: string;
+  asunto: string;
+  nombreEquipo: string;
+  inventario: string;
+  tipoEquipo: string;
+  mac: string;
+  ip: string;
+  usuarioFinal: string;
+  expedienteUnico: string;
+  tecnico: string;
+  /** Fecha y hora de la solicitud (`YYYY-MM-DD HH:mm`). */
+  fecha: string;
+  /** Cuerpo del correo ya redactado, tal como se muestra en el modal y en el documento. */
+  cuerpo: string;
+}
+
 export interface ConfiguracionF0302 {
   expediente: string;
   tecnico: string;
@@ -619,6 +654,27 @@ export interface ConfiguracionF0302 {
     requiereReservaIP?: RespuestaSiNo;
     /** IP reservada; obligatoria con «Sí» y vacía con «No» (se muestra como «No aplica»). */
     ipReservada?: string;
+    /**
+     * MAC del equipo con la que se solicitó la reserva. Se autocompleta con la del inventario
+     * institucional cuando existe; si el equipo no la trae, el técnico la digita en el modal y es
+     * obligatoria para solicitar la reserva.
+     */
+    macEquipo?: string;
+    /**
+     * Por qué el equipo no requiere reserva de IP. Obligatoria cuando la respuesta es «No»: sin
+     * ella el formulario de conformidad no se envía.
+     */
+    justificacionSinReservaIP?: string;
+    /**
+     * Estado de la solicitud de reserva ante el Departamento de Servidores. «No aplica» cuando el
+     * equipo no requiere reserva; «Pendiente de envío» mientras el correo simulado no se haya
+     * enviado; «Enviada» una vez enviado. '' mientras la reserva no se haya respondido.
+     */
+    estadoSolicitudIP?: EstadoSolicitudReservaIP | '';
+    /** Si el correo simulado a Servidores llegó a enviarse. */
+    correoReservaEnviado?: RespuestaSiNo;
+    /** Fecha y hora del envío simulado (`YYYY-MM-DD HH:mm`). */
+    fechaSolicitudIP?: string;
     /** Técnico que validó la reserva en el modal previo al envío del formulario («Nombre — Rol»). */
     ipValidadaPor?: string;
     /** Fecha y hora de esa validación (`YYYY-MM-DD HH:mm`). */
@@ -687,6 +743,12 @@ export interface Conformidad {
   requiereReservaIP?: RespuestaSiNo;
   /** IP reservada al momento del envío; vacía cuando el equipo no requiere reserva. */
   ipReservada?: string;
+  /** MAC con la que se solicitó la reserva; vacía cuando el equipo no requiere reserva. */
+  macEquipo?: string;
+  /** Justificación registrada cuando el equipo no requiere reserva de IP. */
+  justificacionSinReservaIP?: string;
+  /** Estado de la solicitud ante Servidores congelado al enviar el formulario. */
+  estadoSolicitudIP?: EstadoSolicitudReservaIP;
   /** Técnico que validó la reserva en el modal previo al envío. */
   ipValidadaPor?: string;
   /** Fecha y hora de esa validación (`YYYY-MM-DD HH:mm`). */
@@ -906,4 +968,10 @@ export interface EventoTrazabilidad {
   nombreEquipo?: string;
   /** IP reservada del equipo, en los eventos de reserva de IP y de cierre del F0302. */
   ipReservada?: string;
+  /** MAC del equipo, en los eventos de reserva de IP y de solicitud a Servidores. */
+  mac?: string;
+  /** Justificación de no reserva, en los eventos con «Reserva de IP: No». */
+  justificacion?: string;
+  /** Estado de la solicitud de reserva ante Servidores al momento del evento. */
+  estadoSolicitudIP?: string;
 }

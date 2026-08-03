@@ -782,3 +782,228 @@ public/assets/data/configuraciones-f0302.json                    (validador y fe
 public/assets/data/conformidades.json                            (validador y fecha congelados)
 public/assets/data/trazabilidad.json                             (3 eventos renombrados + 2 nuevos)
 ```
+
+---
+
+# Parte 5 — Modal de reserva de IP: justificación si no aplica y correo simulado a Servidores si aplica
+
+**Fecha:** 3 de agosto de 2026, quinta sesión del día (ronda 38 del punto de control)
+**Alcance:** el mismo prototipo Angular; sin backend ni base de datos, sin correo real.
+
+La parte 4 dejó la reserva de IP fuera del cierre del F0302 y solo en el modal previo al envío del
+formulario de conformidad. Esta parte completa ese modal: con «No» ahora se exige una justificación,
+y con «Sí» se exigen la MAC del equipo y una solicitud simulada al Departamento de Servidores.
+
+## 1. Las dos ramas del modal
+
+El modal sigue llamándose «Validación previa al envío del formulario de conformidad» y sigue
+preguntando lo mismo, pero cada respuesta abre su propio camino:
+
+```text
+¿El equipo requiere reserva de IP?
+
+No  →  Justificación de no reserva de IP (obligatoria)
+       Reserva de IP: No · IP reservada: No aplica · Solicitud de reserva de IP: No aplica
+
+Sí  →  IP reservada (obligatoria, formato validado)
+       MAC del equipo (obligatoria, autocompletada cuando el equipo la trae)
+       Solicitud de reserva de IP enviada a Servidores (obligatoria)
+```
+
+Con «No», la justificación tiene cinco atajos —IP dinámica, equipo no permanente en la red, el
+requerimiento no la solicita, la unidad no requiere IP fija, otro motivo justificado— que el técnico
+puede tomar con un clic o reemplazar por su propio texto. Lo que no puede es dejarla vacía:
+
+```text
+Debe justificar por qué no se reservó IP antes de enviar el formulario de conformidad.
+```
+
+Sin justificación no queda explicado por qué el equipo se entregó sin IP fija, y esa explicación es
+precisamente lo que el expediente necesita conservar.
+
+## 2. La MAC viene del registro institucional
+
+La MAC es dato del equipo, no del técnico: `Equipo` la guarda ahora como `mac` y el modal la muestra
+**autocompletada** cuando el registro institucional la trae, indicando de dónde salió. El técnico
+puede corregirla si no coincide con el equipo físico; si el equipo no la trae, el campo queda vacío y
+es obligatorio digitarla.
+
+En la semilla se sembraron MAC en 17 de los 18 equipos. El equipo de `SOL-2026-0145`
+(`2201-1187-2026`) quedó **a propósito sin MAC**, para poder demostrar el caso en que el técnico debe
+escribirla.
+
+```text
+Debe ingresar la MAC del equipo para solicitar la reserva de IP.
+La MAC del equipo no tiene un formato válido.
+```
+
+Se aceptan los dos formatos del pedido —`00:1A:2B:3C:4D:5E` y `00-1A-2B-3C-4D-5E`— pero **no
+mezclados**: `00:1A-2B:3C:4D:5E` es inválida. La MAC se guarda siempre en mayúsculas para que el
+mismo dato no quede escrito de dos maneras.
+
+## 3. El correo simulado al Departamento de Servidores
+
+Dentro del modal, con IP y MAC válidas, se arma la vista previa del correo y se habilita el botón
+**«Enviar solicitud de reserva de IP»**. El cuerpo lleva los nueve datos del pedido:
+
+```text
+Para: Departamento de Servidores
+Asunto: Solicitud de reserva de IP para equipo institucional
+
+Se solicita la reserva de la siguiente dirección IP para el equipo institucional:
+
+Nombre del equipo: CNR-IGN-D0954
+Número de inventario: 2201-0954-2023
+Tipo de equipo: CPU
+MAC del equipo: 00:1A:2B:03:BA:E2
+IP solicitada: 192.168.10.45
+Usuario final asignado: K. Rivas
+Expediente único: EXP-U-2026-0141
+Técnico solicitante: Wendy Carranza — Técnico de Soporte
+Fecha de solicitud: 2026-07-06 15:12
+
+Favor gestionar la reserva correspondiente.
+```
+
+El prototipo **no envía correo real**: registra el envío simulado en el expediente y en la
+trazabilidad y avisa con el mensaje del pedido.
+
+Detalle deliberado: el tipo de equipo se escribe **«CPU»**, no «Desktop». Es el vocabulario del
+formulario impreso y del Departamento de Servidores, no el del inventario.
+
+## 4. El estado de la solicitud es lo que habilita el envío
+
+```text
+No aplica            el equipo no requiere reserva
+Pendiente de envío   respondió «Sí» pero aún no envió la solicitud
+Enviada              el correo simulado ya salió
+```
+
+Con «Sí», el formulario de conformidad **no se envía** mientras el estado no sea «Enviada»:
+
+```text
+Debe completar y enviar la solicitud de reserva de IP antes de enviar el formulario de conformidad.
+```
+
+**Si la IP o la MAC cambian después de enviar la solicitud, el estado vuelve a «Pendiente de
+envío».** La solicitud que salió pedía otra cosa: darla por buena dejaría el expediente diciendo que
+Servidores recibió una IP que nunca se le pidió.
+
+## 5. Dónde se congela el dato
+
+La reserva se captura **después** de finalizar el F0302, así que «Completada» ya no puede ser el
+punto de congelación —lo era hasta la ronda anterior—. Si lo fuera, una IP mal digitada dejaría el
+proceso trabado: no se podría enviar el formulario por el dato incorrecto ni corregirlo por estar el
+F0302 cerrado. Ahora el dato se congela **al enviar el formulario de conformidad**:
+
+```text
+El formulario de conformidad ya fue enviado; la reserva de IP no puede modificarse.
+```
+
+## 6. Qué bloquea y qué no
+
+| Acción | ¿La validación de IP la bloquea? |
+|---|---|
+| Finalizar F0302 · Generar F0302 · Guardar · Ver detalle | **No** |
+| Enviar formulario de conformidad | **Sí** |
+| Conteo de aceptación · aceptación del usuario · garantía · cerrar entrega | **Sí** (cuelgan del envío) |
+
+Se mantiene intacta la regla de la parte 4: la IP no interviene en el cierre del F0302, ni siquiera
+cuando ya viene respondida.
+
+## 7. El botón que vive en dos pantallas
+
+«Enviar formulario de conformidad» existe también en **Entrega y aceptación**, donde no hay modal.
+Hasta ahora ese botón se dejaba pulsar y fallaba con un mensaje que no decía dónde resolverlo. Ahora,
+cuando falta la validación, esa pantalla muestra el motivo y enlaza a **Configuración F0302**, que es
+donde vive el modal. No se duplicó el modal: se duplicaría también la regla.
+
+## 8. Qué se guarda
+
+```text
+Reserva de IP: Sí / No
+IP reservada / solicitada
+MAC del equipo
+Justificación de no reserva, si aplica
+Estado de solicitud de reserva
+Correo simulado enviado: Sí / No
+Fecha de envío simulado
+Técnico que realizó la validación y fecha
+```
+
+Visible en la Configuración F0302, el expediente único, el formulario de conformidad, el documento
+F0302 (vista previa y descarga), el historial técnico, la trazabilidad y el detalle del equipo en el
+Inventario de Hardware. El expediente único además se busca por MAC.
+
+## 9. Trazabilidad
+
+Los eventos pasaron a los nombres del pedido:
+
+```text
+Modal de validación de reserva de IP abierto              (antes «Modal de IP abierto antes de enviar conformidad»)
+Reserva de IP marcada como No / como Sí                   (antes «Reserva de IP respondida en modal de conformidad: …»)
+Justificación de no reserva registrada                    (nuevo)
+IP reservada registrada: <ip>                             (antes «… en modal de conformidad»)
+MAC del equipo registrada: <mac>                          (nuevo)
+Solicitud simulada de reserva de IP enviada a Servidores  (nuevo)
+Formulario de conformidad bloqueado por falta de validación de IP   (antes «… por falta de IP»)
+Formulario de conformidad enviado …
+```
+
+Cada uno guarda además MAC, justificación y estado de la solicitud, que se ven como chips en el
+historial. Los dos eventos del cierre sin validar («F0302 finalizado/generado sin validación de IP
+reservada») quedan sin esos campos a propósito: en ese momento no hay nada que registrar.
+
+## 10. Datos semilla
+
+* 17 de 18 equipos con MAC derivada de su número de inventario (estable entre cargas).
+* `SOL-2026-0141` reservó IP: MAC del registro institucional y solicitud **Enviada** con fecha.
+* `SOL-2025-0210` no reservó: justificación «El equipo utilizará IP dinámica.» y **No aplica**. Su
+  expediente es de 2025 y no tenía eventos de reserva: se sembró la cadena completa.
+* `SOL-2026-0139` (conformidad de demostración sin F0302) se selló a mano, como ya se hizo con el
+  nombre del equipo.
+
+## 11. Casos de prueba
+
+**58 casos, 0 fallos** en la batería de la ronda: el cierre sigue sin depender de la IP; «No» sin
+justificación no guarda ni envía; «Sí» sin IP, con las tres IP inválidas del pedido y con las tres
+válidas; sin MAC, con cuatro MAC inválidas —incluida la de separadores mezclados— y con las dos
+válidas; la MAC en mayúsculas; la solicitud pendiente bloquea el envío y enviada lo habilita; no se
+reenvía dos veces; cambiar IP o MAC invalida la solicitud y vuelve a bloquear; el cuerpo del correo
+con sus nueve datos y el «CPU»; la MAC autocompletada; y los eventos con los nombres del pedido.
+
+Regresiones: **31** de la ronda 37, **30** de la 36, **29** de la 35, **32** de la 34 y accesorios
+**CPU 12** y **Laptop 13**, todas 0 fallos. Se actualizó el espejo de la batería de la ronda 37 —su
+`validarEnvioConformidad` no exigía MAC ni solicitud— para que no siguiera dando por buena la regla
+anterior, y se renombraron los eventos en las baterías 36 y 37.
+
+## 12. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [4.924 seconds]`, 0 errores y las
+dos advertencias preexistentes de presupuesto CSS. `ng serve` con HTTP 200 en las siete rutas y los
+cuatro JSON modificados.
+
+**No hubo clics reales en un navegador** (sin Chromium/Playwright en esta sesión).
+
+## 13. Archivos tocados
+
+```text
+src/app/core/models/models.ts                                    (Equipo.mac; EstadoSolicitudReservaIP;
+                                                                  SolicitudReservaIP; macEquipo, justificación,
+                                                                  estado y correo en F0302 y Conformidad)
+src/app/core/services/data.service.ts                            (macValida, macSugeridaF0302, origenMacF0302,
+                                                                  textoEstadoSolicitudIP, solicitudReservaIP,
+                                                                  registrarSolicitudReservaIP, validarReservaIP y
+                                                                  validarEnvioConformidad ampliadas, eventos)
+src/app/features/configuracion/configuracion.component.ts        (modal con justificación, MAC y correo simulado)
+src/app/features/entrega-aceptacion/entrega.component.ts         (enlace al modal de Configuración F0302)
+src/app/features/generador-documentos/documentos.component.ts    (MAC, solicitud y justificación en el F0302)
+src/app/features/formulario-conformidad/conformidad.component.ts (los mismos datos para el usuario final)
+src/app/features/trazabilidad/trazabilidad.component.ts          (chips y columna de reserva)
+src/app/features/expediente-unico/expediente-unico.component.ts  (datos y búsqueda por MAC)
+src/app/features/inventario-hardware/inventario.component.ts     (MAC y solicitud en el detalle del equipo)
+public/assets/data/equipos.json                                  (MAC en 17 equipos)
+public/assets/data/configuraciones-f0302.json                    (MAC, justificación, estado y fecha)
+public/assets/data/conformidades.json                            (los mismos datos congelados)
+public/assets/data/trazabilidad.json                             (3 eventos renombrados + 4 nuevos)
+```

@@ -262,6 +262,9 @@ interface FilaTraza {
                     @if (e.inventario) { <span class="m-chip">Inventario: <b class="mono">{{ e.inventario }}</b></span> }
                     @if (e.nombreEquipo) { <span class="m-chip">Nombre del equipo: <b class="mono">{{ e.nombreEquipo }}</b></span> }
                     @if (e.ipReservada) { <span class="m-chip">IP reservada: <b class="mono">{{ e.ipReservada }}</b></span> }
+                    @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
+                    @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
+                    @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
                     @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
                     @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
                     @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
@@ -311,6 +314,8 @@ interface FilaTraza {
                   <div class="d-k">Nombre actual del equipo</div><div class="d-v mono">{{ data.nombreEquipoActual(d.equipo.inventario) || '—' }}</div>
                   <div class="d-k">Reserva de IP</div><div class="d-v">{{ data.reservaIPEquipo(d.equipo.inventario).requiere || '—' }}</div>
                   <div class="d-k">IP reservada</div><div class="d-v mono">{{ data.textoIPReservada(ultimaConfEq()) }}</div>
+                  <div class="d-k">MAC del equipo</div><div class="d-v mono">{{ macEquipo() || 'Sin registrar' }}</div>
+                  <div class="d-k">Solicitud de reserva de IP</div><div class="d-v">{{ data.textoEstadoSolicitudIP(ultimaConfEq()) }}</div>
                   <div class="d-k">Equipo</div><div class="d-v">{{ d.equipo.marca }} {{ d.equipo.modelo }} · {{ d.equipo.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} {{ d.equipo.condicion.toLowerCase() }}</div>
                   <div class="d-k">Serie</div><div class="d-v mono">{{ d.equipo.serie || '—' }}</div>
                 </div>
@@ -463,6 +468,12 @@ interface FilaTraza {
                         <td>
                           {{ c.datos.requiereReservaIP || '—' }}
                           <div class="sub-cell mono">{{ data.textoIPReservada(c) }}</div>
+                          @if (c.datos.requiereReservaIP === 'Sí') {
+                            <div class="sub-cell mono">MAC: {{ c.datos.macEquipo || 'Sin registrar' }}</div>
+                            <div class="sub-cell">Solicitud: {{ data.textoEstadoSolicitudIP(c) }}</div>
+                          } @else if (c.datos.requiereReservaIP === 'No') {
+                            <div class="sub-cell">{{ c.datos.justificacionSinReservaIP || 'Sin justificación registrada' }}</div>
+                          }
                         </td>
                         <td>{{ c.datos.asignadoA }}</td>
                         <td class="mono">{{ c.cronometro ? (data.formatoDuracion(c.cronometro.duracionMinutos) || 'En curso') : '—' }}</td>
@@ -652,6 +663,9 @@ interface FilaTraza {
                         @if (e.complejidad) { <span class="m-chip">Complejidad: <b>{{ e.complejidad }}</b></span> }
                         @if (e.nombreEquipo) { <span class="m-chip">Nombre del equipo: <b class="mono">{{ e.nombreEquipo }}</b></span> }
                         @if (e.ipReservada) { <span class="m-chip">IP reservada: <b class="mono">{{ e.ipReservada }}</b></span> }
+                    @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
+                    @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
+                    @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
                         @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
                         @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
                         @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
@@ -1037,6 +1051,11 @@ export class TrazabilidadComponent {
   );
   /** Configuración F0302 más reciente del equipo, finalizada o no: de ahí sale la reserva de IP vigente. */
   protected readonly ultimaConfEq = computed(() => this.configuracionesEq()[0]);
+  /** MAC vigente del equipo: la registrada al solicitar la reserva o, si no hay, la del inventario. */
+  protected readonly macEquipo = computed(() => {
+    const c = this.ultimaConfEq();
+    return (c?.datos.macEquipo ?? '').trim() || (this.detalle()?.equipo.mac ?? '');
+  });
 
   protected conformidadDe(id: string): Conformidad | undefined {
     return this.data.conformidades().find((c) => c.expediente === id);
@@ -1081,7 +1100,8 @@ export class TrazabilidadComponent {
 
   protected tieneDetalle(e: EventoTrazabilidad): boolean {
     return !!(e.modulo || e.estadoAnterior || e.inventario || e.expedienteTecnico || e.expedienteUnico ||
-      e.usuarioFinal || e.tiempo || e.complejidad || e.nombreEquipo || e.ipReservada);
+      e.usuarioFinal || e.tiempo || e.complejidad || e.nombreEquipo || e.ipReservada ||
+      e.mac || e.estadoSolicitudIP || e.justificacion);
   }
 
   private readonly iconos: Record<string, string> = {

@@ -1,6 +1,6 @@
 ▲ [WARNING] angular:styles/component:css;15779485b5f67821904ce34bf05f2e975f74347585ed60b5652509a38c318730;C:/projects/claude/analisis/prototipo-angular/src/app/core/layout/shell.component.ts exceeded maximum budget. Budget 4.00 kB was not met by 328 bytes with a total of 4.33 kB.
 
 
-▲ [WARNING] angular:styles/component:css;089241dcc5756dcd7cbd5f5d694f6bfe722fb3d849254b20f6085da633bb6331;C:/projects/claude/analisis/prototipo-angular/src/app/features/preparacion-tecnica/preparacion.component.ts exceeded maximum budget. Budget 4.00 kB was not met by 25 bytes with a total of 4.03 kB.
+▲ [WARNING] angular:styles/component:css;ed720b34d49f4d1846b68cf02150baabdfbecd57d1ab9ddc109856911646c224;C:/projects/claude/analisis/prototipo-angular/src/app/features/preparacion-tecnica/preparacion.component.ts exceeded maximum budget. Budget 4.00 kB was not met by 266 bytes with a total of 4.27 kB.
 
 

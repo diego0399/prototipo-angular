@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **3 de agosto de 2026 (ronda 37)**.
+nueva sesión sin perder información. Última actualización: **3 de agosto de 2026 (ronda 38)**.
 
 ---
 
@@ -1964,6 +1964,43 @@ Expediente único.
       expectativas de la batería de la ronda 36 (su espejo del cierre conservaba la revalidación
       condicional y los eventos tenían los nombres viejos): de lo contrario habrían seguido dando
       por buena la regla anterior. **Sin recorrido manual de clics en navegador.**
+38. **F0302 — el modal de reserva de IP: justificación si no aplica, MAC y solicitud simulada a
+    Servidores si aplica** (2026-08-03, quinta sesión del día).
+    * El modal previo al envío del formulario de conformidad abre ahora **dos caminos**: con «No»
+      exige una **justificación de no reserva** (cinco atajos frecuentes o texto propio); con «Sí»
+      exige **IP**, **MAC del equipo** y el **envío de una solicitud simulada al Departamento de
+      Servidores**. Sin justificación el expediente no explicaría por qué el equipo se entregó sin
+      IP fija, que es justamente lo que debe conservar.
+    * `Equipo` guarda ahora `mac`: la MAC es dato del registro institucional, no del técnico. El
+      modal la muestra **autocompletada** e indica de dónde salió; si el equipo no la trae, el
+      campo queda vacío y es obligatorio digitarla. Se aceptan `00:1A:2B:3C:4D:5E` y
+      `00-1A-2B-3C-4D-5E`, **no mezclados**, y se guarda en mayúsculas.
+    * El correo simulado lleva los nueve datos del pedido y escribe el tipo de equipo como **«CPU»**,
+      no «Desktop»: es el vocabulario del formulario y del Departamento de Servidores. El prototipo
+      no envía correo real; registra el envío simulado.
+    * Nuevo estado `Solicitud de reserva de IP` (**No aplica · Pendiente de envío · Enviada**). Con
+      «Sí», el formulario de conformidad **no se envía** mientras no esté «Enviada». **Si la IP o la
+      MAC cambian después de enviarla, vuelve a «Pendiente de envío»**: la solicitud que salió pedía
+      otra cosa, y darla por buena dejaría el expediente diciendo que Servidores recibió una IP que
+      nunca se le pidió.
+    * **El punto de congelación se movió**: era «F0302 Completada», ahora es «formulario de
+      conformidad enviado». Como la reserva se captura DESPUÉS de cerrar el F0302, congelar en el
+      cierre dejaba trabado el proceso ante una IP mal digitada —no se podía enviar por el dato
+      incorrecto ni corregir por estar cerrado—.
+    * «Enviar formulario de conformidad» también existe en **Entrega y aceptación**, donde no hay
+      modal: esa pantalla muestra ahora el motivo y **enlaza a Configuración F0302** en lugar de
+      ofrecer un envío que se bloquearía. No se duplicó el modal, porque se duplicaría la regla.
+    * Eventos renombrados a los del pedido («Modal de validación de reserva de IP abierto»,
+      «Reserva de IP marcada como Sí/No», «IP reservada registrada», «Formulario de conformidad
+      bloqueado por falta de validación de IP») y tres nuevos: «Justificación de no reserva
+      registrada», «MAC del equipo registrada» y «Solicitud simulada de reserva de IP enviada a
+      Servidores». Todos guardan MAC, justificación y estado de la solicitud.
+    * Verificado con `npm run build` limpio (4.924 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en siete rutas y los cuatro JSON
+      tocados) y **58 casos, 0 fallos**, más las regresiones de las rondas 37 (31), 36 (30), 35 (29)
+      y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó el espejo de la batería de la ronda 37
+      —no exigía MAC ni solicitud— para que no siguiera dando por buena la regla anterior.
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2001,6 +2038,12 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 38)**: recorrido manual en navegador del modal de reserva de IP —con
+  «No» sin justificación y con justificación; con «Sí» sin MAC, con MAC mal formada, con la
+  solicitud pendiente y ya enviada; y cambiando la IP después de enviarla para comprobar que vuelve
+  a «Pendiente de envío»—, más el caso del equipo `2201-1187-2026`, que a propósito no trae MAC en
+  el registro institucional. Verificado con build limpio, smoke test HTTP y 58 casos contra datos
+  reales, sin clics reales.
 * **Nuevo pendiente (ronda 37)**: recorrido manual en navegador del F0302 de `SOL-2026-0145` —
   finalizar y generar el F0302 **sin tocar nada de IP** (debe permitirlo y el documento debe decir
   «IP reservada: Pendiente de validación antes de conformidad»), y recién después probar el modal
