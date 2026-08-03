@@ -4,7 +4,6 @@ import { Equipo } from '../core/models/models';
 /** Clasifica un estado libre en una variante visual del badge. */
 export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 'gold' | 'neutral' {
   const e = (estado || '').toLowerCase();
-<<<<<<< HEAD
   if (/(carga alta)/.test(e)) return 'danger';
   if (/(carga media)/.test(e)) return 'warn';
   if (/(carga baja)/.test(e)) return 'ok';
@@ -12,11 +11,6 @@ export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 
   // «Inactivo» va antes que la rama «ok»: contiene la subcadena «activo» y se pintaba en verde.
   if (/(no asignado|bloquead|no aplica|inactivo)/.test(e)) return 'neutral';
   if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|preparado|disponible|resuelto|finalizad|capturad|encontrado)/.test(e)) return 'ok';
-=======
-  if (/(no conforme|vencid|falla)/.test(e)) return 'danger';
-  if (/(no asignado|bloquead|no aplica)/.test(e)) return 'neutral';
-  if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|preparado|disponible|resuelto|finalizad|capturad)/.test(e)) return 'ok';
->>>>>>> origin/main
   if (/(pendiente|por generar|no enviado|no iniciada|caso abierto|revisión|abierto)/.test(e)) return 'warn';
   if (/entrante/.test(e)) return 'gold';
   if (/(en configuración|en preparación|en solicitud|asignad|enviado|en curso|en proceso)/.test(e)) return 'info';

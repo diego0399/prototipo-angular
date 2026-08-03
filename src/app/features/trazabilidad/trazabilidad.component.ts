@@ -5,11 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import {
   Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico,
-<<<<<<< HEAD
   Garantia, IngresoHardware, PreparacionF0288
-=======
-  Garantia, IngresoHardware
->>>>>>> origin/main
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 
@@ -423,10 +419,7 @@ interface FilaTraza {
                         <td>
                           @if (p.estado === 'Completada') { <span class="m-chip">Generado · firma {{ p.firma.estado === 'Firmado' ? 'capturada' : 'pendiente' }}</span> }
                           @else { <span class="muted small">Pendiente</span> }
-<<<<<<< HEAD
                           @if (accesoriosResumen(p); as ar) { <div class="sub-cell">{{ ar }}</div> }
-=======
->>>>>>> origin/main
                         </td>
                         <td><ui-badge [estado]="p.estado" /></td>
                         <td style="text-align:right;"><button class="btn btn-ghost btn-sm" (click)="tab.set('traza')">Ver trazabilidad</button></td>
@@ -918,7 +911,6 @@ export class TrazabilidadComponent {
     return 'En proceso';
   }
 
-<<<<<<< HEAD
   /** Resumen de accesorios verificados de una preparación F0288 (equipo usado), o '' si no aplica. */
   protected accesoriosResumen(p: PreparacionF0288): string {
     const va = p.verificacionAccesorios;
@@ -928,8 +920,6 @@ export class TrazabilidadComponent {
     return `${verificados} de ${total} accesorio(s) verificado(s)`;
   }
 
-=======
->>>>>>> origin/main
   /** Estado del F0288 de ese ciclo: Generado si la preparación ya finalizó (o quedó cerrada), Pendiente si sigue en curso. */
   protected f0288DeIngreso(i: IngresoHardware): string {
     if (!i.expedienteTecnicoAsociado) return '—';

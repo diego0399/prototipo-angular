@@ -1,10 +1,6 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-<<<<<<< HEAD
 import { ChecklistSeccion, Cronometro, ExpedienteTecnico, NivelComplejidad, PreparacionF0288, ResultadoConsultaAccesorio, RespuestaSiNo } from '../../core/models/models';
-=======
-import { Cronometro, EstadoAccesorio, ExpedienteTecnico, NivelComplejidad, PreparacionF0288, RespuestaSiNo } from '../../core/models/models';
->>>>>>> origin/main
 import { AuthService } from '../../core/services/auth.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { DataService } from '../../core/services/data.service';
@@ -35,7 +31,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
     .radio-line { display: flex; gap: 18px; align-items: center; }
     .radio-line label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--navy-900); }
     .radio-line input[type='radio'] { width: 17px; height: 17px; accent-color: var(--navy-800); cursor: pointer; }
-<<<<<<< HEAD
     .acc-item { padding: 9px 0; border-bottom: 1px dashed var(--line); }
     .acc-item:last-child { border-bottom: 0; }
     .acc-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
@@ -47,13 +42,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
     .sec-selall { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 600; color: var(--tx-2); cursor: pointer; margin-left: auto; }
     .sec-selall input { width: 15px; height: 15px; accent-color: var(--navy-800); cursor: pointer; }
     .item-row .i-ver { max-width: 170px; }
-=======
-    .acc-row { display: flex; align-items: center; gap: 12px; padding: 7px 0; border-bottom: 1px dashed var(--line); }
-    .acc-row:last-child { border-bottom: 0; }
-    .acc-row .a-nombre { flex: 1; font-size: 13.5px; font-weight: 500; color: var(--navy-900); }
-    .acc-row .a-nombre.na { color: var(--tx-3); font-weight: 300; text-decoration: line-through solid var(--line-strong); }
-    .acc-row select { max-width: 180px; }
->>>>>>> origin/main
     .dest-card { border: 1px solid var(--gold-500); border-left-width: 4px; }
     .dest-card .d-titulo { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--gold-600); }
     .dest-card h2 { font-size: 17px; margin: 2px 0 0; }
@@ -196,15 +184,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                 <span>Al generar el F0288 el equipo quedará <b>Preparado</b> y listo para asignación. La relación con la solicitud se hace después, al crear el Expediente único.</span>
               </div>
             }
-<<<<<<< HEAD
-=======
-            @if (esLaptopNueva(p)) {
-              <div class="alert mt-2">
-                <span class="alert-ico">i</span>
-                <span>Para <b>laptop nueva</b>, Soporte puede crear el expediente técnico y completar el F0288.</span>
-              </div>
-            }
->>>>>>> origin/main
             <div class="prog-head mt-2">
               <span class="p-num">{{ realizados(p) }} de {{ aplicables(p) }} ítems realizados</span>
               <div class="progress" [class.ok]="progreso(p) === 100"><span [style.width.%]="progreso(p)"></span></div>
@@ -260,18 +239,12 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
         </div>
 
         @if (enCurso(p) || p.estado === 'Completada') {
-<<<<<<< HEAD
         <!-- Verificación de falla (solo equipo usado) -->
         @if (p.verificacionFalla; as vf) {
-=======
-        <!-- Verificación de falla y accesorios: preguntas Sí/No (solo equipo usado) -->
-        @if (p.verificacionFalla || p.verificacionAccesorios) {
->>>>>>> origin/main
           <div class="card mb-2">
             <div class="card-head">
               <div>
                 <h3>
-<<<<<<< HEAD
                   Verificación de falla (equipo usado)
                   <ui-help texto="Solo aplica a equipos usados. Responda Sí o No: los campos de detalle se muestran u ocultan dinámicamente según la respuesta." />
                 </h3>
@@ -410,109 +383,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                   <span class="hint">Seleccione Sí o No. Con «Sí» se muestra el detalle de los accesorios correspondientes al tipo de equipo (CPU o Laptop).</span>
                 }
               </div>
-=======
-                  Verificación de falla y accesorios (equipo usado)
-                  <ui-help texto="Solo aplica a equipos usados. Responda Sí o No: los campos de detalle se muestran u ocultan dinámicamente según la respuesta." />
-                </h3>
-                <p class="sub">Responda cada pregunta; el detalle aparece solo cuando la respuesta es Sí</p>
-              </div>
-            </div>
-            <div class="card-body">
-              @if (p.verificacionFalla; as vf) {
-                <div class="verif-bloque">
-                  <div class="row-between" style="flex-wrap: wrap; gap: 10px;">
-                    <span class="v-preg">¿Se realizó verificación de falla?</span>
-                    <div class="radio-line">
-                      <label>
-                        <input type="radio" name="vfalla" [checked]="vf.respuesta === 'Sí'"
-                          [disabled]="p.estado === 'Completada'" (change)="responderFalla(p, 'Sí')" /> Sí
-                      </label>
-                      <label>
-                        <input type="radio" name="vfalla" [checked]="vf.respuesta === 'No'"
-                          [disabled]="p.estado === 'Completada'" (change)="responderFalla(p, 'No')" /> No
-                      </label>
-                    </div>
-                  </div>
-                  @if (vf.respuesta === 'Sí') {
-                    <div class="grid grid-2 mt-1">
-                      <div class="field">
-                        <label>Falla encontrada <span class="req">*</span></label>
-                        <input class="control" [value]="vf.fallaEncontrada" [disabled]="p.estado === 'Completada'"
-                          placeholder="Describa la falla detectada en el equipo…"
-                          (input)="campoFalla(p, 'fallaEncontrada', $event)" />
-                      </div>
-                      <div class="field">
-                        <label>Diagnóstico técnico</label>
-                        <input class="control" [value]="vf.diagnostico" [disabled]="p.estado === 'Completada'"
-                          placeholder="Diagnóstico del técnico…"
-                          (input)="campoFalla(p, 'diagnostico', $event)" />
-                      </div>
-                      <div class="field">
-                        <label>Acción realizada <span class="req">*</span></label>
-                        <input class="control" [value]="vf.accionRealizada" [disabled]="p.estado === 'Completada'"
-                          placeholder="Reparación, reemplazo, ajuste…"
-                          (input)="campoFalla(p, 'accionRealizada', $event)" />
-                      </div>
-                      <div class="field">
-                        <label>Observaciones</label>
-                        <input class="control" [value]="vf.observaciones" [disabled]="p.estado === 'Completada'"
-                          placeholder="Observaciones adicionales (opcional)…"
-                          (input)="campoFalla(p, 'observaciones', $event)" />
-                      </div>
-                    </div>
-                  } @else if (vf.respuesta === 'No') {
-                    <p class="small muted mt-1">No se realizó verificación de falla: los campos de detalle quedan como <b>no aplicables</b> y se ocultan.</p>
-                  } @else {
-                    <span class="hint">Seleccione Sí o No. Con «Sí» se registran la falla encontrada, el diagnóstico, la acción realizada y las observaciones.</span>
-                  }
-                </div>
-              }
-
-              @if (p.verificacionAccesorios; as va) {
-                <div class="verif-bloque">
-                  <div class="row-between" style="flex-wrap: wrap; gap: 10px;">
-                    <span class="v-preg">¿Se verificaron accesorios del equipo?</span>
-                    <div class="radio-line">
-                      <label>
-                        <input type="radio" name="vacc" [checked]="va.respuesta === 'Sí'"
-                          [disabled]="p.estado === 'Completada'" (change)="responderAccesorios(p, 'Sí')" /> Sí
-                      </label>
-                      <label>
-                        <input type="radio" name="vacc" [checked]="va.respuesta === 'No'"
-                          [disabled]="p.estado === 'Completada'" (change)="responderAccesorios(p, 'No')" /> No
-                      </label>
-                    </div>
-                  </div>
-                  @if (va.respuesta === 'Sí') {
-                    <div class="mt-1">
-                      @for (a of va.accesorios; track a.nombre) {
-                        <div class="acc-row">
-                          <span class="a-nombre" [class.na]="a.estado === 'No aplica'">{{ a.nombre }}</span>
-                          <select class="control" [disabled]="p.estado === 'Completada'"
-                            (change)="marcarAcc(p, a.nombre, $event)">
-                            <option value="Pendiente" [selected]="a.estado === 'Pendiente'">Pendiente</option>
-                            <option value="Verificado" [selected]="a.estado === 'Verificado'">Verificado</option>
-                            <option value="Reemplazado" [selected]="a.estado === 'Reemplazado'">Reemplazado</option>
-                            <option value="No aplica" [selected]="a.estado === 'No aplica'">No aplica</option>
-                          </select>
-                          <ui-badge [estado]="a.estado" />
-                        </div>
-                      }
-                      <div class="field mt-1">
-                        <label>Observaciones</label>
-                        <input class="control" [value]="va.observaciones" [disabled]="p.estado === 'Completada'"
-                          placeholder="Accesorios reemplazados, faltantes u observaciones (opcional)…"
-                          (input)="obsAccesorios(p, $event)" />
-                      </div>
-                    </div>
-                  } @else if (va.respuesta === 'No') {
-                    <p class="small muted mt-1">No se verificaron accesorios: el detalle de cargador, cables, mouse, teclado y monitor queda oculto como <b>no aplicable</b>.</p>
-                  } @else {
-                    <span class="hint">Seleccione Sí o No. Con «Sí» se muestra el detalle de cargador, cable de poder, mouse, teclado, monitor y otros accesorios.</span>
-                  }
-                </div>
-              }
->>>>>>> origin/main
             </div>
           </div>
         }
@@ -523,7 +393,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
             <summary>
               {{ sec.titulo }}
               <ui-badge [estado]="seccionCompleta(sec) ? 'Completada' : 'En curso'" />
-<<<<<<< HEAD
               @if (aplicablesSeccion(sec) > 0) {
                 <label class="sec-selall" (click)="$event.stopPropagation()">
                   <input type="checkbox" [checked]="estadoSelAll(sec) === 'todos'"
@@ -533,8 +402,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                     (change)="toggleSeccion(p, sec, $event)" /> Seleccionar todo
                 </label>
               }
-=======
->>>>>>> origin/main
               <span class="acc-arrow">▶</span>
             </summary>
             <div class="acc-body">
@@ -548,7 +415,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                     }
                   </span>
                   <span class="i-nombre" [class.na]="item.estado === 'No aplica' || item.estado === 'No solicitado'">{{ item.nombre }}</span>
-<<<<<<< HEAD
                   @if (item.codigoSoftware; as cod) {
                     <select class="control i-ver" [disabled]="p.estado === 'Completada' || item.estado !== 'Realizado'"
                       (change)="seleccionarVersion(p, sec.titulo, item, $event)">
@@ -558,8 +424,6 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                       }
                     </select>
                   }
-=======
->>>>>>> origin/main
                   @if (item.nota) { <span class="i-nota">{{ item.nota }}</span> }
                   @if (item.evidencia) {
                     <span class="i-evid">{{ item.evidencia }}</span>
@@ -843,14 +707,6 @@ export class PreparacionComponent {
     this.seleccion.set(p.expedienteTecnico);
   }
 
-<<<<<<< HEAD
-=======
-  protected esLaptopNueva(p: PreparacionF0288): boolean {
-    const tec = this.data.expedientesTecnicos().find((x) => x.codigo === p.expedienteTecnico);
-    return tec?.tipoEquipo === 'Laptop' && tec?.condicion === 'Nuevo';
-  }
-
->>>>>>> origin/main
   protected aplicables(p: { secciones: { items: { estado: string }[] }[] }): number {
     return p.secciones.flatMap((s) => s.items).filter((i) => i.estado === 'Realizado' || i.estado === 'Pendiente').length;
   }
@@ -870,12 +726,8 @@ export class PreparacionComponent {
 
   protected marcar(codigoTec: string, seccion: string, item: string, ev: Event): void {
     const checked = (ev.target as HTMLInputElement).checked;
-<<<<<<< HEAD
     const u = this.auth.usuario();
     this.data.marcarItemF0288(codigoTec, seccion, item, checked ? 'Realizado' : 'Pendiente', `${u?.nombre} — ${u?.rol}`);
-=======
-    this.data.marcarItemF0288(codigoTec, seccion, item, checked ? 'Realizado' : 'Pendiente');
->>>>>>> origin/main
   }
 
   // ---------- Verificaciones Sí/No (equipo usado) ----------
@@ -889,7 +741,6 @@ export class PreparacionComponent {
     this.data.actualizarVerificacionAccesorios(p.expedienteTecnico, { respuesta });
   }
   protected marcarAcc(p: PreparacionF0288, nombre: string, ev: Event): void {
-<<<<<<< HEAD
     const u = this.auth.usuario();
     this.data.seleccionarAccesorio(p.expedienteTecnico, nombre, (ev.target as HTMLInputElement).checked, `${u?.nombre} — ${u?.rol}`);
   }
@@ -910,15 +761,11 @@ export class PreparacionComponent {
       case 'No corresponde al equipo': return 'El accesorio no corresponde al equipo principal seleccionado.';
       default: return '';
     }
-=======
-    this.data.marcarAccesorio(p.expedienteTecnico, nombre, (ev.target as HTMLSelectElement).value as EstadoAccesorio);
->>>>>>> origin/main
   }
   protected obsAccesorios(p: PreparacionF0288, ev: Event): void {
     this.data.actualizarVerificacionAccesorios(p.expedienteTecnico, { observaciones: (ev.target as HTMLInputElement).value });
   }
 
-<<<<<<< HEAD
   // ---------- Checklist F0288: «Seleccionar todo» por sección y versión de software ----------
   protected aplicablesSeccion(sec: ChecklistSeccion): number {
     return sec.items.filter((i) => i.estado === 'Realizado' || i.estado === 'Pendiente').length;
@@ -946,8 +793,6 @@ export class PreparacionComponent {
     this.data.seleccionarVersionItemF0288(p.expedienteTecnico, seccion, item.nombre, version, `${u?.nombre} — ${u?.rol}`);
   }
 
-=======
->>>>>>> origin/main
   protected guardar(): void {
     this.toast.ok('Avance guardado', 'El avance de la preparación técnica quedó registrado. Puede continuar más tarde.');
   }

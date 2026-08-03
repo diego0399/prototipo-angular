@@ -2,7 +2,6 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import {
-<<<<<<< HEAD
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
   DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, FilaValidacionLote,
@@ -11,15 +10,6 @@ import {
   ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
   TipoComentarioCaso, TipoCorreccion, TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
-=======
-  AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistSeccion, CierreTecnico, ComentarioCaso, Conformidad,
-  ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo, DocumentoGenerado, Entrega,
-  Equipo, EquipoCatalogoInstitucional, EstadoAccesorio,
-  EstadoAsignacionEquipo, EstadoPreparacionEquipo, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  FirmaProceso, Garantia, IngresoHardware, IntentoAceptacion, MotivoDescargo, MotivoIngreso, PreparacionF0288,
-  RespuestaSiNo, ResultadoIntento, RolClave, SeccionOculta, Solicitud, TipoComentarioCaso, TipoCorreccion,
-  TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios, VerificacionFalla
->>>>>>> origin/main
 } from '../models/models';
 import { AuthService } from './auth.service';
 
@@ -60,7 +50,6 @@ export class DataService {
    * porque representa un sistema externo a SISGOST.
    */
   readonly catalogoInstitucional = signal<EquipoCatalogoInstitucional[]>([]);
-<<<<<<< HEAD
   /**
    * Catálogo de software permitido (F0288/F0302). A diferencia del institucional de equipos, SÍ
    * es administrable (pantalla «Catálogo de software») y por eso SÍ se persiste en localStorage
@@ -69,8 +58,6 @@ export class DataService {
   readonly catalogoSoftware = signal<SoftwareCatalogo[]>([]);
   /** Base institucional simulada de accesorios (Monitor/Teclado/Mouse/Maletín), consultada por número de inventario. */
   readonly catalogoAccesorios = signal<AccesorioCatalogoInstitucional[]>([]);
-=======
->>>>>>> origin/main
 
   /** Clave de persistencia en localStorage: todo cambio sobrevive a un F5 dentro del mismo navegador. */
   private readonly storageKey = 'sisgost.datos.v1';
@@ -104,7 +91,6 @@ export class DataService {
       this.http.get<EquipoCatalogoInstitucional[]>('assets/data/catalogo-institucional.json')
         .subscribe((c) => this.catalogoInstitucional.set(c));
     }
-<<<<<<< HEAD
     if (this.catalogoAccesorios().length === 0) {
       this.http.get<AccesorioCatalogoInstitucional[]>('assets/data/accesorios-institucionales.json')
         .subscribe((c) => this.catalogoAccesorios.set(c));
@@ -116,9 +102,6 @@ export class DataService {
         this.http.get<SoftwareCatalogo[]>('assets/data/catalogo-software.json')
           .subscribe((c) => this.catalogoSoftware.set(this.normalizarCatalogoSoftware(c)));
       }
-=======
-    if (this.hidratarDesdeLocalStorage()) {
->>>>>>> origin/main
       this.asegurarIntentosDeConformidades();
       this.listo.set(true);
       return;
@@ -139,12 +122,8 @@ export class DataService {
       documentos: json<DocumentoGenerado[]>('documentos-generados'),
       eventos: json<EventoTrazabilidad[]>('trazabilidad'),
       ingresos: json<IngresoHardware[]>('ingresos-hardware'),
-<<<<<<< HEAD
       descargos: json<Descargo[]>('descargos'),
       catalogoSoftware: json<SoftwareCatalogo[]>('catalogo-software')
-=======
-      descargos: json<Descargo[]>('descargos')
->>>>>>> origin/main
     }).subscribe((r) => {
       this.usuarios.set(r.usuarios);
       this.solicitudes.set(r.solicitudes);
@@ -161,10 +140,7 @@ export class DataService {
       this.eventos.set(r.eventos);
       this.ingresosHardware.set(r.ingresos);
       this.descargos.set(r.descargos);
-<<<<<<< HEAD
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(r.catalogoSoftware));
-=======
->>>>>>> origin/main
       // No hay JSON semilla de intentos/correcciones: el flujo de no conformidad se genera
       // durante la demostración y se conserva luego en localStorage. Se siembra un intento
       // inicial por cada conformidad ya existente para que el estado de aceptación sea coherente.
@@ -228,12 +204,9 @@ export class DataService {
       this.descargos.set(d.descargos ?? []);
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(d.correcciones ?? []);
-<<<<<<< HEAD
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(d.catalogoSoftware ?? []));
-=======
->>>>>>> origin/main
       return true;
     } catch {
       return false;
@@ -251,12 +224,8 @@ export class DataService {
         conformidades: this.conformidades(), garantias: this.garantias(),
         documentos: this.documentos(), eventos: this.eventos(),
         ingresosHardware: this.ingresosHardware(), descargos: this.descargos(),
-<<<<<<< HEAD
         intentos: this.intentos(), correcciones: this.correcciones(),
         catalogoSoftware: this.catalogoSoftware()
-=======
-        intentos: this.intentos(), correcciones: this.correcciones()
->>>>>>> origin/main
       };
       const json = JSON.stringify(d);
       // Si el contenido no cambió (p. ej. justo después de rehidratar desde otra pestaña),
@@ -672,7 +641,6 @@ export class DataService {
     return this.catalogoInstitucional().find((c) => c.inventario === inventario.trim());
   }
 
-<<<<<<< HEAD
   // ---------- Catálogo de software permitido (F0288 / F0302) ----------
   softwareCatalogoDe(codigo: string): SoftwareCatalogo | undefined {
     return this.catalogoSoftware().find((s) => s.codigo === codigo);
@@ -819,8 +787,6 @@ export class DataService {
       activo ? 'Activo' : 'Inactivo', '', false, { modulo: 'Catálogo de software' });
   }
 
-=======
->>>>>>> origin/main
   /**
    * Consulta el número de inventario en la base institucional simulada: valida el formato,
    * deduce el tipo de equipo, busca la ficha y avisa si el equipo ya está en el Inventario de
@@ -939,7 +905,6 @@ export class DataService {
     return null;
   }
 
-<<<<<<< HEAD
   /**
    * Valida una lista de números de inventario para el ingreso múltiple: por cada uno, deduce el
    * tipo, consulta la base institucional (reutilizando `consultarBaseInstitucional`, que ya deja
@@ -1027,8 +992,6 @@ export class DataService {
     return { exitosos, errores };
   }
 
-=======
->>>>>>> origin/main
   // ---------- Visibilidad por rol ----------
   // Encargados (y Administrador) ven catálogos globales dentro de sus módulos; el Encargado
   // de Hardware solo los de su área. Los Técnicos nunca ven catálogos globales: solo los
@@ -1089,7 +1052,6 @@ export class DataService {
     return this.expedientesTecnicos();
   }
 
-<<<<<<< HEAD
   /** Todos los expedientes técnicos de un técnico (activos, preparados y cerrados). Se busca por
    *  nombre porque `tecnicoPreparacion` se guarda como «Nombre — Rol». */
   expedientesDeTecnico(nombreTecnico: string): ExpedienteTecnico[] {
@@ -1137,8 +1099,6 @@ export class DataService {
       false, { modulo: 'Expediente técnico' });
   }
 
-=======
->>>>>>> origin/main
   /** F0302: el Técnico de Soporte solo ve las configuraciones asignadas a él. */
   configuracionesVisibles(): ConfiguracionF0302[] {
     if (!this.esTecnicoConectado()) return this.configuraciones();
@@ -1612,7 +1572,6 @@ export class DataService {
 
     if (condicion === 'Usado') {
       // Equipo usado: preguntas Sí/No con campos dinámicos según la respuesta (no checklist plano).
-<<<<<<< HEAD
       // «¿Se verificaron accesorios del equipo?» tiene su propia pregunta, separada de la de falla,
       // para no confundirlas: cada una es una tarjeta independiente en la pantalla de preparación.
       falla = { respuesta: '', fallaEncontrada: '', diagnostico: '', accionRealizada: '', observaciones: '' };
@@ -1627,20 +1586,6 @@ export class DataService {
         accesorios: tipo === 'Desktop'
           ? [acc('Monitor', '02'), acc('Teclado', '03'), acc('Mouse', '04')]
           : [acc('Mouse', '02'), acc('Maletín', '03')],
-=======
-      falla = { respuesta: '', fallaEncontrada: '', diagnostico: '', accionRealizada: '', observaciones: '' };
-      const acc = (nombre: string, estado: EstadoAccesorio = 'Pendiente') => ({ nombre, estado });
-      accesorios = {
-        respuesta: '',
-        accesorios: [
-          acc('Cargador', tipo === 'Desktop' ? 'No aplica' : 'Pendiente'),
-          acc('Cable de poder'),
-          acc('Mouse'),
-          acc('Teclado'),
-          acc('Monitor', tipo === 'Laptop' ? 'No aplica' : 'Pendiente'),
-          acc('Otros accesorios')
-        ],
->>>>>>> origin/main
         observaciones: ''
       };
     } else {
@@ -1652,12 +1597,8 @@ export class DataService {
     secciones.push({
       titulo: 'Sistema operativo y cuenta administrador',
       items: [
-<<<<<<< HEAD
         { ...item('Instalación de Windows'), ...this.enlaceSoftware('SOFT-001', 'F0288') },
         item('Instalar actualizaciones'), item('Controladores'),
-=======
-        item('Instalación de Windows 11'), item('Instalar actualizaciones'), item('Controladores'),
->>>>>>> origin/main
         item('Habilitar cuenta Administrador'),
         item('Asignar contraseña Admin', 'Se registra la acción; la contraseña nunca se almacena.')
       ]
@@ -1673,13 +1614,9 @@ export class DataService {
       secciones.push({
         titulo: 'Software según SISSOR · dominio · credenciales',
         items: [
-<<<<<<< HEAD
           { ...item('Antivirus'), ...this.enlaceSoftware('SOFT-003', 'F0288') },
           { ...item('OCS Inventory'), ...this.enlaceSoftware('SOFT-004', 'F0288') },
           item('Office / Chrome / Acrobat'),
-=======
-          item('Antivirus'), item('OCS Inventory'), item('Office / Chrome / Acrobat'),
->>>>>>> origin/main
           item('Agente DLP'), item('Ingreso a dominio'), item('Credenciales: nombre de equipo · cuenta de red')
         ]
       });
@@ -1699,7 +1636,6 @@ export class DataService {
    */
   crearExpedienteTecnico(datos: {
     inventario: string; unidadResponsable: 'Soporte' | 'Hardware';
-<<<<<<< HEAD
     creadoPor: string; tecnicoPreparacion: string; observaciones: string; prioridad?: 'Normal' | 'Alta';
   }): ExpedienteTecnico | string {
     const eq = this.equipoDe(datos.inventario);
@@ -1709,12 +1645,6 @@ export class DataService {
     if (datos.unidadResponsable === 'Soporte' && !datos.observaciones.trim()) {
       return 'Debe justificar en observaciones por qué este Expediente técnico será trabajado por la Unidad de Soporte.';
     }
-=======
-    creadoPor: string; tecnicoPreparacion: string; observaciones: string;
-  }): ExpedienteTecnico | null {
-    const eq = this.equipoDe(datos.inventario);
-    if (!eq || !this.puedeCrearNuevoExpedienteTecnico(datos.inventario)) return null;
->>>>>>> origin/main
     // Se captura antes de crear el nuevo, para poder referenciarlo en el evento si es un reingreso.
     const anterior = this.expedientesTecnicosDeEquipo(datos.inventario)[0];
     const tipo: TipoExpedienteTecnico =
@@ -1733,12 +1663,8 @@ export class DataService {
       tipoExpediente: tipo,
       observaciones: datos.observaciones,
       estado: 'En preparación',
-<<<<<<< HEAD
       fecha: this.hoy(),
       prioridad: datos.prioridad ?? 'Normal'
-=======
-      fecha: this.hoy()
->>>>>>> origin/main
     };
     this.expedientesTecnicos.update((list) => [nuevo, ...list]);
     // Se enlaza este expediente técnico con el ingreso a Hardware que lo originó (el más
@@ -1781,7 +1707,6 @@ export class DataService {
     };
     this.preparaciones.update((list) => [prep, ...list]);
 
-<<<<<<< HEAD
     // Carga laboral y pendientes del técnico al momento de asignarle este expediente (se anota en
     // el detalle del evento de creación en vez de generar un evento aparte por cada consulta).
     const nombreTecnico = datos.tecnicoPreparacion.split('—')[0].trim();
@@ -1789,8 +1714,6 @@ export class DataService {
     const pendientes = this.expedientesPendientesPorPreparar(nombreTecnico).length;
     const detalleCarga = `Carga laboral del técnico al asignar: ${carga} (${this.expedientesActivosDeTecnico(nombreTecnico).length} activos, ${pendientes} pendientes por preparar).`;
 
-=======
->>>>>>> origin/main
     if (anterior) {
       // Reingreso: el equipo ya tenía un expediente técnico (ahora histórico); se referencia
       // explícitamente en el evento, junto con el motivo del reingreso que lo originó.
@@ -1800,17 +1723,12 @@ export class DataService {
         `Nuevo Expediente técnico ${nuevo.codigo} creado por reingreso a Hardware del equipo ${eq.inventario}`,
         'En preparación',
         `Expediente anterior: ${anterior.codigo} (${anterior.estado}) — se conserva como histórico, no se reutiliza. ` +
-<<<<<<< HEAD
           `Motivo del reingreso: ${motivoReingreso}. Técnico de preparación asignado: ${datos.tecnicoPreparacion}. ${detalleCarga}`,
-=======
-          `Motivo del reingreso: ${motivoReingreso}. Técnico de preparación asignado: ${datos.tecnicoPreparacion}.`,
->>>>>>> origin/main
         true,
         { modulo: 'Expediente técnico', estadoAnterior: 'Pendiente de preparación', inventario: eq.inventario, expedienteTecnico: nuevo.codigo });
     } else {
       this.registrarEvento(nuevo.codigo, datos.creadoPor,
         `Expediente técnico ${nuevo.codigo} creado para el equipo ${eq.inventario}`, 'En preparación',
-<<<<<<< HEAD
         `Técnico de preparación asignado: ${datos.tecnicoPreparacion}. ${detalleCarga}`, true,
         { modulo: 'Expediente técnico', estadoAnterior: 'Pendiente de preparación', inventario: eq.inventario, expedienteTecnico: nuevo.codigo });
     }
@@ -1824,11 +1742,6 @@ export class DataService {
         `Expediente técnico ${nuevo.codigo} asignado a la Unidad de Hardware`, 'En preparación', '', false,
         { modulo: 'Expediente técnico', inventario: eq.inventario, expedienteTecnico: nuevo.codigo });
     }
-=======
-        `Técnico de preparación asignado: ${datos.tecnicoPreparacion}.`, true,
-        { modulo: 'Expediente técnico', estadoAnterior: 'Pendiente de preparación', inventario: eq.inventario, expedienteTecnico: nuevo.codigo });
-    }
->>>>>>> origin/main
     // Caso B (no conformidad con revisión técnica): enlaza este Expediente técnico con la corrección
     // abierta que lo originó y registra que fue creado por inconformidad (spec §3, §6, §7).
     const proceso = this.equipoDe(eq.inventario)?.expediente ?? this.asignacionDeEquipo(eq.inventario)?.expediente ?? '';
@@ -1900,7 +1813,6 @@ export class DataService {
     // Se habilita de inmediato la Configuración F0302 con su checklist pendiente.
     if (!this.configuracionDe(id)) {
       const eq = this.equipoDe(asig.equipoInventario);
-<<<<<<< HEAD
       // El software del checklist F0302 se arma desde el catálogo de software permitido: solo el
       // software activo cuya etapa es «Configuración F0302» o «Ambas etapas». No se filtra por
       // tipo de equipo: el catálogo ya no lo configura. «Agente DLP» no está en el catálogo (es
@@ -1914,9 +1826,6 @@ export class DataService {
         ...this.softwareAplicable('F0302').map(swCatalogo),
         swLibre('Agente DLP', 'Corporativo', 'Seguridad')
       ];
-=======
-      const sw = (nombre: string, version: string) => ({ nombre, version, estado: 'Pendiente', evidencia: null });
->>>>>>> origin/main
       const nuevaConf: ConfiguracionF0302 = {
         expediente: id,
         tecnico: tecnicoConfiguracion,
@@ -1939,18 +1848,7 @@ export class DataService {
           requiereReservaIP: '',
           ipReservada: ''
         },
-<<<<<<< HEAD
         software,
-=======
-        software: [
-          sw('Antivirus institucional', 'Corporativo'),
-          sw('OCS Inventory', 'Agente CNR'),
-          sw('Office 365', 'Canal actual'),
-          sw('Google Chrome', 'Estable'),
-          sw('Adobe Acrobat Reader', 'DC'),
-          sw('Agente DLP', 'Corporativo')
-        ],
->>>>>>> origin/main
         softwareOculto: [
           { nombre: 'Visio · Project · Power BI', motivo: 'No solicitados en el requerimiento; el checklist dinámico los oculta.' }
         ],
@@ -2023,29 +1921,14 @@ export class DataService {
     );
   }
 
-<<<<<<< HEAD
   private mapaAccesorio(codigoTec: string, nombre: string, cambio: (a: AccesorioVerificado) => AccesorioVerificado): void {
     this.actualizarPreparacion(codigoTec, (p) =>
       p.verificacionAccesorios
         ? { ...p, verificacionAccesorios: { ...p.verificacionAccesorios, accesorios: p.verificacionAccesorios.accesorios.map((a) => (a.nombre === nombre ? cambio(a) : a)) } }
-=======
-  /** Marca el estado de un accesorio (Verificado · Reemplazado · No aplica) dentro de la verificación. */
-  marcarAccesorio(codigoTec: string, nombre: string, estado: EstadoAccesorio): void {
-    this.actualizarPreparacion(codigoTec, (p) =>
-      p.verificacionAccesorios
-        ? {
-            ...p,
-            verificacionAccesorios: {
-              ...p.verificacionAccesorios,
-              accesorios: p.verificacionAccesorios.accesorios.map((a) => (a.nombre === nombre ? { ...a, estado } : a))
-            }
-          }
->>>>>>> origin/main
         : p
     );
   }
 
-<<<<<<< HEAD
   /** Marca o desmarca un accesorio (checkbox). Al desmarcar se limpia su ficha: hay que volver a buscarlo si se vuelve a marcar. */
   seleccionarAccesorio(codigoTec: string, nombre: string, seleccionado: boolean, usuario: string): void {
     const p = this.preparacionPorCodigo(codigoTec);
@@ -2130,16 +2013,12 @@ export class DataService {
   marcarItemF0288(codigoTec: string, seccion: string, item: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
     let codigoSoftware: string | undefined;
     let eraRealizado = false;
-=======
-  marcarItemF0288(codigoTec: string, seccion: string, item: string, estado: 'Realizado' | 'Pendiente'): void {
->>>>>>> origin/main
     this.preparaciones.update((list) =>
       list.map((p) => (p.expedienteTecnico === codigoTec
         ? {
             ...p,
             secciones: p.secciones.map((sec) =>
               sec.titulo === seccion
-<<<<<<< HEAD
                 ? { ...sec, items: sec.items.map((i) => {
                     if (i.nombre !== item) return i;
                     codigoSoftware = i.codigoSoftware;
@@ -2150,14 +2029,10 @@ export class DataService {
                       ? { ...i, estado, versionSeleccionada: i.versionSeleccionada || vigente }
                       : { ...i, estado, versionSeleccionada: '' };
                   }) }
-=======
-                ? { ...sec, items: sec.items.map((i) => (i.nombre === item ? { ...i, estado } : i)) }
->>>>>>> origin/main
                 : sec)
           }
         : p))
     );
-<<<<<<< HEAD
     if (codigoSoftware && estado === 'Realizado' && !eraRealizado) {
       const p = this.preparacionPorCodigo(codigoTec);
       const sw = this.softwareCatalogoDe(codigoSoftware);
@@ -2210,8 +2085,6 @@ export class DataService {
       this.registrarEvento(codigoTec, usuario, `Versión de software seleccionada: ${item} — ${version}`, 'Realizado', '', false,
         { modulo: 'Preparación técnica F0288', inventario: p.datosGenerales.inventario, expedienteTecnico: codigoTec });
     }
-=======
->>>>>>> origin/main
   }
 
   /** El detalle es obligatorio cuando hubo complejidad; sin responder Sí/No no se puede cerrar. */
@@ -2264,12 +2137,9 @@ export class DataService {
     if (!p.cronometro) return 'Presione «Iniciar preparación» para comenzar el cronómetro antes de finalizar.';
     const pendientes = p.secciones.flatMap((s) => s.items).filter((i) => i.estado === 'Pendiente');
     if (pendientes.length > 0) return 'Complete todos los ítems aplicables del checklist antes de generar el F0288.';
-<<<<<<< HEAD
     const sinVersion = p.secciones.flatMap((s) => s.items)
       .some((i) => i.codigoSoftware && i.estado === 'Realizado' && !i.versionSeleccionada?.trim());
     if (sinVersion) return 'Seleccione la versión de cada software marcado en el checklist antes de generar el F0288.';
-=======
->>>>>>> origin/main
     const vf = p.verificacionFalla;
     if (vf) {
       if (!vf.respuesta) return 'Responda Sí o No a «¿Se realizó verificación de falla?» antes de generar el F0288.';
@@ -2280,16 +2150,11 @@ export class DataService {
     const va = p.verificacionAccesorios;
     if (va) {
       if (!va.respuesta) return 'Responda Sí o No a «¿Se verificaron accesorios del equipo?» antes de generar el F0288.';
-<<<<<<< HEAD
       if (va.respuesta === 'Sí' && !va.accesorios.some((a) => a.seleccionado)) {
         return 'Seleccione al menos un accesorio verificado antes de generar el F0288.';
       }
       if (va.respuesta === 'Sí' && va.accesorios.some((a) => a.seleccionado && a.resultadoBusqueda !== 'Encontrado')) {
         return 'Busque y confirme cada accesorio seleccionado en la base institucional simulada antes de generar el F0288.';
-=======
-      if (va.respuesta === 'Sí' && va.accesorios.some((a) => a.estado === 'Pendiente')) {
-        return 'Marque cada accesorio como Verificado, Reemplazado o No aplica antes de generar el F0288.';
->>>>>>> origin/main
       }
     }
     const errCierre = this.validarCierre(cierre, 'preparación');
@@ -2330,7 +2195,6 @@ export class DataService {
     );
   }
 
-<<<<<<< HEAD
   /**
    * Marca o desmarca un software del checklist F0302. Cuando el software viene del catálogo
    * (`codigoSoftware`), al marcarlo se le asigna la versión vigente si aún no tenía una elegida
@@ -2391,12 +2255,6 @@ export class DataService {
     const c = this.configuracionDe(id);
     this.registrarEvento(id, usuario, `Versión de software seleccionada: ${nombre} — ${version}`, 'Realizado', '', false,
       { modulo: 'Configuración F0302', inventario: c?.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
-=======
-  marcarSoftwareF0302(id: string, nombre: string, estado: 'Realizado' | 'Pendiente'): void {
-    this.actualizarConfiguracionActiva(id, (c) => ({
-      ...c, software: c.software.map((s) => (s.nombre === nombre ? { ...s, estado } : s))
-    }));
->>>>>>> origin/main
   }
 
   // ---------- Reserva de IP (checklist F0302) ----------
@@ -2530,12 +2388,9 @@ export class DataService {
     if (c.software.some((s) => s.estado === 'Pendiente')) {
       return 'Complete todo el software aplicable antes de generar el F0302.';
     }
-<<<<<<< HEAD
     if (c.software.some((s) => s.codigoSoftware && s.estado === 'Realizado' && !s.version?.trim())) {
       return 'Seleccione la versión de cada software marcado antes de generar el F0302.';
     }
-=======
->>>>>>> origin/main
     // La reserva de IP se revalida aquí: es dato obligatorio del expediente y la IP pudo quedar
     // duplicada por una reserva registrada en otro equipo después de guardarla.
     const errIP = this.validarReservaIP(c.datos.inventario, c.datos.requiereReservaIP ?? '', c.datos.ipReservada ?? '');

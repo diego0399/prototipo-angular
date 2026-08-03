@@ -2,7 +2,6 @@
   { "usuario": "wcarranza", "nombre": "Wendy Carranza", "rol": "Técnico de Soporte", "clave": "tec-soporte", "iniciales": "WC", "unidad": "Soporte", "estado": "Activo", "direccionAsignada": "Dirección de Registro" },
   { "usuario": "mmartinez", "nombre": "Mateo Martínez", "rol": "Técnico de Soporte", "clave": "tec-soporte", "iniciales": "MM", "unidad": "Soporte", "estado": "Activo", "direccionAsignada": "Dirección de Tecnologías de la Información" },
   { "usuario": "bmejia", "nombre": "Balmore Mejía", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "BM", "unidad": "Hardware", "estado": "Activo" },
-<<<<<<< HEAD
   { "usuario": "jramirez", "nombre": "José Ramírez", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "JR", "unidad": "Hardware", "estado": "Activo" },
   { "usuario": "lhernandez", "nombre": "Luis Hernández", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "LH", "unidad": "Hardware", "estado": "Activo" },
   { "usuario": "mlopez", "nombre": "Mario López", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "ML", "unidad": "Hardware", "estado": "Activo" },
@@ -11,8 +10,6 @@
   { "usuario": "dmorales", "nombre": "Daniel Morales", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "DM", "unidad": "Hardware", "estado": "Activo" },
   { "usuario": "oreyes", "nombre": "Óscar Reyes", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "OR", "unidad": "Hardware", "estado": "Activo" },
   { "usuario": "fcastro", "nombre": "Fernando Castro", "rol": "Técnico de Hardware", "clave": "tec-hardware", "iniciales": "FC", "unidad": "Hardware", "estado": "Activo" },
-=======
->>>>>>> origin/main
   { "usuario": "cgonzalez", "nombre": "Carlos González", "rol": "Encargado de Soporte", "clave": "enc-soporte", "iniciales": "CG", "unidad": "Soporte", "estado": "Activo" },
   { "usuario": "scruz", "nombre": "Samuel Cruz", "rol": "Encargado de Hardware", "clave": "enc-hardware", "iniciales": "SC", "unidad": "Hardware", "estado": "Activo" },
   { "usuario": "sadmin", "nombre": "Administrador SISGOST", "rol": "Administrador del sistema", "clave": "admin", "iniciales": "AS", "unidad": "DTI", "estado": "Activo" }

@@ -28,10 +28,7 @@ export const routes: Routes = [
       { path: 'acceso-restringido', loadComponent: () => import('./features/acceso-restringido/acceso-restringido.component').then((m) => m.AccesoRestringidoComponent) },
       { path: 'solicitudes', canActivate: [roleGuard], loadComponent: () => import('./features/solicitudes/solicitudes.component').then((m) => m.SolicitudesComponent) },
       { path: 'inventario-hardware', canActivate: [roleGuard], loadComponent: () => import('./features/inventario-hardware/inventario.component').then((m) => m.InventarioHardwareComponent) },
-<<<<<<< HEAD
       { path: 'catalogo-software', canActivate: [roleGuard], loadComponent: () => import('./features/catalogo-software/catalogo-software.component').then((m) => m.CatalogoSoftwareComponent) },
-=======
->>>>>>> origin/main
       { path: 'asignacion', canActivate: [roleGuard], loadComponent: () => import('./features/asignacion/asignacion.component').then((m) => m.AsignacionComponent) },
       { path: 'expediente-tecnico', loadComponent: () => import('./features/expediente-tecnico/expediente-tecnico.component').then((m) => m.ExpedienteTecnicoComponent) },
       { path: 'expediente-unico', canActivate: [roleGuard], loadComponent: () => import('./features/expediente-unico/expediente-unico.component').then((m) => m.ExpedienteUnicoComponent) },

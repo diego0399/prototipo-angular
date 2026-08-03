@@ -328,7 +328,6 @@ reservada, estado anterior y estado nuevo.
    futura de manual y PPTX (sin tocarlos).
 4. Posible corrección futura, **si el usuario la aprueba**: reforzar la validación de Descargo
    para exigir aceptación + garantía.
-<<<<<<< HEAD
 
 ---
 
@@ -543,5 +542,3 @@ la misma advertencia preexistente de presupuesto CSS de `shell.component.ts` com
 - Mismo pendiente de recorrido manual en navegador que arrastran las partes anteriores.
 - Si en el futuro se quiere que el técnico pueda elegir «Prioridad Alta» al crear el expediente
   (no solo verla después en el modal), es un ajuste aparte — no estaba en este pedido.
-=======
->>>>>>> origin/main

@@ -105,11 +105,7 @@ export class AdminComponent {
         'Consulta el recorrido completo del equipo en Trazabilidad (del ingreso al inventario hasta la garantía)',
         'Ingresa equipos al Inventario de Hardware',
         'Asigna CPUs nuevos, laptops nuevas y laptops usadas (Dirección decide, Soporte ejecuta)',
-<<<<<<< HEAD
         'Puede crear el expediente técnico para la Unidad de Soporte, como excepción con justificación obligatoria (Hardware es la unidad por defecto)',
-=======
-        'Crea el expediente técnico de laptop nueva',
->>>>>>> origin/main
         'Selecciona el técnico de configuración',
         'Crea el expediente único y lo envía a configuración'
       ]
@@ -119,11 +115,7 @@ export class AdminComponent {
       permisos: [
         'Sin catálogos globales: solo ve sus F0302, sus entregas y los expedientes donde participa',
         'No ingresa equipos al inventario; ve el F0288 solo si participó en la preparación',
-<<<<<<< HEAD
         'Completa el F0288 solo si el expediente se asignó excepcionalmente a la Unidad de Soporte',
-=======
-        'Completa el F0288 de laptop nueva',
->>>>>>> origin/main
         'Realiza la configuración y completa el F0302',
         'Ejecuta la entrega y envía el formulario de conformidad',
         'Atiende casos de garantía'

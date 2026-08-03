@@ -4,11 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
-<<<<<<< HEAD
 import { ConsultaInventario, Equipo, FilaValidacionLote, MotivoIngreso } from '../../core/models/models';
-=======
-import { ConsultaInventario, Equipo, MotivoIngreso } from '../../core/models/models';
->>>>>>> origin/main
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 
 /**
@@ -72,14 +68,10 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
           <p class="page-sub">Equipos pendientes de preparación, preparados y asignados.</p>
         </div>
         @if (puedeIngresar()) {
-<<<<<<< HEAD
           <div class="row" style="flex-wrap: nowrap;">
             <button class="btn btn-gold" (click)="abrirIngreso()">＋ Ingreso individual</button>
             <button class="btn btn-outline" (click)="abrirIngresoMultiple()">＋ Ingreso múltiple</button>
           </div>
-=======
-          <button class="btn btn-gold" (click)="abrirIngreso()">＋ Ingresar equipo</button>
->>>>>>> origin/main
         }
       </div>
 
@@ -552,7 +544,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
           }
         </ui-modal>
       }
-<<<<<<< HEAD
 
       <!-- Ingreso múltiple: pegar listado o generar por rango, validar contra la base institucional y previsualizar -->
       @if (loteAbierto()) {
@@ -623,8 +614,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
           }
         </ui-modal>
       }
-=======
->>>>>>> origin/main
     </div>
   `
 })
@@ -809,7 +798,6 @@ export class InventarioHardwareComponent {
       'El equipo quedó con origen «Registro manual» porque no figura en la base institucional simulada. Se registró la fecha, la hora y el usuario, y el evento quedó en Trazabilidad. Ya puede crearse su Expediente técnico.');
   }
 
-<<<<<<< HEAD
   // ---------- Ingreso múltiple ----------
   protected loteAbierto = signal(false);
   protected loteModo = signal<'listado' | 'rango'>('listado');
@@ -873,8 +861,6 @@ export class InventarioHardwareComponent {
     }
   }
 
-=======
->>>>>>> origin/main
   protected contarPrep(estado: string): number {
     return this.data.equipos().filter((e) => this.data.estadoPreparacionEquipo(e.inventario) === estado).length;
   }

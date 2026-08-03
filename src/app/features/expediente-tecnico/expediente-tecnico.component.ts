@@ -4,14 +4,9 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
-<<<<<<< HEAD
 import { Equipo, ExpedienteTecnico, UsuarioSistema } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.component';
-=======
-import { Equipo, ExpedienteTecnico } from '../../core/models/models';
-import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
->>>>>>> origin/main
 
 /**
  * Expediente técnico: pertenece al EQUIPO y a su preparación técnica. No tiene relación
@@ -20,11 +15,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
  */
 @Component({
   selector: 'app-expediente-tecnico',
-<<<<<<< HEAD
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, TecnicoBuscadorComponent],
-=======
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent],
->>>>>>> origin/main
   styles: `
     .tipo-tag { font-size: 12px; font-weight: 700; color: var(--navy-800); background: var(--blue-050); border: 1px solid var(--blue-100); border-radius: 8px; padding: 6px 12px; display: inline-block; }
     .sin-exp {
@@ -149,7 +140,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
 
               <div class="field">
                 <label>
-<<<<<<< HEAD
                   Unidad que atenderá <span class="req">*</span>
                   <ui-help texto="La preparación técnica F0288 la atiende principalmente Hardware, sin importar si el equipo es CPU o Laptop. Si se elige Soporte, es una excepción y debe justificarse en observaciones." />
                 </label>
@@ -167,32 +157,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                 <div class="full alert warn">
                   <span class="alert-ico">!</span>
                   <span>Debe justificar en <b>observaciones</b> por qué este Expediente técnico será trabajado por la Unidad de Soporte.</span>
-=======
-                  Unidad responsable <span class="req">*</span>
-                  <ui-help texto="Soporte prepara la laptop nueva; Hardware prepara cuando corresponde (laptop usada, CPU nuevo o CPU usado)." />
-                </label>
-                <select class="control" [(ngModel)]="unidad">
-                  <option value="" disabled>Seleccione…</option>
-                  <option value="Soporte">Soporte</option>
-                  <option value="Hardware">Hardware</option>
-                </select>
-              </div>
-
-              <div class="field">
-                <label>Técnico de preparación técnica <span class="req">*</span></label>
-                <select class="control" [(ngModel)]="tecnico">
-                  <option value="" disabled>Seleccione…</option>
-                  @for (t of tecnicosDisponibles(); track t.usuario) {
-                    <option [value]="t.nombre + ' — ' + t.rol">{{ t.nombre }} — {{ t.rol }}</option>
-                  }
-                </select>
-              </div>
-
-              @if (eqActual() && esLaptopNueva() && unidad() === 'Hardware') {
-                <div class="full alert warn">
-                  <span class="alert-ico">!</span>
-                  <span>Para una <b>laptop nueva</b> la unidad responsable esperada es <b>Soporte</b>.</span>
->>>>>>> origin/main
                 </div>
               }
 
@@ -207,7 +171,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               </div>
 
               <div class="field full">
-<<<<<<< HEAD
                 <label>
                   Observaciones técnicas
                   <span class="hint">{{ unidad() === 'Soporte' ? '(obligatoria: justifique la atención por Soporte)' : '(opcional)' }}</span>
@@ -215,10 +178,6 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                 <textarea class="control" rows="2"
                   [placeholder]="unidad() === 'Soporte' ? 'Ej.: el personal de Hardware no se encuentra disponible…' : 'Observaciones del expediente técnico…'"
                   [(ngModel)]="observaciones"></textarea>
-=======
-                <label>Observaciones técnicas <span class="hint">(opcional)</span></label>
-                <textarea class="control" rows="2" placeholder="Observaciones del expediente técnico…" [(ngModel)]="observaciones"></textarea>
->>>>>>> origin/main
               </div>
             </div>
           </div>
@@ -359,12 +318,8 @@ export class ExpedienteTecnicoComponent {
   protected invInput = signal('');
   protected catalogoAbierto = signal(false);
   protected qCat = signal('');
-<<<<<<< HEAD
   /** Se trabaja preferentemente por Hardware; Soporte es la excepción y exige justificación. */
   protected unidad = signal<'Soporte' | 'Hardware'>('Hardware');
-=======
-  protected unidad = signal<'' | 'Soporte' | 'Hardware'>('');
->>>>>>> origin/main
   protected tecnico = signal('');
   protected observaciones = signal('');
 
@@ -442,18 +397,9 @@ export class ExpedienteTecnicoComponent {
     return 'Este equipo ya fue preparado anteriormente y no tiene un reingreso a Hardware registrado. Regístrelo desde el módulo Descargo antes de crear un nuevo Expediente técnico.';
   });
 
-<<<<<<< HEAD
   protected readonly datosCreacionListos = computed(() =>
     !!this.eqActual() && !!this.unidad() && !!this.tecnico() &&
     (this.unidad() !== 'Soporte' || !!this.observaciones().trim())
-=======
-  protected readonly esLaptopNueva = computed(() =>
-    this.eqActual()?.tipo === 'Laptop' && this.eqActual()?.condicion === 'Nuevo'
-  );
-
-  protected readonly datosCreacionListos = computed(() =>
-    !!this.eqActual() && !!this.unidad() && !!this.tecnico()
->>>>>>> origin/main
   );
 
   protected readonly siguienteCodigo = computed(() => {
@@ -463,7 +409,6 @@ export class ExpedienteTecnicoComponent {
     return `EXP-PT-2026-${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, '0')}`;
   });
 
-<<<<<<< HEAD
   protected elegirTecnico(u: UsuarioSistema): void {
     this.tecnico.set(`${u.nombre} — ${u.rol}`);
   }
@@ -472,13 +417,6 @@ export class ExpedienteTecnicoComponent {
     this.unidad.set(valor);
     this.tecnico.set('');
   }
-=======
-  protected readonly tecnicosDisponibles = computed(() =>
-    this.data.usuarios().filter((u) =>
-      u.clave === (this.unidad() === 'Hardware' ? 'tec-hardware' : 'tec-soporte')
-    )
-  );
->>>>>>> origin/main
 
   protected digitarInventario(valor: string): void {
     this.invInput.set(valor);
@@ -518,35 +456,23 @@ export class ExpedienteTecnicoComponent {
       this.toast.error('Acción no permitida', 'Solo los Encargados de Soporte y Hardware crean expedientes técnicos.');
       return;
     }
-<<<<<<< HEAD
     if (!this.eqActual() || !this.unidad() || !this.tecnico()) {
       this.toast.warn('Complete los campos obligatorios', 'Seleccione el equipo del catálogo, la unidad que atenderá y el técnico de preparación.');
       return;
     }
     if (this.unidad() === 'Soporte' && !this.observaciones().trim()) {
       this.toast.warn('Falta la justificación', 'Debe justificar en observaciones por qué este Expediente técnico será trabajado por la Unidad de Soporte.');
-=======
-    if (!this.datosCreacionListos()) {
-      this.toast.warn('Complete los campos obligatorios', 'Seleccione el equipo del catálogo, la unidad responsable y el técnico de preparación.');
->>>>>>> origin/main
       return;
     }
     const u = this.auth.usuario();
     const esReingreso = this.eqConHistorial();
-<<<<<<< HEAD
     const resultado = this.data.crearExpedienteTecnico({
       inventario: this.invInput().trim(),
       unidadResponsable: this.unidad(),
-=======
-    const creado = this.data.crearExpedienteTecnico({
-      inventario: this.invInput().trim(),
-      unidadResponsable: this.unidad() as 'Soporte' | 'Hardware',
->>>>>>> origin/main
       creadoPor: `${u?.nombre} — ${u?.rol}`,
       tecnicoPreparacion: this.tecnico(),
       observaciones: this.observaciones().trim()
     });
-<<<<<<< HEAD
     if (typeof resultado === 'string') {
       this.toast.error('No se puede crear el expediente técnico', resultado);
       return;
@@ -559,19 +485,5 @@ export class ExpedienteTecnicoComponent {
     this.unidad.set('Hardware');
     this.tecnico.set('');
     this.observaciones.set('');
-=======
-    if (creado) {
-      this.toast.ok(`Expediente técnico ${creado.codigo} creado`,
-        esReingreso
-          ? 'Nuevo ciclo por reingreso a Hardware. Siguiente paso obligatorio: completar la Preparación técnica F0288.'
-          : 'Siguiente paso obligatorio: completar la Preparación técnica F0288 para dejar el equipo preparado y listo para asignación.');
-      this.invInput.set('');
-      this.unidad.set('');
-      this.tecnico.set('');
-      this.observaciones.set('');
-    } else {
-      this.toast.error('No fue posible crear el expediente técnico', 'Verifique el equipo seleccionado.');
-    }
->>>>>>> origin/main
   }
 }
