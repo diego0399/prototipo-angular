@@ -503,6 +503,25 @@ export interface PreparacionF0288 {
   cierre?: CierreTecnico;
 }
 
+/**
+ * Motivo por el que el Técnico de Soporte agrega un software adicional en la Configuración F0302:
+ * el software instalado depende del requerimiento del usuario final, no de una lista fija.
+ */
+export type MotivoSoftwareF0302 =
+  | 'Solicitado en requerimiento' | 'Necesario para funciones del usuario'
+  | 'Software institucional estándar' | 'Requerido por unidad solicitante' | 'Otro';
+
+/**
+ * Origen de un ítem del checklist F0302:
+ * - `'F0302'`: software del catálogo agregado por el Técnico de Soporte según el requerimiento.
+ * - `'Configuración'`: actividad general de configuración (ingreso a dominio, credenciales, Agente
+ *   DLP); no es software del catálogo y no tiene control de versiones.
+ *
+ * El software instalado durante la Preparación F0288 **no se copia aquí**: se hereda del propio
+ * F0288 (ver `DataService.softwareHeredadoF0288`) y se muestra bloqueado.
+ */
+export type OrigenSoftwareF0302 = 'F0302' | 'Configuración';
+
 export interface SoftwareF0302 {
   nombre: string;
   version: string;
@@ -512,6 +531,66 @@ export interface SoftwareF0302 {
   codigoSoftware?: string;
   /** Categoría del catálogo (para agrupar y para el checkbox «Seleccionar todo» por categoría). */
   categoria?: string;
+  /** Origen del ítem dentro del F0302; sin valor equivale a `'F0302'` (configuraciones anteriores a la regla). */
+  origen?: OrigenSoftwareF0302;
+  /** Versión vigente del catálogo al momento de agregarlo; la seleccionada puede ser otra permitida. */
+  versionVigente?: string;
+  /** Motivo o requerimiento que justifica el software; obligatorio al agregarlo desde el catálogo. */
+  motivo?: MotivoSoftwareF0302 | '';
+  /** Observación del técnico; obligatoria cuando el motivo es «Otro». */
+  observacion?: string;
+  /** Técnico de Soporte que agregó el software («Nombre — Rol»). */
+  agregadoPor?: string;
+  /** Fecha y hora en que se agregó (`YYYY-MM-DD HH:mm`). */
+  fechaAgregado?: string;
+  /**
+   * Ítems que no se pueden dar por configurados sin captura de evidencia (en el F0302, el «Agente
+   * DLP»): `cerrarConfiguracion` bloquea el cierre y la generación del documento mientras falte la
+   * captura, incluso si el ítem se marcó con el checkbox «Seleccionar todo» de su categoría.
+   */
+  requiereEvidencia?: boolean;
+}
+
+/**
+ * Evidencia técnica del F0302. En los ítems con captura obligatoria (Agente DLP) guarda además el
+ * archivo simulado, quién lo cargó y cuándo; las evidencias declarativas del checklist solo llevan
+ * nombre y estado.
+ */
+export interface EvidenciaF0302 {
+  nombre: string;
+  estado: string;
+  /** Ítem del checklist F0302 al que respalda (p. ej. «Agente DLP»). */
+  item?: string;
+  /** Archivo simulado cargado (p. ej. `captura-dlp-instalado.png`). */
+  archivo?: string;
+  /** Tipo de evidencia (p. ej. «Agente DLP»). */
+  tipo?: string;
+  /** Técnico que cargó la evidencia. */
+  cargadaPor?: string;
+  /** Fecha y hora de carga (`YYYY-MM-DD HH:mm`). */
+  fecha?: string;
+  /** Formulario asociado; siempre «F0302» en esta pantalla. */
+  formulario?: string;
+}
+
+/**
+ * Software instalado durante la Preparación F0288 tal como lo muestra la Configuración F0302:
+ * información heredada, visible y bloqueada. No se vuelve a marcar ni se puede editar en F0302, y
+ * tampoco puede agregarse de nuevo como software adicional.
+ */
+export interface SoftwareHeredadoF0288 {
+  /** Nombre del catálogo (p. ej. «Antivirus institucional»). */
+  nombre: string;
+  /** Versión registrada en el F0288; si el registro no la guardó, la vigente del catálogo. */
+  version: string;
+  categoria: string;
+  /** Captura registrada en el F0288, o null si ese ítem no exigía evidencia. */
+  evidencia: string | null;
+  codigoSoftware: string;
+  /** Ítem del checklist F0288 del que proviene (p. ej. «Instalación de Antivirus»). */
+  item: string;
+  /** Expediente técnico del F0288 que lo instaló. */
+  expedienteTecnico: string;
 }
 
 export interface ConfiguracionF0302 {
@@ -521,20 +600,32 @@ export interface ConfiguracionF0302 {
   fecha: string;
   estado: string;
   datos: {
-    requerimiento: string; inventario: string; nombrePC: string; tipoServicio: string;
+    requerimiento: string; inventario: string;
+    /**
+     * Nombre del equipo (hostname) que digita el Técnico de Soporte en el checklist F0302, p. ej.
+     * `DT-KRIVAS-045`. '' = aún sin registrar: es dato obligatorio del expediente y se exige antes
+     * de finalizar la configuración.
+     */
+    nombrePC: string;
+    tipoServicio: string;
     asignadoA: string; carne: string; direccionGerencia: string; unidad: string; puesto: string;
     sistemaOperativo: string; arquitectura: string;
     /**
-     * Reserva de IP del checklist F0302. '' = aún sin responder: es dato obligatorio del
-     * expediente, igual que el nombre del equipo, y se pregunta antes de finalizar.
+     * Reserva de IP del equipo. '' = aún sin responder. **Solo se captura desde el modal de
+     * validación previo al envío del formulario de conformidad**: no es una sección del checklist
+     * F0302. Una vez guardada se muestra como dato de consulta en el detalle, el documento, el
+     * expediente único, el historial técnico y la trazabilidad.
      */
     requiereReservaIP?: RespuestaSiNo;
     /** IP reservada; obligatoria con «Sí» y vacía con «No» (se muestra como «No aplica»). */
     ipReservada?: string;
+    /** Técnico que validó la reserva en el modal previo al envío del formulario («Nombre — Rol»). */
+    ipValidadaPor?: string;
+    /** Fecha y hora de esa validación (`YYYY-MM-DD HH:mm`). */
+    ipValidadaEl?: string;
   };
   software: SoftwareF0302[];
-  softwareOculto: SeccionOculta[];
-  evidencias: { nombre: string; estado: string }[];
+  evidencias: EvidenciaF0302[];
   firmas: { preparo: Firma; configuro: Firma };
   /** Registro de tiempo de la configuración (inicia con «Iniciar configuración»). */
   cronometro?: Cronometro;
@@ -586,6 +677,20 @@ export interface Conformidad {
   observaciones: string;
   /** Nombre escrito por el usuario final al aceptar: es su firma de conformidad simulada. Solo existe si aceptó. */
   firmaUsuarioFinal?: string;
+  /**
+   * Datos clave del F0302 congelados al enviar el formulario: el usuario final debe ver con qué
+   * nombre y con qué reserva de IP quedó configurado el equipo que está aceptando. Son opcionales
+   * porque las conformidades enviadas antes de esta regla no los guardaron; en ese caso la
+   * pantalla los toma de la configuración F0302 del proceso.
+   */
+  nombreEquipo?: string;
+  requiereReservaIP?: RespuestaSiNo;
+  /** IP reservada al momento del envío; vacía cuando el equipo no requiere reserva. */
+  ipReservada?: string;
+  /** Técnico que validó la reserva en el modal previo al envío. */
+  ipValidadaPor?: string;
+  /** Fecha y hora de esa validación (`YYYY-MM-DD HH:mm`). */
+  ipValidadaEl?: string;
 }
 
 export type EstadoGarantia = 'Vigente' | 'Vencida' | 'Caso abierto' | 'Cerrado' | 'No iniciada';

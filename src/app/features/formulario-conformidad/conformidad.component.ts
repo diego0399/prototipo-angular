@@ -1,6 +1,7 @@
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { SlicePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Conformidad } from '../../core/models/models';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent } from '../../shared/ui';
@@ -80,6 +81,10 @@ import { BadgeComponent } from '../../shared/ui';
                 <dt>Equipo asignado</dt><dd>{{ c.equipo }}</dd>
                 <dt>Marca y modelo</dt><dd>{{ c.marcaModelo }}</dd>
                 <dt>Número de inventario</dt><dd>{{ c.inventario }}</dd>
+                <dt>Nombre del equipo</dt><dd>{{ nombreEquipo(c) }}</dd>
+                <dt>Reserva de IP</dt><dd>{{ reservaIP(c) }}</dd>
+                <dt>IP reservada</dt><dd>{{ ipReservada(c) }}</dd>
+                @if (validacionIP(c); as v) { <dt>Reserva validada por</dt><dd>{{ v }}</dd> }
                 <dt>Entregado por</dt><dd>{{ c.tecnicoEntrega }}</dd>
               </dl>
             </div>
@@ -208,6 +213,31 @@ export class ConformidadComponent {
     const c = this.conf();
     return !!c && (c.estado === 'Aceptado' || c.estado === 'No conforme');
   });
+
+  // El formulario muestra el nombre del equipo y la reserva de IP con que quedó configurado: son
+  // datos que el usuario final debe poder verificar antes de aceptar la recepción. Se leen del
+  // propio formulario (congelados al enviarlo) y, si se envió antes de esta regla, del F0302.
+  private datosF0302(c: Conformidad) {
+    return this.data.configuracionDe(c.expediente)?.datos;
+  }
+  protected nombreEquipo(c: Conformidad): string {
+    return (c.nombreEquipo || this.datosF0302(c)?.nombrePC || '').trim() || '—';
+  }
+  protected reservaIP(c: Conformidad): string {
+    return c.requiereReservaIP || this.datosF0302(c)?.requiereReservaIP || '—';
+  }
+  protected ipReservada(c: Conformidad): string {
+    const requiere = this.reservaIP(c);
+    if (requiere === 'No') return 'No aplica';
+    if (requiere !== 'Sí') return '—';
+    return (c.ipReservada || this.datosF0302(c)?.ipReservada || '').trim() || '—';
+  }
+  /** Quién validó la reserva en el modal previo al envío y cuándo; vacío si el dato no se guardó. */
+  protected validacionIP(c: Conformidad): string {
+    const por = c.ipValidadaPor || this.datosF0302(c)?.ipValidadaPor || '';
+    const el = c.ipValidadaEl || this.datosF0302(c)?.ipValidadaEl || '';
+    return por ? `${por}${el ? ` · ${el}` : ''}` : '';
+  }
 
   /** Intento de aceptación vigente (el que porta este token del formulario). */
   protected readonly intentoActual = computed(() => {

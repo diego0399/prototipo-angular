@@ -10,7 +10,7 @@ export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 
   if (/(no conforme|vencid|falla|no encontrado|formato inválido|no corresponde|asociado a otro)/.test(e)) return 'danger';
   // «Inactivo» va antes que la rama «ok»: contiene la subcadena «activo» y se pintaba en verde.
   if (/(no asignado|bloquead|no aplica|inactivo)/.test(e)) return 'neutral';
-  if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|preparado|disponible|resuelto|finalizad|capturad|encontrado)/.test(e)) return 'ok';
+  if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|preparado|disponible|resuelto|finalizad|capturad|encontrado|instalado)/.test(e)) return 'ok';
   if (/(pendiente|por generar|no enviado|no iniciada|caso abierto|revisión|abierto)/.test(e)) return 'warn';
   if (/entrante/.test(e)) return 'gold';
   if (/(en configuración|en preparación|en solicitud|asignad|enviado|en curso|en proceso)/.test(e)) return 'info';

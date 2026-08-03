@@ -6,8 +6,9 @@ import {
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
   DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, FilaValidacionLote,
   EstadoAsignacionEquipo, EstadoPreparacionEquipo, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  FirmaProceso, Garantia, IngresoHardware, IntentoAceptacion, MotivoDescargo, MotivoIngreso, PreparacionF0288,
+  FirmaProceso, Garantia, IngresoHardware, IntentoAceptacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
+  SoftwareF0302, SoftwareHeredadoF0288,
   TipoComentarioCaso, TipoCorreccion, TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
@@ -141,7 +142,7 @@ export class DataService {
       this.expedientesTecnicos.set(r.expTec);
       this.expedientesUnicos.set(r.expedientes);
       this.preparaciones.set(this.normalizarPreparaciones(r.preparaciones));
-      this.configuraciones.set(r.configuraciones);
+      this.configuraciones.set(this.normalizarConfiguraciones(r.configuraciones));
       this.entregas.set(r.entregas);
       this.conformidades.set(r.conformidades);
       this.garantias.set(r.garantias);
@@ -203,7 +204,7 @@ export class DataService {
       this.expedientesTecnicos.set(d.expedientesTecnicos ?? []);
       this.expedientesUnicos.set(d.expedientesUnicos ?? []);
       this.preparaciones.set(this.normalizarPreparaciones(d.preparaciones ?? []));
-      this.configuraciones.set(d.configuraciones ?? []);
+      this.configuraciones.set(this.normalizarConfiguraciones(d.configuraciones ?? []));
       this.entregas.set(d.entregas ?? []);
       this.conformidades.set(d.conformidades ?? []);
       this.garantias.set(d.garantias ?? []);
@@ -806,6 +807,54 @@ export class DataService {
         .filter((e) => !this.fueraDelF0288(e.item))
         .map((e) => ({ ...e, item: this.nombreItemF0288(e.item) }))
     }));
+  }
+
+  /**
+   * Actividades generales de la configuración que viven en el mismo arreglo que el software pero
+   * NO son software del catálogo: ingreso a dominio, credenciales y Agente DLP. No tienen versión
+   * controlada ni motivo asociado y se muestran en su propia sección del F0302.
+   */
+  private esActividadConfiguracion(nombre: string): boolean {
+    return /^(agente dlp|soluci[óo]n dlp|ingreso a dominio|credenciales)/i.test((nombre ?? '').trim());
+  }
+
+  /**
+   * Normaliza las configuraciones leídas del JSON semilla o de una foto de localStorage anterior:
+   * marca cada ítem con su origen («Configuración» para las actividades generales, «F0302» para el
+   * software) y completa los campos nuevos del software adicional. **No elimina ítems**: un F0302
+   * ya finalizado documenta lo que realmente se hizo. El software que ahora se hereda del F0288
+   * deja de listarse como adicional en pantalla (`softwareAdicionalF0302`), no aquí.
+   *
+   * No puede consultar el catálogo de software: al rehidratar, las configuraciones se cargan antes
+   * que el catálogo.
+   */
+  private normalizarConfiguraciones(lista: ConfiguracionF0302[]): ConfiguracionF0302[] {
+    return (lista ?? []).map((c) => {
+      // `softwareOculto` desapareció del F0302: el checklist es dinámico y lo que no se agregó
+      // simplemente no está. Se descarta al rehidratar para que ninguna foto anterior lo reviva.
+      const { softwareOculto, ...resto } = c as ConfiguracionF0302 & { softwareOculto?: unknown };
+      void softwareOculto;
+      return {
+        ...resto,
+        software: (resto.software ?? []).map((s) => ({
+          ...s,
+          origen: s.origen ?? (this.esActividadConfiguracion(s.nombre) ? 'Configuración' as const : 'F0302' as const),
+          motivo: s.motivo ?? '',
+          observacion: s.observacion ?? '',
+          // El Agente DLP pasó a exigir captura: se marca también en las configuraciones guardadas
+          // antes de la regla, para que el cierre la pida igual.
+          requiereEvidencia: s.requiereEvidencia ?? this.esAgenteDLP(s.nombre)
+        })),
+        evidencias: (resto.evidencias ?? []).map((e) => (this.esAgenteDLP(e.item ?? e.nombre)
+          ? { ...e, item: e.item ?? 'Agente DLP', tipo: e.tipo ?? 'Agente DLP', formulario: e.formulario ?? 'F0302' }
+          : e))
+      };
+    });
+  }
+
+  /** El «Agente DLP» (antes «Solución DLP») es el ítem del F0302 con captura de evidencia obligatoria. */
+  private esAgenteDLP(nombre: string): boolean {
+    return /^(agente|soluci[óo]n) dlp/i.test((nombre ?? '').trim());
   }
 
   /** Deja constancia de que se abrió/consultó la pantalla «Catálogo de software» (una vez por visita, no por render). */
@@ -1935,21 +1984,20 @@ export class DataService {
     // Se habilita de inmediato la Configuración F0302 con su checklist pendiente.
     if (!this.configuracionDe(id)) {
       const eq = this.equipoDe(asig.equipoInventario);
-      // El software del checklist F0302 se arma desde el catálogo de software permitido: solo el
-      // software activo cuya etapa es «Configuración F0302» o «Ambas etapas». No se filtra por
-      // tipo de equipo: el catálogo ya no lo configura. El Agente DLP, el ingreso a dominio y las
-      // credenciales no son software de catálogo: son actividades del Técnico de Soporte y se
-      // conservan como ítems libres, fuera del control de versiones. Salieron del F0288 (donde
-      // estaban por error) porque no forman parte de la preparación técnica de Hardware.
-      const swCatalogo = (c: SoftwareCatalogo) =>
-        ({ nombre: c.nombre, version: c.versionVigente, estado: 'Pendiente', evidencia: null, codigoSoftware: c.codigo, categoria: c.categoria });
-      const swLibre = (nombre: string, version: string, categoria: string) =>
-        ({ nombre, version, estado: 'Pendiente', evidencia: null, categoria });
-      const software = [
-        ...this.softwareAplicable('F0302').map(swCatalogo),
-        swLibre('Agente DLP', 'Corporativo', 'Seguridad'),
-        swLibre('Ingreso a dominio', 'Dominio institucional', 'Red'),
-        swLibre('Credenciales: nombre de equipo · cuenta de red', 'Según SISSOR', 'Red')
+      // El checklist F0302 arranca SIN software: no hay una lista fija obligatoria para todos los
+      // casos. El software depende del requerimiento del usuario final y el Técnico de Soporte lo
+      // agrega desde el Catálogo de Software permitido durante la configuración; lo que ya instaló
+      // la Preparación F0288 se hereda y se muestra bloqueado, sin copiarse aquí.
+      // Sí quedan fijas las actividades generales de configuración —Agente DLP, ingreso a dominio
+      // y credenciales—, que no son software de catálogo: son tareas del Técnico de Soporte y
+      // salieron del F0288 (donde estaban por error) porque no son preparación técnica de Hardware.
+      const actividad = (nombre: string, version: string, categoria: string, requiereEvidencia = false): SoftwareF0302 =>
+        ({ nombre, version, estado: 'Pendiente', evidencia: null, categoria, origen: 'Configuración', requiereEvidencia });
+      const software: SoftwareF0302[] = [
+        // El Agente DLP es control de seguridad institucional: no se da por configurado sin captura.
+        actividad('Agente DLP', 'Corporativo', 'Seguridad', true),
+        actividad('Ingreso a dominio', 'Dominio institucional', 'Red'),
+        actividad('Credenciales: nombre de equipo · cuenta de red', 'Según SISSOR', 'Red')
       ];
       const nuevaConf: ConfiguracionF0302 = {
         expediente: id,
@@ -1960,7 +2008,10 @@ export class DataService {
         datos: {
           requerimiento: this.tipoRequerimientoTexto(s),
           inventario: asig.equipoInventario,
-          nombrePC: `CNR-${asig.equipoInventario.replace(/-/g, '').slice(-6)}`,
+          // El nombre del equipo lo digita el Técnico de Soporte dentro del checklist F0302: no se
+          // propone uno automático, porque es dato del expediente y responde a la convención de la
+          // unidad (p. ej. `DT-KRIVAS-045`), no al número de inventario.
+          nombrePC: '',
           tipoServicio: 'Asignación de equipo',
           asignadoA: s.destinatario,
           carne: s.carne,
@@ -1974,13 +2025,14 @@ export class DataService {
           ipReservada: ''
         },
         software,
-        softwareOculto: [
-          { nombre: 'Visio · Project · Power BI', motivo: 'No solicitados en el requerimiento; el checklist dinámico los oculta.' }
-        ],
+        // Las capturas de Antivirus y OCS Inventory son evidencia del F0288 y el F0302 las hereda
+        // bloqueadas: aquí solo quedan las evidencias propias de la configuración. La del Agente
+        // DLP se completa con el archivo cuando el técnico la carga (`registrarEvidenciaSoftwareF0302`).
         evidencias: [
-          { nombre: 'Captura de antivirus', estado: 'Pendiente' },
-          { nombre: 'Captura de OCS Inventory', estado: 'Pendiente' },
-          { nombre: 'Evidencia de Solución DLP', estado: 'Pendiente' }
+          { nombre: 'Ingreso exitoso al dominio institucional', estado: 'Pendiente' },
+          { nombre: 'Captura de instalación/configuración del Agente DLP', estado: 'Pendiente',
+            item: 'Agente DLP', tipo: 'Agente DLP', formulario: 'F0302' },
+          { nombre: 'Configuración final para el usuario', estado: 'Pendiente' }
         ],
         firmas: {
           preparo: {
@@ -2490,47 +2542,121 @@ export class DataService {
   marcarSoftwareF0302(id: string, nombre: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
     let codigoSoftware: string | undefined;
     let eraRealizado = false;
+    let exigeCaptura = false;
     this.actualizarConfiguracionActiva(id, (c) => ({
       ...c, software: c.software.map((s) => {
         if (s.nombre !== nombre) return s;
         codigoSoftware = s.codigoSoftware;
         eraRealizado = s.estado === 'Realizado';
-        if (!s.codigoSoftware) return { ...s, estado };
+        exigeCaptura = !!s.requiereEvidencia;
+        // Al desmarcar un ítem con captura obligatoria, la captura deja de tener sentido: se limpia.
+        const evidencia = s.requiereEvidencia && estado !== 'Realizado' ? null : s.evidencia;
+        if (!s.codigoSoftware) return { ...s, estado, evidencia };
         const vigente = this.softwareCatalogoDe(s.codigoSoftware)?.versionVigente ?? '';
         return estado === 'Realizado'
-          ? { ...s, estado, version: s.version || vigente }
-          : { ...s, estado, version: '' };
-      })
+          ? { ...s, estado, evidencia, version: s.version || vigente }
+          : { ...s, estado, evidencia, version: '' };
+      }),
+      evidencias: exigeCaptura && estado !== 'Realizado'
+        ? c.evidencias.map((e) => (e.item === nombre
+            ? { nombre: e.nombre, estado: 'Pendiente', item: e.item, tipo: e.tipo, formulario: e.formulario }
+            : e))
+        : c.evidencias
     }));
+    if (exigeCaptura && estado === 'Realizado' && !eraRealizado) {
+      const c = this.configuracionDe(id);
+      this.registrarEvento(id, usuario, `${nombre} seleccionado en F0302`, 'Realizado',
+        `Formulario: F0302 · Requiere captura de evidencia obligatoria para finalizar la configuración.`, false,
+        { modulo: 'Configuración F0302', inventario: c?.datos.inventario,
+          expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c?.datos.nombrePC });
+    }
     if (codigoSoftware && estado === 'Realizado' && !eraRealizado) {
       const sw = this.softwareCatalogoDe(codigoSoftware);
       const c = this.configuracionDe(id);
       if (sw && c) {
-        this.registrarEvento(id, usuario, `Software seleccionado: ${sw.nombre}`, 'Realizado', '', false,
+        const item = c.software.find((s) => s.codigoSoftware === codigoSoftware);
+        this.registrarEvento(id, usuario, `Software instalado en F0302: ${sw.nombre}`, 'Realizado',
+          `Software: ${sw.nombre} · Versión: ${item?.version || sw.versionVigente} · Categoría: ${sw.categoria} · ` +
+            `Origen: F0302 · Formulario: F0302` + (item?.motivo ? ` · Motivo: ${item.motivo}` : '') +
+            (item?.observacion?.trim() ? ` · Observación: ${item.observacion.trim()}` : ''), false,
           { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
       }
     }
   }
 
   /**
-   * Checkbox «Seleccionar todo» de una categoría de software F0302 (p. ej. «Seguridad»): marca o
-   * desmarca todo el grupo a la vez. Los software del catálogo reciben su versión vigente al
-   * marcarse (si no tenían una ya elegida) y pierden la versión al desmarcarse.
+   * Checkbox «Seleccionar todo» de una categoría de la configuración general F0302 (p. ej. «Red»):
+   * marca o desmarca todo el grupo a la vez. Solo alcanza a las actividades de configuración: el
+   * software adicional del catálogo se marca uno a uno, porque cada ítem lleva su propio motivo.
    */
   marcarCategoriaSoftwareF0302(id: string, categoria: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
+    const alcanza = (s: SoftwareF0302) => s.origen === 'Configuración' && s.categoria === categoria;
+    // «Seleccionar todo» NO exime de la captura: marca el ítem igual que a mano, así que el Agente
+    // DLP queda «Realizado» y sin evidencia, y el cierre lo sigue bloqueando.
+    const conCaptura = this.configuracionDe(id)?.software.filter((s) => alcanza(s) && s.requiereEvidencia) ?? [];
     this.actualizarConfiguracionActiva(id, (c) => ({
-      ...c, software: c.software.map((s) => {
-        if (s.categoria !== categoria) return s;
-        if (!s.codigoSoftware) return { ...s, estado };
-        const vigente = this.softwareCatalogoDe(s.codigoSoftware)?.versionVigente ?? '';
-        return estado === 'Realizado'
-          ? { ...s, estado, version: s.version || vigente }
-          : { ...s, estado, version: '' };
-      })
+      ...c,
+      software: c.software.map((s) => (alcanza(s)
+        ? { ...s, estado, evidencia: s.requiereEvidencia && estado !== 'Realizado' ? null : s.evidencia }
+        : s)),
+      evidencias: estado === 'Realizado' ? c.evidencias : c.evidencias.map((e) =>
+        (conCaptura.some((s) => s.nombre === e.item)
+          ? { nombre: e.nombre, estado: 'Pendiente', item: e.item, tipo: e.tipo, formulario: e.formulario }
+          : e))
     }));
     const c = this.configuracionDe(id);
-    this.registrarEvento(id, usuario, `Categoría completa seleccionada en checklist: ${categoria} (${estado})`, estado, '', false,
+    this.registrarEvento(id, usuario, `Categoría completa seleccionada en checklist: ${categoria} (${estado})`, estado,
+      estado === 'Realizado' && conCaptura.length > 0
+        ? `Formulario: F0302 · ${conCaptura.map((s) => s.nombre).join(' · ')} sigue(n) requiriendo captura de evidencia obligatoria.`
+        : '',
+      false,
       { modulo: 'Configuración F0302', inventario: c?.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
+  }
+
+  /**
+   * Registra la captura de evidencia de un ítem del checklist F0302 que la exige (Agente DLP). La
+   * carga es simulada —basta el nombre del archivo o su referencia—, pero guarda quién la cargó,
+   * cuándo, de qué tipo es, a qué ítem respalda y en qué formulario, igual que lo haría un
+   * repositorio real de evidencias.
+   *
+   * Devuelve null si quedó registrada, o el mensaje de la validación que falló.
+   */
+  registrarEvidenciaSoftwareF0302(id: string, nombre: string, archivo: string, usuario: string): string | null {
+    const captura = archivo.trim();
+    if (!captura) return 'Indique la captura de evidencia: nombre del archivo o número de referencia.';
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado === 'Completada') return 'La configuración ya fue finalizada; su evidencia no se puede modificar.';
+    if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
+    if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
+    const item = c.software.find((s) => s.nombre === nombre);
+    if (!item) return 'No se encontró el ítem del checklist indicado.';
+    if (item.estado !== 'Realizado') return `Marque «${nombre}» en el checklist antes de registrar su captura de evidencia.`;
+
+    const sello = `${this.hoy()} ${this.hora().slice(0, 5)}`;
+    const fila = {
+      nombre: `Captura de instalación/configuración del ${nombre}`, estado: 'Cargada',
+      item: nombre, archivo: captura, tipo: nombre,
+      cargadaPor: usuario.split('—')[0].trim(), fecha: sello, formulario: 'F0302'
+    };
+    this.actualizarConfiguracionActiva(id, (x) => ({
+      ...x,
+      software: x.software.map((s) => (s.nombre === nombre ? { ...s, evidencia: captura } : s)),
+      // Una captura por ítem: volver a registrarla reemplaza la anterior, no acumula filas.
+      evidencias: [...x.evidencias.filter((e) => e.item !== nombre), fila]
+    }));
+    this.registrarEvento(id, usuario, `Captura de ${nombre} registrada`, 'Realizado',
+      `Archivo: ${captura} · Tipo de evidencia: ${nombre} · Formulario: F0302 · Ítem: ${nombre} · Fecha de carga: ${sello}`,
+      false,
+      { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c.datos.nombrePC });
+    return null;
+  }
+
+  /** Ítems del checklist F0302 marcados que exigen captura y todavía no la tienen. */
+  itemsSinCapturaF0302(c: ConfiguracionF0302): SoftwareF0302[] {
+    return this.softwareChecklistF0302(c)
+      .filter((s) => s.requiereEvidencia && s.estado === 'Realizado' && !s.evidencia?.trim());
   }
 
   /** Selecciona la versión permitida de un software del catálogo dentro del checklist F0302. */
@@ -2539,8 +2665,191 @@ export class DataService {
       ...c, software: c.software.map((s) => (s.nombre === nombre ? { ...s, version } : s))
     }));
     const c = this.configuracionDe(id);
-    this.registrarEvento(id, usuario, `Versión de software seleccionada: ${nombre} — ${version}`, 'Realizado', '', false,
+    const sw = c?.software.find((s) => s.nombre === nombre);
+    this.registrarEvento(id, usuario, `Versión de software seleccionada en F0302: ${nombre} — ${version}`, 'Realizado',
+      `Software: ${nombre} · Versión: ${version} · Origen: F0302` +
+        (sw?.motivo ? ` · Motivo: ${sw.motivo}` : ''), false,
       { modulo: 'Configuración F0302', inventario: c?.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
+  }
+
+  // ---------- Software heredado del F0288 y software adicional del F0302 ----------
+  // El software instalado durante la Preparación F0288 NO se copia al F0302: se lee del propio
+  // F0288 y se muestra bloqueado, para que el Técnico de Soporte no lo vuelva a marcar ni pueda
+  // agregarlo otra vez. Lo que sí es propio del F0302 es el software ADICIONAL, que depende del
+  // requerimiento del usuario final y se elige del Catálogo de Software permitido.
+
+  /** Motivos por los que puede agregarse un software adicional en la Configuración F0302. */
+  readonly motivosSoftwareF0302: MotivoSoftwareF0302[] = [
+    'Solicitado en requerimiento', 'Necesario para funciones del usuario',
+    'Software institucional estándar', 'Requerido por unidad solicitante', 'Otro'
+  ];
+
+  /**
+   * Software instalado durante la Preparación F0288 del proceso, tal como lo hereda el F0302:
+   * los ítems del checklist F0288 enlazados al catálogo y ya realizados (Windows, .NET Framework,
+   * Antivirus, OCS Inventory…), con la versión y la captura registradas en esa preparación.
+   */
+  softwareHeredadoF0288(id: string): SoftwareHeredadoF0288[] {
+    const tec = this.expTecnicoDe(id);
+    const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
+    if (!prep || !tec) return [];
+    return prep.secciones
+      .flatMap((s) => s.items)
+      .filter((i) => i.codigoSoftware && i.estado === 'Realizado')
+      .map((i) => {
+        const sw = this.softwareCatalogoDe(i.codigoSoftware!);
+        return {
+          nombre: sw?.nombre ?? this.etiquetaEvidencia(i.nombre),
+          // Las preparaciones antiguas no guardaban la versión elegida; se muestra la vigente del catálogo.
+          version: i.versionSeleccionada?.trim() || sw?.versionVigente || '—',
+          categoria: sw?.categoria ?? 'Otros',
+          evidencia: i.evidencia ?? null,
+          codigoSoftware: i.codigoSoftware!,
+          item: i.nombre,
+          expedienteTecnico: tec.codigo
+        };
+      });
+  }
+
+  /** Códigos de catálogo ya instalados en el F0288 del proceso: no pueden repetirse en el F0302. */
+  private codigosHeredadosF0288(id: string): Set<string> {
+    return new Set(this.softwareHeredadoF0288(id).map((s) => s.codigoSoftware));
+  }
+
+  /** Actividades generales de configuración del F0302 (dominio, credenciales, DLP): no son software del catálogo. */
+  itemsConfiguracionF0302(c: ConfiguracionF0302): SoftwareF0302[] {
+    return c.software.filter((s) => s.origen === 'Configuración');
+  }
+
+  /**
+   * Software adicional del F0302: el que el Técnico de Soporte agregó según el requerimiento. Se
+   * excluye el que ya viene heredado del F0288 —una configuración guardada por una versión
+   * anterior podía repetirlo— para que un mismo software nunca aparezca dos veces en pantalla.
+   */
+  softwareAdicionalF0302(c: ConfiguracionF0302): SoftwareF0302[] {
+    const heredados = this.codigosHeredadosF0288(c.expediente);
+    return c.software.filter((s) => s.origen !== 'Configuración'
+      && !(s.codigoSoftware && heredados.has(s.codigoSoftware)));
+  }
+
+  /** Ítems del checklist F0302 que el técnico debe completar: actividades de configuración + software adicional. */
+  softwareChecklistF0302(c: ConfiguracionF0302): SoftwareF0302[] {
+    return [...this.itemsConfiguracionF0302(c), ...this.softwareAdicionalF0302(c)];
+  }
+
+  /**
+   * Catálogo ofrecido al agregar software en el F0302: solo software ACTIVO cuya etapa es
+   * «Configuración F0302» o «Ambas etapas». El software exclusivo de la Preparación F0288 nunca
+   * se ofrece aquí.
+   */
+  catalogoParaF0302(): SoftwareCatalogo[] {
+    return this.softwareAplicable('F0302');
+  }
+
+  /**
+   * Situación de un software del catálogo respecto de la configuración: si ya está instalado desde
+   * el F0288, si ya se agregó al F0302, o si está disponible para agregarse.
+   */
+  situacionSoftwareF0302(id: string, codigo: string): 'Instalado en F0288' | 'Agregado en F0302' | 'Disponible' {
+    if (this.codigosHeredadosF0288(id).has(codigo)) return 'Instalado en F0288';
+    const c = this.configuracionDe(id);
+    return c?.software.some((s) => s.codigoSoftware === codigo) ? 'Agregado en F0302' : 'Disponible';
+  }
+
+  /** Deja constancia de que el técnico abrió el selector del Catálogo de Software desde el F0302. */
+  registrarConsultaCatalogoF0302(id: string, usuario: string): void {
+    const c = this.configuracionDe(id);
+    const disponibles = this.catalogoParaF0302().length;
+    this.registrarEvento(id, usuario, 'Catálogo de Software consultado en F0302', c?.estado ?? 'En configuración',
+      `${disponibles} software(s) activo(s) aplicable(s) a Configuración F0302 o Ambas etapas · Formulario: F0302`, false,
+      { modulo: 'Configuración F0302', inventario: c?.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
+  }
+
+  /**
+   * Agrega un software adicional al checklist F0302 desde el Catálogo de Software. La versión se
+   * elige entre las permitidas del catálogo (nunca se escribe a mano) y el motivo o requerimiento
+   * asociado es obligatorio; con motivo «Otro», la observación también. No se permite duplicar
+   * software ya instalado en el F0288 ni ya agregado al F0302.
+   *
+   * Devuelve null si quedó agregado, o el mensaje de la validación que falló.
+   */
+  agregarSoftwareF0302(id: string, datos: {
+    codigo: string; version: string; motivo: MotivoSoftwareF0302 | ''; observacion: string;
+  }, usuario: string): string | null {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado === 'Completada') return 'La configuración ya fue finalizada: el F0302 generado no puede modificarse.';
+    if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
+    if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede modificarse.';
+    if (!c.cronometro) return 'Presione «Iniciar configuración» antes de agregar software al checklist F0302.';
+
+    const sw = this.softwareCatalogoDe(datos.codigo);
+    if (!sw) return 'No se encontró el software en el Catálogo de Software.';
+    if (!sw.activo) return `${sw.nombre} está inactivo en el catálogo y no puede agregarse a la configuración.`;
+    if (sw.etapa === 'Preparación F0288') {
+      return `${sw.nombre} es software de la Preparación F0288 y no puede agregarse a la Configuración F0302.`;
+    }
+    const unico = this.expedienteUnicoDe(id)?.codigoUnico;
+    const traza = { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unico };
+    if (this.codigosHeredadosF0288(id).has(datos.codigo)) {
+      this.registrarEvento(id, usuario, `Software duplicado rechazado: ${sw.nombre}`, c.estado,
+        `Software: ${sw.nombre} · Origen: F0288 · Ya instalado durante la Preparación F0288 · Formulario: F0302`, false, traza);
+      return 'Este software ya fue instalado durante la Preparación F0288 y no puede agregarse nuevamente.';
+    }
+    if (c.software.some((s) => s.codigoSoftware === datos.codigo)) {
+      this.registrarEvento(id, usuario, `Software duplicado rechazado: ${sw.nombre}`, c.estado,
+        `Software: ${sw.nombre} · Origen: F0302 · Ya agregado a la Configuración F0302 · Formulario: F0302`, false, traza);
+      return 'Este software ya fue agregado a la Configuración F0302.';
+    }
+    const version = (datos.version ?? '').trim();
+    if (!version) return `Seleccione la versión de ${sw.nombre} desde el catálogo.`;
+    if (!sw.versionesPermitidas.includes(version)) {
+      return `La versión ${version} no está entre las versiones permitidas de ${sw.nombre} en el catálogo.`;
+    }
+    if (!datos.motivo) return 'Seleccione el motivo o requerimiento asociado al software.';
+    const observacion = (datos.observacion ?? '').trim();
+    if (datos.motivo === 'Otro' && !observacion) {
+      return 'Con el motivo «Otro», la observación es obligatoria: indique por qué se instala este software.';
+    }
+
+    const item: SoftwareF0302 = {
+      nombre: sw.nombre, version, estado: 'Pendiente', evidencia: null,
+      codigoSoftware: sw.codigo, categoria: sw.categoria, origen: 'F0302',
+      versionVigente: sw.versionVigente, motivo: datos.motivo, observacion,
+      agregadoPor: usuario, fechaAgregado: `${this.hoy()} ${this.hora().slice(0, 5)}`
+    };
+    this.actualizarConfiguracionActiva(id, (x) => ({ ...x, software: [...x.software, item] }));
+    this.registrarEvento(id, usuario, `Software agregado a Configuración F0302: ${sw.nombre}`, c.estado,
+      `Software: ${sw.nombre} · Versión: ${version} · Versión vigente: ${sw.versionVigente} · Categoría: ${sw.categoria} · ` +
+        `Origen: F0302 · Motivo: ${datos.motivo}` + (observacion ? ` · Observación: ${observacion}` : '') +
+        ' · Formulario: F0302 · Seleccionado desde el Catálogo de Software',
+      false, traza);
+    this.registrarEvento(id, usuario, `Versión de software seleccionada en F0302: ${sw.nombre} — ${version}`, c.estado,
+      `Software: ${sw.nombre} · Versión: ${version} · Origen: F0302 · Motivo: ${datos.motivo}`, false, traza);
+    return null;
+  }
+
+  /**
+   * Retira un software adicional del checklist F0302 mientras la configuración sigue en curso: el
+   * checklist es dinámico y el técnico puede corregir lo que agregó. Nunca toca el software
+   * heredado del F0288 ni las actividades generales de configuración.
+   */
+  quitarSoftwareF0302(id: string, codigo: string, usuario: string): string | null {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado !== 'En curso' && c.estado !== 'Pendiente') {
+      return 'Solo puede retirarse software mientras la configuración está en curso.';
+    }
+    const item = c.software.find((s) => s.codigoSoftware === codigo && s.origen !== 'Configuración');
+    if (!item) return 'Ese software no forma parte del software adicional de esta configuración.';
+    this.actualizarConfiguracionActiva(id, (x) => ({
+      ...x, software: x.software.filter((s) => !(s.codigoSoftware === codigo && s.origen !== 'Configuración'))
+    }));
+    this.registrarEvento(id, usuario, `Software adicional retirado de la Configuración F0302: ${item.nombre}`, c.estado,
+      `Software: ${item.nombre} · Versión: ${item.version} · Origen: F0302` +
+        (item.motivo ? ` · Motivo: ${item.motivo}` : '') + ' · Formulario: F0302', false,
+      { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
+    return null;
   }
 
   // ---------- Reserva de IP (checklist F0302) ----------
@@ -2552,6 +2861,41 @@ export class DataService {
   ipValida(ip: string): boolean {
     const partes = ip.trim().split('.');
     return partes.length === 4 && partes.every((p) => /^\d{1,3}$/.test(p) && Number(p) <= 255);
+  }
+
+  /**
+   * Registra el nombre del equipo (hostname) que digita el Técnico de Soporte en el checklist
+   * F0302. Es dato obligatorio del expediente: viaja al expediente único, al documento generado,
+   * al historial técnico, a la trazabilidad, al formulario de conformidad y al detalle del equipo.
+   *
+   * En una configuración ya finalizada solo se admite cuando el nombre nunca llegó a registrarse
+   * (expedientes anteriores a esta regla): completar el dato que falta sí es válido, cambiar el
+   * que ya quedó documentado no.
+   *
+   * Devuelve null si quedó registrado, o el mensaje de la validación que falló.
+   */
+  registrarNombreEquipo(id: string, usuario: string, nombre: string): string | null {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
+    if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
+    const anterior = (c.datos.nombrePC ?? '').trim();
+    if (c.estado === 'Completada' && anterior) {
+      return 'La configuración ya fue finalizada; el nombre del equipo no puede modificarse.';
+    }
+    const valor = nombre.trim();
+    if (!valor) return 'Debe ingresar el nombre del equipo para finalizar la configuración.';
+    if (valor === anterior) return null;
+    this.actualizarConfiguracionActiva(id, (x) => ({ ...x, datos: { ...x.datos, nombrePC: valor } }));
+    this.registrarEvento(id, usuario, `Nombre del equipo registrado en F0302: ${valor}`, c.estado,
+      anterior
+        ? `Equipo ${c.datos.inventario} · el nombre pasó de ${anterior} a ${valor}.`
+        : `Equipo ${c.datos.inventario} para ${c.datos.asignadoA}.`,
+      false,
+      { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
+        nombreEquipo: valor, estadoAnterior: anterior ? `Nombre del equipo: ${anterior}` : 'Sin nombre de equipo registrado' });
+    return null;
   }
 
   /**
@@ -2568,14 +2912,15 @@ export class DataService {
   }
 
   /**
-   * Valida la reserva de IP del checklist F0302. Devuelve null si es válida, o el mensaje de
-   * la regla que falló: falta la respuesta, falta la IP, formato incorrecto o IP duplicada.
+   * Valida la reserva de IP. Devuelve null si es válida, o el mensaje de la regla que falló: falta
+   * la respuesta, falta la IP, formato incorrecto o IP duplicada. Los mensajes hablan del envío del
+   * formulario de conformidad porque es el único punto donde se captura la reserva.
    */
   validarReservaIP(inventario: string, requiere: RespuestaSiNo, ip: string): string | null {
-    if (!requiere) return 'Indique si el equipo requiere reserva de IP para continuar con la configuración.';
+    if (!requiere) return 'Indique si el equipo requiere reserva de IP antes de enviar el formulario de conformidad.';
     if (requiere === 'No') return null;
     const valor = ip.trim();
-    if (!valor) return 'Debe ingresar la IP reservada para continuar con la configuración.';
+    if (!valor) return 'Debe ingresar la IP reservada antes de enviar el formulario de conformidad.';
     if (!this.ipValida(valor)) return 'La IP ingresada no tiene un formato válido.';
     const otra = this.configuracionConIP(valor, inventario);
     if (otra) {
@@ -2586,13 +2931,26 @@ export class DataService {
   }
 
   /**
-   * Guarda la reserva de IP en la configuración F0302 activa y deja el evento de trazabilidad
-   * (marcada · registrada · actualizada). Devuelve null si se guardó, o el mensaje de validación.
+   * Guarda la reserva de IP de la configuración activa y deja el evento de trazabilidad. Se llama
+   * únicamente desde el modal de validación previo al envío del formulario de conformidad: la
+   * reserva no es una sección del checklist F0302.
+   *
+   * Devuelve null si se guardó (o si no hubo cambio), o el mensaje de validación.
    */
   registrarReservaIP(id: string, usuario: string, requiere: RespuestaSiNo, ip: string): string | null {
     const c = this.configuracionDe(id);
     if (!c) return 'No se encontró la configuración indicada.';
-    if (c.estado === 'Completada') return 'La configuración ya fue finalizada; la reserva de IP no puede modificarse.';
+    // Reconfirmar en el modal lo mismo que ya estaba guardado no es un cambio: se acepta sin tocar
+    // nada, para que el envío del formulario no se trabe por «no puede modificarse».
+    const igual = (c.datos.requiereReservaIP ?? '') === requiere
+      && (c.datos.ipReservada ?? '').trim() === (requiere === 'Sí' ? ip.trim() : '');
+    if (igual) return this.validarReservaIP(c.datos.inventario, requiere, ip);
+    // En una configuración finalizada solo se admite COMPLETAR la reserva que nunca se registró
+    // (expedientes anteriores a la regla); de lo contrario el proceso quedaría trabado: no podría
+    // enviarse el formulario de conformidad por falta del dato ni corregirse por estar cerrado.
+    if (c.estado === 'Completada' && (c.datos.requiereReservaIP ?? '')) {
+      return 'La configuración ya fue finalizada; la reserva de IP no puede modificarse.';
+    }
     if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
     if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
     const error = this.validarReservaIP(c.datos.inventario, requiere, ip);
@@ -2601,8 +2959,12 @@ export class DataService {
     const anteriorReq = c.datos.requiereReservaIP ?? '';
     const anteriorIP = (c.datos.ipReservada ?? '').trim();
     const nuevaIP = requiere === 'Sí' ? ip.trim() : '';
+    const sello = `${this.hoy()} ${this.hora().slice(0, 5)}`;
     this.actualizarConfiguracionActiva(id, (x) => ({
-      ...x, datos: { ...x.datos, requiereReservaIP: requiere, ipReservada: nuevaIP }
+      ...x, datos: {
+        ...x.datos, requiereReservaIP: requiere, ipReservada: nuevaIP,
+        ipValidadaPor: usuario, ipValidadaEl: sello
+      }
     }));
 
     const ref = {
@@ -2611,18 +2973,37 @@ export class DataService {
       usuarioFinal: c.datos.asignadoA, nombreEquipo: c.datos.nombrePC, ipReservada: nuevaIP || 'No aplica'
     };
     if (anteriorReq !== requiere) {
-      this.registrarEvento(id, usuario, `Reserva de IP marcada en F0302: ${requiere}`, `Reserva de IP: ${requiere}`,
-        `Equipo ${c.datos.inventario} (${c.datos.nombrePC}). ${requiere === 'Sí' ? `IP reservada: ${nuevaIP}.` : 'El equipo no requiere reserva de IP.'}`,
+      this.registrarEvento(id, usuario, `Reserva de IP respondida en modal de conformidad: ${requiere}`,
+        `Reserva de IP: ${requiere}`,
+        `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}). ` +
+          (requiere === 'Sí' ? `IP reservada: ${nuevaIP}.` : 'El equipo no requiere reserva de IP: se registra «IP reservada: No aplica».') +
+          ` Validada por ${usuario} el ${sello}.`,
         false, ref);
     }
     if (requiere === 'Sí' && nuevaIP !== anteriorIP) {
       this.registrarEvento(id, usuario,
-        anteriorIP ? `IP reservada actualizada: ${anteriorIP} → ${nuevaIP}` : `IP reservada registrada: ${nuevaIP}`,
+        anteriorIP
+          ? `IP reservada actualizada en modal de conformidad: ${anteriorIP} → ${nuevaIP}`
+          : `IP reservada registrada en modal de conformidad: ${nuevaIP}`,
         `Reserva de IP: Sí`,
-        `Equipo ${c.datos.inventario} (${c.datos.nombrePC}) para ${c.datos.asignadoA}.`, false,
+        `Formulario: F0302 · Equipo ${c.datos.inventario} (${c.datos.nombrePC}) para ${c.datos.asignadoA} · ` +
+          `Validada por ${usuario} el ${sello}.`, false,
         { ...ref, estadoAnterior: anteriorIP ? `IP reservada: ${anteriorIP}` : 'Sin IP reservada' });
     }
     return null;
+  }
+
+  /** Deja constancia de que el técnico abrió el modal de validación previo al envío del formulario. */
+  registrarAperturaModalConformidad(id: string, usuario: string): void {
+    const c = this.configuracionDe(id);
+    if (!c) return;
+    this.registrarEvento(id, usuario, 'Modal de IP abierto antes de enviar conformidad', c.estado,
+      `Formulario: F0302 · Nombre del equipo: ${c.datos.nombrePC || 'Sin registrar'} · ` +
+        `Reserva de IP: ${c.datos.requiereReservaIP || 'Sin responder'} · IP reservada: ${this.textoIPReservada(c)}`,
+      false,
+      { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
+        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
   }
 
   /** Reserva de IP vigente del equipo: la de su configuración F0302 más reciente. */
@@ -2631,9 +3012,13 @@ export class DataService {
     return { requiere: c?.datos.requiereReservaIP ?? '', ip: (c?.datos.ipReservada ?? '').trim() };
   }
 
-  /** Texto legible de la reserva de IP de una configuración: «192.168.10.45», «No aplica» o «—». */
+  /**
+   * Texto legible de la reserva de IP: «192.168.10.45», «No aplica» o, mientras no se haya
+   * respondido, «Pendiente de validación antes de conformidad». Ese último caso es normal: la
+   * reserva no es dato del cierre del F0302, se pregunta al enviar el formulario de conformidad.
+   */
   textoIPReservada(c: Pick<ConfiguracionF0302, 'datos'> | undefined): string {
-    if (!c?.datos.requiereReservaIP) return '—';
+    if (!c?.datos.requiereReservaIP) return 'Pendiente de validación antes de conformidad';
     return c.datos.requiereReservaIP === 'Sí' ? (c.datos.ipReservada || '—') : 'No aplica';
   }
 
@@ -2653,10 +3038,21 @@ export class DataService {
       fechaFin: '', horaFin: '', finalizadoPor: '', duracionMinutos: null
     };
     this.actualizarConfiguracionActiva(id, (x) => ({ ...x, cronometro: crono }));
+    const ref = { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+      expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA };
     this.registrarEvento(id, usuario, `Cronómetro F0302 iniciado para el expediente ${this.expedienteUnicoDe(id)?.codigoUnico ?? id}`, 'En configuración',
-      `Inicio del registro de tiempo de la configuración del equipo ${c.datos.inventario} (${c.datos.nombrePC}) para ${c.datos.asignadoA}.`, false,
-      { modulo: 'Configuración F0302', inventario: c.datos.inventario,
-        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA });
+      `Inicio del registro de tiempo de la configuración del equipo ${c.datos.inventario} (${c.datos.nombrePC}) para ${c.datos.asignadoA}.`, false, ref);
+    // Al abrir el checklist, el F0302 muestra el software que ya instaló la Preparación F0288 como
+    // información heredada y bloqueada: queda constancia de qué se heredó y de que no se re-marca.
+    const heredado = this.softwareHeredadoF0288(id);
+    if (heredado.length > 0) {
+      const detalle = heredado.map((s) => `${s.nombre} ${s.version}${s.evidencia ? ` (evidencia: ${s.evidencia})` : ''}`).join(' · ');
+      this.registrarEvento(id, usuario, 'Software heredado desde F0288 mostrado en F0302', 'En configuración',
+        `Origen: F0288 (${heredado[0].expedienteTecnico}) · Formulario: F0302 · ${detalle}`, false, ref);
+      this.registrarEvento(id, usuario, 'Software de F0288 bloqueado en F0302', 'En configuración',
+        'Origen: F0288 · Formulario: F0302 · No puede volver a marcarse, editarse ni agregarse como software adicional: ' +
+          heredado.map((s) => s.nombre).join(' · '), false, ref);
+    }
     return null;
   }
 
@@ -2671,16 +3067,31 @@ export class DataService {
     if (c.estado === 'Con falla') return 'Esta configuración quedó con falla y el equipo volvió a F0288. Inicie una nueva configuración F0302.';
     if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
     if (!c.cronometro) return 'Presione «Iniciar configuración» para comenzar el cronómetro antes de finalizar.';
-    if (c.software.some((s) => s.estado === 'Pendiente')) {
+    // Solo se valida el checklist propio del F0302 (actividades de configuración + software
+    // adicional): el software heredado del F0288 ya está instalado y se muestra bloqueado.
+    const checklist = this.softwareChecklistF0302(c);
+    if (checklist.some((s) => s.estado === 'Pendiente')) {
       return 'Complete todo el software aplicable antes de generar el F0302.';
     }
-    if (c.software.some((s) => s.codigoSoftware && s.estado === 'Realizado' && !s.version?.trim())) {
+    if (checklist.some((s) => s.codigoSoftware && s.estado === 'Realizado' && !s.version?.trim())) {
       return 'Seleccione la versión de cada software marcado antes de generar el F0302.';
     }
-    // La reserva de IP se revalida aquí: es dato obligatorio del expediente y la IP pudo quedar
-    // duplicada por una reserva registrada en otro equipo después de guardarla.
-    const errIP = this.validarReservaIP(c.datos.inventario, c.datos.requiereReservaIP ?? '', c.datos.ipReservada ?? '');
-    if (errIP) return errIP;
+    // El nombre del equipo es dato obligatorio del expediente: lo digita el técnico y viaja al
+    // documento, al expediente único, al historial, a la trazabilidad y al formulario de conformidad.
+    if (!(c.datos.nombrePC ?? '').trim()) {
+      return 'Debe ingresar el nombre del equipo para finalizar la configuración.';
+    }
+    // Ítems que no se dan por configurados sin captura (Agente DLP). Vale igual si se marcaron con
+    // el checkbox «Seleccionar todo» de la categoría: la validación es sobre el ítem, no sobre cómo
+    // se marcó.
+    const sinCaptura = this.itemsSinCapturaF0302(c)[0];
+    if (sinCaptura) {
+      return `Debe agregar la captura de evidencia del ${sinCaptura.nombre} para finalizar la configuración.`;
+    }
+    // La reserva de IP NO se valida aquí, ni siquiera cuando ya viene respondida: no es dato del
+    // cierre. Se pregunta, se valida y se guarda en el modal previo al envío del formulario de
+    // conformidad, que es donde el dato hace falta de verdad. Finalizar y generar el F0302 no
+    // dependen de ella.
     const errCierre = this.validarCierre(cierre, 'configuración');
     if (errCierre) return errCierre;
 
@@ -2701,14 +3112,52 @@ export class DataService {
     );
     const tiempo = this.formatoDuracion(crono.duracionMinutos);
     const conReserva = c.datos.requiereReservaIP === 'Sí';
-    const ipTexto = conReserva ? (c.datos.ipReservada ?? '') : 'No aplica';
+    // La reserva se responde después, en el modal previo al envío del formulario de conformidad:
+    // al cerrar el F0302 lo normal es que todavía no exista, y el evento lo dice así.
+    const reservaTexto = c.datos.requiereReservaIP || 'Se define al enviar el formulario de conformidad';
+    const ipTexto = this.textoIPReservada(c);
+    const conCaptura = this.softwareChecklistF0302(c).filter((s) => s.requiereEvidencia && s.evidencia?.trim());
+    const capturas = conCaptura.map((s) => `${s.nombre}: ${s.evidencia}`).join(' · ');
+    // La comprobación de las capturas obligatorias es parte del cierre: queda registrada aparte
+    // para que la trazabilidad muestre que se verificó, no solo que el F0302 se generó.
+    for (const s of conCaptura) {
+      const ev = c.evidencias.find((e) => e.item === s.nombre && e.archivo);
+      this.registrarEvento(id, usuario, `Validación de evidencia de ${s.nombre} realizada`, 'Realizado',
+        `Formulario: F0302 · ${s.nombre}: Configurado · Evidencia registrada: ${s.evidencia}` +
+          (ev ? ` · ${ev.cargadaPor} · ${ev.fecha}` : ''), false,
+        { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+          expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c.datos.nombrePC });
+    }
+    // Cerrar sin reserva de IP es el caso normal, no una omisión: queda registrado para que el
+    // historial explique por qué el F0302 se generó sin ese dato y dónde se completará.
+    if (!c.datos.requiereReservaIP) {
+      const refIP = { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c.datos.nombrePC,
+        ipReservada: 'Pendiente de validación antes de conformidad' };
+      const detalleIP = 'Formulario: F0302 · La reserva de IP no es requisito del cierre: se pregunta y se valida '
+        + 'en el modal previo al envío del formulario de conformidad.';
+      this.registrarEvento(id, usuario, 'F0302 finalizado sin validación de IP reservada', 'Listo para entrega', detalleIP, false, refIP);
+      this.registrarEvento(id, usuario, 'F0302 generado sin validación de IP reservada', 'Listo para entrega', detalleIP, false, refIP);
+    }
+    // El cierre deja constancia del software adicional agregado según el requerimiento y del que
+    // se heredó del F0288, para que el historial muestre ambos apartados sin abrir el documento.
+    const adicional = this.softwareAdicionalF0302(c).filter((s) => s.codigoSoftware);
+    const heredado = this.softwareHeredadoF0288(id);
+    const textoAdicional = adicional
+      .map((s) => `${s.nombre} ${s.version}${s.motivo ? ` (${s.motivo})` : ''}`).join(' · ');
+    const textoHeredado = heredado.map((s) => `${s.nombre} ${s.version}`).join(' · ');
     this.registrarEvento(id, usuario,
-      conReserva
-        ? `Configuración F0302 finalizada con reserva de IP ${ipTexto}; documento F0302 generado y firmado`
-        : 'Configuración F0302 finalizada; documento F0302 generado y firmado',
+      adicional.length > 0
+        ? `Configuración F0302 finalizada con software adicional (${adicional.length}); documento F0302 generado y firmado`
+        : conReserva
+          ? `Configuración F0302 finalizada con reserva de IP ${ipTexto}; documento F0302 generado y firmado`
+          : 'Configuración F0302 finalizada; documento F0302 generado y firmado',
       'Listo para entrega',
-      `Nombre del equipo: ${c.datos.nombrePC} · Reserva de IP: ${c.datos.requiereReservaIP} · IP reservada: ${ipTexto} · ` +
+      `Nombre del equipo: ${c.datos.nombrePC} · Reserva de IP: ${reservaTexto} · IP reservada: ${ipTexto} · ` +
         `Tiempo total: ${tiempo} · Complejidad: ${cierre.nivel}` +
+        (capturas ? ` · Evidencias registradas: ${capturas}` : '') +
+        (textoHeredado ? ` · Software heredado de F0288: ${textoHeredado}` : '') +
+        (textoAdicional ? ` · Software agregado en F0302: ${textoAdicional}` : ' · Sin software adicional agregado en F0302') +
         (cierre.hubo === 'Sí' ? ` · Detalle: ${cierre.detalle.trim()}` : (cierre.observacion.trim() ? ` · Observación: ${cierre.observacion.trim()}` : '')),
       true,
       { modulo: 'Configuración F0302', estadoAnterior: 'En configuración', inventario: c.datos.inventario,
@@ -2847,10 +3296,69 @@ export class DataService {
   }
 
   // ---------- Entrega, conformidad y garantía ----------
-  enviarConformidad(id: string, usuario: string): Conformidad | null {
+
+  /**
+   * Datos del F0302 que no pueden faltar antes de enviar el formulario de conformidad: el usuario
+   * final debe ver con qué nombre quedó el equipo y con qué reserva de IP se configuró. Mientras
+   * falte alguno, el flujo NO avanza —no se envía el formulario, no se crea el intento de
+   * aceptación, no se inicia el conteo ni se habilita la garantía—.
+   *
+   * Devuelve null si el formulario puede enviarse, o el mensaje de la regla que lo impide.
+   */
+  validarEnvioConformidad(id: string): string | null {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración F0302 del proceso.';
+    if (c.estado !== 'Completada') {
+      return 'El F0302 debe estar generado antes de solicitar la conformidad del usuario final.';
+    }
+    if (!(c.datos.nombrePC ?? '').trim()) {
+      return 'Debe ingresar el nombre del equipo para finalizar la configuración.';
+    }
+    const requiere = c.datos.requiereReservaIP ?? '';
+    if (!requiere) return 'Indique si el equipo requiere reserva de IP antes de enviar el formulario de conformidad.';
+    if (requiere === 'No') return null;
+    const ip = (c.datos.ipReservada ?? '').trim();
+    if (!ip) return 'Debe ingresar la IP reservada antes de enviar el formulario de conformidad.';
+    if (!this.ipValida(ip)) return 'La IP ingresada no tiene un formato válido.';
+    return null;
+  }
+
+  /**
+   * Envía (o reenvía) el formulario de conformidad al usuario final. Devuelve la conformidad
+   * creada/actualizada, o el mensaje que impide enviarla: el flujo se detiene ahí, sin cambiar de
+   * estado ni registrar intento de aceptación.
+   */
+  enviarConformidad(id: string, usuario: string): Conformidad | string {
     const s = this.solicitud(id);
     const c = this.configuracionDe(id);
-    if (!s || !c || c.estado !== 'Completada') return null;
+    const bloqueo = this.validarEnvioConformidad(id);
+    if (bloqueo || !s || !c) {
+      const motivo = bloqueo ?? 'No se encontró el proceso o su configuración F0302.';
+      if (c) {
+        // El bloqueo también deja rastro: es un intento de avanzar el flujo sin un dato del expediente.
+        const porIP = /reserva de IP|IP reservada|formato válido/i.test(motivo);
+        this.registrarEvento(id, usuario,
+          porIP
+            ? 'Formulario de conformidad bloqueado por falta de IP'
+            : 'Formulario de conformidad bloqueado por falta del nombre del equipo',
+          c.estado,
+          `${motivo} Formulario: F0302 · No se envió el formulario, no se inició el conteo de aceptación, ` +
+            'no se habilitó la respuesta del usuario final ni la garantía y no se cerró la entrega.', false,
+          { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
+            expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
+            nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
+      }
+      return motivo;
+    }
+    // La reserva quedó confirmada antes del envío: se deja constancia de la verificación.
+    const dlp = this.softwareChecklistF0302(c).find((s) => s.requiereEvidencia);
+    this.registrarEvento(id, usuario, 'Reserva de IP validada antes de enviar conformidad',
+      c.estado, `Formulario: F0302 · Nombre del equipo: ${c.datos.nombrePC} · Reserva de IP: ${c.datos.requiereReservaIP} · ` +
+        `IP reservada: ${this.textoIPReservada(c)}` +
+        (dlp ? ` · ${dlp.nombre}: ${dlp.estado}${dlp.evidencia ? ` · Evidencia: ${dlp.evidencia}` : ''}` : ''), false,
+      { modulo: 'Entrega y aceptación', inventario: c.datos.inventario,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA,
+        nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
 
     const existente = this.conformidades().find((x) => x.expediente === id);
     const vence = new Date();
@@ -2858,11 +3366,16 @@ export class DataService {
     if (existente) {
       this.conformidades.update((list) =>
         list.map((x) => (x.expediente === id
-          ? { ...x, estado: 'Pendiente de respuesta', fechaEnvio: new Date().toISOString(), vence: vence.toISOString().slice(0, 10) }
+          ? { ...x, estado: 'Pendiente de respuesta', fechaEnvio: new Date().toISOString(), vence: vence.toISOString().slice(0, 10),
+              // El reenvío vuelve a congelar los datos del F0302: pudieron completarse después del primer envío.
+              nombreEquipo: c.datos.nombrePC, requiereReservaIP: c.datos.requiereReservaIP ?? '',
+              ipReservada: (c.datos.ipReservada ?? '').trim(),
+              ipValidadaPor: c.datos.ipValidadaPor ?? '', ipValidadaEl: c.datos.ipValidadaEl ?? '' }
           : x))
       );
       this.registrarEvento(id, usuario, 'Formulario de conformidad reenviado al correo institucional del usuario final', 'Pendiente de aceptación');
-      return this.conformidades().find((x) => x.expediente === id) ?? null;
+      return this.conformidades().find((x) => x.expediente === id)
+        ?? 'No se encontró el formulario de conformidad del proceso.';
     }
 
     const eq = this.equipoDe(s.equipoInventario);
@@ -2884,7 +3397,14 @@ export class DataService {
       fechaRespuesta: '',
       aceptaTerminos: false,
       respuesta: '',
-      observaciones: ''
+      observaciones: '',
+      // Datos del F0302 congelados en el formulario: el usuario final debe ver con qué nombre y
+      // con qué reserva de IP quedó configurado el equipo que está aceptando.
+      nombreEquipo: c.datos.nombrePC,
+      requiereReservaIP: c.datos.requiereReservaIP ?? '',
+      ipReservada: (c.datos.ipReservada ?? '').trim(),
+      ipValidadaPor: c.datos.ipValidadaPor ?? '',
+      ipValidadaEl: c.datos.ipValidadaEl ?? ''
     };
     this.conformidades.update((list) => [...list, nueva]);
 
@@ -2921,8 +3441,11 @@ export class DataService {
     this.setEstadoSolicitud(id, 'Pendiente de aceptación', 'Respuesta del formulario de conformidad');
     this.actualizarAnexo(id, 'Formulario de conformidad', 'Pendiente de respuesta', `Enviado al correo institucional ${s.correoDestinatario}`);
     this.registrarEvento(id, usuario, 'Formulario de conformidad enviado al correo institucional del usuario final',
-      'Pendiente de aceptación', `Enlace único ${nueva.token}, vence el ${nueva.vence}.`, true,
-      { modulo: 'Entrega y aceptación', estadoAnterior: 'Listo para entrega', inventario: s.equipoInventario, usuarioFinal: s.destinatario });
+      'Pendiente de aceptación',
+      `Enlace único ${nueva.token}, vence el ${nueva.vence}. Nombre del equipo: ${c.datos.nombrePC} · ` +
+        `Reserva de IP: ${c.datos.requiereReservaIP} · IP reservada: ${this.textoIPReservada(c)}.`, true,
+      { modulo: 'Entrega y aceptación', estadoAnterior: 'Listo para entrega', inventario: s.equipoInventario,
+        usuarioFinal: s.destinatario, nombreEquipo: c.datos.nombrePC, ipReservada: this.textoIPReservada(c) });
     // Intento de aceptación #1: cada envío del formulario queda registrado como intento propio.
     this.crearIntentoAceptacion(id, nueva);
     return nueva;

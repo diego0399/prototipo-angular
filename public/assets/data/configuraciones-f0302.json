@@ -18,7 +18,7 @@
       "nivel": "Sin complejidad",
       "hubo": "No",
       "detalle": "",
-      "observacion": "Configuración completada con validación de usuario y software institucional."
+      "observacion": "Configuración completada con validación de usuario y software adicional según el requerimiento."
     },
     "datos": {
       "requerimiento": "Requerimiento de CPU",
@@ -33,54 +33,93 @@
       "sistemaOperativo": "Windows 11 Professional",
       "arquitectura": "64 bits",
       "requiereReservaIP": "Sí",
-      "ipReservada": "192.168.10.45"
+      "ipReservada": "192.168.10.45",
+      "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
+      "ipValidadaEl": "2026-07-06 15:12"
     },
     "software": [
       {
-        "nombre": "Crowdstrike AV",
-        "version": "7.14",
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
         "estado": "Realizado",
-        "evidencia": "Captura de antivirus ✓"
+        "evidencia": "captura-dlp-instalado.png",
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "motivo": "",
+        "observacion": "",
+        "requiereEvidencia": true
       },
       {
-        "nombre": "OCS Inventory",
-        "version": "2.10",
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
         "estado": "Realizado",
-        "evidencia": "Captura de OCS ✓"
+        "evidencia": "Captura de ingreso al dominio ✓",
+        "categoria": "Red",
+        "origen": "Configuración"
       },
       {
-        "nombre": "Microsoft 365",
-        "version": "2405",
+        "nombre": "Credenciales: nombre de equipo · cuenta de red",
+        "version": "Según SISSOR",
         "estado": "Realizado",
-        "evidencia": null
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
       },
       {
-        "nombre": "Forticlient",
-        "version": "7.2",
+        "nombre": "Microsoft Office",
+        "version": "Microsoft 365",
         "estado": "Realizado",
-        "evidencia": null
+        "evidencia": null,
+        "codigoSoftware": "SOFT-002",
+        "categoria": "Ofimática",
+        "origen": "F0302",
+        "versionVigente": "Microsoft 365",
+        "motivo": "Solicitado en requerimiento",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:18"
       },
       {
-        "nombre": "Chrome / Mozilla / Acrobat Reader",
-        "version": "—",
+        "nombre": "Navegador institucional",
+        "version": "Edge",
         "estado": "Realizado",
-        "evidencia": null
+        "evidencia": null,
+        "codigoSoftware": "SOFT-005",
+        "categoria": "Navegación",
+        "origen": "F0302",
+        "versionVigente": "Edge",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:19"
       },
       {
-        "nombre": "ArcGIS Pro (según requerimiento)",
-        "version": "3.3",
+        "nombre": "Lector PDF",
+        "version": "Adobe Reader",
         "estado": "Realizado",
-        "evidencia": null
-      }
-    ],
-    "softwareOculto": [
-      {
-        "nombre": "Solución DLP",
-        "motivo": "No aplica para este puesto según el requerimiento; el checklist dinámico lo oculta."
+        "evidencia": null,
+        "codigoSoftware": "SOFT-006",
+        "categoria": "Utilidad",
+        "origen": "F0302",
+        "versionVigente": "Adobe Reader",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:20"
       },
       {
-        "nombre": "Visio · Project · Power BI",
-        "motivo": "No solicitado en el requerimiento."
+        "nombre": "Cliente VPN",
+        "version": "5.1",
+        "estado": "Realizado",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-007",
+        "categoria": "Red",
+        "origen": "F0302",
+        "versionVigente": "5.1",
+        "motivo": "Requerido por unidad solicitante",
+        "observacion": "El puesto realiza levantamientos de campo y requiere acceso remoto autorizado.",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:26"
       }
     ],
     "evidencias": [
@@ -89,7 +128,17 @@
         "estado": "Verificada"
       },
       {
-        "nombre": "Registro en OCS Inventory",
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Cargada",
+        "item": "Agente DLP",
+        "archivo": "captura-dlp-instalado.png",
+        "tipo": "Agente DLP",
+        "cargadaPor": "Wendy Carranza",
+        "fecha": "2026-07-05 15:34",
+        "formulario": "F0302"
+      },
+      {
+        "nombre": "Instalación del software adicional del requerimiento",
         "estado": "Verificada"
       },
       {
@@ -123,7 +172,7 @@
     "datos": {
       "requerimiento": "Requerimiento de Laptop",
       "inventario": "2201-1187-2026",
-      "nombrePC": "CNR-DR-L1187",
+      "nombrePC": "",
       "tipoServicio": "Primera preparación",
       "asignadoA": "M. Aguilar",
       "carne": "04512",
@@ -137,74 +186,42 @@
     },
     "software": [
       {
-        "nombre": "Crowdstrike AV",
-        "version": "7.14",
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
         "estado": "Pendiente",
-        "evidencia": null
-      },
-      {
-        "nombre": "OCS Inventory",
-        "version": "2.10",
-        "estado": "Pendiente",
-        "evidencia": null
-      },
-      {
-        "nombre": "Microsoft 365",
-        "version": "2405",
-        "estado": "Pendiente",
-        "evidencia": null
-      },
-      {
-        "nombre": "Solución DLP",
-        "version": "11.9",
-        "estado": "Pendiente",
-        "evidencia": null
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
       },
       {
         "nombre": "Ingreso a dominio",
         "version": "Dominio institucional",
         "estado": "Pendiente",
         "evidencia": null,
-        "categoria": "Red"
+        "categoria": "Red",
+        "origen": "Configuración"
       },
       {
         "nombre": "Credenciales: nombre de equipo · cuenta de red",
         "version": "Según SISSOR",
         "estado": "Pendiente",
         "evidencia": null,
-        "categoria": "Red"
-      },
-      {
-        "nombre": "Forticlient",
-        "version": "7.2",
-        "estado": "Pendiente",
-        "evidencia": null
-      },
-      {
-        "nombre": "Chrome / Mozilla / Acrobat Reader",
-        "version": "—",
-        "estado": "Pendiente",
-        "evidencia": null
-      }
-    ],
-    "softwareOculto": [
-      {
-        "nombre": "Visio · Project · Power BI",
-        "motivo": "No solicitado en el requerimiento."
-      },
-      {
-        "nombre": "Prizm · Jinit · UKC",
-        "motivo": "No aplica para este puesto; el checklist dinámico lo oculta."
+        "categoria": "Red",
+        "origen": "Configuración"
       }
     ],
     "evidencias": [
       {
-        "nombre": "Instalación / validación de Solución DLP",
+        "nombre": "Ingreso exitoso al dominio cnr.gob.sv",
         "estado": "Pendiente"
       },
       {
-        "nombre": "Ingreso exitoso al dominio cnr.gob.sv",
-        "estado": "Pendiente"
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
       },
       {
         "nombre": "Configuración final para el usuario",
@@ -260,48 +277,93 @@
       "sistemaOperativo": "Windows 11 Professional",
       "arquitectura": "64 bits",
       "requiereReservaIP": "No",
-      "ipReservada": ""
+      "ipReservada": "",
+      "ipValidadaPor": "Mateo Martínez — Técnico de Soporte",
+      "ipValidadaEl": "2025-12-02 09:40"
     },
     "software": [
       {
-        "nombre": "Crowdstrike AV",
-        "version": "7.10",
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
         "estado": "Realizado",
-        "evidencia": "Captura de antivirus ✓"
+        "evidencia": "captura-dlp-cnr-rprh-d0788.png",
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "motivo": "",
+        "observacion": "",
+        "requiereEvidencia": true
       },
       {
-        "nombre": "OCS Inventory",
-        "version": "2.9",
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
         "estado": "Realizado",
-        "evidencia": "Captura de OCS ✓"
+        "evidencia": "Captura de ingreso al dominio ✓",
+        "categoria": "Red",
+        "origen": "Configuración"
       },
       {
-        "nombre": "Microsoft 365",
-        "version": "2311",
+        "nombre": "Credenciales: nombre de equipo · cuenta de red",
+        "version": "Según SISSOR",
         "estado": "Realizado",
-        "evidencia": null
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
       },
       {
-        "nombre": "Forticlient",
-        "version": "7.0",
+        "nombre": "Microsoft Office",
+        "version": "2021",
         "estado": "Realizado",
-        "evidencia": null
+        "evidencia": null,
+        "codigoSoftware": "SOFT-002",
+        "categoria": "Ofimática",
+        "origen": "F0302",
+        "versionVigente": "Microsoft 365",
+        "motivo": "Solicitado en requerimiento",
+        "observacion": "La unidad trabajaba con la versión 2021 al momento de la configuración.",
+        "agregadoPor": "Mateo Martínez — Técnico de Soporte",
+        "fechaAgregado": "2025-12-01 10:44"
       },
       {
-        "nombre": "Chrome / Mozilla / Acrobat Reader",
-        "version": "—",
+        "nombre": "Navegador institucional",
+        "version": "Chrome",
         "estado": "Realizado",
-        "evidencia": null
-      }
-    ],
-    "softwareOculto": [
-      {
-        "nombre": "Solución DLP",
-        "motivo": "No aplica para este puesto según el requerimiento; el checklist dinámico lo oculta."
+        "evidencia": null,
+        "codigoSoftware": "SOFT-005",
+        "categoria": "Navegación",
+        "origen": "F0302",
+        "versionVigente": "Edge",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Mateo Martínez — Técnico de Soporte",
+        "fechaAgregado": "2025-12-01 10:46"
       },
       {
-        "nombre": "Visio · Project · Power BI",
-        "motivo": "No solicitado en el requerimiento."
+        "nombre": "Lector PDF",
+        "version": "Adobe Reader",
+        "estado": "Realizado",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-006",
+        "categoria": "Utilidad",
+        "origen": "F0302",
+        "versionVigente": "Adobe Reader",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Mateo Martínez — Técnico de Soporte",
+        "fechaAgregado": "2025-12-01 10:47"
+      },
+      {
+        "nombre": "Cliente VPN",
+        "version": "5.0",
+        "estado": "Realizado",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-007",
+        "categoria": "Red",
+        "origen": "F0302",
+        "versionVigente": "5.1",
+        "motivo": "Necesario para funciones del usuario",
+        "observacion": "",
+        "agregadoPor": "Mateo Martínez — Técnico de Soporte",
+        "fechaAgregado": "2025-12-01 10:52"
       }
     ],
     "evidencias": [
@@ -310,7 +372,17 @@
         "estado": "Verificada"
       },
       {
-        "nombre": "Registro en OCS Inventory",
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Cargada",
+        "item": "Agente DLP",
+        "archivo": "captura-dlp-cnr-rprh-d0788.png",
+        "tipo": "Agente DLP",
+        "cargadaPor": "Mateo Martínez",
+        "fecha": "2025-12-01 11:02",
+        "formulario": "F0302"
+      },
+      {
+        "nombre": "Instalación del software adicional del requerimiento",
         "estado": "Verificada"
       },
       {

@@ -5,7 +5,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import {
   AccesorioVerificado, ChecklistItem, Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo,
-  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, PreparacionF0288
+  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, PreparacionF0288,
+  SoftwareF0302, SoftwareHeredadoF0288
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 
@@ -481,6 +482,21 @@ interface FilaTraza {
                           @if (c.estado === 'Completada') { <span class="m-chip">Generado · firma {{ c.firmas.configuro.estado === 'Firmado' ? 'capturada' : 'pendiente' }}</span> }
                           @else if (c.estado === 'Con falla') { <span class="m-chip cambio">Intento con falla</span> }
                           @else { <span class="muted small">Pendiente</span> }
+                          @for (x of capturasF0302(c); track x.nombre) {
+                            <div class="sub-cell" style="max-width: 260px;">
+                              {{ x.nombre }}: {{ x.estado }}@if (x.archivo) { · {{ x.archivo }} · {{ x.cargadaPor }} · {{ x.fecha }} }
+                            </div>
+                          }
+                          @for (s of softwareHeredado(c); track s.codigoSoftware) {
+                            <div class="sub-cell" style="max-width: 260px;">Heredado F0288: {{ s.nombre }} · versión {{ s.version }}@if (s.evidencia) { · {{ s.evidencia }} }</div>
+                          }
+                          @for (s of softwareAgregado(c); track s.nombre) {
+                            <div class="sub-cell" style="max-width: 260px;">
+                              Agregado F0302: {{ s.nombre }} · {{ s.version }} · {{ s.motivo || 'sin motivo registrado' }}
+                              @if (s.observacion) { · {{ s.observacion }} }
+                              @if (s.agregadoPor) { · {{ s.agregadoPor }}@if (s.fechaAgregado) { · {{ s.fechaAgregado }} } }
+                            </div>
+                          }
                         </td>
                         <td><ui-badge [estado]="c.estado" /></td>
                       </tr>
@@ -923,6 +939,38 @@ export class TrazabilidadComponent {
    */
   protected softwareInstalado(p: PreparacionF0288): ChecklistItem[] {
     return p.secciones.flatMap((s) => s.items).filter((i) => i.codigoSoftware && i.estado === 'Realizado');
+  }
+
+  /**
+   * Software que la Configuración F0302 heredó de la Preparación F0288: se muestra en el historial
+   * como información del formulario anterior, nunca como algo configurado por Soporte.
+   */
+  protected softwareHeredado(c: ConfiguracionF0302): SoftwareHeredadoF0288[] {
+    return this.data.softwareHeredadoF0288(c.expediente);
+  }
+
+  /**
+   * Actividades del F0302 con captura obligatoria (Agente DLP) y la evidencia que las respalda:
+   * el historial del equipo debe mostrar el control de seguridad y su archivo, no solo el estado.
+   */
+  protected capturasF0302(c: ConfiguracionF0302) {
+    return this.data.softwareChecklistF0302(c)
+      .filter((s) => s.requiereEvidencia)
+      .map((s) => {
+        const ev = c.evidencias.find((e) => e.item === s.nombre && e.archivo);
+        return {
+          nombre: s.nombre,
+          estado: s.estado === 'Realizado' ? 'Configurado' : s.estado,
+          archivo: ev?.archivo ?? s.evidencia ?? '',
+          cargadaPor: ev?.cargadaPor ?? '',
+          fecha: ev?.fecha ?? ''
+        };
+      });
+  }
+
+  /** Software que el Técnico de Soporte agregó en la Configuración F0302 según el requerimiento. */
+  protected softwareAgregado(c: ConfiguracionF0302): SoftwareF0302[] {
+    return this.data.softwareAdicionalF0302(c).filter((s) => s.codigoSoftware);
   }
 
   /** Resumen de accesorios verificados de una preparación F0288 (equipo usado), o '' si no aplica. */

@@ -260,8 +260,12 @@ interface FilaDoc {
               <dt>Equipo</dt><dd>{{ equipoTxt() }}</dd>
               @if (f.tipo === 'F0302' && conf(); as c) {
                 <dt>Nombre del equipo</dt><dd class="mono">{{ c.datos.nombrePC }}</dd>
-                <dt>¿Requiere reserva de IP?</dt><dd>{{ c.datos.requiereReservaIP || '—' }}</dd>
+                <dt>¿Requiere reserva de IP?</dt>
+                <dd>{{ c.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad' }}</dd>
                 <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(c) }}</dd>
+                @if (c.datos.ipValidadaPor) {
+                  <dt>Reserva validada por</dt><dd>{{ c.datos.ipValidadaPor }} · {{ c.datos.ipValidadaEl }}</dd>
+                }
               }
               <dt>Usuario final</dt><dd>{{ sol()?.destinatario }} — {{ sol()?.unidadDestino }}</dd>
               <dt>Generado</dt><dd>{{ f.doc?.fecha }} por {{ f.doc?.generadoPor }}</dd>
@@ -269,11 +273,56 @@ interface FilaDoc {
             <p class="small muted mt-2">
               @switch (f.tipo) {
                 @case ('F0288') { Contenido: checklist digital de preparación técnica completado dentro de SISGOST, con evidencias verificadas y firma del técnico que preparó. }
-                @case ('F0302') { Contenido: checklist digital de configuración e instalación, software estándar según requerimiento, evidencias verificadas y firmas de preparación y configuración. }
+                @case ('F0302') { Contenido: checklist digital de configuración e instalación, software heredado de la Preparación F0288, software agregado según el requerimiento, evidencias verificadas y firmas de preparación y configuración. }
                 @case ('Entrega y aceptación') { Contenido: constancia de entrega del equipo con la respuesta del formulario externo y la firma de conformidad simulada del usuario final. }
                 @case ('Reporte final') { Contenido: consolidación del expediente único — solicitud, asignación, expediente técnico, F0288, F0302, conformidad del usuario final, garantía y trazabilidad — con las firmas capturadas durante el proceso. }
               }
             </p>
+            @if (f.tipo === 'F0302' && capturasDoc(); as caps) {
+              <div class="mt-2">
+                <b>Controles de seguridad con evidencia</b>
+                <dl class="dl mt-1">
+                  @for (x of caps; track x.item.nombre) {
+                    <dt>{{ x.item.nombre }}</dt>
+                    <dd>
+                      {{ x.item.estado === 'Realizado' ? 'Configurado' : x.item.estado }}
+                      @if (x.evidencia; as ev) {
+                        · evidencia: {{ ev.archivo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}
+                      } @else if (x.item.evidencia) { · evidencia: {{ x.item.evidencia }} }
+                    </dd>
+                  }
+                </dl>
+              </div>
+            }
+            @if (f.tipo === 'F0302' && heredadoDoc(); as hs) {
+              <div class="mt-2">
+                <b>Software instalado previamente en F0288</b>
+                <dl class="dl mt-1">
+                  @for (s of hs; track s.codigoSoftware) {
+                    <dt>{{ s.nombre }}</dt>
+                    <dd>Versión {{ s.version }} · instalado en la Preparación F0288 ({{ s.expedienteTecnico }})@if (s.evidencia) { · evidencia: {{ s.evidencia }} }</dd>
+                  }
+                </dl>
+              </div>
+            }
+            @if (f.tipo === 'F0302') {
+              <div class="mt-2">
+                <b>Software agregado en Configuración F0302</b>
+                @if (adicionalDoc(); as sws) {
+                  <dl class="dl mt-1">
+                    @for (s of sws; track s.nombre) {
+                      <dt>{{ s.nombre }}</dt>
+                      <dd>
+                        {{ s.version }} · {{ s.motivo || 'sin motivo registrado' }} · {{ s.estado }}
+                        @if (s.observacion) { · {{ s.observacion }} }
+                      </dd>
+                    }
+                  </dl>
+                } @else {
+                  <p class="small muted mt-1">No se agregó software adicional: el requerimiento no lo necesitaba.</p>
+                }
+              </div>
+            }
             @if (f.tipo === 'F0288' && softwareDoc(); as sws) {
               <div class="mt-2">
                 <b>Software instalado en la preparación</b>
@@ -470,6 +519,35 @@ export class DocumentosComponent {
     return va?.respuesta === 'Sí' ? va.accesorios : undefined;
   });
 
+  /**
+   * Software instalado previamente en el F0288 que el documento F0302 reporta como heredado: es
+   * información del formulario anterior, no se vuelve a configurar en la etapa de Soporte.
+   */
+  protected readonly heredadoDoc = computed(() => {
+    const x = this.expediente();
+    const lista = x ? this.data.softwareHeredadoF0288(x.expediente) : [];
+    return lista.length > 0 ? lista : undefined;
+  });
+
+  /**
+   * Actividades del F0302 con captura obligatoria (Agente DLP) y la evidencia registrada: el
+   * documento debe dejar constancia del control de seguridad y de quién lo respaldó.
+   */
+  protected readonly capturasDoc = computed(() => {
+    const c = this.conf();
+    if (!c) return undefined;
+    const items = this.data.softwareChecklistF0302(c).filter((s) => s.requiereEvidencia);
+    if (items.length === 0) return undefined;
+    return items.map((s) => ({ item: s, evidencia: c.evidencias.find((e) => e.item === s.nombre && e.archivo) }));
+  });
+
+  /** Software del catálogo que el Técnico de Soporte agregó en la Configuración F0302, con su motivo. */
+  protected readonly adicionalDoc = computed(() => {
+    const c = this.conf();
+    const lista = c ? this.data.softwareAdicionalF0302(c).filter((s) => s.codigoSoftware) : [];
+    return lista.length > 0 ? lista : undefined;
+  });
+
   /** Software del F0288 del proceso (modo Soporte), igual que `softwareDeTec` en modo Hardware. */
   protected readonly softwareDoc = computed(() => {
     const items = (this.prep()?.secciones ?? []).flatMap((s) => s.items)
@@ -567,14 +645,18 @@ export class DocumentosComponent {
       // El F0302 lleva el nombre del equipo y la reserva de IP como datos clave del expediente.
       ...(f.tipo === 'F0302' && this.conf()
         ? [`Nombre del equipo: ${this.conf()!.datos.nombrePC}`,
-           `¿Requiere reserva de IP?: ${this.conf()!.datos.requiereReservaIP || '—'}`,
-           `IP reservada: ${this.data.textoIPReservada(this.conf())}`]
+           `¿Requiere reserva de IP?: ${this.conf()!.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad'}`,
+           `IP reservada: ${this.data.textoIPReservada(this.conf())}`,
+           ...(this.conf()!.datos.ipValidadaPor
+             ? [`Reserva validada por: ${this.conf()!.datos.ipValidadaPor} · ${this.conf()!.datos.ipValidadaEl}`]
+             : [])]
         : []),
       `Usuario final: ${s?.destinatario ?? '—'} — ${s?.unidadDestino ?? ''}`,
       `Generado: ${f.doc.fecha} por ${f.doc.generadoPor}`,
       `Huella de integridad: ${f.doc.hash}`,
       ...this.lineasSoftware(f.tipo === 'F0288' ? this.softwareDoc() : undefined),
       ...this.lineasAccesorios(f.tipo === 'F0288' ? this.accesoriosDoc() : undefined),
+      ...(f.tipo === 'F0302' ? this.lineasSoftwareF0302() : []),
       '',
       'FIRMAS INCLUIDAS EN EL DOCUMENTO',
       '-'.repeat(60),
@@ -601,6 +683,38 @@ export class DocumentosComponent {
       ...items.map((i) => `${i.nombre}: ${i.estado}`
         + (i.versionSeleccionada ? ` — versión ${i.versionSeleccionada}` : '')
         + (i.evidencia ? ` · evidencia: ${i.evidencia}` : ''))
+    ];
+  }
+
+  /**
+   * Los dos apartados de software del documento F0302 descargado: primero lo que ya venía
+   * instalado desde la Preparación F0288 (heredado, no se reconfigura) y luego lo que el Técnico
+   * de Soporte agregó según el requerimiento del usuario final, con su motivo.
+   */
+  private lineasSoftwareF0302(): string[] {
+    const heredado = this.heredadoDoc();
+    const adicional = this.adicionalDoc();
+    const caps = this.capturasDoc();
+    return [
+      ...(caps ? ['', 'CONTROLES DE SEGURIDAD CON EVIDENCIA', '-'.repeat(60),
+        ...caps.map((x) => `${x.item.nombre} | ${x.item.estado === 'Realizado' ? 'Configurado' : x.item.estado}`
+          + (x.evidencia
+            ? ` | evidencia: ${x.evidencia.archivo} | ${x.evidencia.cargadaPor} | ${x.evidencia.fecha} | ${x.evidencia.formulario}`
+            : x.item.evidencia ? ` | evidencia: ${x.item.evidencia}` : ' | sin evidencia registrada'))] : []),
+      '',
+      'SOFTWARE INSTALADO PREVIAMENTE EN F0288',
+      '-'.repeat(60),
+      ...(heredado
+        ? heredado.map((s) => `${s.nombre} | Versión ${s.version} | Preparación F0288 (${s.expedienteTecnico})`
+            + (s.evidencia ? ` | evidencia: ${s.evidencia}` : ''))
+        : ['No hay software del catálogo registrado en la Preparación F0288 de este equipo.']),
+      '',
+      'SOFTWARE AGREGADO EN CONFIGURACIÓN F0302',
+      '-'.repeat(60),
+      ...(adicional
+        ? adicional.map((s) => `${s.nombre} | ${s.version} | ${s.motivo || 'sin motivo registrado'} | ${s.estado}`
+            + (s.observacion?.trim() ? ` | ${s.observacion.trim()}` : ''))
+        : ['No se agregó software adicional: el requerimiento no lo necesitaba.'])
     ];
   }
 

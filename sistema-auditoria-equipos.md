@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **2 de agosto de 2026 (ronda 33)**.
+nueva sesión sin perder información. Última actualización: **3 de agosto de 2026 (ronda 37)**.
 
 ---
 
@@ -1787,6 +1787,183 @@ Expediente único.
       `/preparacion-tecnica`, `/inventario-hardware`, `/generador-documentos`, `/trazabilidad` y el
       JSON de accesorios) y las dos baterías contra datos reales: **Laptop 13 casos y CPU 12 casos, 0
       fallos**. **Sigue sin recorrido manual de clics en navegador.**
+34. **F0302 — software heredado del F0288 (bloqueado) y software adicional dinámico según el
+    requerimiento** (2026-08-03).
+    * **El software del F0288 no se copia al F0302: se lee de él** (`softwareHeredadoF0288`).
+      Así no puede desincronizarse, la regla «bloqueado» se cumple sola (esos ítems no están en
+      `c.software`, así que ningún checkbox, «Seleccionar todo» ni el cierre pueden tocarlos) y no
+      hay que reescribir F0302 ya cerrados para inventarles un apartado. Un ítem se hereda cuando
+      en el F0288 está enlazado al catálogo (`codigoSoftware`) y realizado; se muestran nombre del
+      catálogo, versión registrada, categoría, captura y expediente técnico de origen.
+    * **Desajuste de datos que apareció al probarlo**: los ocho ítems «Instalación de Windows 11»
+      de las preparaciones semilla **no estaban enlazados a `SOFT-001`**, aunque la plantilla
+      actual del F0288 sí los enlaza. Sin ese enlace Windows no podía heredarse, que es
+      justamente lo que la regla pedía. Se enlazaron los ocho y se les registró la versión
+      (`Windows 11 Pro`); es corrección de datos semilla, no de reglas.
+    * **La pantalla F0302 quedó en tres bloques**: «Software instalado durante Preparación F0288»
+      (bloqueado, con candado, visible incluso antes de iniciar el cronómetro porque es consulta),
+      «Software adicional requerido» (con «＋ Agregar software» y «Quitar») y «Configuración
+      general del equipo» —la antigua tabla «Software estándar instalado», renombrada porque lo
+      que queda dentro ya no es software sino actividades de Soporte: dominio, credenciales y
+      Agente DLP—. Los separa el campo nuevo `SoftwareF0302.origen` (`F0302` / `Configuración`).
+    * **El checklist F0302 arranca sin software**: `crearExpedienteUnico` ya no precarga
+      `softwareAplicable('F0302')`. Eso elimina de paso una duplicación real: el antivirus es
+      «Ambas etapas» en el catálogo y se precargaba en el F0302 aunque el F0288 acabara de
+      instalarlo. Las evidencias iniciales también cambiaron: las capturas de antivirus y OCS son
+      del F0288 y el F0302 las hereda.
+    * **Selector del catálogo**: solo software activo de etapa «Configuración F0302» o «Ambas
+      etapas» (hoy SOFT-002, 003, 005, 006 y 007); Windows, OCS y .NET no se ofrecen nunca. Cada
+      fila muestra su situación (Instalado en F0288 · Agregado en F0302 · Disponible). Al agregar
+      se registran software, categoría, versión elegida, versión vigente, motivo, observación,
+      técnico y fecha; la versión sale de `versionesPermitidas` (select, y revalidado en el
+      servicio) y se admite una permitida distinta de la vigente. Con motivo «Otro», observación
+      obligatoria.
+    * **Duplicados** con los dos mensajes exactos del pedido, y evento `Software duplicado
+      rechazado` con el origen del conflicto.
+    * **`cerrarConfiguracion` valida solo el checklist propio** (actividades + adicional), no lo
+      heredado. Sin eso, una configuración guardada por una versión anterior que arrastrara ítems
+      hoy heredados quedaría bloqueada por un «Pendiente» que la pantalla ya no muestra.
+    * **Documento, historial y trazabilidad** llevan los dos apartados; cuando no hubo software
+      adicional el documento lo dice explícitamente (la ausencia también es información).
+      Eventos nuevos: herencia mostrada, herencia bloqueada, catálogo consultado en F0302,
+      software agregado, versión seleccionada, duplicado rechazado, software retirado y cierre
+      «con software adicional (N)».
+    * **`quitarSoftwareF0302` no estaba en el pedido y se agregó igual**: sin deshacer, un
+      software mal elegido dejaría al técnico sin poder cerrar el F0302 (el cierre exige
+      completar todo lo agregado). Solo opera sobre software adicional y con la configuración en
+      curso.
+    * `normalizarConfiguraciones` marca el origen de los ítems guardados y completa los campos
+      nuevos, **sin borrar nada**: lo que ahora se hereda deja de listarse como adicional en
+      pantalla, no en los datos. Como el resto de normalizadores, no consulta el catálogo (al
+      rehidratar, las configuraciones se cargan antes que él).
+    * Verificado con `npm run build` limpio (4.706 s; solo las dos advertencias preexistentes de
+      presupuesto CSS), `ng serve` (HTTP 200 en `/`, `/configuracion`, `/preparacion-tecnica`,
+      `/generador-documentos`, `/trazabilidad`, `/catalogo-software` y los tres JSON tocados) y
+      **31 casos, 0 fallos** contra datos reales, más las regresiones de accesorios (CPU 12 y
+      Laptop 13 casos, 0 fallos). **Sin recorrido manual de clics en navegador.**
+35. **F0302 — nombre del equipo digitado, verificación de la reserva de IP antes de la
+    conformidad y fin del software oculto** (2026-08-03, segunda sesión del día).
+    * **El nombre del equipo ya no se inventa.** `crearExpedienteUnico` proponía
+      `CNR-<últimos 6 del inventario>`; ese nombre no lo había escrito nadie y, al estar siempre
+      presente, la regla de obligatoriedad nunca habría llegado a aplicarse. Las configuraciones
+      nuevas nacen con el nombre **vacío** y el técnico lo digita (`DT-KRIVAS-045`,
+      `LAP-MHERNANDEZ-012`). `cerrarConfiguracion` lo valida antes que la reserva de IP.
+    * **Un F0302 finalizado admite COMPLETAR, no cambiar.** `registrarNombreEquipo` y
+      `registrarReservaIP` aceptan escribir sobre una configuración Completada **solo si el dato
+      nunca se registró**. Sin esa excepción el proceso quedaba trabado: un expediente anterior a
+      la regla no podría enviar la conformidad por falta del dato ni corregirlo por estar cerrado.
+      Cambiar lo que sí quedó documentado sigue bloqueado.
+    * **Confirmación previa a la conformidad**: el botón «Enviar formulario de conformidad» abre
+      un modal con el nombre del equipo y la pregunta «¿El equipo requiere reserva de IP?» (con lo
+      ya registrado precargado). La regla real es `validarEnvioConformidad` —el modal solo es la
+      forma de resolverla— y también corre desde «Entrega y aceptación», donde no hay modal.
+    * **El flujo se detiene de verdad**: `enviarConformidad` pasó a devolver
+      `Conformidad | string` y, cuando devuelve mensaje, **no ejecuta nada** —ni conformidad, ni
+      entrega, ni cambio de estado, ni intento de aceptación, ni anexo—. Como el conteo de
+      aceptación y la garantía cuelgan de ese intento y de ese estado, ninguno arranca. El botón
+      deshabilitado no bastaba: el mismo envío se dispara desde «Entrega y aceptación». El bloqueo
+      deja evento propio.
+    * **El formulario de conformidad muestra nombre del equipo, reserva de IP e IP reservada**, y
+      los tres se **congelan en la conformidad al enviarla** (`nombreEquipo`, `requiereReservaIP`,
+      `ipReservada`): es lo que se le envió al usuario final y no debe cambiar si luego se edita el
+      F0302. El reenvío los vuelve a congelar. Para conformidades anteriores, la pantalla los toma
+      del F0302 del proceso.
+    * **Software oculto eliminado**: se quitó el acordeón, el campo `softwareOculto` salió del
+      modelo, del constructor y de los tres registros semilla, y `normalizarConfiguraciones` lo
+      descarta al rehidratar para que ninguna foto de `localStorage` lo reviva. El tooltip del
+      encabezado ya no habla de software que «se oculta automáticamente». Con el checklist
+      dinámico el bloque no tenía función: lo que no se agrega, simplemente no está.
+    * **También salió el «No solicitado» del F0288**: el checklist de `EXP-PT-2026-0091` tenía
+      «Visio · Project · Power BI» en ese estado. No llegaba al F0302 (el heredado solo toma ítems
+      realizados y enlazados al catálogo), pero sí se veía en Preparación técnica, que es donde el
+      usuario pudo encontrarlo. Se retiró del dato semilla; la lógica del F0288 y su bloque de
+      secciones ocultas quedaron intactos.
+    * Verificado con `npm run build` limpio (4.662 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en `/`, `/configuracion`,
+      `/entrega-aceptacion`, `/preparacion-tecnica`, `/generador-documentos`, `/trazabilidad`,
+      `/expediente-unico` y los tres JSON tocados) y **29 casos, 0 fallos**, más las regresiones
+      de la ronda 34 (31 casos) y de accesorios (CPU 12, Laptop 13). **Sin recorrido manual de
+      clics en navegador.**
+36. **F0302 — la reserva de IP sale del checklist (solo modal de conformidad) y el Agente DLP
+    exige captura de evidencia** (2026-08-03, tercera sesión del día).
+    * **Consecuencia que manda sobre todo lo demás: el cierre del F0302 ya no puede exigir la
+      IP.** La reserva se captura únicamente en el modal previo al envío del formulario de
+      conformidad, y ese envío ocurre DESPUÉS de generar el F0302; si `cerrarConfiguracion`
+      siguiera pidiéndola, el técnico no podría cerrar nunca. Lo que se conserva es la
+      revalidación **condicional**: si la reserva ya fue respondida (reintento tras falla o
+      expediente anterior a la regla) se revisa formato y duplicado, porque la IP pudo quedar
+      tomada por otro equipo entre tanto. El evento de cierre lo dice: «Reserva de IP: Se define
+      al enviar el formulario de conformidad · IP reservada: Pendiente de registrar».
+    * **La IP desapareció de la pantalla principal**: la tarjeta quedó como «Nombre del equipo»
+      y las filas de consulta «Reserva de IP» / «IP reservada» (en «Datos de instalación» y en el
+      detalle de la configuración cerrada) **solo aparecen cuando el dato ya existe**. Antes de
+      responderlo no hay etiquetas de IP en ninguna parte, solo una nota que indica dónde se
+      pregunta. Una vez guardado, viaja como siempre al expediente, documento, historial y
+      trazabilidad.
+    * Modal con el título exacto pedido: **«Validación previa al envío del formulario de
+      conformidad»**. Se agregó un detalle que faltaba: `registrarReservaIP` **acepta sin cambios**
+      cuando el modal reconfirma lo mismo que ya estaba guardado; sin eso, reenviar el formulario
+      de un proceso con reserva chocaba contra «no puede modificarse» sin estar modificando nada.
+    * **Agente DLP con captura obligatoria** vía `SoftwareF0302.requiereEvidencia`, el mismo
+      mecanismo que el F0288 usa para Antivirus y OCS. Bloquea el cierre —y por tanto la
+      generación del documento— con «Debe agregar la captura de evidencia del Agente DLP para
+      finalizar la configuración.», y al desmarcar el ítem la captura se limpia (una evidencia de
+      algo no marcado sería un dato falso). El DLP ya estaba fuera del F0288 desde la ronda 30.
+    * **«Seleccionar todo» no se salta la captura**: la validación es sobre el ítem, no sobre cómo
+      se marcó, así que marcar la categoría Seguridad deja el DLP «Realizado» y sin evidencia y el
+      cierre lo sigue bloqueando; el evento de la categoría lo advierte. Cubierto con tres casos,
+      porque es el atajo por el que este tipo de validación se suele escapar.
+    * `ConfiguracionF0302.evidencias` pasó de `{nombre, estado}` a **`EvidenciaF0302`**, con
+      archivo, tipo, técnico que cargó, fecha/hora, formulario e ítem asociado. Una captura por
+      ítem: volver a registrarla reemplaza la anterior. Se muestra en el detalle F0302, en el
+      documento generado («Controles de seguridad con evidencia»), en el historial técnico y en la
+      trazabilidad.
+    * Datos semilla: el **Agente DLP se agregó a las tres configuraciones** (antes solo estaba en
+      la pendiente; en las otras dos figuraba como «software oculto», eliminado en la ronda 35) y
+      las dos finalizadas llevan su captura completa; 7 eventos nuevos en `SOL-2026-0141` y el
+      evento de cierre reescrito.
+    * Verificado con `npm run build` limpio (7.134 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en las siete rutas y los JSON
+      tocados) y **29 casos, 0 fallos**, más las regresiones de la ronda 34 (31), la ronda 35 (29)
+      y accesorios (CPU 12, Laptop 13). Único ajuste de regresión: las actividades generales de
+      `SOL-2026-0141` ahora son tres, no dos. **Sin recorrido manual de clics en navegador.**
+37. **F0302 — la IP reservada deja de bloquear el cierre (corrección de la ronda 36)**
+    (2026-08-03, cuarta sesión del día).
+    * **El bloqueo no estaba en `cerrarConfiguracion`** —ahí la ronda 36 ya había quitado la
+      exigencia— **sino un paso antes, en `generar()` del componente**: seguía haciendo
+      `if (!this.guardarIP(c, true)) return;`. Como la misma ronda había quitado los campos de IP
+      de la pantalla, `ipReq()` valía siempre `''`, `registrarReservaIP` respondía «Indique si el
+      equipo requiere reserva de IP…» y la función se devolvía **antes de llamar al cierre**. Es el
+      efecto de mover un campo de sitio sin quitar el guardado que lo acompañaba.
+    * **Segundo bloqueo eliminado: la revalidación condicional.** La ronda 36 conservaba en el
+      cierre una revalidación «si la reserva ya venía respondida», por el riesgo de IP duplicada.
+      Con la regla corregida eso también sobra: si la reserva no es dato del cierre, no lo es en
+      ningún caso. Un F0302 con reserva previa mal formada **se cierra igual**; el problema se
+      detecta en el modal previo al envío, que es donde el dato hace falta.
+    * El cierre valida ahora exactamente: checklist completo, versión de cada software de catálogo
+      marcado, nombre del equipo, captura del Agente DLP si fue marcado, y complejidad/observación.
+    * `textoIPReservada` devuelve **«Pendiente de validación antes de conformidad»** mientras la
+      reserva no se haya respondido (antes «—»). Aparece en el documento F0302, el detalle, el
+      expediente único y la trazabilidad: la ausencia queda explicada, no disimulada.
+    * **Qué sigue bloqueando**: solo el envío del formulario de conformidad y lo que cuelga de él
+      (conteo de aceptación, respuesta del usuario final, garantía, cierre de entrega), porque
+      `enviarConformidad` no ejecuta nada cuando devuelve mensaje. Finalizar, generar, guardar y
+      ver detalle no dependen de la IP.
+    * Se agregaron `ipValidadaPor` / `ipValidadaEl` a `ConfiguracionF0302.datos` y a `Conformidad`
+      (sellados al confirmar el modal), visibles en el detalle, el documento y el formulario del
+      usuario final.
+    * Eventos nuevos y renombrados a los nombres del pedido: «F0302 finalizado sin validación de IP
+      reservada» y «F0302 generado sin validación de IP reservada» (dejan constancia de que cerrar
+      sin reserva es lo correcto, no una omisión), «Modal de IP abierto antes de enviar
+      conformidad», «Reserva de IP respondida en modal de conformidad» e «IP reservada registrada
+      en modal de conformidad».
+    * Verificado con `npm run build` limpio (6.659 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en las seis rutas y los JSON tocados)
+      y **33 casos, 0 fallos** —incluidos los 8 obligatorios del pedido—, más las regresiones de las
+      rondas 34 (31), 35 (29) y 36 (29) y accesorios (CPU 12, Laptop 13). Se corrigieron dos
+      expectativas de la batería de la ronda 36 (su espejo del cierre conservaba la revalidación
+      condicional y los eventos tenían los nombres viejos): de lo contrario habrían seguido dando
+      por buena la regla anterior. **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -1824,6 +2001,28 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 37)**: recorrido manual en navegador del F0302 de `SOL-2026-0145` —
+  finalizar y generar el F0302 **sin tocar nada de IP** (debe permitirlo y el documento debe decir
+  «IP reservada: Pendiente de validación antes de conformidad»), y recién después probar el modal
+  de envío con «Sí» sin IP, con `192.168.10.999` y con `192.168.10.45`. Verificado con build
+  limpio, smoke test HTTP y 33 casos contra datos reales, sin clics reales.
+* **Nuevo pendiente (ronda 36)**: recorrido manual en navegador del F0302 de `SOL-2026-0145` —
+  marcar el Agente DLP y comprobar que el cierre se bloquea sin captura, repetirlo marcando la
+  categoría «Seguridad» con «Seleccionar todo» (no debe eximir), cargar la captura y verificar que
+  aparece en el documento generado y en el historial; luego confirmar que la reserva de IP no
+  figura en la pantalla hasta responderla en el modal. Verificado con build limpio, smoke test
+  HTTP y 29 casos contra datos reales, sin clics reales.
+* **Nuevo pendiente (ronda 35)**: recorrido manual en navegador del F0302 de `SOL-2026-0145` —
+  intentar finalizar sin nombre de equipo para ver el bloqueo, digitarlo, y luego probar el modal
+  previo a la conformidad respondiendo «Sí» sin IP y con una IP inválida (192.168.10.999) para
+  comprobar que el formulario no se envía ni cambia el estado. Verificado con build limpio, smoke
+  test HTTP y 29 casos contra datos reales, sin clics reales.
+* **Nuevo pendiente (ronda 34)**: recorrido manual en navegador de la **Configuración F0302** de
+  `SOL-2026-0145` — comprobar el bloque heredado bloqueado (Windows, .NET, Antivirus, OCS),
+  intentar agregar el Antivirus desde el catálogo para ver el mensaje de duplicado del F0288,
+  agregar un software con motivo «Otro» sin observación, y revisar los dos apartados en el F0302
+  generado. Verificado con build limpio, smoke test HTTP y 31 casos contra datos reales, sin
+  clics reales.
 * **Nuevo pendiente (ronda 33)**: recorrido manual en navegador del F0288 de una **Laptop usada**
   ingresada por lote (p. ej. `2201-00-920-0004`, usada) — buscar Mouse y Maletín con correlativos
   distintos al de la laptop, comprobar el aviso «El accesorio no corresponde a una Laptop.» al

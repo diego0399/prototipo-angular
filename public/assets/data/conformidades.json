@@ -17,7 +17,12 @@
     "fechaRespuesta": "",
     "aceptaTerminos": false,
     "respuesta": "",
-    "observaciones": ""
+    "observaciones": "",
+    "nombreEquipo": "CNR-IGN-D0954",
+    "requiereReservaIP": "Sí",
+    "ipReservada": "192.168.10.45",
+    "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
+    "ipValidadaEl": "2026-07-06 15:12"
   },
   {
     "token": "CONF-2026-0139-B7K1",
@@ -38,7 +43,10 @@
     "aceptaTerminos": true,
     "respuesta": "Acepto la recepción del equipo",
     "observaciones": "Sin observaciones",
-    "firmaUsuarioFinal": "C. Escobar"
+    "firmaUsuarioFinal": "C. Escobar",
+    "nombreEquipo": "CNR-RC-L0871",
+    "requiereReservaIP": "No",
+    "ipReservada": ""
   },
   {
     "token": "CONF-2025-0210-J4M9",
@@ -59,6 +67,11 @@
     "aceptaTerminos": true,
     "respuesta": "Acepto la recepción del equipo",
     "observaciones": "Sin observaciones",
-    "firmaUsuarioFinal": "R. Campos"
+    "firmaUsuarioFinal": "R. Campos",
+    "nombreEquipo": "CNR-RPRH-D0788",
+    "requiereReservaIP": "No",
+    "ipReservada": "",
+    "ipValidadaPor": "Mateo Martínez — Técnico de Soporte",
+    "ipValidadaEl": "2025-12-02 09:40"
   }
 ]

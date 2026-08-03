@@ -433,13 +433,14 @@ export class EntregaComponent {
   protected enviar(id: string): void {
     const u = this.auth.usuario();
     const c = this.data.enviarConformidad(id, `${u?.nombre} — ${u?.rol}`);
-    if (c) this.toast.ok('Formulario enviado', `Enlace único enviado a ${c.correo}.`);
-    else this.toast.error('No es posible enviar', 'El F0302 debe estar generado.');
+    if (typeof c === 'string') { this.toast.error('No es posible enviar', c); return; }
+    this.toast.ok('Formulario enviado', `Enlace único enviado a ${c.correo}.`);
   }
 
   protected reenviar(id: string): void {
     const u = this.auth.usuario();
-    this.data.enviarConformidad(id, `${u?.nombre} — ${u?.rol}`);
+    const c = this.data.enviarConformidad(id, `${u?.nombre} — ${u?.rol}`);
+    if (typeof c === 'string') { this.toast.error('No es posible reenviar', c); return; }
     this.toast.ok('Formulario reenviado', 'Se envió nuevamente el enlace al correo institucional del usuario final.');
   }
 

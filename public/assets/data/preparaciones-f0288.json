@@ -100,7 +100,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -301,7 +303,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -448,7 +452,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -648,7 +654,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -784,7 +792,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -913,7 +923,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -1002,12 +1014,6 @@
           {
             "nombre": "Office / Chrome / Acrobat",
             "estado": "Realizado",
-            "evidencia": null,
-            "nota": ""
-          },
-          {
-            "nombre": "Visio · Project · Power BI",
-            "estado": "No solicitado",
             "evidencia": null,
             "nota": ""
           }
@@ -1139,7 +1145,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
@@ -1340,7 +1348,9 @@
             "nombre": "Instalación de Windows 11",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-001",
+            "versionSeleccionada": "Windows 11 Pro"
           },
           {
             "nombre": "Instalar actualizaciones",
