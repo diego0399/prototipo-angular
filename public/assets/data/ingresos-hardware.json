@@ -1,0 +1,28 @@
+[
+  {
+    "idIngresoHardware": "2201-1300-2026-02",
+    "inventario": "2201-1300-2026",
+    "numeroIngreso": 2,
+    "fechaIngreso": "2026-07-15",
+    "horaIngreso": "10:20",
+    "motivoIngreso": "Reingreso por devolución",
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "estadoInicial": "Pendiente de preparación",
+    "estadoFinal": "Preparado",
+    "expedienteTecnicoAsociado": "EXP-PT-2026-0094",
+    "observaciones": "Equipo reingresado tras el descargo DESC-2026-0001 por cambio de puesto del usuario final."
+  },
+  {
+    "idIngresoHardware": "2201-1300-2026-01",
+    "inventario": "2201-1300-2026",
+    "numeroIngreso": 1,
+    "fechaIngreso": "2026-05-04",
+    "horaIngreso": "09:00",
+    "motivoIngreso": "Preparación inicial",
+    "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
+    "estadoInicial": "Pendiente de preparación",
+    "estadoFinal": "Preparado",
+    "expedienteTecnicoAsociado": "EXP-PT-2026-0093",
+    "observaciones": ""
+  }
+]

@@ -1,0 +1,97 @@
+@startuml NucleoTrazabilidad_SISGOST
+' ============================================================
+' SISGOST - Sistema de Gestion y Seguimiento de Soporte Tecnico
+' Diagrama conceptual de capa solida - Gestion de Equipos
+'
+' Nuevo diagrama (2026-07-19), pensado para jefaturas y publico
+' no tecnico: muestra que el nucleo del sistema es el EQUIPO
+' identificado por su numero de inventario, acompanado de sus
+' dos expedientes y de la trazabilidad; todo lo demas (formularios,
+' firmas, documentos, entrega y garantia) se conecta a ese nucleo.
+' Deliberadamente simple: sin cardinalidades ni atributos.
+'
+' Actualizacion 2026-07-22 (ronda 15): F0288 y F0302 registran
+' ademas su cronometro (tiempo total) y nivel de complejidad;
+' se agrega el satelite "Historial tecnico del equipo" con
+' pestanas, que se deriva del nucleo (no es un modulo nuevo).
+'
+' Actualizacion 2026-07-22 (ronda 16, ciclo multiple de equipo):
+' un mismo Equipo puede pasar por el nucleo varias veces a lo
+' largo de su vida (ingresa, se prepara y asigna, se descarga,
+' reingresa y se prepara de nuevo). Se agregan los satelites
+' "Ingresos a Hardware" (inicial y reingresos) y "Descargos"
+' (cierra la asignacion vigente).
+' ============================================================
+
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam linetype polyline
+skinparam rectangle {
+  FontSize 12
+}
+skinparam ArrowColor #5D6D7E
+skinparam note {
+  BackgroundColor #FFFDE7
+  BorderColor #F39C12
+  FontSize 10
+}
+
+title SISGOST — Gestión de Equipos\nNúcleo de trazabilidad del sistema
+
+rectangle "**NÚCLEO DEL SISTEMA**" as NUCLEO #EAF4FB;line:2F6F9F;line.bold {
+  rectangle "**Equipo**\nNúmero de inventario\n(identidad única del equipo)" as EQUIPO #FFFFFF;line:2F6F9F
+  rectangle "**Expediente técnico**\nEXP-PT-AAAA-####\n(la hoja de vida técnica\ndel equipo)" as ET #FFFFFF;line:2F6F9F
+  rectangle "**Expediente único**\nEXP-AAAA-####\n(todo el proceso de entrega\nen un solo lugar)" as EU #FFFFFF;line:2F6F9F
+  rectangle "**Trazabilidad**\n(cada paso queda registrado:\nquién, cuándo y en qué estado)" as TRAZA #FFFFFF;line:2F6F9F
+}
+
+rectangle "Preparación F0288\n(con firma del técnico que preparó,\ncronómetro: tiempo total\ny complejidad)" as F0288 #F4F9F4;line:1E8449
+rectangle "Configuración F0302\n(con firma del técnico que configuró,\ncronómetro: tiempo total\ny complejidad)" as F0302 #F4F9F4;line:1E8449
+rectangle "Ingresos a Hardware\n(inicial y reingresos)" as ING #F4F9F4;line:1E8449
+rectangle "Descargos\n(cierra la asignación vigente;\npuede originar un reingreso)" as DESC #FBF2F2;line:922B21
+rectangle "Historial técnico del equipo\n(pestañas: Resumen · Ingresos a\nHardware · F0288 · F0302 ·\nAsignaciones · Garantía · Documentos ·\nTrazabilidad · Descargos)" as HISTORIAL #EAF4FB;line:2F6F9F
+rectangle "Firmas registradas\n(técnicos y usuario final)" as FIRMAS #FDF6EC;line:B9770E
+rectangle "Documentos generados\ny descargables" as DOCS #FDF6EC;line:B9770E
+rectangle "Entrega y aceptación\n(formulario externo del\nusuario final)" as ENTREGA #F4F0FA;line:6C3483
+rectangle "Garantía" as GAR #FBF2F2;line:922B21
+rectangle "Casos de garantía" as CASOS #FBF2F2;line:922B21
+rectangle "Comentarios de\nseguimiento" as COMEN #FBF2F2;line:922B21
+
+' ---------- Nucleo ----------
+EQUIPO -right- ET
+ET -right- EU
+EU -right- TRAZA
+
+' ---------- Satelites conectados al nucleo ----------
+F0288 -down-> ET : se controla en
+F0302 -down-> EU : se documenta en
+ENTREGA -up-> EU : se registra en
+FIRMAS -up-> EU : quedan asociadas al
+DOCS -up-> EU : se generan desde el
+GAR -up-> EU : se habilita al aceptar
+CASOS -up-> GAR
+COMEN -up-> CASOS
+F0288 ..> TRAZA
+F0302 ..> TRAZA
+ENTREGA ..> TRAZA
+DOCS ..> TRAZA
+CASOS ..> TRAZA
+ING -down-> EQUIPO : se registra en\n(inicial o reingreso)
+DESC -up-> EQUIPO : cierra la\nasignación de
+DESC ..> ING : puede originar\n(según acción posterior)
+ING ..> TRAZA
+DESC ..> TRAZA
+HISTORIAL -up-> EQUIPO : se consulta por\nnúmero de inventario
+TRAZA ..> HISTORIAL : alimenta la\npestaña Trazabilidad
+
+note bottom of NUCLEO
+  Lectura simple: todo lo que le pasa a un equipo se puede
+  reconstruir desde su número de inventario — desde que
+  ingresa al inventario (sin pedir unidad responsable) hasta
+  sus casos de garantía, incluyendo cuánto tiempo tomó cada
+  preparación y configuración y con qué complejidad. Un
+  equipo puede volver a ingresar (reingreso) tras un descargo
+  y repetir el ciclo sin perder su historia anterior.
+end note
+
+@enduml

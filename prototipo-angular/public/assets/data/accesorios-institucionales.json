@@ -1,0 +1,12 @@
+[
+  { "numeroInventario": "2201-00-101-0001-02", "tipo": "Monitor", "marca": "Dell", "modelo": "P2219H", "serie": "MON-CPU-0001-02", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-101-0001-03", "tipo": "Teclado", "marca": "Dell", "modelo": "KB216", "serie": "TEC-CPU-0001-03", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-101-0001-04", "tipo": "Mouse", "marca": "Dell", "modelo": "MS116", "serie": "MOU-CPU-0001-04", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-101-0002-02", "tipo": "Monitor", "marca": "HP", "modelo": "EliteDisplay E223", "serie": "MON-CPU-0002-02", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-101-0002-03", "tipo": "Teclado", "marca": "HP", "modelo": "K1500", "serie": "TEC-CPU-0002-03", "estadoFisico": "Regular" },
+  { "numeroInventario": "2201-00-101-0002-04", "tipo": "Mouse", "marca": "HP", "modelo": "X500", "serie": "MOU-CPU-0002-04", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-920-0001-02", "tipo": "Mouse", "marca": "HP", "modelo": "X3000", "serie": "MOU-LAP-0001-02", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-920-0001-03", "tipo": "Maletín", "marca": "HP", "modelo": "Maletín Ejecutivo", "serie": "MAL-LAP-0001-03", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-920-0002-02", "tipo": "Mouse", "marca": "Logitech", "modelo": "M185", "serie": "MOU-LAP-0002-02", "estadoFisico": "Bueno" },
+  { "numeroInventario": "2201-00-920-0002-03", "tipo": "Maletín", "marca": "Dell", "modelo": "Maletín 14 pulgadas", "serie": "MAL-LAP-0002-03", "estadoFisico": "Regular" }
+]
