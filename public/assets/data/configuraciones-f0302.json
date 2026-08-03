@@ -161,6 +161,20 @@
         "evidencia": null
       },
       {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red"
+      },
+      {
+        "nombre": "Credenciales: nombre de equipo · cuenta de red",
+        "version": "Según SISSOR",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red"
+      },
+      {
         "nombre": "Forticlient",
         "version": "7.2",
         "estado": "Pendiente",

@@ -2,7 +2,7 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import {
-  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistSeccion, CierreTecnico,
+  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
   DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, FilaValidacionLote,
   EstadoAsignacionEquipo, EstadoPreparacionEquipo, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
@@ -12,6 +12,15 @@ import {
   VerificacionFalla
 } from '../models/models';
 import { AuthService } from './auth.service';
+
+/**
+ * Familias de inventario de los accesorios institucionales. Un accesorio se asocia a un equipo
+ * usado por su FAMILIA (el tipo de bien) y su SUFIJO (qué accesorio es), no por el número del
+ * equipo principal: los equipos se numeran `2201-NNNN-AAAA` y los accesorios
+ * `2201-00-101|920-XXXX-SS`, así que sus correlativos son independientes.
+ */
+const FAMILIA_ACCESORIO_CPU = '2201-00-101';
+const FAMILIA_ACCESORIO_LAPTOP = '2201-00-920';
 
 /**
  * Almacén único de datos de SISGOST. Carga los JSON simulados de assets/data
@@ -131,7 +140,7 @@ export class DataService {
       this.asignaciones.set(r.asignaciones);
       this.expedientesTecnicos.set(r.expTec);
       this.expedientesUnicos.set(r.expedientes);
-      this.preparaciones.set(r.preparaciones);
+      this.preparaciones.set(this.normalizarPreparaciones(r.preparaciones));
       this.configuraciones.set(r.configuraciones);
       this.entregas.set(r.entregas);
       this.conformidades.set(r.conformidades);
@@ -193,7 +202,7 @@ export class DataService {
       this.asignaciones.set(d.asignaciones ?? []);
       this.expedientesTecnicos.set(d.expedientesTecnicos ?? []);
       this.expedientesUnicos.set(d.expedientesUnicos ?? []);
-      this.preparaciones.set(d.preparaciones ?? []);
+      this.preparaciones.set(this.normalizarPreparaciones(d.preparaciones ?? []));
       this.configuraciones.set(d.configuraciones ?? []);
       this.entregas.set(d.entregas ?? []);
       this.conformidades.set(d.conformidades ?? []);
@@ -695,6 +704,108 @@ export class DataService {
         ultimaActualizacion: s.ultimaActualizacion ?? ''
       };
     });
+  }
+
+  /**
+   * Ítems que ya no pertenecen al F0288: credenciales, ingreso a dominio y Agente DLP son
+   * actividades del Técnico de Soporte, no de la preparación técnica de Hardware.
+   */
+  private fueraDelF0288(nombre: string): boolean {
+    return /^(agente dlp|ingreso a dominio|credenciales)/i.test((nombre ?? '').trim());
+  }
+
+  /**
+   * Sufijo que corresponde a un accesorio dentro de su familia: en CPU, Monitor -02, Teclado -03
+   * y Mouse -04; en Laptop, Mouse -02 y Maletín -03 (el Mouse cambia de sufijo según la familia).
+   */
+  private sufijoAccesorio(nombre: string, familia: string): string {
+    if (familia === FAMILIA_ACCESORIO_LAPTOP) return nombre === 'Mouse' ? '02' : '03';
+    return nombre === 'Monitor' ? '02' : nombre === 'Teclado' ? '03' : '04';
+  }
+
+  /** Título actual de una sección del checklist F0288 (las secciones se renombraron con el tiempo). */
+  private tituloSeccionF0288(titulo: string): string {
+    if (titulo === 'Software según SISSOR · dominio · credenciales') return 'Instalación de software institucional';
+    if (titulo === 'Sistema operativo y cuenta administrador') return 'Sistema operativo, componentes de Windows y cuenta administrador';
+    return titulo;
+  }
+
+  /**
+   * Agrega «.NET Framework 3.5» a la sección de sistema operativo de una preparación guardada
+   * antes de que el ítem existiera. **Solo se agrega a preparaciones todavía en curso**: un F0288
+   * ya finalizado documenta lo que realmente se hizo, y sumarle un ítem después sería reescribir
+   * un registro técnico cerrado.
+   */
+  private itemsSistemaOperativo(sec: ChecklistSeccion, p: PreparacionF0288): ChecklistItem[] {
+    const esSeccionSO = this.tituloSeccionF0288(sec.titulo) === 'Sistema operativo, componentes de Windows y cuenta administrador';
+    if (!esSeccionSO || p.estado !== 'En preparación') return sec.items;
+    if (sec.items.some((i) => i.nombre.startsWith('.NET Framework'))) return sec.items;
+    const nuevo: ChecklistItem = {
+      nombre: '.NET Framework 3.5', estado: 'Pendiente', evidencia: null,
+      nota: 'Se habilita como característica de Windows cuando aplique.', codigoSoftware: 'SOFT-008'
+    };
+    // Va después de «Controladores» y antes de la cuenta de administrador, igual que en la plantilla.
+    const corte = sec.items.findIndex((i) => i.nombre.startsWith('Habilitar cuenta'));
+    return corte < 0 ? [...sec.items, nuevo] : [...sec.items.slice(0, corte), nuevo, ...sec.items.slice(corte)];
+  }
+
+  /** Nombre actual de los ítems de software del F0288 («Antivirus» → «Instalación de Antivirus»). */
+  private nombreItemF0288(nombre: string): string {
+    const n = (nombre ?? '').trim();
+    if (n === 'Antivirus') return 'Instalación de Antivirus';
+    if (n === 'OCS Inventory') return 'Instalación de OCS Inventory';
+    return n;
+  }
+
+  /** Etiqueta corta para los avisos y eventos de evidencia («Instalación de Antivirus» → «Antivirus»). */
+  private etiquetaEvidencia(nombreItem: string): string {
+    return nombreItem.replace(/^Instalación de /, '');
+  }
+
+  /**
+   * Normaliza las preparaciones leídas del JSON semilla o de una foto de localStorage anterior:
+   * saca del F0288 los ítems de credenciales, dominio y Agente DLP (con sus evidencias y sus
+   * secciones ocultas), renombra los ítems de software al nombre actual y marca como
+   * «requiere evidencia» los de Antivirus y OCS Inventory. Una demo con datos previos queda
+   * alineada con la regla nueva sin obligar a restablecer los datos de demostración.
+   */
+  private normalizarPreparaciones(lista: PreparacionF0288[]): PreparacionF0288[] {
+    return (lista ?? []).map((p) => ({
+      ...p,
+      // Accesorios guardados antes de que existieran la familia y el sello de verificación. Las
+      // fotos más antiguas guardaban solo `{ nombre, estado }`, así que se completan todos los
+      // campos: sin esto la pantalla de accesorios no tendría con qué buscar.
+      verificacionAccesorios: p.verificacionAccesorios
+        ? { ...p.verificacionAccesorios, accesorios: (p.verificacionAccesorios.accesorios ?? []).map((a) => ({
+            ...a,
+            familiaEsperada: a.familiaEsperada || this.familiaAccesoriosDe(p),
+            sufijoEsperado: a.sufijoEsperado || this.sufijoAccesorio(a.nombre, this.familiaAccesoriosDe(p)),
+            seleccionado: a.seleccionado ?? false,
+            numeroInventario: a.numeroInventario ?? '',
+            resultadoBusqueda: a.resultadoBusqueda ?? '',
+            marca: a.marca ?? '', modelo: a.modelo ?? '', serie: a.serie ?? '', estadoFisico: a.estadoFisico ?? '',
+            observacion: a.observacion ?? '',
+            verificadoPor: a.verificadoPor ?? '',
+            fechaVerificacion: a.fechaVerificacion ?? ''
+          })) }
+        : p.verificacionAccesorios,
+      secciones: (p.secciones ?? [])
+        .map((sec) => ({
+          titulo: this.tituloSeccionF0288(sec.titulo),
+          items: this.itemsSistemaOperativo(sec, p).filter((i) => !this.fueraDelF0288(i.nombre)).map((i) => {
+            const nombre = this.nombreItemF0288(i.nombre);
+            const exigeCaptura = nombre === 'Instalación de Antivirus' || nombre === 'Instalación de OCS Inventory';
+            return exigeCaptura ? { ...i, nombre, requiereEvidencia: true } : { ...i, nombre };
+          })
+        }))
+        .filter((sec) => sec.items.length > 0),
+      // La sección oculta «Credenciales, dominio y Agente DLP» pierde sentido: esos ítems ya no
+      // forman parte del F0288 ni siquiera como ítem oculto.
+      seccionesOcultas: (p.seccionesOcultas ?? []).filter((o) => !/dlp|dominio|credenciales/i.test(o.nombre)),
+      evidencias: (p.evidencias ?? [])
+        .filter((e) => !this.fueraDelF0288(e.item))
+        .map((e) => ({ ...e, item: this.nombreItemF0288(e.item) }))
+    }));
   }
 
   /** Deja constancia de que se abrió/consultó la pantalla «Catálogo de software» (una vez por visita, no por render). */
@@ -1575,9 +1686,14 @@ export class DataService {
       // «¿Se verificaron accesorios del equipo?» tiene su propia pregunta, separada de la de falla,
       // para no confundirlas: cada una es una tarjeta independiente en la pantalla de preparación.
       falla = { respuesta: '', fallaEncontrada: '', diagnostico: '', accionRealizada: '', observaciones: '' };
+      // La familia depende del TIPO de equipo, no de su número de inventario: los equipos se
+      // numeran `2201-NNNN-AAAA` y los accesorios `2201-00-101|920-XXXX-SS`, así que el accesorio
+      // nunca comparte número base con su equipo principal.
+      const familia = tipo === 'Desktop' ? FAMILIA_ACCESORIO_CPU : FAMILIA_ACCESORIO_LAPTOP;
       const acc = (nombre: string, sufijoEsperado: string) => ({
-        nombre, sufijoEsperado, seleccionado: false, numeroInventario: '', resultadoBusqueda: '' as const,
-        marca: '', modelo: '', serie: '', estadoFisico: '', observacion: ''
+        nombre, familiaEsperada: familia, sufijoEsperado, seleccionado: false, numeroInventario: '',
+        resultadoBusqueda: '' as const, marca: '', modelo: '', serie: '', estadoFisico: '',
+        observacion: '', verificadoPor: '', fechaVerificacion: ''
       });
       // El conjunto de accesorios depende del tipo de equipo: CPU usado → Monitor/Teclado/Mouse;
       // Laptop usada → Mouse/Maletín (no se muestran otros accesorios).
@@ -1594,11 +1710,16 @@ export class DataService {
         { nombre: 'Verificación de accesorios', motivo: 'No aplica a un equipo nuevo; el checklist dinámico la oculta.' }
       );
     }
+    // «.NET Framework» va aquí y no en la sección de software institucional: es un componente de
+    // Windows que se habilita como característica del sistema, parte de dejar el sistema operativo
+    // listo. Su versión sale del catálogo (SOFT-008), no se escribe a mano.
     secciones.push({
-      titulo: 'Sistema operativo y cuenta administrador',
+      titulo: 'Sistema operativo, componentes de Windows y cuenta administrador',
       items: [
         { ...item('Instalación de Windows'), ...this.enlaceSoftware('SOFT-001', 'F0288') },
         item('Instalar actualizaciones'), item('Controladores'),
+        { ...item('.NET Framework 3.5', 'Se habilita como característica de Windows cuando aplique.'),
+          ...this.enlaceSoftware('SOFT-008', 'F0288') },
         item('Habilitar cuenta Administrador'),
         item('Asignar contraseña Admin', 'Se registra la acción; la contraseña nunca se almacena.')
       ]
@@ -1610,22 +1731,23 @@ export class DataService {
         item('Perfiles de Firewall (dominio, privado, público)')
       ]
     });
+    // Antivirus y OCS Inventory son parte de la preparación técnica que hace Hardware: van siempre
+    // en el F0288, enlazados al catálogo de software y con captura de evidencia obligatoria.
+    // Credenciales, ingreso a dominio y Agente DLP salieron del F0288: son actividades del Técnico
+    // de Soporte y se realizan en la Configuración F0302.
+    const software: ChecklistItem[] = [
+      { ...item('Instalación de Antivirus'), ...this.enlaceSoftware('SOFT-003', 'F0288'), requiereEvidencia: true },
+      { ...item('Instalación de OCS Inventory'), ...this.enlaceSoftware('SOFT-004', 'F0288'), requiereEvidencia: true }
+    ];
     if (unidad === 'Soporte') {
-      secciones.push({
-        titulo: 'Software según SISSOR · dominio · credenciales',
-        items: [
-          { ...item('Antivirus'), ...this.enlaceSoftware('SOFT-003', 'F0288') },
-          { ...item('OCS Inventory'), ...this.enlaceSoftware('SOFT-004', 'F0288') },
-          item('Office / Chrome / Acrobat'),
-          item('Agente DLP'), item('Ingreso a dominio'), item('Credenciales: nombre de equipo · cuenta de red')
-        ]
-      });
+      software.push(item('Office / Chrome / Acrobat'));
     } else {
       ocultas.push({
-        nombre: 'Credenciales, dominio y Agente DLP',
-        motivo: 'No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta.'
+        nombre: 'Office / Chrome / Acrobat',
+        motivo: 'Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware.'
       });
     }
+    secciones.push({ titulo: 'Instalación de software institucional', items: software });
     return { secciones, ocultas, falla, accesorios };
   }
 
@@ -1815,16 +1937,19 @@ export class DataService {
       const eq = this.equipoDe(asig.equipoInventario);
       // El software del checklist F0302 se arma desde el catálogo de software permitido: solo el
       // software activo cuya etapa es «Configuración F0302» o «Ambas etapas». No se filtra por
-      // tipo de equipo: el catálogo ya no lo configura. «Agente DLP» no está en el catálogo (es
-      // parte del flujo SISSOR/dominio ya existente), así que se conserva como ítem libre, fuera
-      // del control de versiones.
+      // tipo de equipo: el catálogo ya no lo configura. El Agente DLP, el ingreso a dominio y las
+      // credenciales no son software de catálogo: son actividades del Técnico de Soporte y se
+      // conservan como ítems libres, fuera del control de versiones. Salieron del F0288 (donde
+      // estaban por error) porque no forman parte de la preparación técnica de Hardware.
       const swCatalogo = (c: SoftwareCatalogo) =>
         ({ nombre: c.nombre, version: c.versionVigente, estado: 'Pendiente', evidencia: null, codigoSoftware: c.codigo, categoria: c.categoria });
       const swLibre = (nombre: string, version: string, categoria: string) =>
         ({ nombre, version, estado: 'Pendiente', evidencia: null, categoria });
       const software = [
         ...this.softwareAplicable('F0302').map(swCatalogo),
-        swLibre('Agente DLP', 'Corporativo', 'Seguridad')
+        swLibre('Agente DLP', 'Corporativo', 'Seguridad'),
+        swLibre('Ingreso a dominio', 'Dominio institucional', 'Red'),
+        swLibre('Credenciales: nombre de equipo · cuenta de red', 'Según SISSOR', 'Red')
       ];
       const nuevaConf: ConfiguracionF0302 = {
         expediente: id,
@@ -1934,7 +2059,8 @@ export class DataService {
     const p = this.preparacionPorCodigo(codigoTec);
     this.mapaAccesorio(codigoTec, nombre, (a) => (seleccionado
       ? { ...a, seleccionado }
-      : { ...a, seleccionado, numeroInventario: '', resultadoBusqueda: '', marca: '', modelo: '', serie: '', estadoFisico: '', observacion: '' }));
+      : { ...a, seleccionado, numeroInventario: '', resultadoBusqueda: '', marca: '', modelo: '', serie: '',
+          estadoFisico: '', observacion: '', verificadoPor: '', fechaVerificacion: '' }));
     if (p && seleccionado) {
       this.registrarEvento(codigoTec, usuario, `Accesorio seleccionado: ${nombre}`, 'Verificación de accesorios iniciada',
         '', false, { modulo: 'Preparación técnica F0288', inventario: p.datosGenerales.inventario, expedienteTecnico: codigoTec });
@@ -1954,50 +2080,142 @@ export class DataService {
   private readonly formatoAccesorio = /^2201-00-(101|920)-\d{4}-\d{2}$/;
 
   /**
-   * Busca un accesorio en la base institucional simulada de accesorios y valida que corresponda
-   * al equipo principal (mismo número de inventario como prefijo) y al sufijo esperado para ese
-   * accesorio (p. ej. Monitor de un CPU usado siempre termina en «-02»). Nunca autocompleta
-   * datos inventados: si no se encuentra, la ficha queda vacía.
+   * Normaliza el número de accesorio antes de buscarlo: quita espacios (incluidos los de en medio,
+   * frecuentes al pegar desde una hoja de cálculo) y pasa a mayúsculas, conservando los guiones.
+   */
+  private normalizarNumeroAccesorio(numero: string): string {
+    return (numero ?? '').replace(/\s+/g, '').toUpperCase();
+  }
+
+  /** Etiqueta del tipo de equipo según la familia del accesorio, para mensajes y eventos. */
+  private tipoPorFamilia(familia: string): 'Laptop' | 'CPU' {
+    return familia === FAMILIA_ACCESORIO_LAPTOP ? 'Laptop' : 'CPU';
+  }
+
+  /**
+   * ¿El accesorio ya está asociado a otro F0288 vigente? Solo cuentan las preparaciones de OTRO
+   * expediente técnico donde el accesorio quedó marcado y encontrado. No cuenta el historial
+   * cerrado: una preparación «Cerrada» (por descargo) o de un expediente técnico ya cerrado es
+   * archivo, y su accesorio puede volver a asociarse a otro equipo.
+   */
+  private accesorioAsociadoActivamente(numero: string, codigoTecActual: string): PreparacionF0288 | undefined {
+    return this.preparaciones().find((otra) => {
+      if (otra.expedienteTecnico === codigoTecActual || otra.estado === 'Cerrada') return false;
+      const tec = this.expedientesTecnicos().find((x) => x.codigo === otra.expedienteTecnico);
+      if (tec?.estado === 'Cerrado') return false;
+      return (otra.verificacionAccesorios?.accesorios ?? [])
+        .some((a) => a.seleccionado && a.resultadoBusqueda === 'Encontrado' && a.numeroInventario.trim() === numero);
+    });
+  }
+
+  /**
+   * Familia de accesorios de una preparación guardada antes de que `familiaEsperada` existiera:
+   * se deduce del tipo del equipo y, si el equipo ya no está, del conjunto de accesorios (solo
+   * la laptop lleva Maletín; solo el CPU lleva Monitor o Teclado).
+   */
+  private familiaAccesoriosDe(p: PreparacionF0288): string {
+    const tipo = this.equipoDe(p.datosGenerales.inventario)?.tipo;
+    if (tipo) return tipo === 'Desktop' ? FAMILIA_ACCESORIO_CPU : FAMILIA_ACCESORIO_LAPTOP;
+    const nombres = (p.verificacionAccesorios?.accesorios ?? []).map((a) => a.nombre);
+    return nombres.includes('Maletín') ? FAMILIA_ACCESORIO_LAPTOP : FAMILIA_ACCESORIO_CPU;
+  }
+
+  /**
+   * Busca un accesorio en la base institucional simulada. Valida, en orden: formato del número,
+   * familia del equipo (CPU `2201-00-101` / Laptop `2201-00-920`), sufijo del accesorio
+   * seleccionado, existencia en la base y que no esté ya asociado a otro F0288 vigente.
+   *
+   * **El correlativo del accesorio no tiene que coincidir con el del equipo principal**: son
+   * bienes con numeración independiente (los equipos son `2201-NNNN-AAAA`), así que exigir el
+   * mismo número base hacía que la búsqueda nunca encontrara nada. Nunca autocompleta datos
+   * inventados: si la validación falla, la ficha queda vacía.
    */
   consultarAccesorio(codigoTec: string, nombre: string, usuario: string): string | null {
     const p = this.preparacionPorCodigo(codigoTec);
     const acc = p?.verificacionAccesorios?.accesorios.find((a) => a.nombre === nombre);
     if (!p || !acc) return 'No se encontró el accesorio indicado.';
     const inventarioEquipo = p.datosGenerales.inventario;
-    const numero = acc.numeroInventario.trim();
+    const numero = this.normalizarNumeroAccesorio(acc.numeroInventario);
+    const familia = acc.familiaEsperada || this.familiaAccesoriosDe(p);
+    const tipoEquipo = this.tipoPorFamilia(familia);
+    // La búsqueda va contra la base GLOBAL de accesorios: no se derivan del equipo principal ni
+    // del método de ingreso (individual, múltiple o por rango), que no intervienen en la consulta.
+    const ficha = this.catalogoAccesorios().find((f) => f.numeroInventario === numero);
+    const duplicado = this.accesorioAsociadoActivamente(numero, codigoTec);
 
     let resultado: ResultadoConsultaAccesorio;
     let mensaje: string;
     if (!this.formatoAccesorio.test(numero)) {
       resultado = 'Formato inválido';
-      mensaje = 'El número de inventario del accesorio no corresponde al formato esperado para este tipo de equipo.';
-    } else if (!numero.startsWith(`${inventarioEquipo}-`) || numero.slice(-2) !== acc.sufijoEsperado) {
+      mensaje = 'El número de inventario del accesorio no tiene un formato válido.';
+    } else if (!numero.startsWith(`${familia}-`)) {
       resultado = 'No corresponde al equipo';
-      mensaje = 'El accesorio no corresponde al equipo principal seleccionado.';
-    } else if (this.catalogoAccesorios().find((f) => f.numeroInventario === numero)) {
-      resultado = 'Encontrado';
-      mensaje = 'Accesorio encontrado en la base institucional simulada.';
-    } else {
+      mensaje = tipoEquipo === 'Laptop'
+        ? 'El accesorio no corresponde a una Laptop.'
+        : 'El accesorio no corresponde al tipo de equipo seleccionado.';
+    } else if (numero.slice(-2) !== acc.sufijoEsperado) {
+      resultado = 'No corresponde al accesorio';
+      mensaje = 'El número ingresado no corresponde al accesorio seleccionado.';
+    } else if (!ficha) {
       resultado = 'No encontrado';
       mensaje = 'No se encontró información del accesorio en la base institucional simulada.';
+    } else if (duplicado) {
+      resultado = 'Asociado a otro equipo';
+      mensaje = 'Este accesorio ya se encuentra asociado a otro equipo activo. Verifique antes de continuar.';
+    } else {
+      resultado = 'Encontrado';
+      mensaje = 'Accesorio encontrado en la base institucional simulada.';
     }
-    const ficha = resultado === 'Encontrado' ? this.catalogoAccesorios().find((f) => f.numeroInventario === numero) : undefined;
+    const asociado = resultado === 'Encontrado';
     this.mapaAccesorio(codigoTec, nombre, (a) => ({
-      ...a, resultadoBusqueda: resultado,
-      marca: ficha?.marca ?? '', modelo: ficha?.modelo ?? '', serie: ficha?.serie ?? '', estadoFisico: ficha?.estadoFisico ?? ''
+      // Se guarda el número ya normalizado: lo que queda en el F0288 y en el documento es el
+      // número limpio, no lo que se tecleó o pegó con espacios.
+      ...a, numeroInventario: numero, resultadoBusqueda: resultado,
+      marca: asociado ? ficha!.marca : '', modelo: asociado ? ficha!.modelo : '',
+      serie: asociado ? ficha!.serie : '', estadoFisico: asociado ? ficha!.estadoFisico : '',
+      verificadoPor: asociado ? usuario : '', fechaVerificacion: asociado ? `${this.hoy()} ${this.hora()}` : ''
     }));
+    // Contexto común de los eventos: además de fecha, hora, usuario y rol que ya guarda
+    // `registrarEvento`, cada evento deja el equipo principal, el expediente técnico, el accesorio
+    // consultado y el resultado.
+    const contexto = { modulo: 'Preparación técnica F0288', inventario: inventarioEquipo, expedienteTecnico: codigoTec };
+    // El evento nombra el tipo de equipo («Accesorio de Laptop…», «Accesorio de CPU…») para poder
+    // filtrar la trazabilidad por el flujo que se estaba probando.
+    const rotulo = `Accesorio de ${tipoEquipo}`;
+    const ref = `${nombre} (${numero || 'sin número'})`;
+    const detalle = `${tipoEquipo} principal: ${inventarioEquipo}. Accesorio seleccionado: ${nombre} ` +
+      `(familia ${familia}, sufijo -${acc.sufijoEsperado}). Número consultado: ${numero || 'sin número'}. ` +
+      `Resultado: ${resultado}. ${mensaje}`;
     this.registrarEvento(codigoTec, usuario,
-      `Accesorio consultado en base institucional simulada: ${nombre} (${numero || 'sin número'})`, resultado, mensaje, false,
-      { modulo: 'Preparación técnica F0288', inventario: inventarioEquipo, expedienteTecnico: codigoTec });
-    if (resultado === 'Encontrado') {
-      this.registrarEvento(codigoTec, usuario, `Accesorio encontrado: ${nombre} (${numero})`, 'Encontrado',
-        `${ficha!.marca} ${ficha!.modelo} · serie ${ficha!.serie} · estado ${ficha!.estadoFisico}.`, false,
-        { modulo: 'Preparación técnica F0288', inventario: inventarioEquipo, expedienteTecnico: codigoTec });
-      this.registrarEvento(codigoTec, usuario, `Accesorio asociado a F0288: ${nombre}`, 'Encontrado', '', false,
-        { modulo: 'Preparación técnica F0288', inventario: inventarioEquipo, expedienteTecnico: codigoTec });
-    } else if (resultado === 'No encontrado') {
-      this.registrarEvento(codigoTec, usuario, `Accesorio no encontrado: ${nombre} (${numero})`, 'No encontrado', '', false,
-        { modulo: 'Preparación técnica F0288', inventario: inventarioEquipo, expedienteTecnico: codigoTec });
+      `${rotulo} consultado en base institucional simulada: ${ref}`, resultado, detalle, false, contexto);
+    switch (resultado) {
+      case 'Encontrado':
+        this.registrarEvento(codigoTec, usuario, `${rotulo} encontrado: ${ref}`, 'Encontrado',
+          `${ficha!.tipo} ${ficha!.marca} ${ficha!.modelo} · serie ${ficha!.serie} · estado ${ficha!.estadoFisico}.`,
+          false, contexto);
+        this.registrarEvento(codigoTec, usuario, `${rotulo} asociado a F0288: ${ref}`, 'Encontrado',
+          `Verificado por ${usuario}.`, false, contexto);
+        break;
+      case 'No encontrado':
+        this.registrarEvento(codigoTec, usuario, `${rotulo} no encontrado: ${ref}`, 'No encontrado',
+          mensaje, false, contexto);
+        break;
+      case 'Formato inválido':
+        this.registrarEvento(codigoTec, usuario, `${rotulo} rechazado por formato inválido: ${ref}`,
+          'Formato inválido', mensaje, false, contexto);
+        break;
+      case 'No corresponde al equipo':
+      case 'No corresponde al accesorio':
+        this.registrarEvento(codigoTec, usuario,
+          `${rotulo} rechazado por no corresponder al ${resultado === 'No corresponde al equipo' ? 'tipo de equipo' : 'accesorio seleccionado'}: ${ref}`,
+          resultado, mensaje, false, contexto);
+        break;
+      case 'Asociado a otro equipo':
+        this.registrarEvento(codigoTec, usuario, `${rotulo} rechazado por duplicado activo: ${ref}`,
+          'Asociado a otro equipo',
+          `${mensaje} Ya está asociado al expediente técnico ${duplicado!.expedienteTecnico} (equipo ${duplicado!.datosGenerales.inventario}).`,
+          false, contexto);
+        break;
     }
     return null;
   }
@@ -2013,6 +2231,7 @@ export class DataService {
   marcarItemF0288(codigoTec: string, seccion: string, item: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
     let codigoSoftware: string | undefined;
     let eraRealizado = false;
+    let seRetiroCaptura = false;
     this.preparaciones.update((list) =>
       list.map((p) => (p.expedienteTecnico === codigoTec
         ? {
@@ -2023,21 +2242,32 @@ export class DataService {
                     if (i.nombre !== item) return i;
                     codigoSoftware = i.codigoSoftware;
                     eraRealizado = i.estado === 'Realizado';
-                    if (!i.codigoSoftware) return { ...i, estado };
+                    // Al desmarcar un ítem que exige captura, su evidencia deja de tener respaldo:
+                    // se retira con el ítem para no dejar la captura de algo que no está instalado.
+                    const evidencia = estado === 'Pendiente' && i.requiereEvidencia ? null : i.evidencia;
+                    if (evidencia !== i.evidencia) seRetiroCaptura = true;
+                    if (!i.codigoSoftware) return { ...i, estado, evidencia };
                     const vigente = this.softwareCatalogoDe(i.codigoSoftware)?.versionVigente ?? '';
                     return estado === 'Realizado'
-                      ? { ...i, estado, versionSeleccionada: i.versionSeleccionada || vigente }
-                      : { ...i, estado, versionSeleccionada: '' };
+                      ? { ...i, estado, evidencia, versionSeleccionada: i.versionSeleccionada || vigente }
+                      : { ...i, estado, evidencia, versionSeleccionada: '' };
                   }) }
                 : sec)
           }
         : p))
     );
+    if (seRetiroCaptura) {
+      this.actualizarPreparacion(codigoTec, (x) => ({ ...x, evidencias: x.evidencias.filter((e) => e.item !== item) }));
+    }
     if (codigoSoftware && estado === 'Realizado' && !eraRealizado) {
       const p = this.preparacionPorCodigo(codigoTec);
       const sw = this.softwareCatalogoDe(codigoSoftware);
       if (p && sw) {
-        this.registrarEvento(codigoTec, usuario, `Software seleccionado: ${sw.nombre}`, 'Realizado', '', false,
+        const version = p.secciones.flatMap((s) => s.items)
+          .find((i) => i.nombre === item)?.versionSeleccionada || sw.versionVigente;
+        this.registrarEvento(codigoTec, usuario, `Software seleccionado: ${sw.nombre}`, 'Realizado',
+          `Versión: ${version} · Categoría: ${sw.categoria} · Formulario: F0288 · Registrado desde el Catálogo de Software (${sw.codigo}).`,
+          false,
           { modulo: 'Preparación técnica F0288', inventario: p.datosGenerales.inventario, expedienteTecnico: codigoTec });
       }
     }
@@ -2050,18 +2280,28 @@ export class DataService {
    * uno.
    */
   marcarSeccionCompletaF0288(codigoTec: string, seccion: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
+    // Ítems de la categoría que exigen captura: al desmarcarla completa, sus evidencias se retiran
+    // igual que al desmarcarlos uno a uno.
+    const conCaptura = estado === 'Pendiente'
+      ? (this.preparacionPorCodigo(codigoTec)?.secciones.find((s) => s.titulo === seccion)?.items ?? [])
+          .filter((i) => i.requiereEvidencia).map((i) => i.nombre)
+      : [];
     this.preparaciones.update((list) =>
       list.map((p) => (p.expedienteTecnico === codigoTec
-        ? { ...p, secciones: p.secciones.map((sec) => (sec.titulo === seccion
-            ? { ...sec, items: sec.items.map((i) => {
-                if (i.estado === 'No solicitado' || i.estado === 'No aplica') return i;
-                if (!i.codigoSoftware) return { ...i, estado };
-                const vigente = this.softwareCatalogoDe(i.codigoSoftware)?.versionVigente ?? '';
-                return estado === 'Realizado'
-                  ? { ...i, estado, versionSeleccionada: i.versionSeleccionada || vigente }
-                  : { ...i, estado, versionSeleccionada: '' };
-              }) }
-            : sec)) }
+        ? { ...p,
+            secciones: p.secciones.map((sec) => (sec.titulo === seccion
+              ? { ...sec, items: sec.items.map((i) => {
+                  if (i.estado === 'No solicitado' || i.estado === 'No aplica') return i;
+                  const evidencia = estado === 'Pendiente' && i.requiereEvidencia ? null : i.evidencia;
+                  if (!i.codigoSoftware) return { ...i, estado, evidencia };
+                  const vigente = this.softwareCatalogoDe(i.codigoSoftware)?.versionVigente ?? '';
+                  return estado === 'Realizado'
+                    ? { ...i, estado, evidencia, versionSeleccionada: i.versionSeleccionada || vigente }
+                    : { ...i, estado, evidencia, versionSeleccionada: '' };
+                }) }
+              : sec)),
+            evidencias: p.evidencias.filter((e) => !conCaptura.includes(e.item))
+          }
         : p))
     );
     const p = this.preparacionPorCodigo(codigoTec);
@@ -2085,6 +2325,38 @@ export class DataService {
       this.registrarEvento(codigoTec, usuario, `Versión de software seleccionada: ${item} — ${version}`, 'Realizado', '', false,
         { modulo: 'Preparación técnica F0288', inventario: p.datosGenerales.inventario, expedienteTecnico: codigoTec });
     }
+  }
+
+  /**
+   * Registra la captura de evidencia de un ítem del checklist F0288 que la exige (Antivirus y OCS
+   * Inventory). Sin esta captura el F0288 no se puede finalizar ni generar su documento.
+   */
+  registrarEvidenciaItemF0288(codigoTec: string, seccion: string, item: string, archivo: string, usuario: string): string | null {
+    const captura = archivo.trim();
+    if (!captura) return 'Indique la captura de evidencia: nombre del archivo o número de referencia.';
+    const p = this.preparacionPorCodigo(codigoTec);
+    if (!p) return 'No se encontró la preparación técnica indicada.';
+    if (p.estado === 'Completada') return 'Esta preparación ya fue finalizada; su evidencia no se puede modificar.';
+    if (p.estado === 'Cerrada') return 'Esta preparación quedó cerrada por un descargo del equipo y ya no puede reutilizarse.';
+    const actual = p.secciones.find((s) => s.titulo === seccion)?.items.find((i) => i.nombre === item);
+    if (!actual) return 'No se encontró el ítem del checklist indicado.';
+    if (actual.estado !== 'Realizado') return `Marque «${item}» en el checklist antes de registrar su captura de evidencia.`;
+    const etiqueta = this.etiquetaEvidencia(item);
+    this.actualizarPreparacion(codigoTec, (x) => ({
+      ...x,
+      secciones: x.secciones.map((sec) => (sec.titulo === seccion
+        ? { ...sec, items: sec.items.map((i) => (i.nombre === item ? { ...i, evidencia: captura } : i)) }
+        : sec)),
+      // Una captura por ítem: volver a registrarla reemplaza la anterior, no acumula filas.
+      evidencias: [
+        ...x.evidencias.filter((e) => e.item !== item),
+        { item, tipo: `Captura de ${etiqueta}`, cargadaPor: usuario.split('—')[0].trim(), fecha: this.hoy(), estado: 'Cargada' }
+      ]
+    }));
+    this.registrarEvento(codigoTec, usuario, `Captura de ${etiqueta} registrada`, 'Realizado',
+      `Evidencia registrada: ${captura}.`, false,
+      { modulo: 'Preparación técnica F0288', inventario: p.datosGenerales.inventario, expedienteTecnico: codigoTec });
+    return null;
   }
 
   /** El detalle es obligatorio cuando hubo complejidad; sin responder Sí/No no se puede cerrar. */
@@ -2140,6 +2412,13 @@ export class DataService {
     const sinVersion = p.secciones.flatMap((s) => s.items)
       .some((i) => i.codigoSoftware && i.estado === 'Realizado' && !i.versionSeleccionada?.trim());
     if (sinVersion) return 'Seleccione la versión de cada software marcado en el checklist antes de generar el F0288.';
+    // Antivirus y OCS Inventory no se pueden dar por instalados sin su captura: es el respaldo
+    // técnico del F0288 y bloquea tanto el cierre como la generación del documento.
+    const sinCaptura = p.secciones.flatMap((s) => s.items)
+      .find((i) => i.requiereEvidencia && i.estado === 'Realizado' && !i.evidencia?.trim());
+    if (sinCaptura) {
+      return `Debe agregar la captura de evidencia de ${this.etiquetaEvidencia(sinCaptura.nombre)} para finalizar la preparación.`;
+    }
     const vf = p.verificacionFalla;
     if (vf) {
       if (!vf.respuesta) return 'Responda Sí o No a «¿Se realizó verificación de falla?» antes de generar el F0288.';
@@ -2176,8 +2455,15 @@ export class DataService {
       list.map((x) => (x.codigo === codigoTec ? { ...x, estado: 'Preparado' as const } : x))
     );
     const tiempo = this.formatoDuracion(crono.duracionMinutos);
+    // El evento de cierre deja constancia del software de catálogo instalado y su versión, para
+    // que la trazabilidad diga con qué quedó preparado el equipo sin abrir el checklist.
+    const instalado = p.secciones.flatMap((s) => s.items)
+      .filter((i) => i.codigoSoftware && i.estado === 'Realizado')
+      .map((i) => `${i.nombre}${i.versionSeleccionada ? ` ${i.versionSeleccionada}` : ''}`)
+      .join(', ');
     this.registrarEvento(codigoTec, usuario, 'Preparación F0288 finalizada; documento F0288 generado y firmado. Equipo preparado y listo para asignación', 'Preparado',
       `Tiempo total: ${tiempo} · Complejidad: ${cierre.nivel}` +
+        (instalado ? ` · Software instalado: ${instalado}` : '') +
         (cierre.hubo === 'Sí' ? ` · Detalle: ${cierre.detalle.trim()}` : (cierre.observacion.trim() ? ` · Observación: ${cierre.observacion.trim()}` : '')),
       true,
       { modulo: 'Preparación técnica F0288', estadoAnterior: 'En preparación', inventario: p.datosGenerales.inventario,

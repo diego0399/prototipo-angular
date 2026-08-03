@@ -30,8 +30,8 @@
     },
     "seccionesOcultas": [
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "verificacionFalla": {
@@ -44,36 +44,153 @@
     "verificacionAccesorios": {
       "respuesta": "Sí",
       "accesorios": [
-        { "nombre": "Cargador", "estado": "No aplica" },
-        { "nombre": "Cable de poder", "estado": "Verificado" },
-        { "nombre": "Mouse", "estado": "Verificado" },
-        { "nombre": "Teclado", "estado": "Verificado" },
-        { "nombre": "Monitor", "estado": "Verificado" },
-        { "nombre": "Otros accesorios", "estado": "No aplica" }
+        {
+          "nombre": "Monitor",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "02",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-02",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "V226HQL",
+          "serie": "MON-CPU-0004-02",
+          "estadoFisico": "Regular",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-16 09:20"
+        },
+        {
+          "nombre": "Teclado",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "03",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-03",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "KBAC-201",
+          "serie": "TEC-CPU-0004-03",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-16 09:20"
+        },
+        {
+          "nombre": "Mouse",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "04",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-04",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "AMR-910",
+          "serie": "MOU-CPU-0004-04",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-16 09:20"
+        }
       ],
       "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
     },
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
-          { "nombre": "Instalación de Windows 11", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Instalar actualizaciones", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Controladores", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Habilitar cuenta Administrador", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Asignar contraseña Admin", "estado": "Realizado", "evidencia": null, "nota": "Se registra la acción; la contraseña nunca se almacena." }
+          {
+            "nombre": "Instalación de Windows 11",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Instalar actualizaciones",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Controladores",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Habilitar cuenta Administrador",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Asignar contraseña Admin",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": "Se registra la acción; la contraseña nunca se almacena."
+          }
         ]
       },
       {
         "titulo": "Configuración básica",
         "items": [
-          { "nombre": "Servicios (proced. remoto, registro, ubicador, update)", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Perfiles de Firewall (dominio, privado, público)", "estado": "Realizado", "evidencia": null, "nota": "" }
+          {
+            "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Perfiles de Firewall (dominio, privado, público)",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          }
+        ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Realizado",
+            "evidencia": "Captura de instalación ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Realizado",
+            "evidencia": "Captura de registro ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
+          }
         ]
       }
     ],
     "evidencias": [
-      { "item": "Verificación de accesorios", "tipo": "Captura de inventario de accesorios", "cargadaPor": "Balmore Mejía", "fecha": "2026-07-16", "estado": "Verificada" }
+      {
+        "item": "Verificación de accesorios",
+        "tipo": "Captura de inventario de accesorios",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-07-16",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-07-16",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-07-16",
+        "estado": "Verificada"
+      }
     ],
     "firma": {
       "quien": "Balmore Mejía · Técnico de Hardware",
@@ -114,8 +231,8 @@
     },
     "seccionesOcultas": [
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "verificacionFalla": {
@@ -128,36 +245,153 @@
     "verificacionAccesorios": {
       "respuesta": "Sí",
       "accesorios": [
-        { "nombre": "Cargador", "estado": "No aplica" },
-        { "nombre": "Cable de poder", "estado": "Verificado" },
-        { "nombre": "Mouse", "estado": "Verificado" },
-        { "nombre": "Teclado", "estado": "Verificado" },
-        { "nombre": "Monitor", "estado": "Verificado" },
-        { "nombre": "Otros accesorios", "estado": "No aplica" }
+        {
+          "nombre": "Monitor",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "02",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-02",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "V226HQL",
+          "serie": "MON-CPU-0004-02",
+          "estadoFisico": "Regular",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-05-05 09:20"
+        },
+        {
+          "nombre": "Teclado",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "03",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-03",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "KBAC-201",
+          "serie": "TEC-CPU-0004-03",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-05-05 09:20"
+        },
+        {
+          "nombre": "Mouse",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "04",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0004-04",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Acer",
+          "modelo": "AMR-910",
+          "serie": "MOU-CPU-0004-04",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-05-05 09:20"
+        }
       ],
       "observaciones": "Teclado y mouse revisados; sin necesidad de reemplazo."
     },
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
-          { "nombre": "Instalación de Windows 11", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Instalar actualizaciones", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Controladores", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Habilitar cuenta Administrador", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Asignar contraseña Admin", "estado": "Realizado", "evidencia": null, "nota": "Se registra la acción; la contraseña nunca se almacena." }
+          {
+            "nombre": "Instalación de Windows 11",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Instalar actualizaciones",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Controladores",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Habilitar cuenta Administrador",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Asignar contraseña Admin",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": "Se registra la acción; la contraseña nunca se almacena."
+          }
         ]
       },
       {
         "titulo": "Configuración básica",
         "items": [
-          { "nombre": "Servicios (proced. remoto, registro, ubicador, update)", "estado": "Realizado", "evidencia": null, "nota": "" },
-          { "nombre": "Perfiles de Firewall (dominio, privado, público)", "estado": "Realizado", "evidencia": null, "nota": "" }
+          {
+            "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          },
+          {
+            "nombre": "Perfiles de Firewall (dominio, privado, público)",
+            "estado": "Realizado",
+            "evidencia": null,
+            "nota": ""
+          }
+        ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Realizado",
+            "evidencia": "Captura de instalación ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Realizado",
+            "evidencia": "Captura de registro ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
+          }
         ]
       }
     ],
     "evidencias": [
-      { "item": "Verificación de accesorios", "tipo": "Captura de inventario de accesorios", "cargadaPor": "Balmore Mejía", "fecha": "2026-05-05", "estado": "Verificada" }
+      {
+        "item": "Verificación de accesorios",
+        "tipo": "Captura de inventario de accesorios",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-05-05",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-05-05",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-05-05",
+        "estado": "Verificada"
+      }
     ],
     "firma": {
       "quien": "Balmore Mejía · Técnico de Hardware",
@@ -208,7 +442,7 @@
     ],
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -260,40 +494,28 @@
         ]
       },
       {
-        "titulo": "Software según SISSOR · dominio · credenciales",
+        "titulo": "Instalación de software institucional",
         "items": [
           {
-            "nombre": "Antivirus",
+            "nombre": "Instalación de Antivirus",
             "estado": "Realizado",
             "evidencia": "Captura de instalación ✓",
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
           },
           {
-            "nombre": "OCS Inventory",
+            "nombre": "Instalación de OCS Inventory",
             "estado": "Realizado",
             "evidencia": "Captura de registro ✓",
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
           },
           {
             "nombre": "Office / Chrome / Acrobat",
-            "estado": "Realizado",
-            "evidencia": null,
-            "nota": ""
-          },
-          {
-            "nombre": "Agente DLP",
-            "estado": "Realizado",
-            "evidencia": "Captura de DLP ✓",
-            "nota": "Aplica: laptop nueva preparada por Soporte."
-          },
-          {
-            "nombre": "Ingreso a dominio",
-            "estado": "Realizado",
-            "evidencia": "Captura de dominio ✓",
-            "nota": ""
-          },
-          {
-            "nombre": "Credenciales: nombre de equipo · cuenta de red",
             "estado": "Realizado",
             "evidencia": null,
             "nota": ""
@@ -303,29 +525,15 @@
     ],
     "evidencias": [
       {
-        "item": "Antivirus",
-        "tipo": "Captura de antivirus",
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
         "cargadaPor": "Wendy Carranza",
         "fecha": "2026-07-12",
         "estado": "Verificada"
       },
       {
-        "item": "OCS Inventory",
-        "tipo": "Captura de OCS",
-        "cargadaPor": "Wendy Carranza",
-        "fecha": "2026-07-12",
-        "estado": "Verificada"
-      },
-      {
-        "item": "Agente DLP",
-        "tipo": "Captura de DLP",
-        "cargadaPor": "Wendy Carranza",
-        "fecha": "2026-07-12",
-        "estado": "Verificada"
-      },
-      {
-        "item": "Ingreso a dominio",
-        "tipo": "Captura de dominio",
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
         "cargadaPor": "Wendy Carranza",
         "fecha": "2026-07-12",
         "estado": "Verificada"
@@ -370,8 +578,8 @@
     },
     "seccionesOcultas": [
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "verificacionFalla": {
@@ -385,35 +593,56 @@
       "respuesta": "Sí",
       "accesorios": [
         {
-          "nombre": "Cargador",
-          "estado": "No aplica"
-        },
-        {
-          "nombre": "Cable de poder",
-          "estado": "Verificado"
-        },
-        {
-          "nombre": "Mouse",
-          "estado": "Verificado"
+          "nombre": "Monitor",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "02",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0005-02",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Dell",
+          "modelo": "E2216H",
+          "serie": "MON-CPU-0005-02",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-01 09:20"
         },
         {
           "nombre": "Teclado",
-          "estado": "Verificado"
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "03",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0005-03",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Dell",
+          "modelo": "KB216",
+          "serie": "TEC-CPU-0005-03",
+          "estadoFisico": "Regular",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-01 09:20"
         },
         {
-          "nombre": "Monitor",
-          "estado": "Verificado"
-        },
-        {
-          "nombre": "Otros accesorios",
-          "estado": "No aplica"
+          "nombre": "Mouse",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "04",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0005-04",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Dell",
+          "modelo": "MS116",
+          "serie": "MOU-CPU-0005-04",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-07-01 09:20"
         }
       ],
       "observaciones": "Accesorios completos; no se requirió reemplazo."
     },
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -463,12 +692,49 @@
             "nota": ""
           }
         ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Realizado",
+            "evidencia": "Captura de instalación ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Realizado",
+            "evidencia": "Captura de registro ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
+          }
+        ]
       }
     ],
     "evidencias": [
       {
         "item": "Verificación de falla",
         "tipo": "Captura de diagnóstico de disco",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-07-01",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-07-01",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
         "cargadaPor": "Balmore Mejía",
         "fecha": "2026-07-01",
         "estado": "Verificada"
@@ -506,13 +772,13 @@
         "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
       },
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -531,6 +797,13 @@
             "estado": "Pendiente",
             "evidencia": null,
             "nota": ""
+          },
+          {
+            "nombre": ".NET Framework 3.5",
+            "estado": "Pendiente",
+            "evidencia": null,
+            "nota": "Se habilita como característica de Windows cuando aplique.",
+            "codigoSoftware": "SOFT-008"
           },
           {
             "nombre": "Habilitar cuenta Administrador",
@@ -560,6 +833,27 @@
             "estado": "Pendiente",
             "evidencia": null,
             "nota": ""
+          }
+        ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Pendiente",
+            "evidencia": null,
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Pendiente",
+            "evidencia": null,
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true
           }
         ]
       }
@@ -613,7 +907,7 @@
     ],
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -631,7 +925,9 @@
             "nombre": ".NET Framework 3.5",
             "estado": "Realizado",
             "evidencia": null,
-            "nota": ""
+            "nota": "Se habilita como característica de Windows cuando aplique.",
+            "codigoSoftware": "SOFT-008",
+            "versionSeleccionada": "3.5"
           },
           {
             "nombre": "Controladores",
@@ -683,19 +979,25 @@
         ]
       },
       {
-        "titulo": "Software según SISSOR · dominio · credenciales",
+        "titulo": "Instalación de software institucional",
         "items": [
           {
-            "nombre": "Antivirus",
+            "nombre": "Instalación de Antivirus",
             "estado": "Realizado",
             "evidencia": "Captura de instalación ✓",
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
           },
           {
-            "nombre": "OCS Inventory",
+            "nombre": "Instalación de OCS Inventory",
             "estado": "Realizado",
             "evidencia": "Captura de registro ✓",
-            "nota": ""
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
           },
           {
             "nombre": "Office / Chrome / Acrobat",
@@ -708,55 +1010,23 @@
             "estado": "No solicitado",
             "evidencia": null,
             "nota": ""
-          },
-          {
-            "nombre": "Agente DLP",
-            "estado": "Realizado",
-            "evidencia": "Captura de DLP ✓",
-            "nota": "Aplica: laptop nueva preparada por Soporte."
-          },
-          {
-            "nombre": "Ingreso a dominio",
-            "estado": "Realizado",
-            "evidencia": "Captura de dominio ✓",
-            "nota": ""
-          },
-          {
-            "nombre": "Credenciales: nombre de equipo · cuenta de red",
-            "estado": "Realizado",
-            "evidencia": null,
-            "nota": ""
           }
         ]
       }
     ],
     "evidencias": [
       {
-        "item": "Antivirus",
-        "tipo": "Captura de antivirus",
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
         "cargadaPor": "Wendy Carranza",
         "fecha": "2026-07-03",
         "estado": "Verificada"
       },
       {
-        "item": "OCS Inventory",
-        "tipo": "Captura de OCS",
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
         "cargadaPor": "Wendy Carranza",
         "fecha": "2026-07-03",
-        "estado": "Verificada"
-      },
-      {
-        "item": "Agente DLP",
-        "tipo": "Captura de DLP",
-        "cargadaPor": "Wendy Carranza",
-        "fecha": "2026-07-03",
-        "estado": "Verificada"
-      },
-      {
-        "item": "Ingreso a dominio",
-        "tipo": "Captura de dominio",
-        "cargadaPor": "Wendy Carranza",
-        "fecha": "2026-07-05",
         "estado": "Verificada"
       }
     ],
@@ -799,8 +1069,8 @@
     },
     "seccionesOcultas": [
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "verificacionFalla": {
@@ -814,35 +1084,56 @@
       "respuesta": "Sí",
       "accesorios": [
         {
-          "nombre": "Cargador",
-          "estado": "No aplica"
-        },
-        {
-          "nombre": "Cable de poder",
-          "estado": "Verificado"
-        },
-        {
-          "nombre": "Mouse",
-          "estado": "Reemplazado"
+          "nombre": "Monitor",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "02",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0006-02",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "HP",
+          "modelo": "P22v G4",
+          "serie": "MON-CPU-0006-02",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-06-25 09:20"
         },
         {
           "nombre": "Teclado",
-          "estado": "Reemplazado"
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "03",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0006-03",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "HP",
+          "modelo": "125 Wired",
+          "serie": "TEC-CPU-0006-03",
+          "estadoFisico": "Bueno",
+          "observacion": "Accesorio reemplazado durante la preparación.",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-06-25 09:20"
         },
         {
-          "nombre": "Monitor",
-          "estado": "Verificado"
-        },
-        {
-          "nombre": "Otros accesorios",
-          "estado": "No aplica"
+          "nombre": "Mouse",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "04",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0006-04",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "HP",
+          "modelo": "125 Wired",
+          "serie": "MOU-CPU-0006-04",
+          "estadoFisico": "Bueno",
+          "observacion": "Accesorio reemplazado durante la preparación.",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2026-06-25 09:20"
         }
       ],
       "observaciones": "Teclado y mouse reemplazados por unidades nuevas."
     },
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -892,12 +1183,49 @@
             "nota": ""
           }
         ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Realizado",
+            "evidencia": "Captura de instalación ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Realizado",
+            "evidencia": "Captura de registro ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
+          }
+        ]
       }
     ],
     "evidencias": [
       {
         "item": "Verificación de accesorios",
         "tipo": "Captura de inventario de accesorios",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-06-25",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2026-06-25",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
         "cargadaPor": "Balmore Mejía",
         "fecha": "2026-06-25",
         "estado": "Verificada"
@@ -942,8 +1270,8 @@
     },
     "seccionesOcultas": [
       {
-        "nombre": "Credenciales, dominio y Agente DLP",
-        "motivo": "No se muestran como obligatorias cuando prepara Hardware; el checklist dinámico las oculta."
+        "nombre": "Office / Chrome / Acrobat",
+        "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
       }
     ],
     "verificacionFalla": {
@@ -957,35 +1285,56 @@
       "respuesta": "Sí",
       "accesorios": [
         {
-          "nombre": "Cargador",
-          "estado": "No aplica"
-        },
-        {
-          "nombre": "Cable de poder",
-          "estado": "Verificado"
-        },
-        {
-          "nombre": "Mouse",
-          "estado": "Verificado"
+          "nombre": "Monitor",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "02",
+          "seleccionado": false,
+          "numeroInventario": "",
+          "resultadoBusqueda": "",
+          "marca": "",
+          "modelo": "",
+          "serie": "",
+          "estadoFisico": "",
+          "observacion": "",
+          "verificadoPor": "",
+          "fechaVerificacion": ""
         },
         {
           "nombre": "Teclado",
-          "estado": "Verificado"
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "03",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0007-03",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Lenovo",
+          "modelo": "KB-1021",
+          "serie": "TEC-CPU-0007-03",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2025-12-05 09:20"
         },
         {
-          "nombre": "Monitor",
-          "estado": "No aplica"
-        },
-        {
-          "nombre": "Otros accesorios",
-          "estado": "No aplica"
+          "nombre": "Mouse",
+          "familiaEsperada": "2201-00-101",
+          "sufijoEsperado": "04",
+          "seleccionado": true,
+          "numeroInventario": "2201-00-101-0007-04",
+          "resultadoBusqueda": "Encontrado",
+          "marca": "Lenovo",
+          "modelo": "MS-1026",
+          "serie": "MOU-CPU-0007-04",
+          "estadoFisico": "Bueno",
+          "observacion": "",
+          "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+          "fechaVerificacion": "2025-12-05 09:20"
         }
       ],
       "observaciones": "Sin monitor asociado; accesorios básicos completos."
     },
     "secciones": [
       {
-        "titulo": "Sistema operativo y cuenta administrador",
+        "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
         "items": [
           {
             "nombre": "Instalación de Windows 11",
@@ -1035,9 +1384,47 @@
             "nota": ""
           }
         ]
+      },
+      {
+        "titulo": "Instalación de software institucional",
+        "items": [
+          {
+            "nombre": "Instalación de Antivirus",
+            "estado": "Realizado",
+            "evidencia": "Captura de instalación ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-003",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "13.0"
+          },
+          {
+            "nombre": "Instalación de OCS Inventory",
+            "estado": "Realizado",
+            "evidencia": "Captura de registro ✓",
+            "nota": "",
+            "codigoSoftware": "SOFT-004",
+            "requiereEvidencia": true,
+            "versionSeleccionada": "2.10"
+          }
+        ]
       }
     ],
-    "evidencias": [],
+    "evidencias": [
+      {
+        "item": "Instalación de Antivirus",
+        "tipo": "Captura de Antivirus",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2025-12-05",
+        "estado": "Verificada"
+      },
+      {
+        "item": "Instalación de OCS Inventory",
+        "tipo": "Captura de OCS Inventory",
+        "cargadaPor": "Balmore Mejía",
+        "fecha": "2025-12-05",
+        "estado": "Verificada"
+      }
+    ],
     "firma": {
       "quien": "Balmore Mejía · Técnico de Hardware",
       "detalle": "Firma registrada al cerrar la preparación técnica",

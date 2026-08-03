@@ -359,7 +359,7 @@ export class CatalogoSoftwareComponent {
   private readonly toast = inject(ToastService);
 
   protected readonly categorias: CategoriaSoftware[] = [
-    'Sistema operativo', 'Ofimática', 'Seguridad', 'Inventario',
+    'Sistema operativo', 'Componentes de Windows', 'Ofimática', 'Seguridad', 'Inventario',
     'Navegación', 'Utilidad', 'Red', 'Comunicación', 'Otro'
   ];
   protected readonly etapas: EtapaSoftware[] = ['Preparación F0288', 'Configuración F0302', 'Ambas etapas'];

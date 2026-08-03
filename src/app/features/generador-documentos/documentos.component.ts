@@ -4,7 +4,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { DocumentoGenerado, ExpedienteTecnico, FirmaProceso } from '../../core/models/models';
+import { AccesorioVerificado, DocumentoGenerado, ExpedienteTecnico, FirmaProceso } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import {
   BuscarExpedienteTecnicoModalComponent, BuscarExpedienteUnicoModalComponent,
@@ -274,13 +274,27 @@ interface FilaDoc {
                 @case ('Reporte final') { Contenido: consolidación del expediente único — solicitud, asignación, expediente técnico, F0288, F0302, conformidad del usuario final, garantía y trazabilidad — con las firmas capturadas durante el proceso. }
               }
             </p>
+            @if (f.tipo === 'F0288' && softwareDoc(); as sws) {
+              <div class="mt-2">
+                <b>Software instalado en la preparación</b>
+                <dl class="dl mt-1">
+                  @for (s of sws; track s.nombre) {
+                    <dt>{{ s.nombre }}</dt>
+                    <dd>
+                      {{ s.estado }}@if (s.versionSeleccionada) { — versión {{ s.versionSeleccionada }} }
+                      @if (s.evidencia) { · evidencia: {{ s.evidencia }} }
+                    </dd>
+                  }
+                </dl>
+              </div>
+            }
             @if (f.tipo === 'F0288' && accesoriosDoc(); as accs) {
               <div class="mt-2">
                 <b>Accesorios verificados</b>
                 <dl class="dl mt-1">
                   @for (a of accs; track a.nombre) {
                     <dt>{{ a.nombre }}</dt>
-                    <dd>{{ a.seleccionado ? 'Verificado' : 'No seleccionado' }}@if (a.seleccionado && a.numeroInventario) { — {{ a.numeroInventario }} }</dd>
+                    <dd>{{ detalleAccesorio(a) }}</dd>
                   }
                 </dl>
               </div>
@@ -325,13 +339,34 @@ interface FilaDoc {
               <dt>Generado</dt><dd>{{ docTecVer()?.fecha }} por {{ docTecVer()?.generadoPor }}</dd>
             </dl>
             <p class="small muted mt-2">Contenido: checklist digital de preparación técnica completado dentro de SISGOST, con evidencias verificadas y firma del técnico que preparó.</p>
+            @if (softwareDeTec(t); as sws) {
+              <div class="mt-2">
+                <b>Software instalado en la preparación</b>
+                <dl class="dl mt-1">
+                  @for (s of sws; track s.nombre) {
+                    <dt>{{ s.nombre }}</dt>
+                    <dd>
+                      {{ s.estado }}@if (s.versionSeleccionada) { — versión {{ s.versionSeleccionada }} }
+                      @if (s.evidencia) { · evidencia: {{ s.evidencia }} }
+                      @else if (s.requiereEvidencia && s.estado === 'Realizado') { · <span class="muted">sin captura registrada</span> }
+                    </dd>
+                  }
+                </dl>
+              </div>
+            }
+            @if (observacionDeTec(t); as obs) {
+              <div class="mt-2">
+                <b>Observaciones de la preparación</b>
+                <p class="small mt-1">{{ obs }}</p>
+              </div>
+            }
             @if (accesoriosDeTec(t); as accs) {
               <div class="mt-2">
                 <b>Accesorios verificados</b>
                 <dl class="dl mt-1">
                   @for (a of accs; track a.nombre) {
                     <dt>{{ a.nombre }}</dt>
-                    <dd>{{ a.seleccionado ? 'Verificado' : 'No seleccionado' }}@if (a.seleccionado && a.numeroInventario) { — {{ a.numeroInventario }} }</dd>
+                    <dd>{{ detalleAccesorio(a) }}</dd>
                   }
                 </dl>
               </div>
@@ -435,6 +470,13 @@ export class DocumentosComponent {
     return va?.respuesta === 'Sí' ? va.accesorios : undefined;
   });
 
+  /** Software del F0288 del proceso (modo Soporte), igual que `softwareDeTec` en modo Hardware. */
+  protected readonly softwareDoc = computed(() => {
+    const items = (this.prep()?.secciones ?? []).flatMap((s) => s.items)
+      .filter((i) => i.codigoSoftware || i.requiereEvidencia);
+    return items.length > 0 ? items : undefined;
+  });
+
   protected readonly filas = computed<FilaDoc[]>(() => {
     const x = this.expediente();
     if (!x) return [];
@@ -531,6 +573,7 @@ export class DocumentosComponent {
       `Usuario final: ${s?.destinatario ?? '—'} — ${s?.unidadDestino ?? ''}`,
       `Generado: ${f.doc.fecha} por ${f.doc.generadoPor}`,
       `Huella de integridad: ${f.doc.hash}`,
+      ...this.lineasSoftware(f.tipo === 'F0288' ? this.softwareDoc() : undefined),
       ...this.lineasAccesorios(f.tipo === 'F0288' ? this.accesoriosDoc() : undefined),
       '',
       'FIRMAS INCLUIDAS EN EL DOCUMENTO',
@@ -548,14 +591,52 @@ export class DocumentosComponent {
     this.toast.ok('Documento descargado', `${f.nombre} se descargó incluyendo las firmas capturadas.`);
   }
 
+  /** Sección «Software instalado» del documento F0288 descargado, con versión y evidencia de cada ítem. */
+  private lineasSoftware(items: { nombre: string; estado: string; versionSeleccionada?: string; evidencia: string | null }[] | undefined): string[] {
+    if (!items) return [];
+    return [
+      '',
+      'SOFTWARE INSTALADO EN LA PREPARACIÓN',
+      '-'.repeat(60),
+      ...items.map((i) => `${i.nombre}: ${i.estado}`
+        + (i.versionSeleccionada ? ` — versión ${i.versionSeleccionada}` : '')
+        + (i.evidencia ? ` · evidencia: ${i.evidencia}` : ''))
+    ];
+  }
+
+  /** Sección «Observaciones» del documento F0288 descargado (vacía si la preparación no dejó observación). */
+  private lineasObservacion(obs: string): string[] {
+    return obs ? ['', 'OBSERVACIONES DE LA PREPARACIÓN', '-'.repeat(60), obs] : [];
+  }
+
+  /**
+   * Ficha de un accesorio verificado tal como se reporta en el F0288: número, marca, modelo,
+   * serie, estado físico, quién lo verificó y cuándo. El accesorio tiene su propio número de
+   * inventario, distinto al del equipo principal, así que el número es parte del dato.
+   */
+  protected detalleAccesorio(a: AccesorioVerificado): string {
+    if (!a.seleccionado) return 'No seleccionado';
+    if (a.resultadoBusqueda !== 'Encontrado') {
+      return `Sin asociar${a.numeroInventario ? ' — ' + a.numeroInventario : ''}${a.resultadoBusqueda ? ' · ' + a.resultadoBusqueda : ''}`;
+    }
+    const ficha = [a.marca, a.modelo].filter(Boolean).join(' ');
+    return `Verificado — ${a.numeroInventario}`
+      + (ficha ? ` · ${ficha}` : '')
+      + (a.serie ? ` · serie ${a.serie}` : '')
+      + (a.estadoFisico ? ` · estado ${a.estadoFisico}` : '')
+      + (a.verificadoPor ? ` · verificado por ${a.verificadoPor}` : '')
+      + (a.fechaVerificacion ? ` (${a.fechaVerificacion})` : '')
+      + (a.observacion.trim() ? ` · observación: ${a.observacion.trim()}` : '');
+  }
+
   /** Sección «Accesorios verificados» del documento F0288 descargado (vacía si no aplica al equipo). */
-  private lineasAccesorios(accesorios: { nombre: string; seleccionado: boolean; numeroInventario: string }[] | undefined): string[] {
+  private lineasAccesorios(accesorios: AccesorioVerificado[] | undefined): string[] {
     if (!accesorios) return [];
     return [
       '',
       'ACCESORIOS VERIFICADOS',
       '-'.repeat(60),
-      ...accesorios.map((a) => `${a.nombre}: ${a.seleccionado ? `Verificado${a.numeroInventario ? ' — ' + a.numeroInventario : ''}` : 'No seleccionado'}`)
+      ...accesorios.map((a) => `${a.nombre}: ${this.detalleAccesorio(a)}`)
     ];
   }
 
@@ -611,6 +692,26 @@ export class DocumentosComponent {
     return va?.respuesta === 'Sí' ? va.accesorios : undefined;
   }
 
+  /**
+   * Software instalado que reporta el documento F0288: los ítems del checklist controlados por el
+   * catálogo o con captura obligatoria (Windows, Antivirus, OCS Inventory), con su versión y su
+   * evidencia. Es la preparación técnica de Hardware: no incluye credenciales, dominio ni DLP,
+   * que son actividades de Soporte y se registran en el F0302.
+   */
+  protected softwareDeTec(t: ExpedienteTecnico) {
+    const items = (this.data.preparacionPorCodigo(t.codigo)?.secciones ?? [])
+      .flatMap((s) => s.items)
+      .filter((i) => i.codigoSoftware || i.requiereEvidencia);
+    return items.length > 0 ? items : undefined;
+  }
+
+  /** Observación técnica del cierre del F0288 (detalle de complejidad u observación libre). */
+  protected observacionDeTec(t: ExpedienteTecnico): string {
+    const c = this.data.preparacionPorCodigo(t.codigo)?.cierre;
+    if (!c) return '';
+    return (c.hubo === 'Sí' ? c.detalle : c.observacion).trim();
+  }
+
   protected descargarTec(t: ExpedienteTecnico): void {
     const d = this.data.documentoF0288DeExpTecnico(t.codigo);
     if (!d) return;
@@ -624,6 +725,8 @@ export class DocumentosComponent {
       `Unidad responsable: ${t.unidadResponsable}`,
       `Generado: ${d.fecha} por ${d.generadoPor}`,
       `Huella de integridad: ${d.hash}`,
+      ...this.lineasSoftware(this.softwareDeTec(t)),
+      ...this.lineasObservacion(this.observacionDeTec(t)),
       ...this.lineasAccesorios(this.accesoriosDeTec(t)),
       '',
       'FIRMA INCLUIDA EN EL DOCUMENTO',

@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **2 de agosto de 2026 (ronda 29)**.
+nueva sesión sin perder información. Última actualización: **2 de agosto de 2026 (ronda 33)**.
 
 ---
 
@@ -1585,6 +1585,208 @@ Expediente único.
       **Sigue sin recorrido manual de clics en navegador** (misma limitación de entorno de rondas
       anteriores): las reglas se verificaron por compilación, revisión de código y smoke test HTTP.
 
+30. **Preparación F0288: salen Credenciales, Dominio y Agente DLP; capturas obligatorias de
+    Antivirus y OCS Inventory** (2026-08-02, segunda sesión del día; corrección de una regla
+    equivocada de rondas anteriores).
+    * **⚠️ El repositorio estaba roto al empezar.** 16 archivos tenían marcadores de conflicto de
+      Git sin resolver (`<<<<<<< HEAD` / `=======` / `>>>>>>> origin/main`) **commiteados** en
+      `8f0e0b0 «Integrar proyecto local con repositorio remoto»`, un merge de `b346ffb` (local,
+      2026-08-02 18:15, con toda la ronda 29) con `c1544e3` (remoto, 2026-07-30, más antiguo). El
+      proyecto no compilaba. Se verificó archivo por archivo que quedarse con el lado local
+      reproduce **exactamente** `b346ffb` y que el merge no aportó ningún archivo nuevo (el remoto
+      solo traía texto más viejo dentro de los conflictos); se restauró ese lado en los 16
+      archivos y se comprobó build limpio antes de tocar el F0288. **La resolución quedó sin
+      commitear**, junto con los cambios de esta entrada.
+    * **Se eliminan del F0288** los ítems «Agente DLP», «Ingreso a dominio» y «Credenciales:
+      nombre de equipo · cuenta de red»: son actividades de Soporte, no de la preparación técnica
+      de Hardware. No quedan en el checklist, ni en sus categorías, ni en las validaciones de
+      cierre, ni en el documento generado, ni en el detalle, ni en el historial, ni en la
+      trazabilidad. Tampoco quedan como sección oculta: la entrada «Credenciales, dominio y Agente
+      DLP» desapareció.
+    * **Antivirus y OCS Inventory ahora van en TODO F0288.** Antes la sección de software solo
+      existía cuando la unidad responsable era Soporte (si preparaba Hardware no aparecían). La
+      sección nueva **«Instalación de software institucional»** es incondicional y contiene
+      «Instalación de Antivirus» (SOFT-003) e «Instalación de OCS Inventory» (SOFT-004), ambos
+      enlazados al catálogo con `enlaceSoftware(codigo, 'F0288')` y con captura obligatoria.
+      «Office / Chrome / Acrobat» **se conservó tal cual** (solo cuando prepara Soporte; cuando
+      prepara Hardware queda como sección oculta). No se pidió quitarlo, pero conviene decidirlo:
+      según el catálogo, Office, navegador y lector PDF son etapa «Configuración F0302», así que
+      hoy ese ítem duplica en el F0288 software que el F0302 ya controla.
+    * **Captura de evidencia obligatoria.** `ChecklistItem` gana `requiereEvidencia?: boolean`. En
+      la pantalla de preparación, al marcar un ítem que la exige aparece en la misma fila un campo
+      de captura y el botón «Agregar captura» (texto simulado, como el resto de evidencias del
+      prototipo); sin marcar, la fila muestra «Captura obligatoria al marcarlo». Al registrarla se
+      guarda en el ítem, se agrega la fila a «Evidencias técnicas complementarias» (una por ítem;
+      volver a registrarla reemplaza la anterior) y se anota el evento `Captura de Antivirus
+      registrada` / `Captura de OCS Inventory registrada`. `cerrarPreparacion` bloquea cierre y
+      generación del documento con el mensaje exacto pedido: «Debe agregar la captura de evidencia
+      de {Antivirus|OCS Inventory} para finalizar la preparación.» **Al desmarcar el ítem la
+      captura se retira** (también con «Seleccionar todo»): una evidencia sin el ítem marcado
+      respaldaría algo que no está instalado.
+    * **Documento F0288 generado**: la vista previa y el archivo descargado no mostraban nada del
+      software instalado; ahora incluyen «SOFTWARE INSTALADO EN LA PREPARACIÓN» (ítem, estado,
+      versión y evidencia) y «OBSERVACIONES DE LA PREPARACIÓN» (detalle de complejidad u
+      observación del cierre), además de los accesorios y la firma que ya traían. Se arman con los
+      ítems que tienen código de catálogo o captura obligatoria, así que por construcción nunca
+      muestran credenciales, dominio ni DLP.
+    * **Dónde quedaron los ítems retirados**: en la Configuración F0302. El Agente DLP ya estaba
+      ahí; se agregaron «Ingreso a dominio» (Dominio institucional · Red) y «Credenciales: nombre
+      de equipo · cuenta de red» (Según SISSOR · Red) como ítems libres, sin control de versiones,
+      porque no son software de catálogo.
+    * **Datos de demostración**: `preparaciones-f0288.json` — las 8 preparaciones pierden los
+      ítems retirados y sus evidencias, y todas ganan la sección de software institucional (las
+      finalizadas como Realizado con versión y captura; la única «En preparación»,
+      EXP-PT-2026-0088, Pendiente, que es donde se ve la regla nueva funcionando).
+      `trazabilidad.json` — el evento F0288 de captura de Agente DLP pasó a «Captura de Antivirus
+      registrada» y la observación que hablaba de ingreso a dominio ahora habla de la captura de
+      OCS. `configuraciones-f0302.json` — la configuración pendiente (SOL-2026-0145) recibió los
+      dos ítems movidos, para que el traslado se vea sin reiniciar los datos.
+    * **Migración en caliente**: `normalizarPreparaciones` aplica lo mismo a las fotos de
+      `localStorage` anteriores (retira los ítems y sus evidencias, renombra «Antivirus» →
+      «Instalación de Antivirus» y «OCS Inventory» → «Instalación de OCS Inventory», marca la
+      captura como obligatoria), en las dos rutas de hidratación. Un navegador con datos previos
+      no queda con ítems que ya no existen ni obliga a «Restablecer datos de demostración».
+    * **Sin cambios** en el resto del flujo: verificación de falla y de accesorios, cronómetro y
+      cierre técnico, permisos, rutas, catálogo de software (ronda 29) y el F0302 fuera de los dos
+      ítems agregados.
+    * Verificado con `npm run build` limpio (`Application bundle generation complete`, 4.729 s;
+      solo las dos advertencias preexistentes de presupuesto CSS — la de `preparacion.component.ts`
+      pasó de 25 a 266 bytes sobre el presupuesto por las dos reglas CSS nuevas de la fila de
+      captura) y `ng serve` (HTTP 200 en `/`, `/preparacion-tecnica`, `/catalogo-software`,
+      `/generador-documentos`, `/configuracion` y en los tres JSON modificados; proceso detenido y
+      terminación confirmada). La migración se probó aparte contra una foto de `localStorage` con
+      el modelo viejo. **Sigue sin recorrido manual de clics en navegador** (misma limitación de
+      entorno de rondas anteriores).
+
+31. **F0288 — búsqueda de accesorios por familia y sufijo, no por el número del equipo**
+    (2026-08-02, tercera sesión del día; corrección de un defecto que impedía asociar accesorios).
+    * **Causa real, más amplia que el síntoma reportado.** La validación anterior exigía
+      `numero.startsWith(`${inventarioEquipo}-`)`, pero equipos y accesorios **no comparten
+      numeración**: los equipos son `2201-NNNN-AAAA` (p. ej. `2201-1211-2026`) y los accesorios
+      `2201-00-101-XXXX-SS` (CPU) o `2201-00-920-XXXX-SS` (Laptop). Ningún accesorio podía empezar
+      por el número de su equipo, así que **la búsqueda nunca encontraba nada, para ningún equipo**;
+      no era un problema del ingreso múltiple o por rango (tampoco funcionaba con ingreso
+      individual). La familia se deduce ahora del TIPO de equipo, no de su número.
+    * **Cadena de validación nueva** en `consultarAccesorio`, en este orden: formato →  familia
+      (`2201-00-101` CPU / `2201-00-920` Laptop, según el tipo) → sufijo del accesorio
+      seleccionado (CPU: Monitor -02, Teclado -03, Mouse -04; Laptop: Mouse -02, Maletín -03) →
+      existencia en la base institucional simulada → duplicidad activa. **El correlativo `XXXX`
+      del accesorio ya no tiene que coincidir con el del equipo principal.**
+    * **Resultados separados**: lo que antes era un solo «No corresponde al equipo» se dividió en
+      «No corresponde al equipo» (familia equivocada) y «No corresponde al accesorio» (familia
+      correcta pero sufijo de otro accesorio), porque son errores distintos; se agregó «Asociado a
+      otro equipo». `AccesorioVerificado` gana `familiaEsperada`, `verificadoPor` y
+      `fechaVerificacion` (se sellan al asociar y se limpian al desmarcar).
+    * **Duplicidad activa**: `accesorioAsociadoActivamente` bloquea si el accesorio ya quedó
+      marcado y encontrado en otra preparación vigente, indicando a qué expediente técnico y equipo
+      pertenece. **No cuenta el historial cerrado** (preparación «Cerrada» o expediente técnico
+      «Cerrado»): ese accesorio puede volver a asociarse.
+    * **Se ven ahora en**: pantalla de preparación (ficha + «Verificado por … · fecha», placeholder
+      con el formato esperado y tooltip que aclara que el correlativo puede diferir del equipo),
+      documento F0288 (la sección «Accesorios verificados» pasó de «Verificado — número» a la ficha
+      completa con marca, modelo, serie, estado, técnico, fecha y observación), historial técnico
+      del equipo (lista de accesorios asociados bajo el resumen) y trazabilidad.
+    * **Trazabilidad**: un evento por cada desenlace (consultado, encontrado, asociado, no
+      encontrado, rechazado por formato, por tipo de equipo, por accesorio seleccionado y por
+      duplicado activo), cada uno con equipo principal, expediente técnico, accesorio seleccionado
+      con su familia y sufijo, número consultado, resultado y mensaje.
+    * **Base simulada**: de 10 a 25 accesorios. Se agregaron los correlativos del pedido (CPU 0003,
+      Laptop 0003) y CPU 0004-0007 para el seed. **Los correlativos 0001-0003 se dejaron
+      deliberadamente libres**: son los de los casos de prueba del pedido, y si el seed los ocupara,
+      la regla de duplicidad activa los bloquearía y darían «Asociado a otro equipo».
+    * **Los accesorios del seed estaban en un modelo obsoleto** (`{ nombre, estado }` con Cargador /
+      Cable de poder / Otros accesorios, sin `seleccionado` ni `numeroInventario`): en pantalla se
+      veía «0 de 6 accesorio(s) verificado(s)» con nombres inexistentes. Se reescribieron las 5
+      preparaciones con el modelo actual y accesorios reales (0094→0004, 0093→0004 por ser el ciclo
+      anterior cerrado del mismo equipo, 0084→0005, 0086→0006, 0041→0007).
+      `normalizarPreparaciones` completa los campos faltantes en las fotos de `localStorage` con el
+      modelo viejo, para que la pantalla de accesorios no quede rota.
+    * Verificado con `npm run build` limpio (`Application bundle generation complete`, 4.736 s; solo
+      las dos advertencias preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en `/`,
+      `/preparacion-tecnica`, `/trazabilidad`, `/generador-documentos` y los dos JSON modificados) y
+      un arnés que reproduce la cadena de validación real contra los datos reales: **12 casos de
+      prueba, 0 fallos**, incluidos los del pedido y los negativos (mezcla de familias, sufijo
+      equivocado, inexistente, formato inválido, duplicado activo e historial cerrado que no
+      bloquea). **Sigue sin recorrido manual de clics en navegador.**
+32. **F0288 — `.NET Framework 3.5` en el checklist y en el Catálogo de Software** (2026-08-02,
+    cuarta sesión del día).
+    * **El ítem ya existía en los datos, pero no en la plantilla.** La preparación
+      `EXP-PT-2026-0091` del seed ya traía `.NET Framework 3.5` en su sección de sistema operativo,
+      pero `plantillaF0288` no lo generaba: se había perdido de la plantilla en algún cambio
+      anterior, así que ninguna preparación nueva lo mostraba. Ese ítem se conservó y se enlazó al
+      catálogo con versión 3.5.
+    * **Catálogo: SOFT-008** — `.NET Framework`, categoría «Componentes de Windows», versiones
+      permitidas `["3.5"]`, vigente 3.5, etapa «Preparación F0288», sin licencia, activo,
+      observación «Habilitar como característica de Windows cuando aplique.». **«Componentes de
+      Windows» es una categoría NUEVA**: el catálogo tenía 9 fijas y pasó a 10 (`CategoriaSoftware`
+      y el `<select>` del formulario). Por su etapa, **no aparece en el F0302** — verificado.
+    * **Checklist**: el ítem va entre «Controladores» y la cuenta de administrador, enlazado con
+      `enlaceSoftware('SOFT-008', 'F0288')`, así que hereda el comportamiento de Windows/Antivirus/OCS:
+      selector limitado a las versiones permitidas (aquí solo 3.5, no hay forma de escribir otra),
+      versión vigente asignada al marcarlo y versión obligatoria antes de generar el F0288. La
+      sección se renombró de «Sistema operativo y cuenta administrador» a **«Sistema operativo,
+      componentes de Windows y cuenta administrador»** (se conservó «y cuenta administrador» porque
+      esos ítems siguen ahí).
+    * **Checkbox por categoría**: no hizo falta tocar nada; `marcarSeccionCompletaF0288` y
+      `estadoSelAll` ya cubren todos los ítems. Verificado: marcar la categoría marca .NET;
+      desmarcarlo a mano deja el checkbox en **parcial**.
+    * **Trazabilidad enriquecida (general, no solo para .NET)**: el evento «Software seleccionado»
+      de los ítems de catálogo pasó de no tener detalle a registrar versión, categoría, formulario y
+      código de catálogo; el evento de cierre del F0288 ahora lista el software de catálogo instalado
+      con su versión.
+    * **Documento F0288**: se agregó el bloque «Software instalado en la preparación» también a la
+      vista de **modo Soporte** y a su descarga — en la ronda 30 solo se había agregado a la vista de
+      modo Hardware, así que ese documento se quedaba sin el detalle de software. En el **historial
+      técnico** (pestaña Preparaciones F0288) se lista ahora el software instalado con su versión.
+    * **Preparaciones ya guardadas**: `normalizarPreparaciones` renombra la sección y agrega el ítem
+      **solo a las preparaciones en curso**. Un F0288 finalizado documenta lo que realmente se hizo;
+      agregarle un ítem después sería reescribir un registro técnico cerrado. En el seed solo lo
+      recibe `EXP-PT-2026-0088` («En preparación»), como Pendiente.
+    * Verificado con `npm run build` limpio (`Application bundle generation complete`, 4.499 s; solo
+      las dos advertencias preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en `/`,
+      `/preparacion-tecnica`, `/catalogo-software`, `/generador-documentos`, `/trazabilidad` y los dos
+      JSON modificados) y comprobación contra los datos reales de las cuatro reglas (etapa, versiones
+      ofrecidas, marcar categoría completa, desmarcar a mano → parcial). **Sigue sin recorrido manual
+      de clics en navegador.**
+33. **F0288 — accesorios de Laptop usada: la causa era la cobertura de la base, no la validación**
+    (2026-08-02, quinta sesión del día).
+    * **Se comprobó antes de cambiar nada.** La validación por familia y sufijo es común a CPU y
+      Laptop desde la entrada 31, así que se probó el camino de laptop tal como estaba, con una
+      laptop usada ingresada desde el catálogo institucional (`2201-00-920-0001`, que es como quedan
+      los equipos del ingreso múltiple y por rango): **11 de 13 casos ya pasaban**. La regla no
+      estaba mal. Los dos fallos eran `2201-00-920-0004-02` y `2201-00-920-0005-03`, que **no
+      existían en la base de accesorios**.
+    * **Causa real: cobertura desigual de la base.** Tenía accesorios de CPU 0001-0007 pero de
+      Laptop solo 0001-0003. De las **seis laptops usadas** del catálogo institucional (0001, 0002,
+      0003, 0004, 0007, 0009) **tres no tenían ningún accesorio**; en CPU solo faltaba una (0009).
+      De ahí el síntoma «en CPU funciona, en laptop no»: quien preparaba una de esas laptops recibía
+      «No encontrado» escribiera lo que escribiera. También explica la asociación con el ingreso
+      múltiple: los equipos ingresados por lote vienen del catálogo institucional y se numeran
+      `2201-00-920-XXXX`, mientras que los del inventario mock individual son `2201-NNNN-AAAA`.
+    * **Base ampliada de 25 a 50 accesorios**: ahora **todos** los equipos del catálogo institucional
+      tienen los suyos (10 CPU × Monitor/Teclado/Mouse y 10 Laptop × Mouse/Maletín), con los datos
+      textuales del pedido para laptop 0004 y 0005. Ningún registro existente se modificó, para no
+      desalinear los accesorios ya asociados en las preparaciones del seed. Se agregaron también los
+      correlativos de CPU 0008-0010 que faltaban: es **solo dato**, no toca ninguna regla de CPU, y
+      evita que reaparezca el mismo problema con el CPU usado 0009.
+    * **Normalización del número**: se quitan los espacios (incluidos los de en medio, frecuentes al
+      pegar desde una hoja de cálculo) y se pasa a mayúsculas conservando guiones, y **el valor
+      normalizado es el que se guarda** en el F0288. Antes solo se hacía `trim()` para la consulta,
+      así que un número pegado con espacios se buscaba bien pero quedaba sucio en el registro y en el
+      documento.
+    * **Mensajes y eventos por tipo de equipo**: con familia equivocada en una laptop el aviso dice
+      «El accesorio no corresponde a una Laptop.» (en CPU se conserva el texto pedido en su momento).
+      Los eventos pasan a «Accesorio de Laptop / de CPU consultado · encontrado · no encontrado ·
+      rechazado por … · asociado a F0288» —cambio de texto, no de lógica— y el detalle agrega el
+      equipo principal con su tipo («Laptop principal: 2201-00-920-0001»).
+    * **No se tocó la lógica de CPU** (familia `2201-00-101`, Monitor -02, Teclado -03, Mouse -04 ni
+      la cadena de validación, que es la misma para ambos tipos). Se corrió la batería de CPU de la
+      entrada 31 como regresión: **12 casos, 0 fallos**.
+    * Verificado con `npm run build` limpio (`Application bundle generation complete`, 4.990 s; solo
+      las dos advertencias preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en `/`,
+      `/preparacion-tecnica`, `/inventario-hardware`, `/generador-documentos`, `/trazabilidad` y el
+      JSON de accesorios) y las dos baterías contra datos reales: **Laptop 13 casos y CPU 12 casos, 0
+      fallos**. **Sigue sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -1622,6 +1824,33 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 33)**: recorrido manual en navegador del F0288 de una **Laptop usada**
+  ingresada por lote (p. ej. `2201-00-920-0004`, usada) — buscar Mouse y Maletín con correlativos
+  distintos al de la laptop, comprobar el aviso «El accesorio no corresponde a una Laptop.» al
+  ingresar un accesorio de CPU, y ver los eventos «Accesorio de Laptop …» en la trazabilidad.
+  Verificado con build limpio, smoke test HTTP y dos baterías de casos contra datos reales, sin
+  clics reales.
+* **Nuevo pendiente (ronda 32)**: recorrido manual en navegador de `.NET Framework 3.5` — que
+  aparezca en el checklist de una preparación nueva, que su selector ofrezca solo 3.5, que el
+  «Seleccionar todo» de la categoría lo marque y que desmarcarlo deje el checkbox en parcial, y
+  que salga en el documento F0288 (en las vistas de modo Hardware y de modo Soporte) y en el
+  historial técnico. Verificado por compilación, smoke test HTTP y comprobación contra los datos
+  reales, sin clics reales.
+* **Nuevo pendiente (ronda 31)**: recorrido manual en navegador de la búsqueda de accesorios —
+  buscar un accesorio con correlativo distinto al del equipo (p. ej. equipo CPU cualquiera y
+  Mouse `2201-00-101-0002-04`), comprobar los cinco mensajes de error, y verificar el bloqueo por
+  duplicado activo intentando asociar un accesorio del seed (`2201-00-101-0004-04`, ya en
+  EXP-PT-2026-0094). Esta ronda se verificó con `npm run build` limpio, smoke test HTTP y un arnés
+  de 12 casos contra los datos reales, sin clics reales.
+* **Nuevo pendiente (ronda 30)**: recorrido manual en navegador del F0288 nuevo — que
+  Credenciales/Dominio/Agente DLP ya no aparezcan en ningún F0288 (incluidos el historial y el
+  documento), el campo de captura de Antivirus y OCS (registrar, ver la fila en «Evidencias
+  técnicas complementarias», desmarcar el ítem y comprobar que la captura se retira), el bloqueo
+  al finalizar sin captura, y los bloques nuevos del documento F0288. Además: **decidir si
+  «Office / Chrome / Acrobat» debe salir del F0288**, ya que según el catálogo Office, navegador
+  y lector PDF son etapa «Configuración F0302» y hoy ese ítem duplica software que el F0302 ya
+  controla (se conservó porque no se pidió quitarlo). Esta ronda se verificó con `npm run build`
+  limpio y smoke test HTTP, sin clics reales.
 * **Nuevo pendiente (ronda 29)**: recorrido manual en navegador del formulario reordenado del
   Catálogo de software — en particular el constructor de versiones permitidas (agregar, quitar,
   que la vigente se sincronice), el bloqueo de «Tipo de licencia» hasta responder «Sí», el modal

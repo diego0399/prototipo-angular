@@ -281,6 +281,12 @@ export interface ChecklistItem {
   codigoSoftware?: string;
   /** Versión elegida entre `SoftwareCatalogo.versionesPermitidas`, cuando `codigoSoftware` aplica. */
   versionSeleccionada?: string;
+  /**
+   * Ítems que no se pueden dar por instalados sin captura de evidencia (en el F0288, «Instalación
+   * de Antivirus» e «Instalación de OCS Inventory»): `cerrarPreparacion` bloquea el cierre y la
+   * generación del documento mientras falte la captura.
+   */
+  requiereEvidencia?: boolean;
 }
 
 export interface ChecklistSeccion {
@@ -373,8 +379,15 @@ export interface VerificacionFalla {
   observaciones: string;
 }
 
-/** Desenlace de la búsqueda de un accesorio en la base institucional simulada. */
-export type ResultadoConsultaAccesorio = 'Encontrado' | 'No encontrado' | 'Formato inválido' | 'No corresponde al equipo';
+/**
+ * Desenlace de la búsqueda de un accesorio en la base institucional simulada. «No corresponde al
+ * equipo» = familia equivocada (accesorio de laptop en un CPU o al revés); «No corresponde al
+ * accesorio» = familia correcta pero sufijo de otro accesorio (p. ej. un «-02» de Monitor cuando
+ * se seleccionó Mouse); «Asociado a otro equipo» = el accesorio ya está en otro F0288 vigente.
+ */
+export type ResultadoConsultaAccesorio =
+  | 'Encontrado' | 'No encontrado' | 'Formato inválido'
+  | 'No corresponde al equipo' | 'No corresponde al accesorio' | 'Asociado a otro equipo';
 
 /**
  * Ficha de un accesorio en la base institucional simulada de accesorios, consultada por su
@@ -390,14 +403,20 @@ export interface AccesorioCatalogoInstitucional {
 }
 
 /**
- * Accesorio a verificar del equipo usado. El conjunto de accesorios (nombre y sufijo esperado)
- * depende del tipo de equipo: CPU usado → Monitor (-02), Teclado (-03), Mouse (-04); Laptop
- * usada → Mouse (-02), Maletín (-03). Al marcar `seleccionado`, se habilita la búsqueda por
- * número de inventario contra `AccesorioCatalogoInstitucional`; los campos de la ficha solo se
- * autocompletan cuando `resultadoBusqueda` es «Encontrado» — nunca se inventan datos.
+ * Accesorio a verificar del equipo usado. El conjunto de accesorios (nombre, familia y sufijo
+ * esperado) depende del tipo de equipo: CPU usado → familia `2201-00-101` con Monitor (-02),
+ * Teclado (-03) y Mouse (-04); Laptop usada → familia `2201-00-920` con Mouse (-02) y Maletín
+ * (-03). Al marcar `seleccionado`, se habilita la búsqueda por número de inventario contra
+ * `AccesorioCatalogoInstitucional`; los campos de la ficha solo se autocompletan cuando
+ * `resultadoBusqueda` es «Encontrado» — nunca se inventan datos.
+ *
+ * El correlativo del accesorio **no tiene que coincidir** con el del equipo principal: los
+ * accesorios son bienes con su propio número de inventario y se asocian por familia y sufijo.
  */
 export interface AccesorioVerificado {
   nombre: string;
+  /** Prefijo de familia que debe tener el accesorio: `2201-00-101` (CPU) o `2201-00-920` (Laptop). */
+  familiaEsperada: string;
   sufijoEsperado: string;
   seleccionado: boolean;
   numeroInventario: string;
@@ -407,6 +426,10 @@ export interface AccesorioVerificado {
   serie: string;
   estadoFisico: string;
   observacion: string;
+  /** Técnico que hizo la verificación (se sella cuando el accesorio se asocia al F0288). */
+  verificadoPor: string;
+  /** Fecha y hora de la verificación (`YYYY-MM-DD HH:mm`); vacía mientras no se haya asociado. */
+  fechaVerificacion: string;
 }
 
 /** Verificación de accesorios del F0288 (equipo usado): detalle visible solo con respuesta «Sí». */
@@ -424,7 +447,7 @@ export type EtapaSoftware = 'Preparación F0288' | 'Configuración F0302' | 'Amb
 
 /** Categorías permitidas para clasificar el software del catálogo. */
 export type CategoriaSoftware =
-  | 'Sistema operativo' | 'Ofimática' | 'Seguridad' | 'Inventario'
+  | 'Sistema operativo' | 'Componentes de Windows' | 'Ofimática' | 'Seguridad' | 'Inventario'
   | 'Navegación' | 'Utilidad' | 'Red' | 'Comunicación' | 'Otro';
 
 /** Tipo de licenciamiento, solo cuando el software requiere licencia. */

@@ -4,8 +4,8 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import {
-  Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico,
-  Garantia, IngresoHardware, PreparacionF0288
+  AccesorioVerificado, ChecklistItem, Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo,
+  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, PreparacionF0288
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 
@@ -419,7 +419,13 @@ interface FilaTraza {
                         <td>
                           @if (p.estado === 'Completada') { <span class="m-chip">Generado · firma {{ p.firma.estado === 'Firmado' ? 'capturada' : 'pendiente' }}</span> }
                           @else { <span class="muted small">Pendiente</span> }
+                          @for (s of softwareInstalado(p); track s.nombre) {
+                            <div class="sub-cell">{{ s.nombre }}@if (s.versionSeleccionada) { · versión {{ s.versionSeleccionada }} }</div>
+                          }
                           @if (accesoriosResumen(p); as ar) { <div class="sub-cell">{{ ar }}</div> }
+                          @for (a of accesoriosAsociados(p); track a.numeroInventario) {
+                            <div class="sub-cell mono" style="max-width: 260px;">{{ a.nombre }} · {{ a.numeroInventario }} — {{ a.marca }} {{ a.modelo }} · {{ a.estadoFisico }}</div>
+                          }
                         </td>
                         <td><ui-badge [estado]="p.estado" /></td>
                         <td style="text-align:right;"><button class="btn btn-ghost btn-sm" (click)="tab.set('traza')">Ver trazabilidad</button></td>
@@ -911,6 +917,14 @@ export class TrazabilidadComponent {
     return 'En proceso';
   }
 
+  /**
+   * Software del catálogo que quedó instalado en una preparación F0288 (Windows, .NET Framework,
+   * Antivirus, OCS Inventory…), con la versión elegida desde el catálogo.
+   */
+  protected softwareInstalado(p: PreparacionF0288): ChecklistItem[] {
+    return p.secciones.flatMap((s) => s.items).filter((i) => i.codigoSoftware && i.estado === 'Realizado');
+  }
+
   /** Resumen de accesorios verificados de una preparación F0288 (equipo usado), o '' si no aplica. */
   protected accesoriosResumen(p: PreparacionF0288): string {
     const va = p.verificacionAccesorios;
@@ -918,6 +932,17 @@ export class TrazabilidadComponent {
     const total = va.accesorios.length;
     const verificados = va.accesorios.filter((a) => a.seleccionado).length;
     return `${verificados} de ${total} accesorio(s) verificado(s)`;
+  }
+
+  /**
+   * Accesorios efectivamente asociados a una preparación F0288: los marcados y encontrados en la
+   * base institucional simulada. Cada uno lleva su propio número de inventario, distinto al del
+   * equipo principal.
+   */
+  protected accesoriosAsociados(p: PreparacionF0288): AccesorioVerificado[] {
+    const va = p.verificacionAccesorios;
+    if (!va || va.respuesta !== 'Sí') return [];
+    return va.accesorios.filter((a) => a.seleccionado && a.resultadoBusqueda === 'Encontrado');
   }
 
   /** Estado del F0288 de ese ciclo: Generado si la preparación ya finalizó (o quedó cerrada), Pendiente si sigue en curso. */

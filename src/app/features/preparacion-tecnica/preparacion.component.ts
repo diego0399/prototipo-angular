@@ -20,6 +20,8 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
     .item-row .i-nombre.na { color: var(--tx-3); font-weight: 300; text-decoration: line-through solid var(--line-strong); }
     .item-row .i-evid { font-size: 11.5px; color: var(--blue-600); background: var(--blue-050); border: 1px solid var(--blue-100); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
     .item-row .i-nota { font-size: 11.5px; color: var(--tx-3); font-style: italic; max-width: 300px; }
+    .item-row .i-falta { font-size: 11.5px; color: var(--warn); background: var(--warn-bg); border: 1px solid var(--warn-line); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+    .item-row .i-cap { flex: none; width: 230px; font-size: 12.5px; padding: 5px 9px; }
     .prog-head { display: flex; align-items: center; gap: 14px; }
     .prog-head .p-num { font-size: 13px; font-weight: 700; color: var(--navy-900); white-space: nowrap; }
     .prog-head .progress { flex: 1; min-width: 140px; }
@@ -342,11 +344,12 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                           </label>
                           @if (a.seleccionado) {
                             <input class="control mono a-num" [value]="a.numeroInventario" [disabled]="p.estado === 'Completada'"
-                              placeholder="Número de inventario del accesorio…"
+                              [placeholder]="a.familiaEsperada + '-XXXX-' + a.sufijoEsperado"
                               (input)="numAcc(p, a.nombre, $event)" />
                             <button type="button" class="btn btn-outline btn-sm"
                               [disabled]="p.estado === 'Completada' || !a.numeroInventario.trim()"
                               (click)="buscarAcc(p, a.nombre)">Buscar accesorio</button>
+                            <ui-help [texto]="'El accesorio se valida por familia (' + a.familiaEsperada + ') y sufijo (-' + a.sufijoEsperado + '), no por el número del equipo principal: el correlativo XXXX del accesorio puede ser distinto al del equipo.'" />
                             @if (a.resultadoBusqueda) { <ui-badge [estado]="a.resultadoBusqueda" /> }
                           }
                         </div>
@@ -357,8 +360,11 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                             <div><div class="d-k">Serie</div><div class="d-v mono">{{ a.serie }}</div></div>
                             <div><div class="d-k">Estado físico</div><div class="d-v">{{ a.estadoFisico }}</div></div>
                           </div>
+                          @if (a.verificadoPor) {
+                            <p class="small muted mt-1">Verificado por {{ a.verificadoPor }} · {{ a.fechaVerificacion }}</p>
+                          }
                         } @else if (a.seleccionado && a.resultadoBusqueda) {
-                          <p class="acc-err">{{ mensajeResultadoAcc(a.resultadoBusqueda) }}</p>
+                          <p class="acc-err">{{ mensajeResultadoAcc(a.resultadoBusqueda, a.familiaEsperada === '2201-00-920') }}</p>
                         }
                         @if (a.seleccionado) {
                           <div class="field mt-1">
@@ -428,6 +434,16 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                   @if (item.evidencia) {
                     <span class="i-evid">{{ item.evidencia }}</span>
                     <ui-help texto="La evidencia no reemplaza el checklist; solo respalda ítems técnicos específicos." />
+                  } @else if (item.requiereEvidencia && p.estado !== 'Completada') {
+                    @if (item.estado === 'Realizado') {
+                      <input class="control i-cap" [ngModel]="textoCaptura(sec.titulo, item.nombre)"
+                        (ngModelChange)="escribirCaptura(sec.titulo, item.nombre, $event)"
+                        placeholder="Captura de evidencia: archivo o referencia…" />
+                      <button class="btn btn-outline btn-sm" (click)="agregarCaptura(p, sec.titulo, item.nombre)">Agregar captura</button>
+                      <ui-help [texto]="'Sin esta captura no se puede finalizar la preparación ni generar el F0288. Al desmarcar «' + item.nombre + '» la captura se retira.'" />
+                    } @else {
+                      <span class="i-falta">Captura obligatoria al marcarlo</span>
+                    }
                   }
                   <ui-badge [estado]="item.estado" />
                 </div>
@@ -454,7 +470,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
             <div>
               <h3>
                 Evidencias técnicas complementarias
-                <ui-help texto="La evidencia no reemplaza el checklist; solo respalda ítems técnicos específicos (antivirus, OCS, DLP, dominio…)." />
+                <ui-help texto="La evidencia no reemplaza el checklist; respalda los ítems técnicos que la exigen. En el F0288 son obligatorias las capturas de Antivirus y de OCS Inventory." />
               </h3>
             </div>
           </div>
@@ -754,11 +770,16 @@ export class PreparacionComponent {
     const u = this.auth.usuario();
     this.data.consultarAccesorio(p.expedienteTecnico, nombre, `${u?.nombre} — ${u?.rol}`);
   }
-  protected mensajeResultadoAcc(r: ResultadoConsultaAccesorio | ''): string {
+  /** `esLaptop` diferencia el aviso de familia equivocada: en una laptop el mensaje lo dice tal cual. */
+  protected mensajeResultadoAcc(r: ResultadoConsultaAccesorio | '', esLaptop = false): string {
     switch (r) {
       case 'No encontrado': return 'No se encontró información del accesorio en la base institucional simulada.';
-      case 'Formato inválido': return 'El número de inventario del accesorio no corresponde al formato esperado para este tipo de equipo.';
-      case 'No corresponde al equipo': return 'El accesorio no corresponde al equipo principal seleccionado.';
+      case 'Formato inválido': return 'El número de inventario del accesorio no tiene un formato válido.';
+      case 'No corresponde al equipo': return esLaptop
+        ? 'El accesorio no corresponde a una Laptop.'
+        : 'El accesorio no corresponde al tipo de equipo seleccionado.';
+      case 'No corresponde al accesorio': return 'El número ingresado no corresponde al accesorio seleccionado.';
+      case 'Asociado a otro equipo': return 'Este accesorio ya se encuentra asociado a otro equipo activo. Verifique antes de continuar.';
       default: return '';
     }
   }
@@ -791,6 +812,31 @@ export class PreparacionComponent {
     if (!version) return;
     const u = this.auth.usuario();
     this.data.seleccionarVersionItemF0288(p.expedienteTecnico, seccion, item.nombre, version, `${u?.nombre} — ${u?.rol}`);
+  }
+
+  // Captura de evidencia de los ítems que la exigen (Antivirus y OCS Inventory). El texto en
+  // edición se guarda por ítem —clave «sección||ítem»— para no mezclar dos capturas a la vez.
+  protected capturas = signal<Record<string, string>>({});
+  private claveCaptura(seccion: string, item: string): string {
+    return `${seccion}||${item}`;
+  }
+  protected textoCaptura(seccion: string, item: string): string {
+    return this.capturas()[this.claveCaptura(seccion, item)] ?? '';
+  }
+  protected escribirCaptura(seccion: string, item: string, valor: string): void {
+    this.capturas.update((m) => ({ ...m, [this.claveCaptura(seccion, item)]: valor }));
+  }
+  protected agregarCaptura(p: PreparacionF0288, seccion: string, item: string): void {
+    const u = this.auth.usuario();
+    const error = this.data.registrarEvidenciaItemF0288(
+      p.expedienteTecnico, seccion, item, this.textoCaptura(seccion, item), `${u?.nombre} — ${u?.rol}`);
+    if (error) {
+      this.toast.error('No se pudo registrar la captura', error);
+      return;
+    }
+    this.escribirCaptura(seccion, item, '');
+    this.toast.ok('Captura de evidencia registrada',
+      `La evidencia de ${item} quedó en el F0288 y en la trazabilidad del equipo.`);
   }
 
   protected guardar(): void {
