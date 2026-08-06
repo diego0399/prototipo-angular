@@ -2,13 +2,13 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import {
-  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
+  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
-  DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, FilaValidacionLote,
-  EstadoAsignacionEquipo, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  FirmaProceso, Garantia, IngresoHardware, IntentoAceptacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
-  ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
-  SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP,
+  DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaReproceso, FilaValidacionLote,
+  EstadoAsignacionEquipo, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemReproceso, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
+  ReprocesoF0288, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
+  SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
   TipoComentarioCaso, TipoCorreccion, TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
@@ -54,6 +54,11 @@ export class DataService {
   readonly intentos = signal<IntentoAceptacion[]>([]);
   /** Correcciones de no conformidad registradas por el Técnico de Soporte. */
   readonly correcciones = signal<CorreccionNoConformidad[]>([]);
+  /**
+   * Reprocesos de Preparación F0288 abiertos por fallas detectadas en F0302. Cada uno pertenece al
+   * Expediente técnico que ya tenía el equipo: son la alternativa a crear expedientes nuevos.
+   */
+  readonly reprocesos = signal<ReprocesoF0288[]>([]);
   /**
    * Base de datos institucional simulada que se consulta por número de inventario al ingresar
    * un equipo. Es solo lectura: no se persiste en localStorage ni se reinicia con la demo,
@@ -133,6 +138,7 @@ export class DataService {
       eventos: json<EventoTrazabilidad[]>('trazabilidad'),
       ingresos: json<IngresoHardware[]>('ingresos-hardware'),
       descargos: json<Descargo[]>('descargos'),
+      reprocesos: json<ReprocesoF0288[]>('reprocesos-f0288'),
       catalogoSoftware: json<SoftwareCatalogo[]>('catalogo-software')
     }).subscribe((r) => {
       this.usuarios.set(r.usuarios);
@@ -150,6 +156,7 @@ export class DataService {
       this.eventos.set(r.eventos);
       this.ingresosHardware.set(r.ingresos);
       this.descargos.set(r.descargos);
+      this.reprocesos.set(this.normalizarReprocesos(r.reprocesos ?? []));
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(r.catalogoSoftware));
       // No hay JSON semilla de intentos/correcciones: el flujo de no conformidad se genera
       // durante la demostración y se conserva luego en localStorage. Se siembra un intento
@@ -214,6 +221,7 @@ export class DataService {
       this.descargos.set(d.descargos ?? []);
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(d.correcciones ?? []);
+      this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(d.catalogoSoftware ?? []));
@@ -235,6 +243,7 @@ export class DataService {
         documentos: this.documentos(), eventos: this.eventos(),
         ingresosHardware: this.ingresosHardware(), descargos: this.descargos(),
         intentos: this.intentos(), correcciones: this.correcciones(),
+        reprocesos: this.reprocesos(),
         catalogoSoftware: this.catalogoSoftware()
       };
       const json = JSON.stringify(d);
@@ -373,11 +382,9 @@ export class DataService {
     return !!cor && cor.reingresoHardware;
   }
   /**
-   * true mientras el equipo tiene un F0302 «Con falla» pendiente de revisión técnica en su proceso
-   * vigente y todavía no se ha iniciado una nueva Configuración F0302. Igual que la revisión por
-   * inconformidad (Caso B), el equipo volvió a F0288 SIN descargo —la asignación sigue vigente—, por lo
-   * que debe permitirse crear un nuevo Expediente técnico para la nueva preparación pese a esa asignación.
-   * Sin esta excepción el equipo quedaba bloqueado y nunca regresaba realmente a F0288.
+   * true mientras el equipo tiene un F0302 «Con falla» con su incidencia todavía abierta y aún no
+   * se ha iniciado el nuevo intento. Ya NO habilita crear un Expediente técnico nuevo: la falla se
+   * atiende dentro del expediente vigente, corrigiéndola en F0302 o con un reproceso F0288.
    */
   revisionTecnicaPorFallaF0302(inventario: string): boolean {
     const eq = this.equipoDe(inventario);
@@ -540,6 +547,10 @@ export class DataService {
   intentosF0302(inventario: string): number {
     return this.configuracionesDeEquipo(inventario).filter((c) => this.configuracionEsIntento(c)).length;
   }
+  /** Fallas F0302 del equipo = intentos que quedaron «Con falla». */
+  fallasF0302(inventario: string): number {
+    return this.configuracionesDeEquipo(inventario).filter((c) => c.estado === 'Con falla').length;
+  }
   /**
    * Resumen consolidado del equipo, usado tanto por «Ver detalle» en Inventario de Hardware
    * como por la pestaña Resumen del Historial técnico, para que ambas vistas muestren
@@ -547,6 +558,7 @@ export class DataService {
    */
   resumenEquipo(inventario: string): {
     vecesIngresado: number; vecesPreparado: number; vecesConfigurado: number; intentosF0302: number;
+    fallasF0302: number; reprocesosF0288: number;
     vecesAsignado: number; vecesDescargado: number; responsableOperativo: string;
     ultimoTecnicoPreparo: string; ultimoTecnicoConfiguro: string;
     ultimaPreparacion?: PreparacionF0288; ultimaConfiguracion?: ConfiguracionF0302;
@@ -562,6 +574,10 @@ export class DataService {
       vecesPreparado: preps.filter((p) => this.preparacionFinalizada(p)).length,
       vecesConfigurado: confs.filter((c) => this.configuracionFinalizada(c)).length,
       intentosF0302: confs.filter((c) => this.configuracionEsIntento(c)).length,
+      // Los reprocesos NO se cuentan como preparaciones ni como expedientes técnicos: son
+      // correcciones dentro del mismo expediente y llevan su propio contador.
+      fallasF0302: confs.filter((c) => c.estado === 'Con falla').length,
+      reprocesosF0288: this.reprocesosDeEquipo(inventario).length,
       vecesAsignado: asigs.length,
       vecesDescargado: this.vecesDescargado(inventario),
       responsableOperativo: eq ? this.responsableOperativo(eq) : '—',
@@ -614,9 +630,10 @@ export class DataService {
     // descargo (aún no fue aceptado formalmente), por lo que la asignación sigue vigente; aun así
     // se permite crear un nuevo Expediente técnico para la revisión mientras la corrección esté abierta.
     if (this.revisionHardwarePorInconformidad(inventario)) return hayReingresoPendiente;
-    // Excepción análoga: falla durante F0302. El equipo debe regresar a F0288 aunque siga asignado
-    // (aún no hubo descargo). Se permite crear el nuevo Expediente técnico para la nueva preparación.
-    if (this.revisionTecnicaPorFallaF0302(inventario)) return hayReingresoPendiente;
+    // Ya NO hay excepción por falla en F0302: una falla del mismo ciclo se atiende con un reproceso
+    // F0288 dentro del expediente técnico vigente. Un expediente nuevo corresponde solo a un ciclo
+    // nuevo —reingreso formal tras descargo, sustitución del equipo o autorización de jefatura—,
+    // que es exactamente lo que exige la condición de abajo: reingreso pendiente y sin asignación.
     return hayReingresoPendiente && !this.asignacionDeEquipo(inventario);
   }
   /**
@@ -841,6 +858,7 @@ export class DataService {
       const requiere = resto.datos?.requiereReservaIP ?? '';
       return {
         ...resto,
+        falla: resto.falla ? this.normalizarFalla(resto.falla) : undefined,
         datos: {
           ...resto.datos,
           macEquipo: resto.datos?.macEquipo ?? '',
@@ -864,6 +882,31 @@ export class DataService {
           : e))
       };
     });
+  }
+
+  /**
+   * Completa una falla guardada por una versión anterior. El campo `requiereNuevaPreparacion`
+   * pasó a llamarse `requiereReprocesoF0288`: el nombre viejo sugería crear un expediente técnico
+   * nuevo, que es justo lo que dejó de hacerse.
+   *
+   * El estado de la incidencia se deduce de lo que la falla pedía, nunca de lo que habría sido
+   * cómodo: una falla vieja que exigía volver a preparación queda «reproceso requerido», no
+   * «lista para reintento», porque en esas fotos ese reproceso nunca se registró como tal. El
+   * reproceso puede abrirse después desde Preparación técnica y así completar lo que falta.
+   */
+  private normalizarFalla(f: FallaF0302): FallaF0302 {
+    const vieja = f as FallaF0302 & { requiereNuevaPreparacion?: boolean };
+    const reproceso = f.requiereReprocesoF0288 ?? vieja.requiereNuevaPreparacion ?? false;
+    return {
+      ...f,
+      requiereReprocesoF0288: reproceso,
+      sugerencia: f.sugerencia ?? this.matrizFalla(f.tipo).sugerencia,
+      justificacionReproceso: f.justificacionReproceso ?? '',
+      detalle: f.detalle ?? {},
+      estadoIncidencia: f.estadoIncidencia ?? (reproceso
+        ? 'REPROCESO_F0288_REQUERIDO'
+        : f.requiereHardware ? 'PENDIENTE_REVISION_HARDWARE' : 'PENDIENTE_CORRECCION_SOPORTE')
+    };
   }
 
   /** El «Agente DLP» (antes «Solución DLP») es el ítem del F0302 con captura de evidencia obligatoria. */
@@ -3374,16 +3417,275 @@ export class DataService {
     return null;
   }
 
+  // ---------- Falla en F0302: checklist dinámico e incidencia de configuración ----------
+
   /**
-   * Reporta una falla detectada durante la Configuración F0302 (spec Parte B): detiene el
-   * cronómetro y guarda el tiempo trabajado, marca el F0302 como intento «Con falla» (nunca se
-   * borra), devuelve el equipo al flujo F0288 (reingreso a Hardware si aplica) y NO habilita ni
-   * la aceptación ni la garantía. La descripción de la falla es obligatoria. Devuelve null si se
-   * registró, o el mensaje de la validación que falló.
+   * Comportamiento esperado por tipo de falla. Es el corazón de la regla: NO todas las fallas
+   * devuelven el equipo a preparación, así que cada tipo trae su propio checklist, su sugerencia
+   * de reproceso y la nota que explica qué hará el sistema.
+   *
+   * `sugerencia: 'Depende'` significa que el tipo por sí solo no decide: la respuesta sale de una
+   * pregunta adicional del checklist (reinstalación del SO, revisión física de red, acción
+   * requerida), y `sugerenciaReproceso` la resuelve cuando esa pregunta está contestada.
+   */
+  matrizFalla(tipo: TipoFallaF0302): {
+    sugerencia: SugerenciaReproceso; revisionHardware: boolean; campos: string[]; nota: string;
+  } {
+    switch (tipo) {
+      case 'Falla física del equipo':
+        return { sugerencia: 'Sí', revisionHardware: true,
+          campos: ['componenteAfectado', 'descripcion', 'evidencia', 'observacionHardware'],
+          nota: 'Requiere revisión por Hardware y reproceso F0288 dentro del mismo Expediente técnico.' };
+      case 'Falla de disco':
+        return { sugerencia: 'Sí', revisionHardware: true,
+          campos: ['tipoDisco', 'serieDisco', 'sintoma', 'evidencia', 'observacionHardware'],
+          nota: 'Requiere revisión por Hardware y reproceso F0288. Detalle el disco afectado.' };
+      case 'Falla de memoria':
+        return { sugerencia: 'Sí', revisionHardware: true,
+          campos: ['capacidadRam', 'sintoma', 'evidencia', 'observacionHardware'],
+          nota: 'Requiere revisión por Hardware y reproceso F0288. Detalle la memoria RAM.' };
+      case 'Problema de sistema operativo':
+        return { sugerencia: 'Depende', revisionHardware: false,
+          campos: ['tipoProblemaSO', 'requiereReinstalacion', 'evidencia', 'observacionTecnica'],
+          nota: 'Con reinstalación o reparación base va a reproceso F0288; sin ella se corrige en el mismo F0302.' };
+      case 'Problema de red':
+        return { sugerencia: 'No', revisionHardware: false,
+          campos: ['tipoProblemaRed', 'mac', 'ipActual', 'puntoRed', 'requiereRevisionFisica', 'evidencia', 'observacionTecnica'],
+          nota: 'Se atiende en F0302. Solo va a reproceso F0288 si se marca revisión física por Hardware.' };
+      case 'No permite ingreso a dominio':
+        return { sugerencia: 'No', revisionHardware: false,
+          campos: ['usuarioCuenta', 'mensajeError', 'nombreEquipo', 'evidencia', 'observacionTecnica'],
+          nota: 'Corresponde a Soporte: se corrige en el mismo F0302, sin reproceso F0288 por defecto.' };
+      case 'Accesorio faltante':
+        return { sugerencia: 'Sí', revisionHardware: true,
+          campos: ['accesorio', 'inventarioEsperado', 'evidencia', 'observacionTecnica'],
+          nota: 'Se atiende por Hardware dentro del mismo Expediente técnico; no se crea uno nuevo.' };
+      case 'Configuración incompleta por falla previa':
+        return { sugerencia: 'Depende', revisionHardware: false,
+          campos: ['etapaDeteccion', 'descripcion', 'accionRequerida', 'evidencia', 'justificacionReproceso'],
+          nota: 'La acción requerida decide si se corrige en F0302 o pasa a reproceso F0288.' };
+      default:
+        return { sugerencia: 'Depende', revisionHardware: false,
+          campos: ['descripcion', 'evidencia', 'justificacionReproceso'],
+          nota: 'El técnico decide si requiere reproceso F0288 y lo justifica.' };
+    }
+  }
+
+  /** true si el checklist dinámico de ese tipo de falla incluye el campo indicado. */
+  fallaPideCampo(tipo: TipoFallaF0302, campo: string): boolean {
+    return this.matrizFalla(tipo).campos.includes(campo);
+  }
+
+  /**
+   * Sugerencia de reproceso ya resuelta con lo que el técnico lleva contestado. Los tres tipos
+   * «Depende» se resuelven con su pregunta propia; mientras esa pregunta esté sin responder, la
+   * sugerencia sigue siendo «Depende» y la pantalla no puede preseleccionar nada.
+   */
+  sugerenciaReproceso(tipo: TipoFallaF0302, detalle: DetalleFallaF0302 = {}): SugerenciaReproceso {
+    if (tipo === 'Problema de sistema operativo') {
+      return detalle.requiereReinstalacion === 'Sí' ? 'Sí' : detalle.requiereReinstalacion === 'No' ? 'No' : 'Depende';
+    }
+    if (tipo === 'Problema de red') {
+      // Por defecto «No»: el problema de red se atiende en F0302 salvo que haya revisión física.
+      return detalle.requiereRevisionFisica === 'Sí' ? 'Sí' : 'No';
+    }
+    if (tipo === 'Configuración incompleta por falla previa') {
+      const a = detalle.accionRequerida;
+      if (!a) return 'Depende';
+      return a === 'Reproceso F0288' || a === 'Revisar por Hardware' ? 'Sí' : 'No';
+    }
+    return this.matrizFalla(tipo).sugerencia;
+  }
+
+  /**
+   * ¿La falla lleva revisión por Hardware? El tipo la implica (física, disco, memoria, accesorio)
+   * o el técnico la marcó en el checklist de red / en la acción requerida.
+   */
+  fallaRequiereHardware(tipo: TipoFallaF0302, detalle: DetalleFallaF0302 = {}): boolean {
+    if (this.matrizFalla(tipo).revisionHardware) return true;
+    if (tipo === 'Problema de red') return detalle.requiereRevisionFisica === 'Sí';
+    if (tipo === 'Configuración incompleta por falla previa') return detalle.accionRequerida === 'Revisar por Hardware';
+    return false;
+  }
+
+  /** Opciones sugeridas de cada campo del checklist dinámico (spec §8). */
+  readonly componentesFalla = ['Carcasa', 'Pantalla', 'Puertos', 'Fuente', 'Batería', 'Teclado', 'Touchpad', 'Otro'];
+  readonly tiposDisco = ['HDD', 'SSD', 'NVMe', 'Otro'];
+  readonly sintomasDisco = ['No detecta disco', 'Sectores dañados', 'Lentitud extrema', 'Error de arranque', 'Requiere cambio de disco', 'Otro'];
+  readonly sintomasMemoria = ['No reconoce memoria', 'Pantallazos', 'Reinicio inesperado', 'Error en prueba de memoria', 'Otro'];
+  readonly problemasSO = ['Error de arranque', 'Sistema inestable', 'Actualización fallida', 'Drivers pendientes', 'Activación pendiente', 'Otro'];
+  readonly problemasRed = ['Sin conexión', 'No obtiene IP', 'IP duplicada', 'Problema de DNS', 'Problema de punto de red', 'Problema de adaptador', 'Otro'];
+  readonly accesoriosFalla = ['Monitor', 'Teclado', 'Mouse', 'Maletín', 'Cargador', 'Otro'];
+  readonly accionesRequeridasFalla: AccionRequeridaFalla[] =
+    ['Corregir en F0302', 'Revisar por Hardware', 'Reproceso F0288', 'Escalar a Encargado'];
+
+  /**
+   * Valida el checklist dinámico antes de registrar la falla: solo exige los campos del tipo
+   * seleccionado, y pide justificación cuando el técnico se aparta de la sugerencia del sistema
+   * (en cualquiera de las dos direcciones) o cuando decide un reproceso que el sistema no dedujo.
+   */
+  validarFalla(datos: {
+    tipo: TipoFallaF0302; descripcion: string; requiereReprocesoF0288: boolean;
+    justificacionReproceso?: string; detalle?: DetalleFallaF0302;
+  }): string | null {
+    const d = datos.detalle ?? {};
+    const t = datos.tipo;
+    if (!datos.descripcion.trim()) return 'La observación / descripción de la falla es obligatoria.';
+    if (t === 'Falla física del equipo' && !(d.componenteAfectado ?? '').trim()) {
+      return 'Indique el componente afectado por la falla física.';
+    }
+    if (t === 'Falla de disco') {
+      if (!(d.tipoDisco ?? '').trim()) return 'Indique el tipo de disco afectado.';
+      if (!(d.sintoma ?? '').trim()) return 'Seleccione el síntoma detectado en el disco.';
+    }
+    if (t === 'Falla de memoria') {
+      if (!(d.capacidadRam ?? '').trim()) return 'Indique la capacidad de RAM instalada.';
+      if (!(d.sintoma ?? '').trim()) return 'Seleccione el síntoma detectado en la memoria.';
+    }
+    if (t === 'Problema de sistema operativo') {
+      if (!(d.tipoProblemaSO ?? '').trim()) return 'Indique el tipo de problema del sistema operativo.';
+      if (!d.requiereReinstalacion) return 'Indique si el problema requiere reinstalación o reparación base del sistema operativo.';
+    }
+    if (t === 'Problema de red') {
+      if (!(d.tipoProblemaRed ?? '').trim()) return 'Indique el tipo de problema de red.';
+      if (!(d.mac ?? '').trim()) return 'Indique la MAC del equipo para registrar el problema de red.';
+      if ((d.mac ?? '').trim() && !this.macValida(d.mac ?? '')) return 'La MAC del equipo no tiene un formato válido.';
+      if (!d.requiereRevisionFisica) return 'Indique si el problema de red requiere revisión física por Hardware.';
+    }
+    if (t === 'No permite ingreso a dominio') {
+      if (!(d.usuarioCuenta ?? '').trim()) return 'Indique el usuario o cuenta con la que se intentó el ingreso al dominio.';
+      if (!(d.mensajeError ?? '').trim()) return 'Registre el mensaje de error del intento de ingreso al dominio.';
+      if (!(d.nombreEquipo ?? '').trim()) return 'Indique el nombre del equipo con el que se intentó ingresar al dominio.';
+    }
+    if (t === 'Accesorio faltante' && !(d.accesorio ?? '').trim()) return 'Indique el accesorio faltante.';
+    if (t === 'Configuración incompleta por falla previa') {
+      if (!(d.etapaDeteccion ?? '').trim()) return 'Indique la etapa donde se detectó la configuración incompleta.';
+      if (!d.accionRequerida) return 'Seleccione la acción requerida para la configuración incompleta.';
+    }
+
+    const sugerida = this.sugerenciaReproceso(t, d);
+    const elegida: SugerenciaReproceso = datos.requiereReprocesoF0288 ? 'Sí' : 'No';
+    const just = (datos.justificacionReproceso ?? '').trim();
+    if (sugerida !== 'Depende' && sugerida !== elegida && !just) {
+      return `El sistema sugiere «${sugerida}» en «¿Requiere reproceso de Preparación F0288?» para este tipo de falla: justifique el cambio antes de registrarla.`;
+    }
+    // «Otro» y «Configuración incompleta» quedan en manos del técnico: si decide el reproceso, la
+    // justificación es lo único que deja constancia de por qué el equipo vuelve a preparación.
+    if (sugerida === 'Depende' && datos.requiereReprocesoF0288 && !just) {
+      return 'Registre la justificación del reproceso de Preparación F0288.';
+    }
+    return null;
+  }
+
+  /** Texto legible de los estados técnicos de la incidencia (spec §9), para mostrarlos sin jerga. */
+  textoEstadoIncidencia(estado: EstadoIncidenciaF0302): string {
+    switch (estado) {
+      case 'INCIDENCIA_CONFIGURACION_REGISTRADA': return 'Incidencia de configuración registrada';
+      case 'PENDIENTE_CORRECCION_SOPORTE': return 'Pendiente de corrección de Soporte';
+      case 'PENDIENTE_REVISION_HARDWARE': return 'Pendiente de revisión de Hardware';
+      case 'REPROCESO_F0288_REQUERIDO': return 'Reproceso F0288 requerido';
+      case 'REPROCESO_F0288_ASIGNADO': return 'Reproceso F0288 asignado';
+      case 'REPROCESO_F0288_EN_PROCESO': return 'Reproceso F0288 en proceso';
+      case 'REPROCESO_F0288_FINALIZADO': return 'Reproceso F0288 finalizado';
+      case 'REPROCESO_F0288_FIRMADO': return 'Reproceso F0288 firmado';
+      case 'REPROCESO_F0288_NO_CORREGIDO': return 'Reproceso F0288 no corregido';
+      case 'PENDIENTE_EVALUACION_ENCARGADO': return 'Pendiente de evaluación del Encargado';
+      case 'PENDIENTE_SUSTITUCION_EQUIPO': return 'Pendiente de sustitución de equipo';
+      default: return 'Listo para reintento F0302';
+    }
+  }
+
+  /**
+   * Completa los reprocesos guardados por una versión anterior, que no tenían asignación,
+   * checklist, evidencias, cronómetro, firma ni resultado. El estado se conserva: un reproceso
+   * que quedó «Finalizado» sin firma sigue sin firma —no se inventa una— y por eso no podrá
+   * devolver el equipo hasta que alguien la registre, que es exactamente la regla nueva.
+   */
+  private normalizarReprocesos(lista: ReprocesoF0288[]): ReprocesoF0288[] {
+    return (lista ?? []).map((r) => ({
+      ...r,
+      prioridad: r.prioridad ?? 'Normal',
+      unidadAtiende: r.unidadAtiende ?? 'Hardware',
+      justificacionUnidad: r.justificacionUnidad ?? '',
+      observacionSoporte: r.observacionSoporte ?? r.motivo ?? '',
+      evidenciaSoporte: r.evidenciaSoporte ?? '',
+      tecnicoAsignado: r.tecnicoAsignado ?? r.atendidoPor ?? '',
+      asignadoPor: r.asignadoPor ?? '',
+      fechaAsignacion: r.fechaAsignacion ?? '',
+      horaAsignacion: r.horaAsignacion ?? '',
+      checklist: r.checklist?.length ? r.checklist : this.checklistReproceso(r.tipoFalla),
+      evidencias: r.evidencias ?? [],
+      resultado: r.resultado ?? '',
+      observacionResultado: r.observacionResultado ?? ''
+    }));
+  }
+
+  /** Reprocesos F0288 de un Expediente técnico, del más reciente al más antiguo. */
+  reprocesosDeExpTecnico(codigoTec: string): ReprocesoF0288[] {
+    return this.reprocesos().filter((r) => r.expedienteTecnico === codigoTec).sort((a, b) => b.numero - a.numero);
+  }
+  /** Reprocesos F0288 del equipo, del más reciente al más antiguo. */
+  reprocesosDeEquipo(inventario: string): ReprocesoF0288[] {
+    return this.reprocesos().filter((r) => r.inventario === inventario)
+      .sort((a, b) => `${b.fechaSolicitud}${b.horaSolicitud}`.localeCompare(`${a.fechaSolicitud}${a.horaSolicitud}`));
+  }
+  /** Reproceso F0288 abierto del equipo (aún sin firmar), si lo hay. */
+  reprocesoAbiertoDeEquipo(inventario: string): ReprocesoF0288 | undefined {
+    return this.reprocesosDeEquipo(inventario).find((r) => r.estado !== 'Firmado' && r.estado !== 'No corregido');
+  }
+  /**
+   * Reprocesos que todavía piden algo: los requeridos, los asignados, los que están en proceso y
+   * los firmados que aún no devolvieron el equipo a Configuración F0302.
+   */
+  reprocesosPendientes(): ReprocesoF0288[] {
+    return this.reprocesos()
+      .filter((r) => r.estado !== 'No corregido' &&
+        (r.estado !== 'Firmado' || this.fallaVigenteDe(r.expediente)?.estadoIncidencia === 'REPROCESO_F0288_FIRMADO'))
+      .sort((a, b) => (a.prioridad === b.prioridad ? 0 : a.prioridad === 'Alta' ? -1 : 1)
+        || `${b.fechaSolicitud}${b.horaSolicitud}`.localeCompare(`${a.fechaSolicitud}${a.horaSolicitud}`));
+  }
+  /**
+   * Reprocesos visibles según el rol. El Técnico de Hardware ve los suyos y los que todavía no
+   * tienen dueño (para poder tomarlos); los Encargados y el Administrador ven todos; el Técnico de
+   * Soporte solo ve los de los procesos donde participó, porque son los que está esperando.
+   */
+  reprocesosVisibles(): ReprocesoF0288[] {
+    const clave = this.claveConectada();
+    const nombre = this.nombreConectado();
+    const todos = this.reprocesos();
+    if (clave === 'tec-hardware') {
+      return todos.filter((r) => !r.tecnicoAsignado || r.tecnicoAsignado.includes(nombre));
+    }
+    if (clave === 'tec-soporte') {
+      return todos.filter((r) => r.solicitadoPor.includes(nombre) || this.participaEnProceso(r.expediente, nombre));
+    }
+    return todos;
+  }
+  reprocesoDe(idReproceso: string): ReprocesoF0288 | undefined {
+    return this.reprocesos().find((r) => r.id === idReproceso);
+  }
+  /** Falla vigente del proceso: la del intento F0302 con falla más reciente. */
+  fallaVigenteDe(id: string): FallaF0302 | undefined {
+    return this.configuracionesConFallaDe(id)[0]?.falla;
+  }
+
+  /**
+   * Reporta una falla detectada durante la Configuración F0302: detiene el cronómetro y guarda el
+   * tiempo trabajado, marca el F0302 como intento «Con falla» (nunca se borra) y abre una
+   * **incidencia de configuración sobre el MISMO Expediente técnico**.
+   *
+   * Lo que ya no hace: crear un ingreso a Hardware y, con él, obligar a un Expediente técnico
+   * nuevo. Multiplicar expedientes por cada falla del mismo ciclo desordenaba el historial sin
+   * aportar nada; cuando la falla exige volver a preparación se abre un **reproceso F0288** dentro
+   * del expediente vigente. Un expediente nuevo solo corresponde en un ciclo nuevo: reingreso
+   * formal tras descargo, sustitución del equipo o autorización de jefatura.
+   *
+   * Devuelve null si se registró, o el mensaje de la validación que falló.
    */
   reportarFallaF0302(id: string, datos: {
-    tipo: TipoFallaF0302; descripcion: string; requiereHardware: boolean;
-    requiereNuevaPreparacion: boolean; observacionTecnica: string; evidencia: string;
+    tipo: TipoFallaF0302; descripcion: string; requiereReprocesoF0288: boolean;
+    justificacionReproceso?: string; detalle?: DetalleFallaF0302;
+    observacionTecnica?: string; evidencia?: string;
   }, usuario: string): string | null {
     const c = this.configuracionDe(id);
     if (!c) return 'No se encontró la configuración indicada.';
@@ -3391,71 +3693,598 @@ export class DataService {
     if (c.estado === 'Completada') return 'La configuración ya fue finalizada; no puede reportarse una falla.';
     if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo.';
     if (!c.cronometro) return 'Inicie la configuración (cronómetro en curso) antes de reportar una falla.';
-    if (!datos.descripcion.trim()) return 'La observación / descripción de la falla es obligatoria.';
+    const invalido = this.validarFalla(datos);
+    if (invalido) return invalido;
 
+    const detalle: DetalleFallaF0302 = { ...(datos.detalle ?? {}) };
+    const reproceso = datos.requiereReprocesoF0288;
+    const hardware = this.fallaRequiereHardware(datos.tipo, detalle);
     const crono = this.detenerCronometro(c.cronometro, usuario);
+    const estadoIncidencia: EstadoIncidenciaF0302 = reproceso
+      ? 'REPROCESO_F0288_REQUERIDO'
+      : hardware ? 'PENDIENTE_REVISION_HARDWARE' : 'PENDIENTE_CORRECCION_SOPORTE';
     const falla: FallaF0302 = {
-      tipo: datos.tipo, descripcion: datos.descripcion.trim(), requiereHardware: datos.requiereHardware,
-      requiereNuevaPreparacion: datos.requiereNuevaPreparacion, observacionTecnica: datos.observacionTecnica.trim(),
-      evidencia: datos.evidencia.trim(), tecnicoReporta: usuario, fecha: this.hoy(), hora: this.hora(),
-      tiempoMinutos: crono.duracionMinutos
+      tipo: datos.tipo, descripcion: datos.descripcion.trim(), requiereHardware: hardware,
+      requiereReprocesoF0288: reproceso, sugerencia: this.sugerenciaReproceso(datos.tipo, detalle),
+      justificacionReproceso: (datos.justificacionReproceso ?? '').trim(), detalle, estadoIncidencia,
+      observacionTecnica: (datos.observacionTecnica ?? '').trim(), evidencia: (datos.evidencia ?? '').trim(),
+      tecnicoReporta: usuario, fecha: this.hoy(), hora: this.hora(), tiempoMinutos: crono.duracionMinutos
     };
     // El F0302 con falla se conserva: solo cambia de estado y guarda la falla; nunca se elimina.
     this.actualizarConfiguracionActiva(id, (x) => ({ ...x, estado: 'Con falla', cronometro: crono, falla }));
 
     const tiempo = this.formatoDuracion(crono.duracionMinutos);
     const unicoCod = this.expedienteUnicoDe(id)?.codigoUnico;
-    // No habilita aceptación ni garantía: el expediente queda pendiente de revisión técnica.
-    this.setEstadoSolicitud(id, 'F0302 con falla', 'Revisión técnica F0288 por falla en la configuración');
+    const codigoTec = this.expTecnicoDeEquipo(c.datos.inventario)?.codigo;
+    const ref = {
+      modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod,
+      expedienteTecnico: codigoTec, usuarioFinal: c.datos.asignadoA, tipoFalla: datos.tipo,
+      requiereReproceso: reproceso ? 'Sí' : 'No', evidencia: falla.evidencia
+    };
+    const accion = reproceso ? 'Reproceso F0288 dentro del mismo Expediente técnico'
+      : hardware ? 'Revisión de Hardware sin reproceso F0288' : 'Corrección de Soporte en el mismo F0302';
+
+    // No habilita aceptación ni garantía: el expediente queda con la incidencia abierta.
+    this.setEstadoSolicitud(id, 'F0302 con falla',
+      reproceso ? 'Reproceso F0288 por falla en la configuración' : 'Corrección de Soporte por falla en la configuración');
     this.expedientesUnicos.update((list) =>
       list.map((x) => (x.expediente === id
-        ? { ...x, estado: 'Pendiente de revisión técnica', resumenEstado: 'F0302 con falla · devuelto a F0288' }
+        ? { ...x, estado: reproceso ? 'Pendiente de reproceso F0288' : 'Pendiente de corrección de Soporte',
+            resumenEstado: `F0302 con falla · ${this.textoEstadoIncidencia(estadoIncidencia)}` }
         : x)));
     this.actualizarAnexo(id, 'Se anexa configuración del equipo', 'Con falla', `${datos.tipo}: ${falla.descripcion}`);
 
-    // Trazabilidad obligatoria (spec §18).
-    this.registrarEvento(id, usuario, 'Falla detectada durante F0302', 'F0302 con falla',
-      `${datos.tipo}: ${falla.descripcion}`, true,
-      { modulo: 'Configuración F0302', estadoAnterior: 'En configuración', inventario: c.datos.inventario,
-        expedienteUnico: unicoCod, usuarioFinal: c.datos.asignadoA, tiempo });
-    this.registrarEvento(id, usuario, `Cronómetro F0302 detenido por falla (tiempo trabajado: ${tiempo || 'menos de 1 min'})`, 'F0302 con falla',
-      '', false, { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod, tiempo });
-    this.registrarEvento(id, usuario, 'F0302 registrado como intento con falla (se conserva en el historial)', 'F0302 con falla',
-      'No se borra el intento F0302 ni se reinician los contadores históricos.', false,
-      { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod });
-    this.registrarEvento(id, usuario, 'Equipo pendiente de revisión técnica', 'Pendiente de revisión técnica',
-      'No se habilita el formulario de aceptación ni la garantía mientras el F0302 quede con falla.', true,
-      { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod, usuarioFinal: c.datos.asignadoA });
+    // Trazabilidad de la incidencia (spec §14).
+    this.registrarEvento(id, usuario, 'Falla reportada durante F0302', 'F0302 con falla',
+      `${datos.tipo}: ${falla.descripcion}`, true, { ...ref, estadoAnterior: 'En configuración', tiempo, accionTomada: accion });
+    this.registrarEvento(id, usuario, `Tipo de falla seleccionado: ${datos.tipo}`, 'F0302 con falla',
+      this.resumenDetalleFalla(falla), false, { ...ref, accionTomada: accion });
+    this.registrarEvento(id, usuario, 'Checklist dinámico de falla cargado', 'F0302 con falla',
+      this.matrizFalla(datos.tipo).nota, false, { ...ref, accionTomada: accion });
+    this.registrarEvento(id, usuario,
+      `Requiere reproceso F0288 evaluado: ${reproceso ? 'Sí' : 'No'}`, 'F0302 con falla',
+      falla.sugerencia === (reproceso ? 'Sí' : 'No')
+        ? `Sugerencia del sistema para «${datos.tipo}»: ${falla.sugerencia}.`
+        : `Sugerencia del sistema: ${falla.sugerencia}. Justificación del cambio: ${falla.justificacionReproceso}`,
+      true, { ...ref, accionTomada: accion, justificacion: falla.justificacionReproceso });
+    this.registrarEvento(id, usuario, `Cronómetro F0302 detenido por falla (tiempo trabajado: ${tiempo || 'menos de 1 min'})`,
+      'F0302 con falla', '', false, { ...ref, tiempo });
+    this.registrarEvento(id, usuario, 'F0302 guardado como intento con falla', 'F0302 con falla',
+      'El intento se conserva en el historial: no se borra ni se reinician los contadores.', false, { ...ref, accionTomada: accion });
+    this.registrarEvento(id, usuario, 'Incidencia de configuración registrada', this.textoEstadoIncidencia(estadoIncidencia),
+      `Asociada al Expediente técnico ${codigoTec ?? '—'} y al Expediente único ${unicoCod ?? '—'}: no se crea un Expediente técnico nuevo.`,
+      true, { ...ref, accionTomada: accion });
 
-    const reingresa = datos.requiereHardware || datos.requiereNuevaPreparacion;
-    if (reingresa) {
-      const previos = this.ingresosDeEquipo(c.datos.inventario);
-      const ingreso: IngresoHardware = {
-        idIngresoHardware: `${c.datos.inventario}-${String(previos.length + 1).padStart(2, '0')}`,
-        inventario: c.datos.inventario, numeroIngreso: previos.length + 1,
-        fechaIngreso: this.hoy(), horaIngreso: this.hora(), motivoIngreso: 'Reingreso por revisión técnica',
-        ingresadoPor: usuario, estadoInicial: 'Pendiente de revisión', estadoFinal: '',
-        observaciones: `Reingreso por falla en F0302 (sin descargo): ${datos.tipo} — ${falla.descripcion}`
-      };
-      this.ingresosHardware.update((list) => [ingreso, ...list]);
-      this.registrarEvento(c.datos.inventario, usuario,
-        `Equipo ${c.datos.inventario} devuelto a flujo F0288 por falla en F0302 (nuevo ingreso a Hardware, sin descargo)`,
-        'Pendiente de revisión', 'Los F0288 y F0302 anteriores se conservan; los contadores históricos no se reinician.', true,
-        { modulo: 'Ingreso a Hardware', estadoAnterior: 'F0302 con falla', inventario: c.datos.inventario });
+    if (reproceso) {
+      const r = this.abrirReprocesoF0288(c, falla, usuario, codigoTec, unicoCod);
+      this.actualizarConfiguracionConFalla(id, (f) => ({ ...f, reprocesoId: r.id }));
+      this.registrarEvento(id, usuario, 'Equipo enviado a reproceso F0288', 'Reproceso F0288 requerido',
+        `Reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}; el F0288 original se conserva.`,
+        true, { ...ref, accionTomada: accion, reproceso: r.id });
     } else {
-      this.registrarEvento(id, usuario, 'Equipo devuelto a flujo F0288 por falla en F0302', 'Pendiente de revisión técnica',
-        'Se podrá iniciar una nueva Configuración F0302 con el equipo ya preparado.', false,
-        { modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod });
+      this.registrarEvento(id, usuario, 'Equipo enviado a corrección de Soporte',
+        this.textoEstadoIncidencia(estadoIncidencia),
+        'La falla se atiende en el mismo F0302: el equipo no regresa a Preparación F0288.',
+        true, { ...ref, accionTomada: accion });
     }
     return null;
   }
 
+  /** Resumen de una línea con los campos del checklist dinámico que sí aplican al tipo de falla. */
+  resumenDetalleFalla(f: FallaF0302): string {
+    const d = f.detalle ?? {};
+    const partes: string[] = [];
+    const agrega = (etiqueta: string, valor?: string) => { if ((valor ?? '').trim()) partes.push(`${etiqueta}: ${valor}`); };
+    agrega('Componente afectado', d.componenteAfectado);
+    agrega('Tipo de disco', d.tipoDisco);
+    agrega('Serie del disco', d.serieDisco);
+    agrega('RAM instalada', d.capacidadRam);
+    agrega('Síntoma', d.sintoma);
+    agrega('Problema del SO', d.tipoProblemaSO);
+    agrega('¿Reinstalación o reparación base?', d.requiereReinstalacion);
+    agrega('Problema de red', d.tipoProblemaRed);
+    agrega('MAC', d.mac);
+    agrega('IP actual', d.ipActual);
+    agrega('Punto de red', d.puntoRed);
+    agrega('¿Revisión física por Hardware?', d.requiereRevisionFisica);
+    agrega('Usuario o cuenta', d.usuarioCuenta);
+    agrega('Mensaje de error', d.mensajeError);
+    agrega('Nombre del equipo', d.nombreEquipo);
+    agrega('Accesorio faltante', d.accesorio);
+    agrega('Inventario esperado', d.inventarioEsperado);
+    agrega('Etapa de detección', d.etapaDeteccion);
+    agrega('Acción requerida', d.accionRequerida);
+    agrega('Observación para Hardware', d.observacionHardware);
+    return partes.join(' · ');
+  }
+
+  /** Actualiza la falla del intento F0302 con falla más reciente del proceso. */
+  private actualizarConfiguracionConFalla(id: string, cambio: (f: FallaF0302) => FallaF0302): void {
+    const objetivo = this.configuracionesConFallaDe(id)[0];
+    if (!objetivo?.falla) return;
+    this.configuraciones.update((list) =>
+      list.map((c) => (c === objetivo && c.falla ? { ...c, falla: cambio(c.falla) } : c)));
+  }
+
   /**
-   * Inicia una NUEVA Configuración F0302 tras una falla, sin borrar la anterior: el F0302 con
-   * falla queda como intento en el historial y esta crea una configuración activa fresca. Requiere
-   * que exista una configuración con falla, que no haya otra configuración activa y que el equipo
-   * esté nuevamente «Preparado» (nueva Preparación F0288 completada, si aplicaba). Devuelve la
-   * nueva configuración o el mensaje de validación.
+   * Checklist de Reproceso F0288 según el tipo de falla reportado en F0302. Es un checklist
+   * PROPIO, no una copia del F0288: la preparación inicial ya se hizo y no se repite. Los ítems
+   * marcados `implicaCorreccion` son los que dejan de ser revisión y pasan a ser intervención
+   * sobre el equipo; en cuanto uno de ellos se marca, la evidencia deja de ser opcional.
+   */
+  checklistReproceso(tipo: TipoFallaF0302): ItemReproceso[] {
+    const item = (nombre: string, implicaCorreccion = false): ItemReproceso =>
+      ({ nombre, estado: 'Pendiente', implicaCorreccion, nota: '' });
+    switch (tipo) {
+      case 'Falla física del equipo':
+        return [item('Revisión física general del equipo'), item('Verificación de carcasa, puertos y conectores'),
+          item('Verificación de encendido'), item('Verificación de componentes internos'),
+          item('Corrección aplicada', true), item('Evidencia de revisión física')];
+      case 'Falla de disco':
+        return [item('Verificación del disco instalado'), item('Revisión de conexión del disco'),
+          item('Diagnóstico básico del disco'), item('Cambio de disco, si aplica', true),
+          item('Verificación de arranque'), item('Evidencia del diagnóstico o cambio')];
+      case 'Falla de memoria':
+        return [item('Verificación de memoria RAM instalada'), item('Limpieza o reinstalación de módulo RAM', true),
+          item('Prueba básica de memoria'), item('Cambio de memoria, si aplica', true),
+          item('Verificación de estabilidad'), item('Evidencia del diagnóstico o cambio')];
+      case 'Problema de sistema operativo':
+        return [item('Revisión del sistema operativo instalado'), item('Reparación del sistema operativo, si aplica', true),
+          item('Reinstalación de Windows, si aplica', true), item('Actualizaciones aplicadas'),
+          item('.NET Framework 3.5 verificado'), item('Evidencia de corrección')];
+      case 'Problema de red':
+        // Un problema de red solo llega a reproceso cuando Soporte marcó revisión física: por eso
+        // el checklist es el de la revisión física y no el de conectividad, que ya se descartó.
+        return [item('Revisión de puerto de red'), item('Verificación de adaptador de red'),
+          item('Verificación de cable o conexión física'), item('Validación de MAC del equipo'),
+          item('Evidencia de revisión de red')];
+      case 'Accesorio faltante':
+        return [item('Verificación de accesorios requeridos'), item('Asociación de accesorio faltante', true),
+          item('Validación de inventario del accesorio'), item('Estado físico del accesorio'),
+          item('Evidencia de accesorio asociado')];
+      default:
+        // Base para «Otro», «No permite ingreso a dominio» y «Configuración incompleta».
+        return [item('Revisión técnica del caso'), item('Diagnóstico realizado'),
+          item('Corrección aplicada', true), item('Prueba posterior a la corrección'),
+          item('Evidencia de corrección')];
+    }
+  }
+
+  /**
+   * Técnicos de Hardware con su carga de trabajo, para el buscador del rollback. La carga cuenta
+   * las preparaciones F0288 sin cerrar y los reprocesos abiertos que ya tiene asignados: son las
+   * dos cosas que ocupan realmente a un técnico de Hardware.
+   */
+  tecnicosHardwareConCarga(): { usuario: UsuarioSistema; nombreRol: string; preparaciones: number; reprocesos: number; total: number; carga: string }[] {
+    return this.usuarios()
+      .filter((u) => u.clave === 'tec-hardware' && u.estado !== 'Inactivo')
+      .map((usuario) => {
+        const nombreRol = `${usuario.nombre} — ${usuario.rol}`;
+        const preparaciones = this.preparaciones()
+          .filter((p) => p.tecnico.includes(usuario.nombre) && p.estado !== 'Completada' && p.estado !== 'Cerrada').length;
+        const reprocesos = this.reprocesos()
+          .filter((r) => r.tecnicoAsignado.includes(usuario.nombre) && r.estado !== 'Firmado' && r.estado !== 'No corregido').length;
+        const total = preparaciones + reprocesos;
+        return { usuario, nombreRol, preparaciones, reprocesos, total,
+          carga: total >= 3 ? 'Carga alta' : total >= 1 ? 'Carga media' : 'Carga baja' };
+      })
+      .sort((a, b) => a.total - b.total);
+  }
+
+  /** Técnico de Hardware que preparó inicialmente el equipo: el candidato natural del rollback. */
+  tecnicoPreparoInicialmente(inventario: string): string {
+    const tec = this.expTecnicoDeEquipo(inventario);
+    return tec?.tecnicoPreparacion ?? '';
+  }
+
+  /**
+   * Abre el reproceso F0288 de una falla **sobre el Expediente técnico que el equipo ya tiene**.
+   * El correlativo (`…-R1`, `…-R2`) es por expediente técnico: así el historial se lee como
+   * «F0288 #1 → F0302 #1 con falla → Reproceso F0288 #1 → F0302 #2» sin multiplicar expedientes.
+   * Nace sin técnico asignado: el rollback a Hardware es un paso propio y con nombre.
+   */
+  private abrirReprocesoF0288(c: ConfiguracionF0302, falla: FallaF0302, usuario: string,
+    codigoTec?: string, unicoCod?: string): ReprocesoF0288 {
+    const tecnico = codigoTec ?? this.expTecnicoDeEquipo(c.datos.inventario)?.codigo ?? c.datos.inventario;
+    const numero = this.reprocesosDeExpTecnico(tecnico).length + 1;
+    const reproceso: ReprocesoF0288 = {
+      id: `${tecnico}-R${numero}`, expedienteTecnico: tecnico, expediente: c.expediente,
+      expedienteUnico: unicoCod ?? '', inventario: c.datos.inventario, numero,
+      tipoFalla: falla.tipo, motivo: `${falla.tipo}: ${falla.descripcion}`,
+      // Una falla que exige revisión física deja al equipo detenido en Hardware: se atiende primero.
+      prioridad: falla.requiereHardware ? 'Alta' : 'Normal',
+      unidadAtiende: 'Hardware', justificacionUnidad: '',
+      solicitadoPor: usuario, observacionSoporte: falla.observacionTecnica || falla.descripcion,
+      evidenciaSoporte: falla.evidencia,
+      fechaSolicitud: this.hoy(), horaSolicitud: this.hora(),
+      tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
+      atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
+      checklist: this.checklistReproceso(falla.tipo),
+      evidencias: [], correccionTecnica: '',
+      observaciones: falla.detalle?.observacionHardware ?? '',
+      firma: undefined, resultado: '', observacionResultado: '', estado: 'Requerido'
+    };
+    this.reprocesos.update((list) => [reproceso, ...list]);
+    return reproceso;
+  }
+
+  /** Datos de referencia comunes a todos los eventos de un reproceso (spec §19). */
+  private refReproceso(r: ReprocesoF0288): Partial<EventoTrazabilidad> {
+    return {
+      modulo: 'Reprocesos F0288', inventario: r.inventario, expedienteTecnico: r.expedienteTecnico,
+      expedienteUnico: r.expedienteUnico, tipoFalla: r.tipoFalla, requiereReproceso: 'Sí',
+      reproceso: r.id, tecnicoReporta: r.solicitadoPor, tecnicoHardware: r.tecnicoAsignado || 'Sin asignar',
+      resultadoReproceso: r.resultado || 'Pendiente', firmaRegistrada: r.firma ? 'Sí' : 'No'
+    };
+  }
+
+  private actualizarReproceso(id: string, cambio: (r: ReprocesoF0288) => ReprocesoF0288): void {
+    this.reprocesos.update((list) => list.map((x) => (x.id === id ? cambio(x) : x)));
+  }
+
+  /**
+   * Abre un reproceso F0288 para una falla que ya está registrada pero todavía no lo tiene. Cubre
+   * las fotos anteriores a esta regla —donde la falla mandaba a preparación sin dejar constancia
+   * de un reproceso— y evita que esos expedientes queden sin salida.
+   */
+  asegurarReprocesoDeFalla(id: string, usuario: string): ReprocesoF0288 | undefined {
+    const conFalla = this.configuracionesConFallaDe(id)[0];
+    if (!conFalla?.falla) return undefined;
+    const existente = conFalla.falla.reprocesoId ? this.reprocesoDe(conFalla.falla.reprocesoId) : undefined;
+    if (existente) return existente;
+    const r = this.abrirReprocesoF0288(conFalla, conFalla.falla, usuario,
+      this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo, this.expedienteUnicoDe(id)?.codigoUnico);
+    this.actualizarConfiguracionConFalla(id, (f) => ({ ...f, reprocesoId: r.id }));
+    return r;
+  }
+
+  /**
+   * Rollback a Hardware: asigna el reproceso a un Técnico de Hardware. Puede ser el mismo que
+   * preparó el equipo o cualquier otro. Asignarlo fuera de Hardware es la excepción y solo la
+   * autoriza un Encargado con justificación: si cualquiera pudiera desviarlo a Soporte, la
+   * revisión física simplemente no ocurriría.
+   */
+  asignarReprocesoF0288(idReproceso: string, tecnico: string, usuario: string, justificacion = ''): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado !== 'Requerido' && r.estado !== 'Asignado') {
+      return 'El reproceso F0288 ya fue iniciado: no puede reasignarse.';
+    }
+    if (!tecnico.trim()) return 'Seleccione el Técnico de Hardware que atenderá el reproceso.';
+    const esHardware = this.tecnicosHardwareConCarga().some((t) => t.nombreRol === tecnico.trim());
+    const clave = this.claveConectada();
+    const esEncargado = clave === 'enc-hardware' || clave === 'enc-soporte' || clave === 'admin';
+    if (!esHardware) {
+      if (!esEncargado) return 'El reproceso F0288 debe asignarse a un Técnico de Hardware. Solo un Encargado puede autorizar una excepción.';
+      if (!justificacion.trim()) return 'Justifique por qué este reproceso se asigna fuera de la Unidad de Hardware.';
+    }
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, estado: 'Asignado', tecnicoAsignado: tecnico.trim(), asignadoPor: usuario,
+      fechaAsignacion: this.hoy(), horaAsignacion: this.hora(),
+      unidadAtiende: esHardware ? 'Hardware' : 'Soporte',
+      justificacionUnidad: esHardware ? '' : justificacion.trim()
+    }));
+    this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_ASIGNADO' }));
+    const actualizado = this.reprocesoDe(idReproceso)!;
+    this.registrarEvento(r.expediente, usuario, 'Rollback realizado a Hardware', 'Reproceso F0288 asignado',
+      `El equipo ${r.inventario} regresa a la Unidad de ${actualizado.unidadAtiende} por ${r.tipoFalla}.`, true,
+      { ...this.refReproceso(actualizado), accionTomada: 'Rollback a Hardware' });
+    this.registrarEvento(r.expediente, usuario, 'Reproceso asignado a Técnico de Hardware', 'Reproceso F0288 asignado',
+      esHardware
+        ? `${r.id} asignado a ${tecnico.trim()}.`
+        : `${r.id} asignado a ${tecnico.trim()} fuera de Hardware. Justificación del Encargado: ${justificacion.trim()}`,
+      true, { ...this.refReproceso(actualizado), accionTomada: 'Asignación del reproceso F0288',
+        justificacion: actualizado.justificacionUnidad });
+    return null;
+  }
+
+  /** El Técnico de Hardware toma el reproceso: arranca el cronómetro del tiempo trabajado. */
+  iniciarReprocesoF0288(idReproceso: string, usuario: string): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado === 'Requerido') return 'Asigne el reproceso F0288 a un Técnico de Hardware antes de iniciarlo.';
+    if (r.estado === 'En proceso') return 'Este reproceso F0288 ya está en proceso.';
+    if (r.estado !== 'Asignado') return 'Este reproceso F0288 ya fue finalizado.';
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, estado: 'En proceso', atendidoPor: usuario, fechaInicio: this.hoy(),
+      cronometro: { fechaInicio: this.hoy(), horaInicio: this.horaCrono(), iniciadoPor: usuario,
+        fechaFin: '', horaFin: '', finalizadoPor: '', duracionMinutos: null }
+    }));
+    this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_EN_PROCESO' }));
+    this.registrarEvento(r.expediente, usuario, 'Reproceso F0288 iniciado', 'Reproceso F0288 en proceso',
+      `${r.id} sobre el Expediente técnico ${r.expedienteTecnico} (${r.unidadAtiende}). Checklist de Reproceso F0288 según «${r.tipoFalla}».`,
+      true, { ...this.refReproceso(r), tecnicoHardware: r.tecnicoAsignado || usuario,
+        accionTomada: 'Inicio del reproceso F0288' });
+    return null;
+  }
+
+  /** Marca un ítem del Checklist de Reproceso F0288. Solo mientras el reproceso está en proceso. */
+  marcarItemReproceso(idReproceso: string, nombreItem: string, estado: ItemReproceso['estado'], nota = ''): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado !== 'En proceso') return 'Inicie el reproceso F0288 para completar su checklist.';
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, checklist: x.checklist.map((i) => (i.nombre === nombreItem ? { ...i, estado, nota: nota || i.nota } : i))
+    }));
+    return null;
+  }
+
+  /** Adjunta una evidencia simulada al reproceso, con el código del reproceso y su expediente. */
+  agregarEvidenciaReproceso(idReproceso: string, archivo: string, tipo: string, usuario: string): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado !== 'En proceso') return 'Inicie el reproceso F0288 para adjuntar evidencias.';
+    if (!archivo.trim()) return 'Indique el nombre del archivo de evidencia.';
+    const evidencia: EvidenciaReproceso = {
+      archivo: archivo.trim(), tipo: tipo.trim() || 'Evidencia de corrección',
+      fecha: this.hoy(), hora: this.hora(), cargadaPor: usuario,
+      reproceso: r.id, expedienteTecnico: r.expedienteTecnico
+    };
+    this.actualizarReproceso(idReproceso, (x) => ({ ...x, evidencias: [...x.evidencias, evidencia] }));
+    this.registrarEvento(r.expediente, usuario, 'Evidencia de reproceso registrada', 'Reproceso F0288 en proceso',
+      `${evidencia.archivo} · ${evidencia.tipo}`, false,
+      { ...this.refReproceso(r), evidencia: evidencia.archivo, accionTomada: 'Evidencia adjuntada al reproceso F0288' });
+    return null;
+  }
+
+  /**
+   * ¿Este reproceso exige evidencia? Solo cuando se marcó algún ítem que implica cambio,
+   * reparación o corrección técnica: revisar y no tocar nada no produce nada que adjuntar.
+   */
+  reprocesoExigeEvidencia(r: ReprocesoF0288): boolean {
+    return r.checklist.some((i) => i.implicaCorreccion && i.estado === 'Realizado');
+  }
+
+  /**
+   * Finaliza el trabajo técnico del reproceso: detiene el cronómetro y guarda el tiempo trabajado.
+   * Exige el checklist resuelto (sin ítems pendientes), la corrección técnica y la evidencia
+   * cuando hubo intervención. No lo cierra: el cierre es la firma.
+   */
+  finalizarReprocesoF0288(idReproceso: string, usuario: string, correccion: string, observaciones = ''): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado === 'Requerido' || r.estado === 'Asignado') return 'Inicie el reproceso F0288 antes de finalizarlo.';
+    if (r.estado !== 'En proceso') return 'Este reproceso F0288 ya fue finalizado.';
+    if (r.checklist.some((i) => i.estado === 'Pendiente')) {
+      return 'Complete el Checklist de Reproceso F0288 antes de finalizarlo.';
+    }
+    if (!correccion.trim()) return 'Registre la corrección técnica realizada antes de finalizar el reproceso F0288.';
+    if (this.reprocesoExigeEvidencia(r) && r.evidencias.length === 0) {
+      return 'El reproceso implicó una corrección técnica: adjunte la evidencia antes de finalizarlo.';
+    }
+    const crono = r.cronometro ? this.detenerCronometro(r.cronometro, usuario) : undefined;
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, estado: 'Finalizado', fechaFin: this.hoy(), cronometro: crono,
+      correccionTecnica: correccion.trim(), observaciones: observaciones.trim() || x.observaciones,
+      atendidoPor: x.atendidoPor || usuario
+    }));
+    this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_FINALIZADO' }));
+    const tiempo = this.formatoDuracion(crono?.duracionMinutos ?? null);
+    this.registrarEvento(r.expediente, usuario, 'Checklist de reproceso completado', 'Reproceso F0288 finalizado',
+      r.checklist.map((i) => `${i.nombre}: ${i.estado}`).join(' · '), false,
+      { ...this.refReproceso(r), accionTomada: 'Checklist de Reproceso F0288 completado' });
+    this.registrarEvento(r.expediente, usuario, 'Reproceso F0288 finalizado', 'Reproceso F0288 finalizado',
+      `Corrección técnica: ${correccion.trim()}`, true,
+      { ...this.refReproceso(r), tiempo: tiempo || 'menos de 1 min',
+        accionTomada: 'Corrección técnica registrada en el reproceso F0288' });
+    return null;
+  }
+
+  /**
+   * Firma del Técnico de Hardware y resultado del reproceso. La firma es lo que cierra: sin ella
+   * el reproceso queda finalizado pero abierto, porque nadie se hizo responsable de lo que se
+   * hizo sobre el equipo. El resultado decide a dónde va el proceso.
+   */
+  firmarReprocesoF0288(idReproceso: string, usuario: string, resultado: ResultadoReproceso | '',
+    observacionResultado = '', firmaSimulada = ''): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado !== 'Finalizado') return 'Finalice el reproceso F0288 antes de firmarlo.';
+    if (!resultado) return 'Seleccione el resultado del reproceso antes de firmarlo.';
+    const firmante = (firmaSimulada || usuario).trim();
+    if (!firmante) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
+    if (resultado !== 'Corregido' && !observacionResultado.trim()) {
+      return 'Registre la observación del resultado: el reproceso no quedó corregido.';
+    }
+    const u = this.usuarios().find((x) => firmante.startsWith(x.nombre));
+    const firma: FirmaReproceso = {
+      nombre: u?.nombre ?? firmante.split('—')[0].trim(),
+      cargo: u?.rol ?? firmante.split('—')[1]?.trim() ?? 'Técnico de Hardware',
+      unidad: u?.unidad ?? r.unidadAtiende,
+      fecha: this.hoy(), hora: this.hora(),
+      firma: `Firmado electrónicamente (simulado) por ${firmante}`
+    };
+    const estadoReproceso = resultado === 'Corregido' ? 'Firmado' as const : 'No corregido' as const;
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, firma, resultado, observacionResultado: observacionResultado.trim(), estado: estadoReproceso
+    }));
+    const firmado = this.reprocesoDe(idReproceso)!;
+    this.registrarEvento(r.expediente, usuario, 'Firma de Técnico de Hardware registrada',
+      resultado === 'Corregido' ? 'Reproceso F0288 firmado' : 'Reproceso F0288 no corregido',
+      `${firma.nombre} — ${firma.cargo} (${firma.unidad}) · ${firma.fecha} ${firma.hora} · Resultado: ${resultado}`,
+      true, { ...this.refReproceso(firmado), accionTomada: 'Firma del reproceso F0288' });
+
+    // El resultado decide el desenlace: solo «Corregido» devuelve el equipo a configuración.
+    if (resultado === 'Corregido') {
+      this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_FIRMADO' }));
+      return null;
+    }
+    if (resultado === 'Requiere sustitución de equipo') {
+      this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'PENDIENTE_SUSTITUCION_EQUIPO' }));
+      this.solicitarSustitucionEquipo(r.expediente, usuario,
+        `Resultado del reproceso ${r.id}: ${observacionResultado.trim()}`);
+      return null;
+    }
+    const incidencia = resultado === 'No corregido' ? 'REPROCESO_F0288_NO_CORREGIDO' as const : 'PENDIENTE_EVALUACION_ENCARGADO' as const;
+    this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: incidencia }));
+    this.setEstadoSolicitud(r.expediente, 'Pendiente de evaluación del Encargado',
+      `Reproceso ${r.id} sin corregir: ${observacionResultado.trim()}`);
+    this.expedientesUnicos.update((list) => list.map((x) => (x.expediente === r.expediente
+      ? { ...x, estado: 'Pendiente de evaluación del Encargado',
+          resumenEstado: `Reproceso F0288 ${r.id} · ${resultado}` } : x)));
+    this.registrarEvento(r.expediente, usuario, 'Reproceso F0288 enviado a evaluación del Encargado',
+      'Pendiente de evaluación del Encargado', observacionResultado.trim(), true,
+      { ...this.refReproceso(firmado), accionTomada: 'Evaluación del Encargado' });
+    return null;
+  }
+
+  /**
+   * Devuelve el equipo a Configuración F0302 tras el reproceso: habilita el nuevo intento. Exige
+   * la firma —es la regla de «no cerrar sin firma»— y que el resultado haya sido «Corregido».
+   */
+  devolverAConfiguracionF0302(idReproceso: string, usuario: string): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado === 'Requerido' || r.estado === 'Asignado' || r.estado === 'En proceso') {
+      return 'Finalice el reproceso F0288 antes de devolver el equipo a Configuración F0302.';
+    }
+    if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
+    if (r.resultado !== 'Corregido') {
+      return `El reproceso cerró como «${r.resultado}»: el equipo no puede volver a Configuración F0302 hasta que el Encargado lo resuelva.`;
+    }
+    this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'LISTO_PARA_REINTENTO_F0302' }));
+    this.setEstadoSolicitud(r.expediente, 'Pendiente de nuevo intento F0302', 'Nueva Configuración F0302 tras el reproceso F0288');
+    this.expedientesUnicos.update((list) => list.map((x) => (x.expediente === r.expediente
+      ? { ...x, estado: 'Pendiente de configuración', resumenEstado: `Reproceso F0288 ${r.id} finalizado y firmado · listo para reintento F0302` } : x)));
+    this.registrarEvento(r.expediente, usuario, 'Equipo devuelto a Configuración F0302', 'Listo para reintento F0302',
+      `Tras el reproceso ${r.id}; el Expediente técnico ${r.expedienteTecnico} sigue siendo el mismo.`, true,
+      { ...this.refReproceso(r), accionTomada: 'Devolución a Configuración F0302' });
+    this.registrarEvento(r.expediente, usuario, 'Nuevo intento F0302 habilitado', 'Listo para reintento F0302',
+      'Soporte puede iniciar el nuevo intento sobre el mismo Expediente técnico.', true,
+      { ...this.refReproceso(r), accionTomada: 'Habilitación del nuevo intento F0302' });
+    return null;
+  }
+
+  /**
+   * Constancia interna del reproceso: se genera al firmarlo y consolida lo que quedó registrado.
+   * Es un documento del reproceso, no un F0288 nuevo — el F0288 original no se toca.
+   */
+  constanciaReprocesoF0288(idReproceso: string): string[] | string {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
+    const eq = this.equipoDe(r.inventario);
+    return [
+      'SISGOST · Centro Nacional de Registros',
+      'Constancia de Reproceso F0288',
+      '='.repeat(60),
+      `Código del reproceso: ${r.id}`,
+      `Expediente técnico original: ${r.expedienteTecnico}`,
+      `Expediente único: ${r.expedienteUnico || '—'}`,
+      `Equipo: ${eq ? `${eq.marca} ${eq.modelo}` : '—'}`,
+      `Número de inventario: ${r.inventario}`,
+      `Tipo de falla reportada: ${r.tipoFalla}`,
+      `Reportada por: ${r.solicitadoPor} · ${r.fechaSolicitud} ${r.horaSolicitud}`,
+      `Observación de Soporte: ${r.observacionSoporte || '—'}`,
+      `Evidencia reportada por Soporte: ${r.evidenciaSoporte || '—'}`,
+      `Técnico de Hardware asignado: ${r.tecnicoAsignado || '—'}`,
+      '',
+      'CHECKLIST DE REPROCESO F0288',
+      '-'.repeat(60),
+      ...r.checklist.map((i) => `  [${i.estado === 'Realizado' ? 'X' : i.estado === 'No aplica' ? '—' : ' '}] ${i.nombre}${i.nota ? ` · ${i.nota}` : ''}`),
+      '',
+      'EVIDENCIAS DEL REPROCESO',
+      '-'.repeat(60),
+      ...(r.evidencias.length
+        ? r.evidencias.map((e) => `  ${e.archivo} · ${e.tipo} · ${e.cargadaPor} · ${e.fecha} ${e.hora}`)
+        : ['  Sin evidencias adjuntas (el reproceso no implicó corrección técnica).']),
+      '',
+      `Tiempo trabajado: ${this.formatoDuracion(r.cronometro?.duracionMinutos ?? null) || 'menos de 1 min'}`,
+      `Inicio: ${r.cronometro?.fechaInicio ?? r.fechaInicio} ${r.cronometro?.horaInicio ?? ''}`.trim(),
+      `Finalización: ${r.cronometro?.fechaFin ?? r.fechaFin} ${r.cronometro?.horaFin ?? ''}`.trim(),
+      `Corrección técnica: ${r.correccionTecnica || '—'}`,
+      `Resultado: ${r.resultado || '—'}`,
+      `Observaciones: ${r.observacionResultado || r.observaciones || '—'}`,
+      '',
+      'FIRMA DEL TÉCNICO DE HARDWARE',
+      '-'.repeat(60),
+      `  ${r.firma.nombre}`,
+      `  ${r.firma.cargo} · ${r.firma.unidad}`,
+      `  ${r.firma.fecha} · ${r.firma.hora}`,
+      `  ${r.firma.firma}`,
+      '',
+      'Documento de demostración del prototipo SISGOST; las firmas son simuladas.'
+    ];
+  }
+
+  /**
+   * Deja registrada la constancia del reproceso como documento del expediente. Se guarda una sola
+   * vez por reproceso: volver a descargarla no genera un documento distinto ni una huella nueva.
+   */
+  registrarConstanciaReproceso(idReproceso: string, usuario: string): void {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r?.firma) return;
+    if (this.documentos().some((d) => d.tipo === 'Constancia de reproceso F0288' && d.reproceso === r.id)) return;
+    this.documentos.update((list) => [
+      ...list,
+      { tipo: 'Constancia de reproceso F0288', expediente: r.expediente, reproceso: r.id,
+        generadoPor: usuario, fecha: this.hoy(), hash: this.hash() }
+    ]);
+    this.registrarEvento(r.expediente, usuario, 'Constancia de Reproceso F0288 generada', 'Reproceso F0288 firmado',
+      `Constancia interna del reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}.`, false,
+      { ...this.refReproceso(r), accionTomada: 'Constancia de Reproceso F0288' });
+  }
+
+  /**
+   * Registra la corrección de Soporte de una falla que NO requiere reproceso F0288 (red, dominio,
+   * sistema operativo sin reinstalación…). Deja el proceso listo para el nuevo intento F0302 sin
+   * que el equipo haya salido del escritorio del técnico.
+   */
+  registrarCorreccionSoporte(id: string, usuario: string, descripcion: string): string | null {
+    const conFalla = this.configuracionesConFallaDe(id)[0];
+    if (!conFalla?.falla) return 'Este proceso no tiene una falla F0302 que corregir.';
+    const f = conFalla.falla;
+    if (f.requiereReprocesoF0288) return 'Esta falla requiere reproceso de Preparación F0288: no puede cerrarse como corrección de Soporte.';
+    if (f.estadoIncidencia === 'LISTO_PARA_REINTENTO_F0302') return 'La corrección de Soporte ya fue registrada.';
+    if (!descripcion.trim()) return 'Describa la corrección realizada antes de registrarla.';
+    this.actualizarConfiguracionConFalla(id, (x) => ({
+      ...x, estadoIncidencia: 'LISTO_PARA_REINTENTO_F0302',
+      correccionSoporte: { descripcion: descripcion.trim(), tecnico: usuario, fecha: this.hoy(), hora: this.hora() }
+    }));
+    this.setEstadoSolicitud(id, 'Pendiente de nuevo intento F0302', 'Nueva Configuración F0302 tras la corrección de Soporte');
+    this.expedientesUnicos.update((list) => list.map((x) => (x.expediente === id
+      ? { ...x, estado: 'Pendiente de configuración', resumenEstado: 'Corrección de Soporte registrada · listo para reintento F0302' } : x)));
+    this.registrarEvento(id, usuario, 'Corrección de Soporte registrada', 'Listo para reintento F0302',
+      descripcion.trim(), true,
+      { modulo: 'Configuración F0302', inventario: conFalla.datos.inventario,
+        expedienteTecnico: this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, tipoFalla: f.tipo, requiereReproceso: 'No',
+        accionTomada: 'Corrección de Soporte en el mismo F0302' });
+    return null;
+  }
+
+  /**
+   * Solicita la sustitución del equipo: el único desenlace de una falla en el que sí puede
+   * evaluarse un Expediente técnico nuevo, porque el equipo que lo recibiría es otro. No lo crea
+   * automáticamente —eso sigue siendo decisión de un Encargado— ni descarga el equipo por su
+   * cuenta: deja el proceso marcado y el equipo señalado como no apto para entrega.
+   */
+  solicitarSustitucionEquipo(id: string, usuario: string, motivo: string): string | null {
+    const conFalla = this.configuracionesConFallaDe(id)[0];
+    if (!conFalla?.falla) return 'Este proceso no tiene una falla F0302 registrada.';
+    if (!motivo.trim()) return 'Indique el motivo por el que el equipo debe sustituirse.';
+    const inventario = conFalla.datos.inventario;
+    this.equipos.update((list) => list.map((e) => (e.inventario === inventario
+      ? { ...e, observaciones: `${e.observaciones ? e.observaciones + ' · ' : ''}No apto para entrega: sustitución solicitada por falla en F0302 (${motivo.trim()})` }
+      : e)));
+    this.setEstadoSolicitud(id, 'Pendiente de sustitución de equipo', 'Sustitución del equipo por falla en F0302');
+    this.expedientesUnicos.update((list) => list.map((x) => (x.expediente === id
+      ? { ...x, estado: 'Pendiente de sustitución de equipo', resumenEstado: 'Equipo no apto para entrega · sustitución solicitada' } : x)));
+    this.registrarEvento(id, usuario, 'Sustitución de equipo solicitada por falla en F0302', 'Pendiente de sustitución de equipo',
+      `${motivo.trim()} — El equipo queda marcado como no apto para entrega; el Expediente técnico del equipo sustituto se evalúa aparte.`,
+      true, { modulo: 'Configuración F0302', inventario,
+        expedienteTecnico: this.expTecnicoDeEquipo(inventario)?.codigo,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, tipoFalla: conFalla.falla.tipo,
+        accionTomada: 'Sustitución de equipo' });
+    return null;
+  }
+
+  /**
+   * Inicia un NUEVO intento de Configuración F0302 tras una falla, sin borrar el anterior: el
+   * F0302 con falla queda como intento en el historial y esta crea una configuración activa
+   * fresca sobre el MISMO Expediente técnico. Requiere que la incidencia esté resuelta —corrección
+   * de Soporte registrada o reproceso F0288 finalizado y devuelto— y que el equipo siga preparado.
+   * Devuelve la nueva configuración o el mensaje de validación.
    */
   nuevaConfiguracionF0302(id: string, usuario: string): ConfiguracionF0302 | string {
     const conFalla = this.configuracionesConFallaDe(id)[0];
@@ -3463,11 +4292,14 @@ export class DataService {
     const activa = this.configuraciones().find((c) => c.expediente === id && c.estado !== 'Con falla');
     if (activa) return 'Ya existe una configuración F0302 activa para este proceso.';
     const inventario = conFalla.datos.inventario;
-    // La falla devolvió el equipo a F0288: si quedó un reingreso a Hardware pendiente, primero debe
-    // crearse el nuevo Expediente técnico y completarse la nueva Preparación (aunque el ET anterior
-    // siga «Preparado»). Solo así se cumple el retorno obligatorio a F0288 tras la falla.
-    if (this.reingresoHardwarePendiente(inventario)) {
-      return 'El equipo tiene un reingreso a Hardware pendiente por la falla: cree el nuevo Expediente técnico y complete la nueva Preparación F0288 antes de reconfigurar.';
+    const falla = conFalla.falla;
+    // La incidencia manda: ya no se exige un reingreso a Hardware ni un Expediente técnico nuevo,
+    // pero sí que la falla se haya atendido de verdad —corregida por Soporte o reprocesada en
+    // F0288 y devuelta—. Sin eso el reintento arrancaría sobre el mismo problema.
+    if (falla && falla.estadoIncidencia !== 'LISTO_PARA_REINTENTO_F0302') {
+      return falla.requiereReprocesoF0288
+        ? `Complete el reproceso de Preparación F0288 y devuelva el equipo a Configuración F0302 antes de reintentar (estado: ${this.textoEstadoIncidencia(falla.estadoIncidencia)}).`
+        : 'Registre la corrección de Soporte de la falla antes de iniciar un nuevo intento F0302.';
     }
     if (this.estadoPreparacionEquipo(inventario) !== 'Preparado') {
       return 'El equipo debe completar la Preparación F0288 antes de iniciar una nueva Configuración F0302.';
@@ -3496,10 +4328,15 @@ export class DataService {
         ? { ...x, estado: 'En configuración', resumenEstado: 'Nueva configuración F0302 tras falla' }
         : x)));
     this.actualizarAnexo(id, 'Se anexa configuración del equipo', 'En proceso', 'Nueva configuración F0302 tras la falla anterior');
-    this.registrarEvento(id, usuario, 'Nueva Configuración F0302 iniciada tras la falla anterior', 'En configuración',
-      'El F0302 con falla se conserva como intento en el historial de configuraciones.', true,
-      { modulo: 'Configuración F0302', estadoAnterior: 'Pendiente de revisión técnica', inventario,
-        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: conFalla.datos.asignadoA });
+    const intento = this.configuracionesDeEquipo(inventario).filter((x) => this.configuracionEsIntento(x)).length + 1;
+    this.registrarEvento(id, usuario, `Nuevo intento F0302 iniciado (intento #${intento})`, 'En configuración',
+      `El F0302 con falla se conserva como intento en el historial; se trabaja sobre el mismo Expediente técnico ${this.expTecnicoDeEquipo(inventario)?.codigo ?? '—'}.`,
+      true,
+      { modulo: 'Configuración F0302', estadoAnterior: this.textoEstadoIncidencia(falla?.estadoIncidencia ?? 'LISTO_PARA_REINTENTO_F0302'),
+        inventario, expedienteTecnico: this.expTecnicoDeEquipo(inventario)?.codigo,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: conFalla.datos.asignadoA,
+        tipoFalla: falla?.tipo, requiereReproceso: falla ? (falla.requiereReprocesoF0288 ? 'Sí' : 'No') : undefined,
+        accionTomada: 'Nuevo intento de Configuración F0302', reproceso: falla?.reprocesoId });
     return nueva;
   }
 

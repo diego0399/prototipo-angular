@@ -235,7 +235,12 @@ import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.componen
                 <td>{{ x.tipoExpediente }}</td>
                 <td>{{ x.unidadResponsable }}</td>
                 <td>{{ x.tecnicoPreparacion.split('—')[0].trim() }}</td>
-                <td><ui-badge [estado]="estadoF0288(x)" /></td>
+                <td>
+                  <ui-badge [estado]="estadoF0288(x)" />
+                  @for (r of reprocesosDe(x); track r.id) {
+                    <div class="sub-cell">Reproceso #{{ r.numero }}: {{ r.estado }} <span class="mono">{{ r.id }}</span></div>
+                  }
+                </td>
                 <td><ui-badge [estado]="x.estado" /></td>
                 <td>
                   <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
@@ -440,6 +445,14 @@ export class ExpedienteTecnicoComponent {
 
   protected estadoF0288(t: ExpedienteTecnico): string {
     return this.data.preparacionPorCodigo(t.codigo)?.estado ?? 'Sin registro';
+  }
+
+  /**
+   * Reprocesos F0288 del expediente: correcciones por fallas detectadas en F0302 que se registran
+   * aquí en lugar de generar expedientes técnicos nuevos.
+   */
+  protected reprocesosDe(t: ExpedienteTecnico) {
+    return [...this.data.reprocesosDeExpTecnico(t.codigo)].sort((a, b) => a.numero - b.numero);
   }
 
   protected f0288Pendiente(t: ExpedienteTecnico): boolean {

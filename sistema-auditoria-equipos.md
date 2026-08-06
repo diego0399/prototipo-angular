@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **3 de agosto de 2026 (ronda 38)**.
+nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 40)**.
 
 ---
 
@@ -2001,6 +2001,92 @@ Expediente único.
       y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó el espejo de la batería de la ronda 37
       —no exigía MAC ni solicitud— para que no siguiera dando por buena la regla anterior.
       **Sin recorrido manual de clics en navegador.**
+39. **F0302 — checklist dinámico por tipo de falla y reproceso F0288 sin expedientes técnicos
+    nuevos** (2026-08-05).
+    * **La falla dejó de crear expedientes técnicos.** Reportar una falla generaba un ingreso a
+      Hardware, y ese ingreso es justo lo que habilita `puedeCrearNuevoExpedienteTecnico`: el mismo
+      equipo, en el mismo ciclo, acumulaba expedientes por cada tropiezo. Ahora la falla abre una
+      **incidencia sobre el Expediente técnico vigente** y, si hay que volver a preparación, un
+      **reproceso F0288** dentro de ese mismo expediente (`EXP-PT-…-R1`, correlativo por expediente).
+      El F0288 original queda intacto. Se quitó del servicio la excepción que abría el paso a un
+      expediente nuevo por falla en F0302; queda solo la condición del ciclo nuevo (reingreso tras
+      descargo, sustitución o autorización).
+    * **`matrizFalla(tipo)`** concentra el comportamiento de los nueve tipos: sugerencia de reproceso,
+      revisión por Hardware, campos del checklist y nota contextual. La pantalla y la validación leen
+      de ahí, así que no pueden discrepar. Los tres «Depende» —sistema operativo, red y configuración
+      incompleta— se resuelven con **su propia pregunta**, y al responderla la respuesta de reproceso
+      se reajusta sola. Cambiar el tipo limpia el checklist: un síntoma de disco no significa nada
+      dentro de un problema de red.
+    * «¿Requiere nueva preparación F0288?» pasó a **«¿Requiere reproceso de Preparación F0288?»**: el
+      nombre viejo era la lectura que produjo el problema. Apartarse de la sugerencia exige
+      justificación **en las dos direcciones**, y en los tipos «Depende» se exige cuando el técnico
+      decide el reproceso. La sugerencia se guarda junto con la respuesta: sin ella, un «No» en una
+      falla de disco se leería después como criterio del sistema y no como decisión de alguien.
+    * Nuevos estados de la incidencia (`PENDIENTE_CORRECCION_SOPORTE`, `REPROCESO_F0288_REQUERIDO`,
+      `…_EN_PROCESO`, `…_FINALIZADO`, `LISTO_PARA_REINTENTO_F0302`), en pantalla en castellano.
+      **`NUEVO_EXPEDIENTE_TECNICO` no existe como estado automático**: no es un estado del proceso
+      sino una decisión de un Encargado. El reintento F0302 exige que la incidencia esté atendida de
+      verdad —reproceso finalizado y devuelto, o corrección de Soporte registrada—.
+    * Botones por caso: en Configuración F0302 «Registrar corrección», «Atender reproceso F0288» y
+      «Reintentar F0302» (deshabilitado con el motivo a la vista); en Preparación técnica, una tarjeta
+      con «Iniciar reproceso F0288», «Registrar corrección y finalizar» —corrección obligatoria— y
+      «Devolver a Configuración F0302». La **sustitución de equipo** tiene botón propio: es el único
+      desenlace de una falla en el que corresponde evaluar un expediente nuevo, porque el equipo que
+      lo recibiría es otro.
+    * Contadores separados: `Veces preparado` (los reprocesos **no** suman), `Reprocesos F0288`,
+      `Intentos F0302`, `Veces configurado` y `Fallas F0302`. Los once eventos del pedido guardan tipo
+      de falla, reproceso evaluado, acción tomada y evidencia. El documento F0302 gana un **Historial
+      del ciclo** (F0288 #1 → F0302 #1 con falla → Reproceso #1 → F0302 #2) que solo aparece si hubo
+      falla.
+    * Migración: `normalizarFalla` deduce el estado de la incidencia de lo que la falla pedía, **nunca**
+      «listo para reintento» —en esas fotos nadie registró la corrección—, y
+      `asegurarReprocesoDeFalla` abre el reproceso que nunca existió cuando alguien va a atenderlo.
+    * Verificado con `npm run build` limpio (4.565 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en ocho rutas y los tres JSON tocados) y
+      **108 casos, 0 fallos**, más las regresiones de las rondas 38 (58), 37 (31), 36 (30), 35 (29) y
+      34 (32) y accesorios (CPU 12, Laptop 13). Se actualizaron dos expectativas por la nueva
+      configuración semilla. **Sin recorrido manual de clics en navegador.**
+40. **F0302 — rollback a Hardware: reproceso `-R1` con checklist propio, evidencia, tiempo y firma**
+    (2026-08-06).
+    * El reproceso de la ronda 39 pasó a ser un trabajo real de Hardware. **Nace sin dueño**
+      (`Requerido`) y el rollback es una acción propia: hasta que se asigna no se puede iniciar. El
+      buscador muestra los técnicos de Hardware con su **carga laboral** (preparaciones + reprocesos
+      abiertos) y marca al que preparó inicialmente el equipo —candidato natural, no obligación—.
+      Asignarlo fuera de Hardware solo lo autoriza un Encargado, con justificación: sin esa
+      restricción cualquiera podría desviar a Soporte una revisión física y esta no ocurriría.
+    * **Checklist de Reproceso F0288** propio y por tipo de falla (7 variantes; los tipos sin
+      checklist propio usan el base). Cada uno marca qué ítems **implican cambio, reparación o
+      corrección**: marcar uno hace la evidencia obligatoria. Un reproceso de red que solo verificó
+      el puerto no tiene nada que adjuntar y no se le exige.
+    * Cronómetro propio del reproceso (inicio, fin y duración), separado del de la preparación
+      inicial. Finalizar exige checklist resuelto y corrección técnica escrita.
+    * **La firma es lo que cierra**, no «finalizar»: sin ella el reproceso queda finalizado pero
+      abierto y el equipo no vuelve a configuración. Se guardan nombre, cargo, unidad, fecha, hora y
+      firma simulada; sin ese registro nadie se hizo responsable de lo que se hizo sobre el equipo.
+    * **El resultado decide el desenlace**: «Corregido» habilita devolver el equipo; «No corregido»,
+      «Requiere sustitución» y «Requiere evaluación del Encargado» exigen observación y **no**
+      devuelven el equipo a F0302. La sustitución sigue siendo el único caso que justifica evaluar un
+      expediente técnico nuevo, y para el equipo sustituto.
+    * Módulo nuevo **`/reprocesos-f0288`** («Reprocesos · F0288») con la tabla de diez columnas del
+      pedido, ordenada por prioridad, y las acciones por estado. Visibilidad por rol: el Técnico de
+      Hardware ve los suyos y los que no tienen dueño; los Encargados y el Administrador, todos; el
+      Técnico de Soporte, los de sus procesos. En Preparación técnica quedó solo un aviso con enlace
+      —duplicar la pantalla habría duplicado la regla—.
+    * **Constancia de Reproceso F0288** descargable con los trece datos del pedido, registrada como
+      documento del expediente del proceso e identificada por el código del reproceso (así un mismo
+      expediente acumula una constancia por reproceso sin pisarse).
+    * Contadores tal como los pidió el usuario: **Preparaciones iniciales 1 · Reprocesos F0288 1 ·
+      Intentos F0302 2 · F0302 exitosos 1 · Fallas F0302 1**, y los expedientes técnicos sin aumentar.
+      Doce eventos con los quince campos; `Firma registrada` pasa de «No» a «Sí» en el momento real.
+    * Migración: `normalizarReprocesos` completa los reprocesos viejos, pero **conserva el estado**:
+      uno que quedó «Finalizado» sin firma sigue sin firma y no podrá devolver el equipo hasta que
+      alguien la registre.
+    * Verificado con `npm run build` limpio (6.221 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en nueve rutas, incluida la nueva, y los
+      tres JSON tocados) y **95 casos, 0 fallos**, más las regresiones de las rondas 39 (108), 38 (58),
+      37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó una
+      expectativa de la ronda 39: el estado terminal de un reproceso corregido pasó de «Finalizado» a
+      «Firmado». **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2038,6 +2124,16 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 40)**: recorrido manual en navegador de `/reprocesos-f0288` —asignación
+  desde el buscador de técnicos con carga, excepción fuera de Hardware, checklist de los siete tipos,
+  evidencia obligatoria al marcar un ítem de corrección, cronómetro, intento de devolver sin firmar y
+  los cuatro resultados—, más la descarga de la Constancia de Reproceso F0288. Verificado con build
+  limpio, smoke test HTTP y 95 casos contra datos reales, sin clics reales.
+* **Nuevo pendiente (ronda 39)**: recorrido manual en navegador del checklist dinámico de falla —los
+  nueve tipos, las tres preguntas que resuelven un «Depende», el cambio de sugerencia con y sin
+  justificación— y del ciclo completo del reproceso F0288 entre Configuración F0302 y Preparación
+  técnica, comprobando en pantalla que **no aparece ningún Expediente técnico nuevo**. Verificado con
+  build limpio, smoke test HTTP y 108 casos contra datos reales, sin clics reales.
 * **Nuevo pendiente (ronda 38)**: recorrido manual en navegador del modal de reserva de IP —con
   «No» sin justificación y con justificación; con «Sí» sin MAC, con MAC mal formada, con la
   solicitud pendiente y ya enviada; y cambiando la IP después de enviarla para comprobar que vuelve

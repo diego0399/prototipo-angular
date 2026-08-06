@@ -2,7 +2,8 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
-  ConfiguracionF0302, Cronometro, MotivoSoftwareF0302, NivelComplejidad, RespuestaSiNo,
+  AccionRequeridaFalla, ConfiguracionF0302, Cronometro, DetalleFallaF0302, MotivoSoftwareF0302,
+  NivelComplejidad, ReprocesoF0288, RespuestaSiNo,
   SoftwareCatalogo, SoftwareF0302, SolicitudReservaIP, TipoFallaF0302
 } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
@@ -508,19 +509,19 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
           </div>
         }
 
-        <!-- Reportar falla durante la configuración: devuelve el equipo a F0288 (spec Parte B) -->
+        <!-- Reportar falla durante la configuración: el checklist se adapta al tipo de falla -->
         @if (enCurso(c)) {
           <div class="card mb-2" style="border-left: 4px solid var(--danger, #c0392b);">
             <div class="card-head">
               <div>
                 <h3>
                   ¿Se detectó una falla durante la configuración?
-                  <ui-help texto="Reportar una falla detiene el cronómetro y guarda el tiempo trabajado, conserva el F0302 como intento «Con falla» (no se borra) y devuelve el equipo al flujo F0288. No se habilita la aceptación ni la garantía." />
+                  <ui-help texto="El checklist se adapta al tipo de falla: no todas devuelven el equipo a Preparación F0288. La falla se registra como intento F0302 y como incidencia del mismo Expediente técnico; nunca se crea uno nuevo." />
                 </h3>
-                <p class="sub">El F0302 con falla se conserva como intento; el equipo regresa a revisión/preparación F0288</p>
+                <p class="sub">El intento F0302 se conserva y la incidencia queda en el mismo Expediente técnico</p>
               </div>
               <button class="btn btn-outline btn-sm" (click)="fallaAbierto.set(!fallaAbierto())">
-                {{ fallaAbierto() ? 'Cancelar' : '⚠ Reportar falla y devolver a F0288' }}
+                {{ fallaAbierto() ? 'Cancelar' : '⚠ Reportar falla en la configuración' }}
               </button>
             </div>
             @if (fallaAbierto()) {
@@ -528,45 +529,212 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 <div class="grid grid-2">
                   <div class="field">
                     <label>Tipo de falla <span class="req">*</span></label>
-                    <select class="control" [ngModel]="fTipo()" (ngModelChange)="fTipo.set($event)">
+                    <select class="control" [ngModel]="fTipo()" (ngModelChange)="cambiarTipoFalla($event)">
                       @for (t of tiposFalla; track t) { <option [value]="t">{{ t }}</option> }
                     </select>
+                    <span class="hint">{{ notaFalla() }}</span>
                   </div>
                   <div class="field">
-                    <label>Evidencia (si aplica)</label>
+                    <label>Evidencia @if (fTipo() === 'Otro') { <span class="req">*</span> } @else { (si aplica) }</label>
                     <input class="control" [ngModel]="fEvid()" (ngModelChange)="fEvid.set($event)" placeholder="Captura / número de evidencia…" />
                   </div>
                 </div>
+
+                <!-- Checklist dinámico: solo los campos del tipo seleccionado -->
+                @if (pide('componenteAfectado')) {
+                  <div class="field">
+                    <label>Componente afectado <span class="req">*</span></label>
+                    <select class="control" [ngModel]="fDetalle().componenteAfectado ?? ''" (ngModelChange)="setDetalle('componenteAfectado', $event)">
+                      <option value="">Seleccione…</option>
+                      @for (x of data.componentesFalla; track x) { <option [value]="x">{{ x }}</option> }
+                    </select>
+                  </div>
+                }
+                @if (pide('tipoDisco')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Tipo de disco <span class="req">*</span></label>
+                      <select class="control" [ngModel]="fDetalle().tipoDisco ?? ''" (ngModelChange)="setDetalle('tipoDisco', $event)">
+                        <option value="">Seleccione…</option>
+                        @for (x of data.tiposDisco; track x) { <option [value]="x">{{ x }}</option> }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>Serie del disco (si aplica)</label>
+                      <input class="control" [ngModel]="fDetalle().serieDisco ?? ''" (ngModelChange)="setDetalle('serieDisco', $event)" />
+                    </div>
+                  </div>
+                }
+                @if (pide('capacidadRam')) {
+                  <div class="field">
+                    <label>Capacidad de RAM instalada <span class="req">*</span></label>
+                    <input class="control" [ngModel]="fDetalle().capacidadRam ?? ''" (ngModelChange)="setDetalle('capacidadRam', $event)" placeholder="p. ej. 8 GB" />
+                  </div>
+                }
+                @if (pide('sintoma')) {
+                  <div class="field">
+                    <label>Síntoma detectado <span class="req">*</span></label>
+                    <select class="control" [ngModel]="fDetalle().sintoma ?? ''" (ngModelChange)="setDetalle('sintoma', $event)">
+                      <option value="">Seleccione…</option>
+                      @for (x of (fTipo() === 'Falla de disco' ? data.sintomasDisco : data.sintomasMemoria); track x) {
+                        <option [value]="x">{{ x }}</option>
+                      }
+                    </select>
+                  </div>
+                }
+                @if (pide('tipoProblemaSO')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Tipo de problema <span class="req">*</span></label>
+                      <select class="control" [ngModel]="fDetalle().tipoProblemaSO ?? ''" (ngModelChange)="setDetalle('tipoProblemaSO', $event)">
+                        <option value="">Seleccione…</option>
+                        @for (x of data.problemasSO; track x) { <option [value]="x">{{ x }}</option> }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>¿Requiere reinstalación o reparación base? <span class="req">*</span></label>
+                      <div class="radio-line" style="padding-top: 8px;">
+                        <label><input type="radio" name="freinst" [checked]="fDetalle().requiereReinstalacion === 'Sí'" (change)="setDetalle('requiereReinstalacion', 'Sí')" /> Sí</label>
+                        <label><input type="radio" name="freinst" [checked]="fDetalle().requiereReinstalacion === 'No'" (change)="setDetalle('requiereReinstalacion', 'No')" /> No</label>
+                      </div>
+                      <span class="hint">Con «Sí» la falla pasa a reproceso F0288; con «No» se corrige en este mismo F0302.</span>
+                    </div>
+                  </div>
+                }
+                @if (pide('tipoProblemaRed')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Tipo de problema de red <span class="req">*</span></label>
+                      <select class="control" [ngModel]="fDetalle().tipoProblemaRed ?? ''" (ngModelChange)="setDetalle('tipoProblemaRed', $event)">
+                        <option value="">Seleccione…</option>
+                        @for (x of data.problemasRed; track x) { <option [value]="x">{{ x }}</option> }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>MAC del equipo <span class="req">*</span></label>
+                      <input class="control" [ngModel]="fDetalle().mac ?? ''" (ngModelChange)="setDetalle('mac', $event)" placeholder="00:1A:2B:3C:4D:5E" />
+                      <span class="hint">Tomada del registro institucional del equipo: {{ macSugerida(c) || 'no registrada' }}</span>
+                    </div>
+                  </div>
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>IP actual (si aplica)</label>
+                      <input class="control" [ngModel]="fDetalle().ipActual ?? ''" (ngModelChange)="setDetalle('ipActual', $event)" placeholder="192.168.10.45" />
+                    </div>
+                    <div class="field">
+                      <label>Punto de red (si aplica)</label>
+                      <input class="control" [ngModel]="fDetalle().puntoRed ?? ''" (ngModelChange)="setDetalle('puntoRed', $event)" placeholder="p. ej. PR-2-14" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>¿Requiere revisión física por Hardware? <span class="req">*</span></label>
+                    <div class="radio-line" style="padding-top: 8px;">
+                      <label><input type="radio" name="frevfis" [checked]="fDetalle().requiereRevisionFisica === 'Sí'" (change)="setDetalle('requiereRevisionFisica', 'Sí')" /> Sí</label>
+                      <label><input type="radio" name="frevfis" [checked]="fDetalle().requiereRevisionFisica === 'No'" (change)="setDetalle('requiereRevisionFisica', 'No')" /> No</label>
+                    </div>
+                    <span class="hint">Solo con «Sí» el problema de red pasa a reproceso F0288; por defecto se atiende en este F0302.</span>
+                  </div>
+                }
+                @if (pide('usuarioCuenta')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Usuario o cuenta utilizada <span class="req">*</span></label>
+                      <input class="control" [ngModel]="fDetalle().usuarioCuenta ?? ''" (ngModelChange)="setDetalle('usuarioCuenta', $event)" />
+                    </div>
+                    <div class="field">
+                      <label>Nombre del equipo <span class="req">*</span></label>
+                      <input class="control" [ngModel]="fDetalle().nombreEquipo ?? ''" (ngModelChange)="setDetalle('nombreEquipo', $event)" [placeholder]="c.datos.nombrePC || 'Nombre del equipo…'" />
+                    </div>
+                  </div>
+                  <div class="field">
+                    <label>Mensaje de error <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [ngModel]="fDetalle().mensajeError ?? ''" (ngModelChange)="setDetalle('mensajeError', $event)" placeholder="Mensaje mostrado al intentar ingresar al dominio…"></textarea>
+                  </div>
+                }
+                @if (pide('accesorio')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Accesorio faltante <span class="req">*</span></label>
+                      <select class="control" [ngModel]="fDetalle().accesorio ?? ''" (ngModelChange)="setDetalle('accesorio', $event)">
+                        <option value="">Seleccione…</option>
+                        @for (x of data.accesoriosFalla; track x) { <option [value]="x">{{ x }}</option> }
+                      </select>
+                    </div>
+                    <div class="field">
+                      <label>Número de inventario esperado (si aplica)</label>
+                      <input class="control" [ngModel]="fDetalle().inventarioEsperado ?? ''" (ngModelChange)="setDetalle('inventarioEsperado', $event)" placeholder="2201-00-101-0000-01" />
+                    </div>
+                  </div>
+                }
+                @if (pide('etapaDeteccion')) {
+                  <div class="grid grid-2">
+                    <div class="field">
+                      <label>Etapa donde se detectó la falla <span class="req">*</span></label>
+                      <input class="control" [ngModel]="fDetalle().etapaDeteccion ?? ''" (ngModelChange)="setDetalle('etapaDeteccion', $event)" placeholder="p. ej. Instalación de software / Ingreso a dominio" />
+                    </div>
+                    <div class="field">
+                      <label>Acción requerida <span class="req">*</span></label>
+                      <select class="control" [ngModel]="fDetalle().accionRequerida ?? ''" (ngModelChange)="setDetalle('accionRequerida', $event)">
+                        <option value="">Seleccione…</option>
+                        @for (x of data.accionesRequeridasFalla; track x) { <option [value]="x">{{ x }}</option> }
+                      </select>
+                      <span class="hint">«Reproceso F0288» y «Revisar por Hardware» devuelven el equipo a preparación; las otras dos se resuelven aquí.</span>
+                    </div>
+                  </div>
+                }
+
                 <div class="field">
-                  <label>Descripción / observación de la falla <span class="req">*</span></label>
+                  <label>
+                    {{ fTipo() === 'Configuración incompleta por falla previa' ? 'Descripción de la configuración incompleta' : 'Descripción / observación de la falla' }}
+                    <span class="req">*</span>
+                  </label>
                   <textarea class="control" rows="2" [ngModel]="fDesc()" (ngModelChange)="fDesc.set($event)" placeholder="Describa la falla detectada (obligatorio)…"></textarea>
                 </div>
-                <div class="grid grid-2">
+                @if (pide('observacionHardware')) {
                   <div class="field">
-                    <label>¿Requiere revisión de Hardware?</label>
-                    <div class="radio-line" style="padding-top: 8px;">
-                      <label><input type="radio" name="freqhw" [checked]="fReqHw()" (change)="fReqHw.set(true)" /> Sí</label>
-                      <label><input type="radio" name="freqhw" [checked]="!fReqHw()" (change)="fReqHw.set(false)" /> No</label>
-                    </div>
+                    <label>Observación para Hardware</label>
+                    <textarea class="control" rows="2" [ngModel]="fDetalle().observacionHardware ?? ''" (ngModelChange)="setDetalle('observacionHardware', $event)" placeholder="Lo que Hardware debe revisar o corregir…"></textarea>
                   </div>
-                  <div class="field">
-                    <label>¿Requiere nueva Preparación F0288?</label>
-                    <div class="radio-line" style="padding-top: 8px;">
-                      <label><input type="radio" name="freqprep" [checked]="fReqPrep()" (change)="fReqPrep.set(true)" /> Sí</label>
-                      <label><input type="radio" name="freqprep" [checked]="!fReqPrep()" (change)="fReqPrep.set(false)" /> No</label>
-                    </div>
+                }
+
+                <div class="field">
+                  <label>
+                    ¿Requiere reproceso de Preparación F0288?
+                    <ui-help texto="Reproceso, no «nueva preparación»: la corrección se registra dentro del mismo Expediente técnico. Solo un ciclo nuevo —reingreso tras descargo, sustitución del equipo o autorización de jefatura— justifica un Expediente técnico nuevo." />
+                  </label>
+                  <div class="radio-line" style="padding-top: 8px;">
+                    <label><input type="radio" name="freproc" [checked]="fReproceso()" (change)="fReproceso.set(true)" /> Sí</label>
+                    <label><input type="radio" name="freproc" [checked]="!fReproceso()" (change)="fReproceso.set(false)" /> No</label>
+                    <span class="chip">Sugerencia del sistema: {{ sugerencia() }}</span>
                   </div>
+                  @if (sugerencia() === 'Depende') {
+                    <span class="hint">Para este tipo de falla el sistema no decide solo: responda la pregunta del checklist o justifique su elección.</span>
+                  }
                 </div>
+                @if (cambioSugerencia() || (sugerencia() === 'Depende' && fReproceso())) {
+                  <div class="field">
+                    <label>Justificación <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [ngModel]="fJust()" (ngModelChange)="fJust.set($event)"
+                      [placeholder]="cambioSugerencia() ? 'Explique por qué se aparta de la sugerencia del sistema…' : 'Explique por qué el equipo debe volver a preparación…'"></textarea>
+                  </div>
+                }
+
                 <div class="field">
                   <label>Observación técnica (opcional)</label>
                   <textarea class="control" rows="2" [ngModel]="fObs()" (ngModelChange)="fObs.set($event)"></textarea>
                 </div>
                 <div class="alert warn">
                   <span class="alert-ico">!</span>
-                  <span>El F0302 quedará <b>Con falla</b> (se conserva como intento), se guardará el tiempo trabajado y el equipo volverá a <b>F0288</b>. No se habilitará la aceptación ni la garantía. Los contadores históricos no se reinician.</span>
+                  @if (fReproceso()) {
+                    <span>El F0302 quedará <b>Con falla</b> (se conserva como intento) y se abrirá un <b>reproceso de Preparación F0288</b> sobre el mismo Expediente técnico: <b>no se crea un Expediente técnico nuevo</b>. No se habilitará la aceptación ni la garantía.</span>
+                  } @else {
+                    <span>El F0302 quedará <b>Con falla</b> (se conserva como intento) y la incidencia se atenderá como <b>corrección de Soporte en este mismo F0302</b>: el equipo <b>no</b> regresa a Preparación F0288. No se habilitará la aceptación ni la garantía.</span>
+                  }
                 </div>
                 <div class="row" style="justify-content: flex-end;">
-                  <button class="btn btn-primary" (click)="reportarFalla(c.expediente)">Confirmar falla y devolver a F0288</button>
+                  <button class="btn btn-primary" (click)="reportarFalla(c.expediente)">
+                    {{ fReproceso() ? 'Registrar falla y enviar a reproceso F0288' : 'Registrar falla y corregir en F0302' }}
+                  </button>
                 </div>
               </div>
             }
@@ -596,38 +764,100 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
             <div class="card-head">
               <div>
                 <h3>Configuración F0302 con falla</h3>
-                <p class="sub">El equipo fue devuelto a F0288; este intento F0302 se conserva en el historial y no se borra</p>
+                <p class="sub">Intento conservado en el historial · la incidencia vive en el mismo Expediente técnico</p>
               </div>
-              <ui-badge estado="Con falla" />
+              @if (c.falla; as f) { <ui-badge [estado]="data.textoEstadoIncidencia(f.estadoIncidencia)" /> }
             </div>
             <div class="card-body">
               @if (c.falla; as f) {
                 <dl class="dl">
                   <dt>Tipo de falla</dt><dd>{{ f.tipo }}</dd>
                   <dt>Descripción de la falla</dt><dd>{{ f.descripcion }}</dd>
+                  @if (data.resumenDetalleFalla(f); as det) {
+                    <dt>Checklist de la falla</dt><dd>{{ det }}</dd>
+                  }
                   <dt>Tiempo trabajado del F0302</dt><dd>{{ data.formatoDuracion(f.tiempoMinutos) || 'menos de 1 min' }}</dd>
                   <dt>Técnico que reportó</dt><dd>{{ f.tecnicoReporta }}</dd>
                   <dt>Fecha y hora</dt><dd>{{ f.fecha }} · {{ f.hora }}</dd>
                   <dt>¿Requiere revisión de Hardware?</dt><dd>{{ f.requiereHardware ? 'Sí' : 'No' }}</dd>
-                  <dt>¿Requiere nueva Preparación F0288?</dt><dd>{{ f.requiereNuevaPreparacion ? 'Sí' : 'No' }}</dd>
+                  <dt>¿Requiere reproceso de Preparación F0288?</dt>
+                  <dd>{{ f.requiereReprocesoF0288 ? 'Sí' : 'No' }} <span class="chip">Sugerencia del sistema: {{ f.sugerencia }}</span></dd>
+                  @if (f.justificacionReproceso) { <dt>Justificación</dt><dd>{{ f.justificacionReproceso }}</dd> }
+                  <dt>Expediente técnico</dt>
+                  <dd>{{ expTecnico(c) || '—' }} <span class="chip">Se conserva: no se creó uno nuevo</span></dd>
+                  @if (reprocesoDeFalla(c); as r) {
+                    <dt>Reproceso F0288</dt>
+                    <dd>{{ r.id }} · {{ r.estado }} · atiende {{ r.unidadAtiende }}
+                      <div class="sub-cell">Técnico asignado: {{ r.tecnicoAsignado || 'Sin asignar' }} · prioridad {{ r.prioridad }}</div>
+                      @if (r.correccionTecnica) { <div class="sub-cell">Corrección: {{ r.correccionTecnica }}</div> }
+                      @if (r.firma; as fr) { <div class="sub-cell">Firmado por {{ fr.nombre }} — {{ fr.cargo }} · {{ fr.fecha }} {{ fr.hora }} · Resultado: {{ r.resultado }}</div> }
+                      @else if (r.estado === 'Finalizado') { <div class="sub-cell">Pendiente de firma del Técnico de Hardware</div> }
+                    </dd>
+                  }
+                  @if (f.correccionSoporte; as k) {
+                    <dt>Corrección de Soporte</dt>
+                    <dd>{{ k.descripcion }} <div class="sub-cell">{{ k.tecnico }} · {{ k.fecha }} {{ k.hora }}</div></dd>
+                  }
                   @if (f.observacionTecnica) { <dt>Observación técnica</dt><dd>{{ f.observacionTecnica }}</dd> }
                   @if (f.evidencia) { <dt>Evidencia</dt><dd>{{ f.evidencia }}</dd> }
                 </dl>
-              }
-              <div class="alert warn mt-2">
-                <span class="alert-ico">!</span>
-                <span>No se habilita la aceptación ni la garantía mientras el F0302 quede con falla. El equipo debe pasar por <b>F0288</b> (revisión técnica y/o nueva preparación) antes de reconfigurar.</span>
-              </div>
-              <div class="row mt-2" style="flex-wrap: wrap;">
-                <a class="btn btn-outline btn-sm" routerLink="/trazabilidad" [queryParams]="{ inventario: c.datos.inventario }">Ver historial técnico</a>
-                @if (data.puedeCrearNuevoExpedienteTecnico(c.datos.inventario)) {
-                  <a class="btn btn-outline btn-sm" routerLink="/expediente-tecnico" [queryParams]="{ inventario: c.datos.inventario }">Crear nuevo Expediente técnico</a>
+
+                <div class="alert warn mt-2">
+                  <span class="alert-ico">!</span>
+                  @if (f.requiereReprocesoF0288) {
+                    <span>No se habilita la aceptación ni la garantía mientras la incidencia siga abierta. La corrección se registra como <b>reproceso F0288</b> en <b>Preparación técnica</b>, dentro del Expediente técnico <b>{{ expTecnico(c) || '—' }}</b>.</span>
+                  } @else {
+                    <span>No se habilita la aceptación ni la garantía mientras la incidencia siga abierta. Esta falla se resuelve <b>aquí mismo</b>: registre la corrección de Soporte y reintente el F0302.</span>
+                  }
+                </div>
+
+                <!-- Botones según el caso (spec §13) -->
+                <div class="row mt-2" style="flex-wrap: wrap;">
+                  <a class="btn btn-outline btn-sm" routerLink="/trazabilidad" [queryParams]="{ inventario: c.datos.inventario }">Ver trazabilidad</a>
+                  @if (f.requiereReprocesoF0288) {
+                    <a class="btn btn-outline btn-sm" routerLink="/reprocesos-f0288">
+                      {{ f.estadoIncidencia === 'LISTO_PARA_REINTENTO_F0302' ? 'Ver reproceso F0288' : 'Ver reproceso F0288 en Hardware' }}
+                    </a>
+                  } @else if (f.estadoIncidencia !== 'LISTO_PARA_REINTENTO_F0302') {
+                    <button class="btn btn-outline btn-sm" (click)="correccionAbierta.set(!correccionAbierta())">
+                      {{ correccionAbierta() ? 'Cancelar' : 'Registrar corrección' }}
+                    </button>
+                  }
+                  <button class="btn btn-primary btn-sm" [disabled]="!equipoPreparado(c)" (click)="nuevaConfig(c.expediente)">
+                    Reintentar F0302
+                  </button>
+                  <button class="btn btn-outline btn-sm" (click)="sustitucionAbierta.set(!sustitucionAbierta())">
+                    {{ sustitucionAbierta() ? 'Cancelar sustitución' : 'Solicitar sustitución de equipo' }}
+                  </button>
+                </div>
+                @if (!equipoPreparado(c)) {
+                  <span class="hint">
+                    «Reintentar F0302» se habilita cuando la incidencia queda resuelta
+                    ({{ f.requiereReprocesoF0288 ? 'reproceso F0288 finalizado y equipo devuelto a configuración' : 'corrección de Soporte registrada' }}).
+                  </span>
                 }
-                <a class="btn btn-outline btn-sm" routerLink="/preparacion-tecnica">Iniciar nueva Preparación F0288</a>
-                <button class="btn btn-primary btn-sm" [disabled]="!equipoPreparado(c)" (click)="nuevaConfig(c.expediente)">Iniciar nueva configuración F0302</button>
-              </div>
-              @if (!equipoPreparado(c)) {
-                <span class="hint">«Iniciar nueva configuración F0302» se habilita cuando el equipo quede nuevamente Preparado (nueva Preparación F0288 completada).</span>
+
+                @if (correccionAbierta()) {
+                  <div class="field mt-2">
+                    <label>Corrección realizada por Soporte <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [ngModel]="cDesc()" (ngModelChange)="cDesc.set($event)"
+                      placeholder="Describa lo que se corrigió en el F0302 (obligatorio)…"></textarea>
+                    <div class="row mt-1" style="justify-content: flex-end;">
+                      <button class="btn btn-primary btn-sm" (click)="registrarCorreccion(c.expediente)">Guardar corrección y continuar configuración</button>
+                    </div>
+                  </div>
+                }
+                @if (sustitucionAbierta()) {
+                  <div class="field mt-2">
+                    <label>Motivo de la sustitución del equipo <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [ngModel]="sMotivo()" (ngModelChange)="sMotivo.set($event)"
+                      placeholder="Por qué este equipo ya no puede entregarse…"></textarea>
+                    <span class="hint">La sustitución marca el equipo como no apto para entrega. Es el único desenlace de una falla en el que corresponde evaluar un Expediente técnico nuevo, porque el equipo que lo recibiría es otro.</span>
+                    <div class="row mt-1" style="justify-content: flex-end;">
+                      <button class="btn btn-primary btn-sm" (click)="solicitarSustitucion(c.expediente)">Solicitar sustitución</button>
+                    </div>
+                  </div>
+                }
               }
             </div>
           </div>
@@ -890,7 +1120,7 @@ export class ConfiguracionComponent {
   /** Modal de confirmación previo al envío del formulario de conformidad. */
   protected confirmarAbierto = signal(false);
 
-  // ---------- Reporte de falla F0302 (Parte B) ----------
+  // ---------- Reporte de falla F0302 con checklist dinámico ----------
   protected readonly tiposFalla: TipoFallaF0302[] = [
     'Falla física del equipo', 'Falla de disco', 'Falla de memoria', 'Problema de sistema operativo',
     'Problema de red', 'No permite ingreso a dominio', 'Accesorio faltante',
@@ -899,20 +1129,66 @@ export class ConfiguracionComponent {
   protected fallaAbierto = signal(false);
   protected fTipo = signal<TipoFallaF0302>('Falla física del equipo');
   protected fDesc = signal('');
-  protected fReqHw = signal(true);
-  protected fReqPrep = signal(true);
   protected fObs = signal('');
   protected fEvid = signal('');
+  /** Campos del checklist dinámico: solo se envían los que el tipo seleccionado pide. */
+  protected fDetalle = signal<DetalleFallaF0302>({});
+  /** Respuesta del técnico a «¿Requiere reproceso de Preparación F0288?». */
+  protected fReproceso = signal(true);
+  protected fJust = signal('');
+  /** Corrección de Soporte y reproceso, en la vista del F0302 con falla. */
+  protected correccionAbierta = signal(false);
+  protected cDesc = signal('');
+  protected sustitucionAbierta = signal(false);
+  protected sMotivo = signal('');
+
+  /** Lo que la matriz sugiere con lo que el técnico lleva contestado. */
+  protected readonly sugerencia = computed(() => this.data.sugerenciaReproceso(this.fTipo(), this.fDetalle()));
+  protected readonly notaFalla = computed(() => this.data.matrizFalla(this.fTipo()).nota);
+  /** true cuando el técnico se aparta de la sugerencia: ahí la justificación es obligatoria. */
+  protected readonly cambioSugerencia = computed(() => {
+    const s = this.sugerencia();
+    return s !== 'Depende' && s !== (this.fReproceso() ? 'Sí' : 'No');
+  });
+
+  protected pide(campo: string): boolean {
+    return this.data.fallaPideCampo(this.fTipo(), campo);
+  }
+  /** Escribe un campo del checklist dinámico sin perder los demás. */
+  protected setDetalle(campo: keyof DetalleFallaF0302, valor: string): void {
+    this.fDetalle.update((d) => ({ ...d, [campo]: valor }));
+    // Las tres preguntas que resuelven un «Depende» mueven la sugerencia: se reajusta la respuesta
+    // para que el técnico vea lo que el sistema propone y no lo que quedó de la pregunta anterior.
+    if (campo === 'requiereReinstalacion' || campo === 'requiereRevisionFisica' || campo === 'accionRequerida') {
+      const s = this.data.sugerenciaReproceso(this.fTipo(), this.fDetalle());
+      if (s !== 'Depende') { this.fReproceso.set(s === 'Sí'); this.fJust.set(''); }
+    }
+  }
+  /** Al cambiar el tipo de falla se reinicia el checklist y se toma la sugerencia del nuevo tipo. */
+  protected cambiarTipoFalla(tipo: TipoFallaF0302): void {
+    this.fTipo.set(tipo);
+    this.fDetalle.set({});
+    this.fJust.set('');
+    const s = this.data.matrizFalla(tipo).sugerencia;
+    this.fReproceso.set(s === 'Sí');
+  }
 
   /**
-   * El equipo del proceso está nuevamente Preparado (nueva F0288 completada) y sin reingreso a
-   * Hardware pendiente: recién entonces se habilita la nueva configuración. Tras una falla el
-   * Expediente técnico anterior sigue «Preparado», por eso también se exige que no quede un reingreso
-   * pendiente —de lo contrario el equipo saltaría F0288.
+   * El equipo del proceso está nuevamente Preparado (F0288 vigente finalizado) y su incidencia de
+   * configuración quedó resuelta: recién entonces se habilita el nuevo intento F0302. Ya no se
+   * exige un reingreso a Hardware —la falla se atiende dentro del mismo Expediente técnico—, sino
+   * que la corrección de Soporte o el reproceso F0288 se hayan completado de verdad.
    */
   protected equipoPreparado(c: ConfiguracionF0302): boolean {
-    return this.data.estadoPreparacionEquipo(c.datos.inventario) === 'Preparado'
-      && !this.data.reingresoHardwarePendiente(c.datos.inventario);
+    if (this.data.estadoPreparacionEquipo(c.datos.inventario) !== 'Preparado') return false;
+    return (c.falla?.estadoIncidencia ?? 'LISTO_PARA_REINTENTO_F0302') === 'LISTO_PARA_REINTENTO_F0302';
+  }
+  protected reprocesoDeFalla(c: ConfiguracionF0302): ReprocesoF0288 | undefined {
+    return c.falla?.reprocesoId ? this.data.reprocesoDe(c.falla.reprocesoId) : undefined;
+  }
+  /** Expediente técnico vigente del equipo: el mismo antes y después de la falla. */
+  protected expTecnico(c: ConfiguracionF0302): string {
+    return this.data.expTecnicoDeEquipo(c.datos.inventario)?.codigo ?? '';
   }
 
   constructor() {
@@ -942,6 +1218,10 @@ export class ConfiguracionComponent {
   }
 
   /** De dónde salió la MAC que muestra el modal: del inventario institucional o digitada aquí. */
+  /** MAC conocida del equipo, para acompañar el checklist de un problema de red. */
+  protected macSugerida(c: ConfiguracionF0302): string {
+    return this.data.macSugeridaF0302(c.expediente);
+  }
   protected origenMac(c: ConfiguracionF0302): string {
     return this.data.origenMacF0302(c.expediente);
   }
@@ -1289,25 +1569,48 @@ export class ConfiguracionComponent {
     return true;
   }
 
-  protected reportarFalla(id: string): void {
+  private get usuarioActual(): string {
     const u = this.auth.usuario();
+    return `${u?.nombre} — ${u?.rol}`;
+  }
+
+  protected reportarFalla(id: string): void {
+    const reproceso = this.fReproceso();
     const error = this.data.reportarFallaF0302(id, {
-      tipo: this.fTipo(), descripcion: this.fDesc(), requiereHardware: this.fReqHw(),
-      requiereNuevaPreparacion: this.fReqPrep(), observacionTecnica: this.fObs(), evidencia: this.fEvid()
-    }, `${u?.nombre} — ${u?.rol}`);
+      tipo: this.fTipo(), descripcion: this.fDesc(), requiereReprocesoF0288: reproceso,
+      justificacionReproceso: this.fJust(), detalle: this.fDetalle(),
+      observacionTecnica: this.fObs(), evidencia: this.fEvid()
+    }, this.usuarioActual);
     if (error) { this.toast.error('No se puede reportar la falla', error); return; }
     this.fallaAbierto.set(false);
-    this.fDesc.set(''); this.fObs.set(''); this.fEvid.set('');
-    this.fReqHw.set(true); this.fReqPrep.set(true); this.fTipo.set('Falla física del equipo');
-    this.toast.ok('F0302 con falla registrado',
-      'Se detuvo el cronómetro y se guardó el tiempo trabajado. El F0302 se conserva como intento con falla y el equipo volvió a F0288. No se habilitó la aceptación ni la garantía.');
+    this.fDesc.set(''); this.fObs.set(''); this.fEvid.set(''); this.fJust.set('');
+    this.fDetalle.set({}); this.cambiarTipoFalla('Falla física del equipo');
+    this.toast.ok('F0302 con falla registrado', reproceso
+      ? 'Se abrió un reproceso de Preparación F0288 dentro del mismo Expediente técnico: no se creó uno nuevo. El intento F0302 se conserva en el historial.'
+      : 'La falla se atiende como corrección de Soporte en el mismo F0302: el equipo no regresa a Preparación F0288. El intento F0302 se conserva en el historial.');
+  }
+
+  protected registrarCorreccion(id: string): void {
+    const error = this.data.registrarCorreccionSoporte(id, this.usuarioActual, this.cDesc());
+    if (error) { this.toast.error('No se pudo registrar la corrección', error); return; }
+    this.correccionAbierta.set(false);
+    this.cDesc.set('');
+    this.toast.ok('Corrección de Soporte registrada', 'El proceso queda listo para el nuevo intento F0302, sobre el mismo Expediente técnico.');
+  }
+
+  protected solicitarSustitucion(id: string): void {
+    const error = this.data.solicitarSustitucionEquipo(id, this.usuarioActual, this.sMotivo());
+    if (error) { this.toast.error('No se pudo solicitar la sustitución', error); return; }
+    this.sustitucionAbierta.set(false);
+    this.sMotivo.set('');
+    this.toast.ok('Sustitución de equipo solicitada',
+      'El equipo queda marcado como no apto para entrega. El Expediente técnico del equipo sustituto se evalúa aparte: es el único caso en que corresponde crear uno nuevo.');
   }
 
   protected nuevaConfig(id: string): void {
-    const u = this.auth.usuario();
-    const r = this.data.nuevaConfiguracionF0302(id, `${u?.nombre} — ${u?.rol}`);
-    if (typeof r === 'string') { this.toast.error('No se puede iniciar una nueva configuración', r); return; }
+    const r = this.data.nuevaConfiguracionF0302(id, this.usuarioActual);
+    if (typeof r === 'string') { this.toast.error('No se puede iniciar un nuevo intento F0302', r); return; }
     this.seleccion.set(id);
-    this.toast.ok('Nueva configuración F0302 iniciada', 'El F0302 con falla anterior se conserva en el historial. Inicie el cronómetro para comenzar.');
+    this.toast.ok('Nuevo intento F0302 iniciado', 'El F0302 con falla anterior se conserva en el historial. Inicie el cronómetro para comenzar.');
   }
 }

@@ -273,6 +273,13 @@ interface FilaDoc {
                 @if (c.datos.ipValidadaPor) {
                   <dt>Reserva validada por</dt><dd>{{ c.datos.ipValidadaPor }} · {{ c.datos.ipValidadaEl }}</dd>
                 }
+                @if (historialCiclo().length) {
+                  <dt>Historial del ciclo</dt>
+                  <dd>
+                    @for (linea of historialCiclo(); track $index) { <div class="sub-cell">{{ linea }}</div> }
+                    <div class="sub-cell"><b>Expediente técnico: {{ expTecnicoDoc() || '—' }}</b> — el mismo durante todo el ciclo, incluidos los reprocesos.</div>
+                  </dd>
+                }
               }
               <dt>Usuario final</dt><dd>{{ sol()?.destinatario }} — {{ sol()?.unidadDestino }}</dd>
               <dt>Generado</dt><dd>{{ f.doc?.fecha }} por {{ f.doc?.generadoPor }}</dd>
@@ -513,6 +520,41 @@ export class DocumentosComponent {
     return eq ? `${eq.marca} ${eq.modelo} · inventario ${eq.inventario}` : '—';
   }
 
+  /** Expediente técnico vigente del equipo del proceso. */
+  protected expTecnicoDoc(): string {
+    const inv = this.sol()?.equipoInventario;
+    return inv ? (this.data.expTecnicoDeEquipo(inv)?.codigo ?? '') : '';
+  }
+
+  /**
+   * Historial del ciclo tal como debe leerse en el F0302: preparaciones, intentos de configuración
+   * y reprocesos, en orden y **bajo un mismo Expediente técnico**. Solo aparece cuando hubo alguna
+   * falla; sin ella el documento no tiene nada que aclarar y la sección sobra.
+   */
+  protected readonly historialCiclo = computed<string[]>(() => {
+    const inv = this.sol()?.equipoInventario;
+    if (!inv) return [];
+    if (this.data.fallasF0302(inv) === 0) return [];
+    const clave = (f?: string, h?: string) => `${f ?? ''} ${h ?? ''}`;
+    const filas = [
+      ...this.data.preparacionesDeEquipo(inv).map((p, i, todas) => ({
+        orden: clave(p.cronometro?.fechaInicio || p.fecha),
+        texto: `F0288 #${todas.length - i}: ${p.estado === 'Completada' ? 'Finalizado' : p.estado}`
+      })),
+      ...this.data.configuracionesDeEquipo(inv).map((c, i, todas) => ({
+        orden: clave(c.cronometro?.fechaInicio || c.fecha),
+        texto: `F0302 #${todas.length - i}: ` + (c.falla
+          ? `Con falla — ${c.falla.tipo}`
+          : c.estado === 'Completada' ? 'Finalizado correctamente' : c.estado)
+      })),
+      ...this.data.reprocesosDeEquipo(inv).map((r) => ({
+        orden: clave(r.fechaSolicitud, r.horaSolicitud),
+        texto: `Reproceso F0288 #${r.numero} (${r.expedienteTecnico}): ${r.correccionTecnica || r.motivo} · ${r.estado}`
+      }))
+    ];
+    return filas.sort((a, b) => a.orden.localeCompare(b.orden)).map((x) => x.texto);
+  });
+
   /** Preparación F0288 del proceso seleccionado (modo Soporte): aporta los accesorios verificados al documento. */
   protected readonly prep = computed(() => {
     const x = this.expediente();
@@ -664,6 +706,11 @@ export class DocumentosComponent {
                : []),
            ...(this.conf()!.datos.ipValidadaPor
              ? [`Reserva validada por: ${this.conf()!.datos.ipValidadaPor} · ${this.conf()!.datos.ipValidadaEl}`]
+             : []),
+           ...(this.historialCiclo().length
+             ? ['', 'HISTORIAL DEL CICLO', '-'.repeat(60),
+                ...this.historialCiclo().map((l) => `  ${l}`),
+                `  Expediente técnico: ${this.expTecnicoDoc() || '—'} — el mismo durante todo el ciclo, incluidos los reprocesos.`]
              : [])]
         : []),
       `Usuario final: ${s?.destinatario ?? '—'} — ${s?.unidadDestino ?? ''}`,

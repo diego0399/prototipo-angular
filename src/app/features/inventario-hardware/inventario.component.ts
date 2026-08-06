@@ -236,6 +236,8 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                 <dt>Veces preparado</dt><dd>{{ r.vecesPreparado }}</dd>
                 <dt>Veces configurado</dt><dd>{{ r.vecesConfigurado }}</dd>
                 <dt>Intentos F0302</dt><dd>{{ r.intentosF0302 }}</dd>
+                <dt>Fallas F0302</dt><dd>{{ r.fallasF0302 }}</dd>
+                <dt>Reprocesos F0288</dt><dd>{{ r.reprocesosF0288 }} <span class="chip">No suman expedientes técnicos</span></dd>
                 <dt>Veces asignado</dt><dd>{{ r.vecesAsignado }}</dd>
                 <dt>Veces descargado</dt><dd>{{ r.vecesDescargado }}</dd>
               </dl>

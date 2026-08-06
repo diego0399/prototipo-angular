@@ -265,6 +265,15 @@ interface FilaTraza {
                     @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
                     @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
                     @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
+                    @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
+                    @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
+                    @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
+                    @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
+                    @if (e.tecnicoReporta) { <span class="m-chip">Reportó (Soporte): <b>{{ e.tecnicoReporta }}</b></span> }
+                    @if (e.tecnicoHardware) { <span class="m-chip">Técnico de Hardware: <b>{{ e.tecnicoHardware }}</b></span> }
+                    @if (e.resultadoReproceso) { <span class="m-chip">Resultado del reproceso: <b>{{ e.resultadoReproceso }}</b></span> }
+                    @if (e.firmaRegistrada) { <span class="m-chip">Firma registrada: <b>{{ e.firmaRegistrada }}</b></span> }
+                    @if (e.evidencia) { <span class="m-chip">Evidencia: <b>{{ e.evidencia }}</b></span> }
                     @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
                     @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
                     @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
@@ -328,9 +337,11 @@ interface FilaTraza {
                 </div>
                 <div>
                   <div class="d-k">Veces ingresado a Hardware</div><div class="d-v">{{ resumenEq()?.vecesIngresado ?? ingresosEq().length }}</div>
-                  <div class="d-k">Veces preparado</div><div class="d-v">{{ vecesPreparado() }}</div>
-                  <div class="d-k">Veces configurado</div><div class="d-v">{{ vecesConfigurado() }}</div>
+                  <div class="d-k">Preparaciones iniciales</div><div class="d-v">{{ vecesPreparado() }}</div>
+                  <div class="d-k">Reprocesos F0288 <span class="small muted">(no suman preparaciones ni expedientes)</span></div><div class="d-v">{{ reprocesosEq().length }}</div>
                   <div class="d-k">Intentos F0302 <span class="small muted">(incluye con falla)</span></div><div class="d-v">{{ intentosF0302() }}</div>
+                  <div class="d-k">F0302 exitosos</div><div class="d-v">{{ vecesConfigurado() }}</div>
+                  <div class="d-k">Fallas F0302</div><div class="d-v">{{ fallasF0302() }}</div>
                   <div class="d-k">Veces asignado</div><div class="d-v">{{ asignacionesEq().length }}</div>
                   <div class="d-k">Veces descargado</div><div class="d-v">{{ resumenEq()?.vecesDescargado ?? descargosEq().length }}</div>
                 </div>
@@ -443,6 +454,49 @@ interface FilaTraza {
                 </table>
               </div>
               <span class="hint">Cada preparación conserva su propio F0288: las preparaciones anteriores nunca se sobrescriben.</span>
+
+              <!-- Reprocesos: correcciones dentro del mismo Expediente técnico, no preparaciones nuevas -->
+              @if (reprocesosEq().length) {
+                <div class="sec-title mt-3">Reprocesos de Preparación F0288</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead>
+                      <tr><th>Reproceso</th><th>Exp. técnico</th><th>Origen</th><th>Técnico de Hardware</th><th>Tiempo</th><th>Corrección y evidencias</th><th>Firma y resultado</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (r of reprocesosEq(); track r.id) {
+                        <tr>
+                          <td class="mono">{{ r.id }}<div class="sub-cell">Reproceso #{{ r.numero }} · prioridad {{ r.prioridad }}</div></td>
+                          <td class="mono">{{ r.expedienteTecnico }}<div class="sub-cell">El mismo expediente</div></td>
+                          <td>{{ r.tipoFalla }}<div class="sub-cell" style="max-width: 220px;">{{ r.motivo }}</div></td>
+                          <td>{{ (r.tecnicoAsignado || 'Sin asignar').split('—')[0].trim() }}
+                            <div class="sub-cell">Reportó: {{ r.solicitadoPor.split('—')[0].trim() }} · {{ r.fechaSolicitud }}</div>
+                            @if (r.justificacionUnidad) { <div class="sub-cell">Excepción: {{ r.justificacionUnidad }}</div> }
+                          </td>
+                          <td class="mono">{{ data.formatoDuracion(r.cronometro?.duracionMinutos ?? null) || '—' }}</td>
+                          <td>
+                            <div class="sub-cell" style="max-width: 240px;">{{ r.correccionTecnica || '—' }}</div>
+                            @for (e of r.evidencias; track e.archivo) {
+                              <div class="sub-cell" style="max-width: 240px;">{{ e.archivo }} · {{ e.tipo }} · {{ e.cargadaPor }}</div>
+                            }
+                          </td>
+                          <td>
+                            @if (r.firma; as fr) {
+                              {{ r.resultado }}
+                              <div class="sub-cell">{{ fr.nombre }} — {{ fr.cargo }} · {{ fr.fecha }} {{ fr.hora }}</div>
+                            } @else { <span class="muted small">Sin firma</span> }
+                          </td>
+                          <td><ui-badge [estado]="r.estado" /></td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <span class="hint">
+                  Un reproceso corrige la preparación por una falla detectada en F0302 y se registra <b>dentro del mismo
+                  Expediente técnico</b>: no crea uno nuevo, no repite el F0288 original y no cuenta como «vez preparado».
+                </span>
+              }
             }
 
             <!-- ── Configuraciones F0302 ── -->
@@ -481,7 +535,10 @@ interface FilaTraza {
                         <td>
                           @if (c.falla; as f) {
                             {{ f.tipo }}
-                            <div class="sub-cell" style="max-width: 200px;">Devuelto a F0288</div>
+                            <div class="sub-cell" style="max-width: 200px;">{{ data.textoEstadoIncidencia(f.estadoIncidencia) }}</div>
+                            <div class="sub-cell" style="max-width: 200px;">Reproceso F0288: {{ f.requiereReprocesoF0288 ? 'Sí' : 'No' }} · sugerencia {{ f.sugerencia }}</div>
+                            @if (f.reprocesoId) { <div class="sub-cell mono" style="max-width: 200px;">{{ f.reprocesoId }}</div> }
+                            @if (data.resumenDetalleFalla(f); as det) { <div class="sub-cell" style="max-width: 220px;">{{ det }}</div> }
                           } @else { <span class="muted">—</span> }
                         </td>
                         <td>
@@ -666,6 +723,15 @@ interface FilaTraza {
                     @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
                     @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
                     @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
+                    @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
+                    @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
+                    @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
+                    @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
+                    @if (e.tecnicoReporta) { <span class="m-chip">Reportó (Soporte): <b>{{ e.tecnicoReporta }}</b></span> }
+                    @if (e.tecnicoHardware) { <span class="m-chip">Técnico de Hardware: <b>{{ e.tecnicoHardware }}</b></span> }
+                    @if (e.resultadoReproceso) { <span class="m-chip">Resultado del reproceso: <b>{{ e.resultadoReproceso }}</b></span> }
+                    @if (e.firmaRegistrada) { <span class="m-chip">Firma registrada: <b>{{ e.firmaRegistrada }}</b></span> }
+                    @if (e.evidencia) { <span class="m-chip">Evidencia: <b>{{ e.evidencia }}</b></span> }
                         @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
                         @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
                         @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
@@ -908,10 +974,18 @@ export class TrazabilidadComponent {
 
     if (unico && conf) {
       if (conf.estado === 'Con falla') {
-        // F0302 con falla: el equipo debe volver a F0288; no hay aceptación ni garantía hasta reconfigurar bien.
+        // F0302 con falla: la incidencia se atiende dentro del mismo Expediente técnico —corrección
+        // de Soporte o reproceso F0288— y solo después se habilita el nuevo intento.
         acciones.push({ texto: 'Ver detalle de falla F0302', ruta: '/configuracion' });
-        if (this.data.estadoPreparacionEquipo(inv) === 'Preparado' && !this.data.reingresoHardwarePendiente(inv)) {
-          acciones.push({ texto: 'Iniciar nueva configuración F0302', ruta: '/configuracion' });
+        const incidencia = conf.falla?.estadoIncidencia ?? 'LISTO_PARA_REINTENTO_F0302';
+        if (incidencia === 'LISTO_PARA_REINTENTO_F0302') {
+          if (this.data.estadoPreparacionEquipo(inv) === 'Preparado') {
+            acciones.push({ texto: 'Reintentar F0302', ruta: '/configuracion' });
+          }
+        } else if (conf.falla?.requiereReprocesoF0288) {
+          acciones.push({ texto: 'Atender reproceso F0288', ruta: '/preparacion-tecnica' });
+        } else {
+          acciones.push({ texto: 'Registrar corrección de Soporte', ruta: '/configuracion' });
         }
       } else if (conf.estado !== 'Completada') {
         const enCurso = !!conf.cronometro && conf.cronometro.duracionMinutos === null;
@@ -1035,6 +1109,18 @@ export class TrazabilidadComponent {
   protected readonly intentosF0302 = computed(() =>
     this.configuracionesEq().filter((c) => this.data.configuracionEsIntento(c)).length
   );
+  /** Fallas F0302 = intentos que quedaron con falla. */
+  protected readonly fallasF0302 = computed(() =>
+    this.configuracionesEq().filter((c) => c.estado === 'Con falla').length
+  );
+  /**
+   * Reprocesos F0288 del equipo. Llevan contador propio precisamente para que no se confundan con
+   * las preparaciones ni inflen la cuenta de expedientes técnicos: son correcciones dentro de uno.
+   */
+  protected readonly reprocesosEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.reprocesosDeEquipo(d.equipo.inventario) : [];
+  });
 
   /** Resultado legible de un F0302 para la pestaña de configuraciones. */
   protected resultadoF0302(c: ConfiguracionF0302): string {
@@ -1101,7 +1187,9 @@ export class TrazabilidadComponent {
   protected tieneDetalle(e: EventoTrazabilidad): boolean {
     return !!(e.modulo || e.estadoAnterior || e.inventario || e.expedienteTecnico || e.expedienteUnico ||
       e.usuarioFinal || e.tiempo || e.complejidad || e.nombreEquipo || e.ipReservada ||
-      e.mac || e.estadoSolicitudIP || e.justificacion);
+      e.mac || e.estadoSolicitudIP || e.justificacion ||
+      e.tipoFalla || e.requiereReproceso || e.accionTomada || e.reproceso || e.evidencia ||
+      e.tecnicoReporta || e.tecnicoHardware || e.resultadoReproceso || e.firmaRegistrada);
   }
 
   private readonly iconos: Record<string, string> = {

@@ -33,6 +33,7 @@ export const routes: Routes = [
       { path: 'expediente-tecnico', loadComponent: () => import('./features/expediente-tecnico/expediente-tecnico.component').then((m) => m.ExpedienteTecnicoComponent) },
       { path: 'expediente-unico', canActivate: [roleGuard], loadComponent: () => import('./features/expediente-unico/expediente-unico.component').then((m) => m.ExpedienteUnicoComponent) },
       { path: 'preparacion-tecnica', loadComponent: () => import('./features/preparacion-tecnica/preparacion.component').then((m) => m.PreparacionComponent) },
+      { path: 'reprocesos-f0288', loadComponent: () => import('./features/reprocesos-f0288/reprocesos.component').then((m) => m.ReprocesosComponent) },
       { path: 'configuracion', canActivate: [roleGuard], loadComponent: () => import('./features/configuracion/configuracion.component').then((m) => m.ConfiguracionComponent) },
       { path: 'entrega-aceptacion', canActivate: [roleGuard], loadComponent: () => import('./features/entrega-aceptacion/entrega.component').then((m) => m.EntregaComponent) },
       { path: 'garantia', canActivate: [roleGuard], loadComponent: () => import('./features/garantia/garantia.component').then((m) => m.GarantiaComponent) },

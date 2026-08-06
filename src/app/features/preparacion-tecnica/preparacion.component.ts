@@ -1,6 +1,7 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ChecklistSeccion, Cronometro, ExpedienteTecnico, NivelComplejidad, PreparacionF0288, ResultadoConsultaAccesorio, RespuestaSiNo } from '../../core/models/models';
+import { RouterLink } from '@angular/router';
+import { ChecklistSeccion, Cronometro, ExpedienteTecnico, NivelComplejidad, PreparacionF0288, ReprocesoF0288, ResultadoConsultaAccesorio, RespuestaSiNo } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { DataService } from '../../core/services/data.service';
@@ -10,7 +11,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
 
 @Component({
   selector: 'app-preparacion',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent],
   styles: `
     .item-row { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
     .item-row:last-child { border-bottom: 0; }
@@ -74,6 +75,27 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
           <p class="page-sub">Checklist digital de preparación del equipo.</p>
         </div>
       </div>
+
+      <!-- Aviso de rollback: los reprocesos se trabajan en su propia pantalla, no aquí -->
+      @if (reprocesosPendientes().length) {
+        <div class="card card-pad mb-3" style="border-left: 4px solid var(--warn, #c9930a);">
+          <div class="row-between" style="flex-wrap: wrap; gap: 16px;">
+            <div style="min-width: 0;">
+              <b class="small">
+                {{ reprocesosPendientes().length }} reproceso(s) F0288 pendiente(s)
+                <ui-help texto="Equipos devueltos a Hardware por una falla detectada en F0302. El reproceso corrige la preparación DENTRO del Expediente técnico que el equipo ya tiene: no es una preparación nueva y no crea un expediente nuevo." />
+              </b>
+              <p class="small muted">
+                @for (r of reprocesosPendientes(); track r.id) {
+                  <span class="mono">{{ r.id }}</span> · {{ r.tipoFalla }} · {{ r.estado }}@if (!$last) { · }
+                }
+              </p>
+            </div>
+            <a class="btn btn-gold" routerLink="/reprocesos-f0288">Atender reprocesos F0288</a>
+          </div>
+          <span class="hint">El checklist de reproceso, la evidencia, el tiempo trabajado y la firma se registran en «Reprocesos · F0288».</span>
+        </div>
+      }
 
       <!-- Último expediente asignado o pendiente: se carga automáticamente, sin obligar a buscar -->
       @if (esDestacada() && prep(); as p) {
@@ -627,6 +649,16 @@ export class PreparacionComponent {
   protected cHubo = signal<RespuestaSiNo>('');
   protected cDetalle = signal('');
   protected cObs = signal('');
+
+  /**
+   * Reprocesos F0288 pendientes que este usuario puede ver. Se trabajan en su propia pantalla:
+   * aquí solo se avisa, para que un técnico que entra a preparar no pase por alto un equipo que
+   * volvió de configuración.
+   */
+  protected readonly reprocesosPendientes = computed<ReprocesoF0288[]>(() => {
+    const visibles = new Set(this.data.reprocesosVisibles().map((r) => r.id));
+    return this.data.reprocesosPendientes().filter((r) => visibles.has(r.id));
+  });
 
   constructor() {
     const intervalo = setInterval(() => this.tick.set(Date.now()), 1000);

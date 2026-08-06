@@ -806,11 +806,17 @@ export interface Garantia {
 }
 
 export interface DocumentoGenerado {
-  tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final';
+  tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final' | 'Constancia de reproceso F0288';
   expediente: string;
   generadoPor: string;
   fecha: string;
   hash: string;
+  /**
+   * Código del reproceso al que pertenece la constancia. El documento se guarda bajo el
+   * expediente del proceso —para que aparezca junto a los demás— pero un mismo expediente puede
+   * acumular varias constancias, una por reproceso, y este campo es lo que las distingue.
+   */
+  reproceso?: string;
 }
 
 /** Resultado de un intento de aceptación del usuario final. */
@@ -904,7 +910,10 @@ export interface CorreccionNoConformidad {
   estado: 'Iniciada' | 'Finalizada';
 }
 
-/** Tipo de falla detectada durante la Configuración F0302 que obliga a devolver el equipo a F0288. */
+/**
+ * Tipo de falla detectada durante la Configuración F0302. NO todas devuelven el equipo a F0288:
+ * cada tipo tiene su propio checklist y su propia sugerencia de reproceso (ver `matrizFalla`).
+ */
 export type TipoFallaF0302 =
   | 'Falla física del equipo'
   | 'Falla de disco'
@@ -917,18 +926,111 @@ export type TipoFallaF0302 =
   | 'Otro';
 
 /**
- * Falla detectada durante la Configuración F0302. Se registra al reportar la falla: el F0302
- * queda como intento realizado con falla (nunca se borra), el equipo regresa a revisión/
- * preparación F0288 y NO se habilita ni la aceptación ni la garantía. Conserva el tiempo
- * trabajado del cronómetro hasta el momento de la falla.
+ * Lo que la matriz por tipo de falla sugiere sobre el reproceso F0288. «Depende» significa que la
+ * respuesta sale de una pregunta adicional del checklist (reinstalación del SO, revisión física de
+ * red, acción requerida) y no del tipo de falla por sí solo.
+ */
+export type SugerenciaReproceso = 'Sí' | 'No' | 'Depende';
+
+/** Acción requerida cuando la configuración quedó incompleta por una falla previa. */
+export type AccionRequeridaFalla =
+  | 'Corregir en F0302'
+  | 'Revisar por Hardware'
+  | 'Reproceso F0288'
+  | 'Escalar a Encargado';
+
+/**
+ * Estado de la incidencia de configuración abierta por una falla en F0302. Sustituye a la idea de
+ * «nuevo expediente técnico»: la incidencia vive dentro del expediente técnico vigente y avanza
+ * hasta quedar lista para un nuevo intento F0302.
+ */
+export type EstadoIncidenciaF0302 =
+  | 'INCIDENCIA_CONFIGURACION_REGISTRADA'
+  | 'PENDIENTE_CORRECCION_SOPORTE'
+  | 'PENDIENTE_REVISION_HARDWARE'
+  | 'REPROCESO_F0288_REQUERIDO'
+  | 'REPROCESO_F0288_ASIGNADO'
+  | 'REPROCESO_F0288_EN_PROCESO'
+  | 'REPROCESO_F0288_FINALIZADO'
+  | 'REPROCESO_F0288_FIRMADO'
+  | 'REPROCESO_F0288_NO_CORREGIDO'
+  | 'PENDIENTE_EVALUACION_ENCARGADO'
+  | 'PENDIENTE_SUSTITUCION_EQUIPO'
+  | 'LISTO_PARA_REINTENTO_F0302';
+
+/**
+ * Campos del checklist dinámico de la falla: solo se llenan los que el tipo seleccionado pide. Se
+ * guardan juntos para que el detalle no ensucie la falla con una decena de campos sueltos que
+ * además serían inaplicables entre sí (la serie del disco no significa nada en un problema de red).
+ */
+export interface DetalleFallaF0302 {
+  /** Falla física: componente afectado (Carcasa · Pantalla · Puertos · Fuente · Batería · Teclado · Touchpad · Otro). */
+  componenteAfectado?: string;
+  /** Falla de disco: tipo (HDD/SSD/NVMe/Otro) y serie, si aplica. */
+  tipoDisco?: string;
+  serieDisco?: string;
+  /** Falla de memoria: capacidad de RAM instalada. */
+  capacidadRam?: string;
+  /** Falla de disco o de memoria: síntoma detectado. */
+  sintoma?: string;
+  /** Sistema operativo: tipo de problema y si implica reinstalación o reparación base. */
+  tipoProblemaSO?: string;
+  requiereReinstalacion?: RespuestaSiNo;
+  /** Red: tipo de problema, datos de conectividad y si requiere revisión física por Hardware. */
+  tipoProblemaRed?: string;
+  mac?: string;
+  ipActual?: string;
+  puntoRed?: string;
+  requiereRevisionFisica?: RespuestaSiNo;
+  /** Dominio: cuenta utilizada, mensaje de error y nombre del equipo. */
+  usuarioCuenta?: string;
+  mensajeError?: string;
+  nombreEquipo?: string;
+  /** Accesorio faltante: cuál y su número de inventario esperado, si aplica. */
+  accesorio?: string;
+  inventarioEsperado?: string;
+  /** Configuración incompleta: etapa donde se detectó y acción requerida. */
+  etapaDeteccion?: string;
+  accionRequerida?: AccionRequeridaFalla;
+  /** Observación dirigida a Hardware, en las fallas que se atienden allí. */
+  observacionHardware?: string;
+}
+
+/** Corrección registrada por Soporte dentro del mismo F0302, cuando la falla no exige reproceso. */
+export interface CorreccionSoporteF0302 {
+  descripcion: string;
+  tecnico: string;
+  fecha: string;
+  hora: string;
+}
+
+/**
+ * Falla detectada durante la Configuración F0302. El F0302 queda como intento realizado con falla
+ * (nunca se borra) y se abre una incidencia de configuración sobre el MISMO expediente técnico:
+ * no se crea uno nuevo. Según el tipo de falla, la incidencia se corrige en F0302 o pasa a un
+ * reproceso F0288. Conserva el tiempo trabajado del cronómetro hasta el momento de la falla.
  */
 export interface FallaF0302 {
   tipo: TipoFallaF0302;
   descripcion: string;
-  /** ¿La falla requiere revisión de Hardware (reingreso sin descargo)? */
+  /** ¿La falla requiere revisión por Hardware? */
   requiereHardware: boolean;
-  /** ¿La falla requiere una nueva Preparación F0288? */
-  requiereNuevaPreparacion: boolean;
+  /**
+   * ¿La falla requiere reproceso de Preparación F0288? Se llamaba `requiereNuevaPreparacion`: el
+   * nombre sugería crear un expediente nuevo, que es justo lo que no debe ocurrir.
+   */
+  requiereReprocesoF0288: boolean;
+  /** Lo que sugirió la matriz al momento de reportar; se conserva para poder auditar el cambio. */
+  sugerencia: SugerenciaReproceso;
+  /** Obligatoria cuando el técnico se aparta de la sugerencia del sistema. */
+  justificacionReproceso: string;
+  /** Campos propios del tipo de falla seleccionado. */
+  detalle: DetalleFallaF0302;
+  estadoIncidencia: EstadoIncidenciaF0302;
+  /** Reproceso F0288 abierto por esta falla, cuando aplicó. */
+  reprocesoId?: string;
+  /** Corrección de Soporte registrada en el mismo F0302, cuando la falla no exigió reproceso. */
+  correccionSoporte?: CorreccionSoporteF0302;
   observacionTecnica: string;
   /** Evidencia adjunta (nombre/descripción simulada), si aplica. */
   evidencia: string;
@@ -938,6 +1040,109 @@ export interface FallaF0302 {
   hora: string;
   /** Tiempo trabajado del F0302 hasta la falla (minutos), tomado del cronómetro. */
   tiempoMinutos: number | null;
+}
+
+/** Resultado con el que Hardware cierra un reproceso F0288. */
+export type ResultadoReproceso =
+  | 'Corregido'
+  | 'No corregido'
+  | 'Requiere sustitución de equipo'
+  | 'Requiere evaluación del Encargado';
+
+/**
+ * Ítem del checklist de reproceso. Es un checklist propio, NO el del F0288 original: se llama
+ * «Checklist de Reproceso F0288» y su contenido depende del tipo de falla reportado en F0302.
+ */
+export interface ItemReproceso {
+  nombre: string;
+  estado: 'Realizado' | 'Pendiente' | 'No aplica';
+  /**
+   * true en los ítems que implican cambio, reparación o corrección técnica. Marcar uno de ellos
+   * hace obligatoria la evidencia: es la diferencia entre revisar y haber intervenido el equipo.
+   */
+  implicaCorreccion?: boolean;
+  nota: string;
+}
+
+/** Evidencia simulada adjuntada durante el reproceso. */
+export interface EvidenciaReproceso {
+  archivo: string;
+  tipo: string;
+  fecha: string;
+  hora: string;
+  cargadaPor: string;
+  /** Código del reproceso y expediente técnico original: la evidencia se guarda con ambos. */
+  reproceso: string;
+  expedienteTecnico: string;
+}
+
+/** Firma simulada del Técnico de Hardware que cierra el reproceso. */
+export interface FirmaReproceso {
+  nombre: string;
+  cargo: string;
+  unidad: string;
+  fecha: string;
+  hora: string;
+  /** Firma simulada del prototipo (no hay firma electrónica real). */
+  firma: string;
+}
+
+/**
+ * Reproceso de Preparación F0288 abierto por una falla detectada en F0302 (revisión técnica
+ * complementaria / corrección de preparación). Pertenece al MISMO Expediente técnico que la
+ * preparación original: es lo que evita multiplicar expedientes técnicos por cada falla. El F0288
+ * original se conserva intacto; el reproceso registra la corrección hecha sobre él, con su propio
+ * checklist, sus evidencias, su tiempo trabajado y la firma del técnico que lo atendió.
+ */
+export interface ReprocesoF0288 {
+  /** `EXP-PT-2026-0095-R1`: el expediente técnico original y el número de reproceso dentro de él. */
+  id: string;
+  /** El mismo Expediente técnico de la preparación original: nunca se crea uno nuevo. */
+  expedienteTecnico: string;
+  /** Expediente (solicitud) del proceso donde se detectó la falla. */
+  expediente: string;
+  expedienteUnico: string;
+  inventario: string;
+  /** Reproceso #1, #2… dentro del mismo Expediente técnico. */
+  numero: number;
+  tipoFalla: TipoFallaF0302;
+  /** Motivo del reproceso, tomado de la falla que lo originó. */
+  motivo: string;
+  /** Prioridad de atención, derivada del tipo de falla (Alta cuando hay revisión física). */
+  prioridad: 'Alta' | 'Normal';
+  /** Unidad que atiende la corrección: Hardware salvo excepción justificada por un Encargado. */
+  unidadAtiende: 'Soporte' | 'Hardware';
+  /** Justificación del Encargado cuando el reproceso se asigna fuera de Hardware. */
+  justificacionUnidad: string;
+  /** Técnico de Soporte que reportó la falla, y lo que dejó dicho al reportarla. */
+  solicitadoPor: string;
+  observacionSoporte: string;
+  evidenciaSoporte: string;
+  fechaSolicitud: string;
+  horaSolicitud: string;
+  /** Técnico al que se asignó el reproceso (rollback a Hardware). */
+  tecnicoAsignado: string;
+  asignadoPor: string;
+  fechaAsignacion: string;
+  horaAsignacion: string;
+  /** Quien efectivamente lo trabajó (normalmente el asignado). */
+  atendidoPor: string;
+  fechaInicio: string;
+  fechaFin: string;
+  /** Cronómetro del reproceso: arranca al iniciarlo y se detiene al finalizarlo. */
+  cronometro?: Cronometro;
+  /** Checklist de Reproceso F0288, adaptado al tipo de falla. */
+  checklist: ItemReproceso[];
+  evidencias: EvidenciaReproceso[];
+  /** Corrección técnica realizada durante el reproceso. */
+  correccionTecnica: string;
+  observaciones: string;
+  /** Firma del Técnico de Hardware: sin ella el reproceso no se cierra. */
+  firma?: FirmaReproceso;
+  resultado: ResultadoReproceso | '';
+  /** Observación del resultado, obligatoria cuando el reproceso no quedó corregido. */
+  observacionResultado: string;
+  estado: 'Requerido' | 'Asignado' | 'En proceso' | 'Finalizado' | 'Firmado' | 'No corregido';
 }
 
 /**
@@ -974,4 +1179,22 @@ export interface EventoTrazabilidad {
   justificacion?: string;
   /** Estado de la solicitud de reserva ante Servidores al momento del evento. */
   estadoSolicitudIP?: string;
+  /** Tipo de falla, en los eventos de la incidencia de configuración F0302. */
+  tipoFalla?: string;
+  /** «Sí»/«No» del reproceso F0288 evaluado para esa falla. */
+  requiereReproceso?: string;
+  /** Acción tomada tras evaluar la falla (corrección en F0302, reproceso F0288, revisión…). */
+  accionTomada?: string;
+  /** Evidencia registrada con la falla o con la corrección. */
+  evidencia?: string;
+  /** Reproceso F0288 al que pertenece el evento, cuando aplica. */
+  reproceso?: string;
+  /** Técnico de Soporte que reportó la falla que originó el reproceso. */
+  tecnicoReporta?: string;
+  /** Técnico de Hardware asignado al reproceso. */
+  tecnicoHardware?: string;
+  /** Resultado con el que se cerró el reproceso. */
+  resultadoReproceso?: string;
+  /** «Sí»/«No»: si la firma del Técnico de Hardware ya estaba registrada al momento del evento. */
+  firmaRegistrada?: string;
 }

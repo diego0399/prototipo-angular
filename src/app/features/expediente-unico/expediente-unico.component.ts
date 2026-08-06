@@ -319,6 +319,15 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
             }
             <div><div class="d-k">Usuario final</div><div class="d-v">{{ solicitudDe(x)?.destinatario || '—' }}</div></div>
             <div><div class="d-k">Técnico de configuración</div><div class="d-v">{{ tecnicoConfigDe(x) }}</div></div>
+            @if (fallaDe(x); as f) {
+              <div><div class="d-k">Incidencia de configuración</div><div class="d-v">{{ data.textoEstadoIncidencia(f.estadoIncidencia) }}<div class="sub-cell">{{ f.tipo }}</div></div></div>
+              <div>
+                <div class="d-k">Reproceso F0288</div>
+                <div class="d-v">{{ f.requiereReprocesoF0288 ? 'Sí' : 'No' }}
+                  <div class="sub-cell mono">{{ f.reprocesoId || 'Sin reproceso' }} · Exp. técnico {{ expTecnicoDe(x) || '—' }}</div>
+                </div>
+              </div>
+            }
             <div><div class="d-k">Última actualización</div><div class="d-v mono">{{ ultimaActualizacion(x) }}</div></div>
           </div>
           <div class="row mt-2">
@@ -374,6 +383,28 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                     <dt>Solicitud de reserva de IP</dt><dd>{{ data.textoEstadoSolicitudIP(configDe(x)) }}</dd>
                   } @else if (configDe(x)?.datos?.requiereReservaIP === 'No') {
                     <dt>Justificación de no reserva</dt><dd>{{ configDe(x)?.datos?.justificacionSinReservaIP || 'Sin registrar' }}</dd>
+                  }
+                  @if (fallaDe(x); as f) {
+                    <dt>Falla detectada en F0302</dt>
+                    <dd>{{ f.tipo }} — {{ f.descripcion }}
+                      @if (data.resumenDetalleFalla(f); as det) { <div class="sub-cell">{{ det }}</div> }
+                    </dd>
+                    <dt>Estado de la incidencia</dt><dd>{{ data.textoEstadoIncidencia(f.estadoIncidencia) }}</dd>
+                    <dt>¿Requiere reproceso F0288?</dt>
+                    <dd>{{ f.requiereReprocesoF0288 ? 'Sí' : 'No' }} <span class="chip">Sugerencia del sistema: {{ f.sugerencia }}</span>
+                      @if (f.justificacionReproceso) { <div class="sub-cell">Justificación: {{ f.justificacionReproceso }}</div> }
+                    </dd>
+                    <dt>Expediente técnico</dt>
+                    <dd class="mono">{{ expTecnicoDe(x) || '—' }} <span class="chip">El mismo antes y después de la falla</span></dd>
+                    @for (r of reprocesosDe(x); track r.id) {
+                      <dt>Reproceso F0288 #{{ r.numero }}</dt>
+                      <dd class="mono">{{ r.id }} · {{ r.estado }}
+                        @if (r.correccionTecnica) { <div class="sub-cell">Corrección: {{ r.correccionTecnica }}</div> }
+                      </dd>
+                    }
+                    @if (f.correccionSoporte; as k) {
+                      <dt>Corrección de Soporte</dt><dd>{{ k.descripcion }} <div class="sub-cell">{{ k.tecnico }} · {{ k.fecha }} {{ k.hora }}</div></dd>
+                    }
                   }
                   <dt>Usuario final</dt><dd>{{ solicitudDe(x)?.destinatario }} — {{ solicitudDe(x)?.unidadDestino }}</dd>
                   <dt>Correo institucional</dt><dd>{{ solicitudDe(x)?.correoDestinatario }}</dd>
@@ -882,6 +913,16 @@ export class ExpedienteUnicoComponent {
   }
 
   protected solicitudDe(x: ExpedienteUnico) { return this.data.solicitud(x.expediente); }
+  /** Falla del último intento F0302 con falla del proceso, si la hubo. */
+  protected fallaDe(x: ExpedienteUnico) { return this.data.fallaVigenteDe(x.expediente); }
+  /** Expediente técnico del equipo: no cambia por una falla en F0302. */
+  protected expTecnicoDe(x: ExpedienteUnico): string {
+    const inv = this.solicitudDe(x)?.equipoInventario ?? '';
+    return inv ? (this.data.expTecnicoDeEquipo(inv)?.codigo ?? '') : '';
+  }
+  protected reprocesosDe(x: ExpedienteUnico) {
+    return this.data.reprocesos().filter((r) => r.expediente === x.expediente).sort((a, b) => a.numero - b.numero);
+  }
   /** Configuración F0302 del proceso: aporta el nombre del equipo y la reserva de IP al expediente. */
   protected configDe(x: ExpedienteUnico) { return this.data.configuracionDe(x.expediente); }
   protected asignacionDe(x: ExpedienteUnico) { return this.data.asignacionDe(x.expediente); }

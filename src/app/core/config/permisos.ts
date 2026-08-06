@@ -35,7 +35,10 @@ export const NAVEGACION: NavGrupo[] = [
     titulo: 'Preparación técnica',
     items: [
       { ruta: '/expediente-tecnico', icono: 'folder', titulo: 'Expediente técnico' },
-      { ruta: '/preparacion-tecnica', icono: 'tool', titulo: 'Preparación · F0288' }
+      { ruta: '/preparacion-tecnica', icono: 'tool', titulo: 'Preparación · F0288' },
+      // Reprocesos F0288: el rollback de Hardware por fallas detectadas en F0302. Lo trabaja
+      // Hardware; Soporte entra solo a consultar el reproceso de los procesos que reportó.
+      { ruta: '/reprocesos-f0288', icono: 'undo', titulo: 'Reprocesos · F0288' }
     ]
   },
   {

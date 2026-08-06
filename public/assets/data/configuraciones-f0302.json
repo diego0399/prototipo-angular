@@ -169,6 +169,191 @@
     }
   },
   {
+    "expediente": "SOL-2026-0141",
+    "tecnico": "Wendy Carranza — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "2026-06-29",
+    "estado": "Con falla",
+    "cronometro": {
+      "fechaInicio": "2026-06-29",
+      "horaInicio": "09:10:00",
+      "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+      "fechaFin": "2026-06-29",
+      "horaFin": "09:47:00",
+      "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+      "duracionMinutos": 37
+    },
+    "datos": {
+      "requerimiento": "Requerimiento de CPU",
+      "inventario": "2201-0954-2023",
+      "nombrePC": "CNR-IGN-D0954",
+      "tipoServicio": "Reasignación de equipo usado",
+      "asignadoA": "J. Portillo",
+      "carne": "03287",
+      "direccionGerencia": "IGN",
+      "unidad": "Unidad de Geodesia",
+      "puesto": "Técnico geodesta",
+      "sistemaOperativo": "Windows 11 Professional",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "ipValidadaPor": "",
+      "ipValidadaEl": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Realizado",
+        "evidencia": "captura-dlp-instalado.png",
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "motivo": "",
+        "observacion": "",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Realizado",
+        "evidencia": "Captura de ingreso al dominio ✓",
+        "categoria": "Red",
+        "origen": "Configuración"
+      },
+      {
+        "nombre": "Credenciales: nombre de equipo · cuenta de red",
+        "version": "Según SISSOR",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      },
+      {
+        "nombre": "Microsoft Office",
+        "version": "Microsoft 365",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-002",
+        "categoria": "Ofimática",
+        "origen": "F0302",
+        "versionVigente": "Microsoft 365",
+        "motivo": "Solicitado en requerimiento",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:18"
+      },
+      {
+        "nombre": "Navegador institucional",
+        "version": "Edge",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-005",
+        "categoria": "Navegación",
+        "origen": "F0302",
+        "versionVigente": "Edge",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:19"
+      },
+      {
+        "nombre": "Lector PDF",
+        "version": "Adobe Reader",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-006",
+        "categoria": "Utilidad",
+        "origen": "F0302",
+        "versionVigente": "Adobe Reader",
+        "motivo": "Software institucional estándar",
+        "observacion": "",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:20"
+      },
+      {
+        "nombre": "Cliente VPN",
+        "version": "5.1",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "codigoSoftware": "SOFT-007",
+        "categoria": "Red",
+        "origen": "F0302",
+        "versionVigente": "5.1",
+        "motivo": "Requerido por unidad solicitante",
+        "observacion": "El puesto realiza levantamientos de campo y requiere acceso remoto autorizado.",
+        "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+        "fechaAgregado": "2026-07-05 15:26"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Ingreso exitoso al dominio cnr.gob.sv",
+        "estado": "Pendiente"
+      },
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "archivo": "captura-dlp-instalado.png",
+        "tipo": "Agente DLP",
+        "cargadaPor": "Wendy Carranza",
+        "fecha": "2026-07-05 15:34",
+        "formulario": "F0302"
+      },
+      {
+        "nombre": "Instalación del software adicional del requerimiento",
+        "estado": "Pendiente"
+      },
+      {
+        "nombre": "Configuración final para el usuario",
+        "estado": "Pendiente"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-06-26",
+        "hora": "14:15"
+      },
+      "configuro": {
+        "quien": "Wendy Carranza · Técnico de Soporte",
+        "detalle": "Firma registrada al cerrar la configuración",
+        "estado": "Pendiente de cierre",
+        "fecha": "",
+        "hora": ""
+      }
+    },
+    "falla": {
+      "tipo": "Falla de disco",
+      "descripcion": "El equipo no completó el arranque tras instalar el software base; el disco desaparece del BIOS de forma intermitente.",
+      "requiereHardware": true,
+      "requiereReprocesoF0288": true,
+      "sugerencia": "Sí",
+      "justificacionReproceso": "",
+      "detalle": {
+        "tipoDisco": "HDD",
+        "serieDisco": "WD-WX21A9075431",
+        "sintoma": "Error de arranque",
+        "observacionHardware": "Verificar disco y cable SATA; el equipo es usado y ya reportó lentitud en la preparación."
+      },
+      "estadoIncidencia": "LISTO_PARA_REINTENTO_F0302",
+      "reprocesoId": "EXP-PT-2026-0086-R1",
+      "observacionTecnica": "Se detiene la configuración para no instalar sobre un disco inestable.",
+      "evidencia": "captura-bios-sin-disco.png",
+      "tecnicoReporta": "Wendy Carranza — Técnico de Soporte",
+      "fecha": "2026-06-29",
+      "hora": "09:47",
+      "tiempoMinutos": 37
+    }
+  },
+  {
     "expediente": "SOL-2026-0145",
     "tecnico": "Wendy Carranza — Técnico de Soporte",
     "seleccionadoPor": "Carlos González — Encargado de Soporte",
