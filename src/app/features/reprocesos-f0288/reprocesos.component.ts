@@ -34,58 +34,152 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
         <div>
           <div class="page-kicker">Preparación técnica</div>
           <h1>
-            Reprocesos F0288 pendientes
-            <ui-help texto="Equipos devueltos a Hardware por una falla detectada en la Configuración F0302. El reproceso se registra dentro del Expediente técnico original —nunca se crea uno nuevo— y se cierra con la firma del Técnico de Hardware." />
+            {{ esEncargado() ? 'Reprocesos F0288' : 'Mis reprocesos F0288' }}
+            <ui-help texto="Equipos devueltos a Hardware por una falla detectada en la Configuración F0302. El reproceso se registra dentro del Expediente técnico original —nunca se crea uno nuevo—, lo asigna un Encargado y se cierra con la firma del Técnico de Hardware." />
           </h1>
-          <p class="page-sub">Rollback a Hardware · corrección dentro del Expediente técnico original.</p>
+          <p class="page-sub">
+            @if (esEncargado()) { Asignación y seguimiento · corrección dentro del Expediente técnico original. }
+            @else { Reprocesos que le fueron asignados · corrección dentro del Expediente técnico original. }
+          </p>
         </div>
       </div>
 
+      <!-- Fallas que exigen reproceso y quedaron sin él (expedientes anteriores a la regla) -->
+      @if (esEncargado() && sinReproceso().length) {
+        <div class="card card-pad mb-3" style="border-left: 4px solid var(--danger, #c0392b);">
+          <b class="small">{{ sinReproceso().length }} falla(s) F0302 exigen reproceso y todavía no lo tienen</b>
+          <p class="small muted">Vienen de expedientes registrados antes de esta regla. Genere el reproceso para que puedan continuar.</p>
+          @for (c of sinReproceso(); track c.expediente) {
+            <div class="row-between mt-1" style="flex-wrap: wrap; gap: 12px;">
+              <span class="small">
+                <b class="mono">{{ c.expediente }}</b> · {{ c.datos.inventario }} · {{ c.falla?.tipo }}
+              </span>
+              <button class="btn btn-outline btn-sm" (click)="generarReproceso(c.expediente)">Generar reproceso F0288</button>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Bandeja de Encargados: reprocesos pendientes de asignación ── -->
+      @if (esEncargado()) {
+        <div class="card mb-3">
+          <div class="card-head">
+            <div>
+              <h3>Reprocesos F0288 pendientes de asignación</h3>
+              <p class="sub">Ningún reproceso se asigna solo: aquí se decide qué Técnico de Hardware lo atiende</p>
+            </div>
+            <span class="chip">{{ porAsignar().length }} por asignar</span>
+          </div>
+          <div class="card-body table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th>Código de reproceso</th>
+                  <th>Expediente técnico original</th>
+                  <th>Expediente único</th>
+                  <th>Número de inventario</th>
+                  <th>Tipo de equipo</th>
+                  <th>Tipo de falla</th>
+                  <th>Técnico de Soporte que reportó</th>
+                  <th>Fecha de reporte</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th style="text-align:right;">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of porAsignar(); track r.id) {
+                  <tr>
+                    <td class="mono main-cell">{{ r.id }}<div class="sub-cell">Reproceso #{{ r.numero }}</div></td>
+                    <td class="mono">{{ r.expedienteTecnico }}</td>
+                    <td class="mono">{{ r.expedienteUnico || '—' }}</td>
+                    <td class="mono">{{ r.inventario }}</td>
+                    <td>{{ tipoEquipo(r) }}<div class="sub-cell">{{ equipoTxt(r) }}</div></td>
+                    <td>{{ r.tipoFalla }}</td>
+                    <td>{{ r.solicitadoPor.split('—')[0].trim() }}<div class="sub-cell">{{ r.solicitadoPor.split('—')[1] || '' }}</div></td>
+                    <td class="mono">{{ r.fechaSolicitud }}<div class="sub-cell">{{ r.horaSolicitud }}</div></td>
+                    <td><ui-badge [estado]="r.prioridad === 'Alta' ? 'Carga alta' : 'Carga baja'" /><div class="sub-cell">{{ r.prioridad }}</div></td>
+                    <td><ui-badge [estado]="r.estado" /></td>
+                    <td style="text-align:right;">
+                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                        <button class="btn btn-ghost btn-sm" (click)="abrir(r.id)">
+                          {{ seleccion() === r.id ? 'Ocultar' : 'Ver detalle de falla' }}
+                        </button>
+                        <button class="btn btn-primary btn-sm" (click)="abrirAsignacion(r)">Asignar Técnico de Hardware</button>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="11" class="muted" style="text-align:center; padding: 26px;">
+                    No hay reprocesos pendientes de asignación.
+                  </td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (porAsignar().length) {
+            <div class="card-body" style="padding-top: 0;">
+              <div class="row" style="flex-wrap: wrap;">
+                <a class="btn btn-outline btn-sm" routerLink="/trazabilidad">Ver historial técnico</a>
+                <a class="btn btn-outline btn-sm" routerLink="/trazabilidad">Ver trazabilidad</a>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <!-- ── Reprocesos en curso (Encargados) / Mis reprocesos (Técnico de Hardware) ── -->
       <div class="card mb-3">
         <div class="card-head">
           <div>
-            <h3>Equipos devueltos por falla en F0302</h3>
-            <p class="sub">Se atienden primero los de prioridad Alta (fallas con revisión física)</p>
+            <h3>{{ esEncargado() ? 'Reprocesos asignados y en curso' : 'Mis reprocesos F0288' }}</h3>
+            <p class="sub">
+              @if (esEncargado()) { Seguimiento de los reprocesos ya asignados a Hardware }
+              @else { Solo aparecen los reprocesos que un Encargado le asignó }
+            </p>
           </div>
-          <span class="chip">{{ pendientes().length }} pendiente(s)</span>
+          <span class="chip">{{ enCurso().length }} en curso</span>
         </div>
         <div class="card-body table-wrap">
           <table class="tbl">
             <thead>
               <tr>
-                <th>Código reproceso</th>
+                <th>Código de reproceso</th>
                 <th>Expediente técnico original</th>
                 <th>Equipo</th>
                 <th>Inventario</th>
                 <th>Tipo de falla</th>
-                <th>Prioridad</th>
-                <th>Fecha de devolución</th>
-                <th>Técnico de Soporte que reportó</th>
+                <th>Fecha de asignación</th>
                 <th>Estado</th>
                 <th style="text-align:right;">Acciones</th>
               </tr>
             </thead>
             <tbody>
-              @for (r of pendientes(); track r.id) {
+              @for (r of enCurso(); track r.id) {
                 <tr>
                   <td class="mono main-cell">{{ r.id }}<div class="sub-cell">Reproceso #{{ r.numero }}</div></td>
                   <td class="mono">{{ r.expedienteTecnico }}</td>
                   <td>{{ equipoTxt(r) }}</td>
                   <td class="mono">{{ r.inventario }}</td>
                   <td>{{ r.tipoFalla }}</td>
-                  <td><ui-badge [estado]="r.prioridad === 'Alta' ? 'Carga alta' : 'Carga baja'" /><div class="sub-cell">{{ r.prioridad }}</div></td>
-                  <td class="mono">{{ r.fechaSolicitud }}<div class="sub-cell">{{ r.horaSolicitud }}</div></td>
-                  <td>{{ r.solicitadoPor.split('—')[0].trim() }}<div class="sub-cell">{{ r.tecnicoAsignado ? 'Atiende: ' + r.tecnicoAsignado.split('—')[0].trim() : 'Sin asignar' }}</div></td>
+                  <td class="mono">{{ r.fechaAsignacion || '—' }}
+                    <div class="sub-cell">{{ r.tecnicoAsignado.split('—')[0].trim() || 'Sin asignar' }}</div>
+                    @if (esEncargado() && r.asignadoPor) { <div class="sub-cell">Asignó: {{ r.asignadoPor.split('—')[0].trim() }}</div> }
+                  </td>
                   <td><ui-badge [estado]="r.estado" /></td>
                   <td style="text-align:right;">
                     <button class="btn btn-ghost btn-sm" (click)="abrir(r.id)">
-                      {{ seleccion() === r.id ? 'Ocultar detalle' : 'Ver detalle de falla' }}
+                      {{ seleccion() === r.id ? 'Ocultar detalle' : 'Ver detalle' }}
                     </button>
                   </td>
                 </tr>
               } @empty {
-                <tr><td colspan="10" class="muted" style="text-align:center; padding: 26px;">
-                  No hay reprocesos F0288 pendientes. Los equipos con falla en F0302 que requieren volver a preparación aparecen aquí.
+                <tr><td colspan="8" class="muted" style="text-align:center; padding: 26px;">
+                  @if (esEncargado()) {
+                    No hay reprocesos asignados en curso.
+                  } @else {
+                    No tiene reprocesos F0288 asignados. Cuando un Encargado le asigne uno, aparecerá aquí.
+                  }
                 </td></tr>
               }
             </tbody>
@@ -121,19 +215,27 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               </dd>
             </dl>
 
-            <!-- Rollback: asignación a un Técnico de Hardware -->
-            @if (r.estado === 'Requerido' || r.estado === 'Asignado') {
+            <!-- Rollback: asignación a un Técnico de Hardware, potestad del Encargado -->
+            @if (r.estado === 'Pendiente de asignación' || r.estado === 'Asignado') {
               <div class="card card-pad mt-2">
                 <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
                   <div>
                     <b class="small">Rollback a Hardware</b>
-                    <p class="small muted">El equipo regresa a la Unidad de Hardware. Puede tomarlo el mismo técnico que lo preparó u otro.</p>
+                    <p class="small muted">
+                      @if (esEncargado()) {
+                        El equipo regresa a la Unidad de Hardware. Puede tomarlo el mismo técnico que lo preparó u otro.
+                      } @else {
+                        La asignación la hace un Encargado: ningún técnico toma un reproceso por su cuenta.
+                      }
+                    </p>
                   </div>
-                  <button class="btn btn-primary btn-sm" (click)="abrirAsignacion(r)">
-                    {{ r.tecnicoAsignado ? 'Reasignar técnico' : 'Asignar Técnico de Hardware' }}
-                  </button>
+                  @if (esEncargado()) {
+                    <button class="btn btn-primary btn-sm" (click)="abrirAsignacion(r)">
+                      {{ r.tecnicoAsignado ? 'Reasignar técnico' : 'Asignar Técnico de Hardware' }}
+                    </button>
+                  }
                 </div>
-                @if (preparoInicialmente(r); as prev) {
+                @if (esEncargado() && preparoInicialmente(r); as prev) {
                   <span class="hint">Preparó inicialmente este equipo: <b>{{ prev }}</b>.</span>
                 }
               </div>
@@ -254,8 +356,8 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               }
               <a class="btn btn-outline" routerLink="/trazabilidad" [queryParams]="{ inventario: r.inventario }">Ver trazabilidad</a>
             </div>
-            @if (r.estado === 'Requerido') {
-              <span class="hint">«Iniciar reproceso» se habilita cuando el reproceso quede asignado a un Técnico de Hardware.</span>
+            @if (r.estado === 'Pendiente de asignación') {
+              <span class="hint">«Iniciar reproceso» se habilita cuando un <b>Encargado</b> asigne el reproceso a un Técnico de Hardware.</span>
             }
             @if (r.estado === 'No corregido') {
               <div class="alert warn mt-2">
@@ -274,33 +376,55 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
             El equipo <b class="mono">{{ r.inventario }}</b> regresa a Hardware por <b>{{ r.tipoFalla }}</b>.
             Puede tomarlo el mismo técnico que lo preparó o cualquier otro.
           </p>
+          @if (avisoCarga(); as aviso) {
+            <div class="alert warn mt-2">
+              <span class="alert-ico">!</span>
+              <span>{{ aviso }}</span>
+            </div>
+          }
           <div class="table-wrap mt-2">
             <table class="tbl">
-              <thead><tr><th>Técnico de Hardware</th><th>Preparaciones abiertas</th><th>Reprocesos abiertos</th><th>Carga</th><th style="text-align:right;"></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Técnico de Hardware</th>
+                  <th>Reprocesos activos</th>
+                  <th>Expedientes activos</th>
+                  <th>Pendientes por preparar</th>
+                  <th>Carga laboral</th>
+                  <th style="text-align:right;"></th>
+                </tr>
+              </thead>
               <tbody>
                 @for (t of tecnicos(); track t.nombreRol) {
                   <tr>
                     <td>
                       <div class="main-cell">{{ t.usuario.nombre }}</div>
                       <div class="sub-cell">{{ t.usuario.rol }} · {{ t.usuario.unidad }}</div>
-                      @if (t.nombreRol === preparoInicialmente(r)) { <span class="chip">Preparó este equipo</span> }
+                      @if (t.nombreRol === preparoInicialmente(r)) { <span class="chip">Preparó este equipo inicialmente</span> }
                     </td>
-                    <td class="mono">{{ t.preparaciones }}</td>
                     <td class="mono">{{ t.reprocesos }}</td>
-                    <td><ui-badge [estado]="t.carga" /></td>
+                    <td class="mono">{{ t.expedientes }}</td>
+                    <td class="mono">{{ t.preparaciones }}</td>
+                    <td>
+                      <ui-badge [estado]="t.carga" />
+                      @if (t.carga === 'Carga alta') {
+                        <div class="sub-cell">Este técnico tiene carga alta. Revise sus pendientes antes de asignarle el reproceso.</div>
+                      }
+                    </td>
                     <td style="text-align:right;">
                       <button class="btn btn-primary btn-sm" (click)="asignar(r, t.nombreRol)">Asignar</button>
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="5" class="muted" style="text-align:center; padding: 20px;">No hay técnicos de Hardware activos.</td></tr>
+                  <tr><td colspan="6" class="muted" style="text-align:center; padding: 20px;">No hay técnicos de Hardware activos.</td></tr>
                 }
               </tbody>
             </table>
           </div>
+          <span class="hint">La carga alta advierte, no bloquea: el Encargado decide con el dato a la vista.</span>
           @if (esEncargado()) {
             <div class="field mt-2">
-              <label>Excepción: asignar fuera de Hardware</label>
+              <label>Excepción: asignar fuera de la Unidad de Hardware</label>
               <input class="control" [ngModel]="otroTecnico()" (ngModelChange)="otroTecnico.set($event)" placeholder="Nombre — Rol del técnico…" />
               <textarea class="control mt-1" rows="2" [ngModel]="justificacion()" (ngModelChange)="justificacion.set($event)"
                 placeholder="Justifique por qué este reproceso no lo atiende Hardware (obligatorio)…"></textarea>
@@ -382,6 +506,29 @@ export class ReprocesosComponent {
     return this.data.reprocesosPendientes().filter((r) => visibles.has(r.id));
   });
 
+  /**
+   * Bandeja de Encargados: lo que espera una decisión de asignación. El Técnico de Hardware nunca
+   * ve esta lista —si la viera podría tomarlos, y repartir la carga es tarea del Encargado—.
+   */
+  protected readonly porAsignar = computed<ReprocesoF0288[]>(() =>
+    this.esEncargado() ? this.pendientes().filter((r) => r.estado === 'Pendiente de asignación') : []
+  );
+
+  /** Reprocesos ya asignados: la lista de trabajo del técnico y el seguimiento del Encargado. */
+  protected readonly enCurso = computed<ReprocesoF0288[]>(() =>
+    this.pendientes().filter((r) => r.estado !== 'Pendiente de asignación')
+  );
+
+  /** Fallas que exigen reproceso y quedaron sin él (solo en expedientes anteriores a la regla). */
+  protected readonly sinReproceso = computed(() => this.data.fallasSinReproceso());
+
+  /** Advertencia del modal cuando todos los técnicos disponibles están cargados. */
+  protected readonly avisoCarga = computed<string>(() => {
+    const lista = this.tecnicos();
+    if (!lista.length || lista.some((t) => t.carga !== 'Carga alta')) return '';
+    return 'Todos los técnicos de Hardware tienen carga alta. Revise sus pendientes antes de asignarles el reproceso.';
+  });
+
   protected readonly activo = computed(() => this.pendientes().find((r) => r.id === this.seleccion())
     ?? this.data.reprocesos().find((r) => r.id === this.seleccion()));
 
@@ -400,6 +547,12 @@ export class ReprocesosComponent {
   protected equipoTxt(r: ReprocesoF0288): string {
     const eq = this.data.equipoDe(r.inventario);
     return eq ? `${eq.marca} ${eq.modelo}` : '—';
+  }
+
+  /** «CPU» / «Laptop»: el vocabulario del formulario, no el «Desktop» del inventario. */
+  protected tipoEquipo(r: ReprocesoF0288): string {
+    const eq = this.data.equipoDe(r.inventario);
+    return eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—';
   }
 
   protected preparoInicialmente(r: ReprocesoF0288): string {
@@ -425,6 +578,14 @@ export class ReprocesosComponent {
     this.evArchivo.set(''); this.evTipo.set('');
   }
 
+  protected generarReproceso(expediente: string): void {
+    const r = this.data.asegurarReprocesoDeFalla(expediente, this.usuarioActual);
+    if (typeof r === 'string') { this.toast.error('No se pudo generar el reproceso', r); return; }
+    this.seleccion.set(r.id);
+    this.toast.ok(`Reproceso ${r.id} generado`,
+      `Queda pendiente de asignación sobre el Expediente técnico ${r.expedienteTecnico}: no se creó uno nuevo.`);
+  }
+
   protected abrirAsignacion(r: ReprocesoF0288): void {
     this.seleccion.set(r.id);
     this.otroTecnico.set('');
@@ -433,10 +594,17 @@ export class ReprocesosComponent {
   }
 
   protected asignar(r: ReprocesoF0288, tecnico: string): void {
+    const carga = this.tecnicos().find((t) => t.nombreRol === tecnico);
     const error = this.data.asignarReprocesoF0288(r.id, tecnico, this.usuarioActual, this.justificacion());
     if (error) { this.toast.error('No se pudo asignar el reproceso', error); return; }
     this.asignarAbierto.set(false);
     this.firmante.set(tecnico);
+    // La carga alta advierte, no bloquea: la asignación ya quedó hecha y el aviso acompaña.
+    if (carga?.carga === 'Carga alta') {
+      this.toast.error('Este técnico tiene carga alta',
+        `Revise sus pendientes antes de asignarle el reproceso. ${r.id} quedó asignado a ${tecnico}.`);
+      return;
+    }
     this.toast.ok('Rollback a Hardware registrado',
       `${r.id} quedó asignado a ${tecnico}. El Expediente técnico ${r.expedienteTecnico} sigue siendo el mismo.`);
   }

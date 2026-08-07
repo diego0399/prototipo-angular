@@ -228,3 +228,161 @@ public/assets/data/reprocesos-f0288.json                         (ciclo completo
 public/assets/data/documentos-generados.json                     (constancia del reproceso)
 public/assets/data/trazabilidad.json                             (7 eventos nuevos + 5 completados)
 ```
+
+---
+
+# Parte 2 — Reproceso F0288 con control de Encargados: pendiente de asignación, permisos y correlativo
+
+**Fecha:** 6 de agosto de 2026, segunda sesión del día (ronda 41 del punto de control)
+**Alcance:** el mismo prototipo Angular; sin backend ni base de datos.
+
+La parte 1 dio al reproceso su checklist, su evidencia, su cronómetro y su firma. Esta parte le pone
+**quién decide**: el reproceso nace sin dueño y solo un Encargado lo asigna.
+
+## 1. El reproceso nace pendiente de asignación
+
+Antes quedaba en `Requerido` y cualquiera podía asignarlo. Ahora nace en **`Pendiente de asignación`**
+(`REPROCESO_F0288_PENDIENTE_ASIGNACION`) y hasta que un Encargado decide, nadie lo toca:
+
+```text
+Un Encargado debe asignar el reproceso F0288 a un Técnico de Hardware antes de iniciarlo.
+```
+
+El nombre del estado dice qué falta y de quién depende, que es lo que la bandeja necesita mostrar.
+
+## 2. Solo los Encargados asignan
+
+```text
+El Técnico de Soporte reporta la falla; no reparte trabajo de otra unidad.
+El Técnico de Hardware no se autoasigna reprocesos.
+Encargado de Hardware, Encargado de Soporte y Administrador sí asignan.
+```
+
+```text
+Solo un Encargado puede asignar reprocesos F0288. El reproceso queda pendiente de asignación.
+```
+
+La regla existe para que la carga de Hardware la reparta quien la conoce. Si el técnico pudiera
+autoasignarse, los reprocesos incómodos se quedarían sin dueño y los fáciles se los llevaría el
+primero que entrara.
+
+Y nadie trabaja lo que no le tocó: iniciar un reproceso ajeno se rechaza con el nombre de quien lo
+tiene.
+
+```text
+Este reproceso está asignado a Balmore Mejía — Técnico de Hardware. Solo un Encargado puede reasignarlo.
+```
+
+## 3. Dos vistas, una pantalla
+
+**Encargados** ven la bandeja **«Reprocesos F0288 pendientes de asignación»** con las once columnas
+del pedido —código, expediente técnico original, expediente único, inventario, tipo de equipo, tipo
+de falla, técnico de Soporte que reportó, fecha de reporte, prioridad, estado y acciones— más una
+segunda tabla de seguimiento con los ya asignados.
+
+**El Técnico de Hardware** ve **«Mis reprocesos F0288»**: solo los que le asignaron. No ve la
+bandeja de pendientes, porque verla sería poder tomarlos.
+
+El modal de asignación muestra ahora **reprocesos activos, expedientes activos y pendientes por
+preparar** de cada técnico, además de su carga. La carga alta **advierte, no bloquea**:
+
+```text
+Este técnico tiene carga alta. Revise sus pendientes antes de asignarle el reproceso.
+```
+
+El aviso sale *después* de asignar, con el reproceso ya asignado: bloquear sería decidir por el
+Encargado, y ocultarlo sería dejarlo decidir a ciegas.
+
+## 4. Un solo reproceso abierto por expediente
+
+El correlativo se calcula del mayor número usado, no de la cantidad de reprocesos: contar la lista
+podría repetir un código que ya existió.
+
+Y no se abre `-R2` mientras `-R1` siga abierto:
+
+```text
+Ya existe un reproceso abierto para este expediente. Debe cerrarse antes de generar uno nuevo.
+```
+
+Dos reprocesos corrigiendo la misma preparación al mismo tiempo se pisarían, y el historial no diría
+cuál dejó el equipo como quedó. Un Encargado puede autorizar la excepción, pero deja escrito por qué:
+
+```text
+Ya existe un reproceso abierto para este expediente (EXP-PT-2026-0095-R1, En proceso).
+Justifique la excepción para generar uno nuevo.
+```
+
+Cerrar el reproceso —firmado o «No corregido»— libera el correlativo.
+
+## 5. Trazabilidad
+
+Tres eventos nuevos y uno renombrado:
+
+```text
+Reproceso F0288 requerido                          (nuevo)
+Reproceso F0288 generado                           (nuevo)
+Reproceso pendiente de asignación por Encargado    (nuevo)
+Reproceso asignado por Encargado                   (antes «Reproceso asignado a Técnico de Hardware»)
+```
+
+Cada evento del reproceso guarda ahora también **el Encargado que asignó**. Antes de la asignación
+figura como «Pendiente de asignación»: un expediente que nombrara al Encargado desde el rollback
+estaría mintiendo sobre cuándo se tomó la decisión.
+
+## 6. Auditoría del §19
+
+| Punto | Estado |
+|---|---|
+| Creación innecesaria de expedientes técnicos | Sin rastro: no hay ingreso a Hardware por falla ni excepción en `puedeCrearNuevoExpedienteTecnico` |
+| Reprocesos asignados automáticamente | Nacen `Pendiente de asignación`; `asignarReprocesoF0288` exige Encargado |
+| Técnicos autoasignándose | Bloqueado al asignar y al iniciar; el técnico no ve los pendientes |
+| Estados inconsistentes tras F0302 con falla | **Corregido en esta ronda** (ver abajo) |
+| F0302 continuando sin cerrar el reproceso | `nuevaConfiguracionF0302` exige `LISTO_PARA_REINTENTO_F0302` |
+| Reprocesos cerrados sin firma | `devolverAConfiguracionF0302` exige firma y resultado «Corregido» |
+| Reprocesos sin trazabilidad | Las nueve acciones registran evento |
+| Contadores aumentando expedientes | Los reprocesos viven en su propio signal y su propio contador |
+| Historial mostrando reprocesos como expedientes | Tabla propia bajo el mismo expediente técnico |
+
+**Lo que sí apareció**: `asegurarReprocesoDeFalla` —el rescate para expedientes anteriores a la
+regla— existía pero **ningún botón lo llamaba**, así que una falla migrada que exigía reproceso
+quedaba trabada sin salida. Ahora la bandeja de Encargados lista esas fallas y ofrece
+«Generar reproceso F0288»; el método además exige ser Encargado, que antes no comprobaba.
+
+## 7. Casos de prueba
+
+**68 casos, 0 fallos**: el estado inicial sin dueño; los tres roles que pueden asignar y los dos que
+no; iniciar un reproceso ajeno; la visibilidad de cada rol; el correlativo R1/R2/R3 con y sin
+reproceso abierto; la excepción del Encargado; el cierre que libera el correlativo; los trece
+eventos con sus dieciséis campos; y los nueve puntos del §19 verificados contra el código y los datos.
+
+Regresiones: **95** de la ronda 40, **108** de la 39, **58** de la 38, **31** de la 37, **30** de la
+36, **29** de la 35, **32** de la 34 y accesorios **CPU 12** y **Laptop 13**, todas 0 fallos. Se
+actualizó una expectativa de la ronda 40 por el evento renombrado.
+
+## 8. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [5.455 seconds]`, 0 errores y las
+dos advertencias preexistentes de presupuesto CSS. `ng serve` con HTTP 200 en nueve rutas y los dos
+JSON tocados.
+
+**No hubo clics reales en un navegador** (sin Chromium/Playwright en esta sesión).
+
+## 9. Archivos tocados
+
+```text
+src/app/core/models/models.ts                                    (REPROCESO_F0288_PENDIENTE_ASIGNACION,
+                                                                  estado «Pendiente de asignación»,
+                                                                  justificacionReprocesoSimultaneo,
+                                                                  encargadoAsigno en el evento)
+src/app/core/services/data.service.ts                            (puedeAsignarReprocesos,
+                                                                  reprocesoAbiertoDeExpTecnico, correlativo por
+                                                                  máximo, bloqueo de reprocesos simultáneos,
+                                                                  asignación solo de Encargados, inicio solo del
+                                                                  asignado, visibilidad, fallasSinReproceso,
+                                                                  asegurarReprocesoDeFalla, eventos nuevos)
+src/app/features/reprocesos-f0288/reprocesos.component.ts        (bandeja de Encargados, «Mis reprocesos F0288»,
+                                                                  modal con carga completa y advertencia,
+                                                                  generación de reprocesos faltantes)
+public/assets/data/reprocesos-f0288.json                         (campo de control de reprocesos simultáneos)
+public/assets/data/trazabilidad.json                             (3 eventos nuevos, 1 renombrado, 12 completados)
+```

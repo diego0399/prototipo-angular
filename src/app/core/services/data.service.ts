@@ -3584,6 +3584,7 @@ export class DataService {
       case 'PENDIENTE_CORRECCION_SOPORTE': return 'Pendiente de corrección de Soporte';
       case 'PENDIENTE_REVISION_HARDWARE': return 'Pendiente de revisión de Hardware';
       case 'REPROCESO_F0288_REQUERIDO': return 'Reproceso F0288 requerido';
+      case 'REPROCESO_F0288_PENDIENTE_ASIGNACION': return 'Reproceso F0288 pendiente de asignación';
       case 'REPROCESO_F0288_ASIGNADO': return 'Reproceso F0288 asignado';
       case 'REPROCESO_F0288_EN_PROCESO': return 'Reproceso F0288 en proceso';
       case 'REPROCESO_F0288_FINALIZADO': return 'Reproceso F0288 finalizado';
@@ -3604,6 +3605,10 @@ export class DataService {
   private normalizarReprocesos(lista: ReprocesoF0288[]): ReprocesoF0288[] {
     return (lista ?? []).map((r) => ({
       ...r,
+      // «Requerido» pasó a llamarse «Pendiente de asignación»: el nombre dice ahora qué falta y
+      // de quién depende, que es lo que la bandeja de Encargados necesita mostrar.
+      estado: (r.estado as string) === 'Requerido' ? 'Pendiente de asignación' : r.estado,
+      justificacionReprocesoSimultaneo: r.justificacionReprocesoSimultaneo ?? '',
       prioridad: r.prioridad ?? 'Normal',
       unidadAtiende: r.unidadAtiende ?? 'Hardware',
       justificacionUnidad: r.justificacionUnidad ?? '',
@@ -3645,16 +3650,17 @@ export class DataService {
         || `${b.fechaSolicitud}${b.horaSolicitud}`.localeCompare(`${a.fechaSolicitud}${a.horaSolicitud}`));
   }
   /**
-   * Reprocesos visibles según el rol. El Técnico de Hardware ve los suyos y los que todavía no
-   * tienen dueño (para poder tomarlos); los Encargados y el Administrador ven todos; el Técnico de
-   * Soporte solo ve los de los procesos donde participó, porque son los que está esperando.
+   * Reprocesos visibles según el rol. El Técnico de Hardware ve **solo los que le asignaron**: si
+   * viera los pendientes de asignación podría tomarlos, y repartir la carga de Hardware es tarea
+   * del Encargado. Los Encargados y el Administrador ven todos; el Técnico de Soporte ve los de
+   * los procesos donde participó, porque son los que está esperando.
    */
   reprocesosVisibles(): ReprocesoF0288[] {
     const clave = this.claveConectada();
     const nombre = this.nombreConectado();
     const todos = this.reprocesos();
     if (clave === 'tec-hardware') {
-      return todos.filter((r) => !r.tecnicoAsignado || r.tecnicoAsignado.includes(nombre));
+      return todos.filter((r) => !!r.tecnicoAsignado && r.tecnicoAsignado.includes(nombre));
     }
     if (clave === 'tec-soporte') {
       return todos.filter((r) => r.solicitadoPor.includes(nombre) || this.participaEnProceso(r.expediente, nombre));
@@ -3686,6 +3692,8 @@ export class DataService {
     tipo: TipoFallaF0302; descripcion: string; requiereReprocesoF0288: boolean;
     justificacionReproceso?: string; detalle?: DetalleFallaF0302;
     observacionTecnica?: string; evidencia?: string;
+    /** Excepción de un Encargado para abrir un reproceso con otro todavía abierto. */
+    justificacionReprocesoSimultaneo?: string;
   }, usuario: string): string | null {
     const c = this.configuracionDe(id);
     if (!c) return 'No se encontró la configuración indicada.';
@@ -3699,9 +3707,23 @@ export class DataService {
     const detalle: DetalleFallaF0302 = { ...(datos.detalle ?? {}) };
     const reproceso = datos.requiereReprocesoF0288;
     const hardware = this.fallaRequiereHardware(datos.tipo, detalle);
+    // Un solo reproceso abierto por Expediente técnico: dos corrigiendo la misma preparación al
+    // mismo tiempo se pisarían y el historial no diría cuál dejó el equipo como quedó. Un Encargado
+    // puede autorizar la excepción, pero deja escrito por qué.
+    const justSimultaneo = (datos.justificacionReprocesoSimultaneo ?? '').trim();
+    const codigoTecnico = this.expTecnicoDeEquipo(c.datos.inventario)?.codigo;
+    if (reproceso && codigoTecnico) {
+      const abierto = this.reprocesoAbiertoDeExpTecnico(codigoTecnico);
+      if (abierto && !this.puedeAsignarReprocesos()) {
+        return 'Ya existe un reproceso abierto para este expediente. Debe cerrarse antes de generar uno nuevo.';
+      }
+      if (abierto && !justSimultaneo) {
+        return `Ya existe un reproceso abierto para este expediente (${abierto.id}, ${abierto.estado}). Justifique la excepción para generar uno nuevo.`;
+      }
+    }
     const crono = this.detenerCronometro(c.cronometro, usuario);
     const estadoIncidencia: EstadoIncidenciaF0302 = reproceso
-      ? 'REPROCESO_F0288_REQUERIDO'
+      ? 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
       : hardware ? 'PENDIENTE_REVISION_HARDWARE' : 'PENDIENTE_CORRECCION_SOPORTE';
     const falla: FallaF0302 = {
       tipo: datos.tipo, descripcion: datos.descripcion.trim(), requiereHardware: hardware,
@@ -3756,11 +3778,24 @@ export class DataService {
       true, { ...ref, accionTomada: accion });
 
     if (reproceso) {
-      const r = this.abrirReprocesoF0288(c, falla, usuario, codigoTec, unicoCod);
+      const r = this.abrirReprocesoF0288(c, falla, usuario, codigoTec, unicoCod, justSimultaneo);
       this.actualizarConfiguracionConFalla(id, (f) => ({ ...f, reprocesoId: r.id }));
-      this.registrarEvento(id, usuario, 'Equipo enviado a reproceso F0288', 'Reproceso F0288 requerido',
+      this.registrarEvento(id, usuario, 'Reproceso F0288 requerido', 'Reproceso F0288 requerido',
+        `La falla «${datos.tipo}» exige volver a preparación: el equipo no continúa en F0302.`, true,
+        { ...ref, accionTomada: accion, reproceso: r.id });
+      this.registrarEvento(id, usuario, 'Reproceso F0288 generado', 'Reproceso F0288 pendiente de asignación',
+        `${r.id} — reproceso #${r.numero} del Expediente técnico ${r.expedienteTecnico}. No se crea un Expediente técnico nuevo.`
+          + (justSimultaneo ? ` Excepción autorizada: ${justSimultaneo}` : ''),
+        true, { ...ref, accionTomada: accion, reproceso: r.id, justificacion: justSimultaneo });
+      this.registrarEvento(id, usuario, 'Equipo enviado a reproceso F0288', 'Reproceso F0288 pendiente de asignación',
         `Reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}; el F0288 original se conserva.`,
         true, { ...ref, accionTomada: accion, reproceso: r.id });
+      // Nadie lo toma solo: la bandeja de Encargados es la que decide quién lo atiende.
+      this.registrarEvento(id, usuario, 'Reproceso pendiente de asignación por Encargado',
+        'Reproceso F0288 pendiente de asignación',
+        'El Técnico de Soporte reporta la falla; la asignación a Hardware la hace un Encargado.',
+        true, { ...ref, accionTomada: 'Pendiente de asignación por Encargado', reproceso: r.id,
+          encargadoAsigno: 'Pendiente de asignación', tecnicoHardware: 'Sin asignar' });
     } else {
       this.registrarEvento(id, usuario, 'Equipo enviado a corrección de Soporte',
         this.textoEstadoIncidencia(estadoIncidencia),
@@ -3855,7 +3890,10 @@ export class DataService {
    * las preparaciones F0288 sin cerrar y los reprocesos abiertos que ya tiene asignados: son las
    * dos cosas que ocupan realmente a un técnico de Hardware.
    */
-  tecnicosHardwareConCarga(): { usuario: UsuarioSistema; nombreRol: string; preparaciones: number; reprocesos: number; total: number; carga: string }[] {
+  tecnicosHardwareConCarga(): {
+    usuario: UsuarioSistema; nombreRol: string; preparaciones: number; reprocesos: number;
+    expedientes: number; total: number; carga: string;
+  }[] {
     return this.usuarios()
       .filter((u) => u.clave === 'tec-hardware' && u.estado !== 'Inactivo')
       .map((usuario) => {
@@ -3864,8 +3902,11 @@ export class DataService {
           .filter((p) => p.tecnico.includes(usuario.nombre) && p.estado !== 'Completada' && p.estado !== 'Cerrada').length;
         const reprocesos = this.reprocesos()
           .filter((r) => r.tecnicoAsignado.includes(usuario.nombre) && r.estado !== 'Firmado' && r.estado !== 'No corregido').length;
+        // Expedientes técnicos que todavía no llegaron a «Preparado»: trabajo abierto del técnico.
+        const expedientes = this.expedientesTecnicos()
+          .filter((t) => t.tecnicoPreparacion.includes(usuario.nombre) && t.estado !== 'Preparado' && t.estado !== 'Cerrado').length;
         const total = preparaciones + reprocesos;
-        return { usuario, nombreRol, preparaciones, reprocesos, total,
+        return { usuario, nombreRol, preparaciones, reprocesos, expedientes, total,
           carga: total >= 3 ? 'Carga alta' : total >= 1 ? 'Carga media' : 'Carga baja' };
       })
       .sort((a, b) => a.total - b.total);
@@ -3878,15 +3919,33 @@ export class DataService {
   }
 
   /**
+   * Solo los Encargados asignan reprocesos. La regla existe para que la carga de Hardware la
+   * reparta quien la conoce: si el técnico pudiera autoasignarse, los reprocesos incómodos se
+   * quedarían sin dueño y los fáciles se los llevaría el primero que entrara.
+   */
+  puedeAsignarReprocesos(): boolean {
+    const c = this.claveConectada();
+    return c === 'enc-hardware' || c === 'enc-soporte' || c === 'admin';
+  }
+
+  /** Reproceso todavía abierto (sin firmar ni cerrar) del Expediente técnico, si lo hay. */
+  reprocesoAbiertoDeExpTecnico(codigoTec: string): ReprocesoF0288 | undefined {
+    return this.reprocesosDeExpTecnico(codigoTec)
+      .find((r) => r.estado !== 'Firmado' && r.estado !== 'No corregido');
+  }
+
+  /**
    * Abre el reproceso F0288 de una falla **sobre el Expediente técnico que el equipo ya tiene**.
    * El correlativo (`…-R1`, `…-R2`) es por expediente técnico: así el historial se lee como
    * «F0288 #1 → F0302 #1 con falla → Reproceso F0288 #1 → F0302 #2» sin multiplicar expedientes.
    * Nace sin técnico asignado: el rollback a Hardware es un paso propio y con nombre.
    */
   private abrirReprocesoF0288(c: ConfiguracionF0302, falla: FallaF0302, usuario: string,
-    codigoTec?: string, unicoCod?: string): ReprocesoF0288 {
+    codigoTec?: string, unicoCod?: string, justificacionSimultaneo = ''): ReprocesoF0288 {
     const tecnico = codigoTec ?? this.expTecnicoDeEquipo(c.datos.inventario)?.codigo ?? c.datos.inventario;
-    const numero = this.reprocesosDeExpTecnico(tecnico).length + 1;
+    // El correlativo sale del mayor número ya usado, no de la cantidad: si un reproceso se cerró y
+    // otro se abrió, contar la lista podría repetir un código que ya existió.
+    const numero = Math.max(0, ...this.reprocesosDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
     const reproceso: ReprocesoF0288 = {
       id: `${tecnico}-R${numero}`, expedienteTecnico: tecnico, expediente: c.expediente,
       expedienteUnico: unicoCod ?? '', inventario: c.datos.inventario, numero,
@@ -3897,12 +3956,14 @@ export class DataService {
       solicitadoPor: usuario, observacionSoporte: falla.observacionTecnica || falla.descripcion,
       evidenciaSoporte: falla.evidencia,
       fechaSolicitud: this.hoy(), horaSolicitud: this.hora(),
+      // Nace sin dueño: la asignación es potestad de un Encargado, nunca automática.
       tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
+      justificacionReprocesoSimultaneo: justificacionSimultaneo,
       atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
       checklist: this.checklistReproceso(falla.tipo),
       evidencias: [], correccionTecnica: '',
       observaciones: falla.detalle?.observacionHardware ?? '',
-      firma: undefined, resultado: '', observacionResultado: '', estado: 'Requerido'
+      firma: undefined, resultado: '', observacionResultado: '', estado: 'Pendiente de asignación'
     };
     this.reprocesos.update((list) => [reproceso, ...list]);
     return reproceso;
@@ -3914,7 +3975,8 @@ export class DataService {
       modulo: 'Reprocesos F0288', inventario: r.inventario, expedienteTecnico: r.expedienteTecnico,
       expedienteUnico: r.expedienteUnico, tipoFalla: r.tipoFalla, requiereReproceso: 'Sí',
       reproceso: r.id, tecnicoReporta: r.solicitadoPor, tecnicoHardware: r.tecnicoAsignado || 'Sin asignar',
-      resultadoReproceso: r.resultado || 'Pendiente', firmaRegistrada: r.firma ? 'Sí' : 'No'
+      resultadoReproceso: r.resultado || 'Pendiente', firmaRegistrada: r.firma ? 'Sí' : 'No',
+      encargadoAsigno: r.asignadoPor || 'Pendiente de asignación'
     };
   }
 
@@ -3927,15 +3989,40 @@ export class DataService {
    * las fotos anteriores a esta regla —donde la falla mandaba a preparación sin dejar constancia
    * de un reproceso— y evita que esos expedientes queden sin salida.
    */
-  asegurarReprocesoDeFalla(id: string, usuario: string): ReprocesoF0288 | undefined {
+  asegurarReprocesoDeFalla(id: string, usuario: string): ReprocesoF0288 | string {
+    if (!this.puedeAsignarReprocesos()) {
+      return 'Solo un Encargado puede generar el reproceso F0288 de una falla ya registrada.';
+    }
     const conFalla = this.configuracionesConFallaDe(id)[0];
-    if (!conFalla?.falla) return undefined;
+    if (!conFalla?.falla) return 'Este proceso no tiene una falla F0302 registrada.';
+    if (!conFalla.falla.requiereReprocesoF0288) return 'Esta falla no requiere reproceso de Preparación F0288.';
     const existente = conFalla.falla.reprocesoId ? this.reprocesoDe(conFalla.falla.reprocesoId) : undefined;
     if (existente) return existente;
-    const r = this.abrirReprocesoF0288(conFalla, conFalla.falla, usuario,
-      this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo, this.expedienteUnicoDe(id)?.codigoUnico);
-    this.actualizarConfiguracionConFalla(id, (f) => ({ ...f, reprocesoId: r.id }));
+    const codigoTec = this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo;
+    const unicoCod = this.expedienteUnicoDe(id)?.codigoUnico;
+    const r = this.abrirReprocesoF0288(conFalla, conFalla.falla, conFalla.falla.tecnicoReporta || usuario, codigoTec, unicoCod);
+    this.actualizarConfiguracionConFalla(id, (f) => ({
+      ...f, reprocesoId: r.id, estadoIncidencia: 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
+    }));
+    this.registrarEvento(id, usuario, 'Reproceso F0288 generado', 'Reproceso F0288 pendiente de asignación',
+      `${r.id} — reproceso #${r.numero} del Expediente técnico ${r.expedienteTecnico}. Se completó una falla registrada antes de esta regla; no se crea un Expediente técnico nuevo.`,
+      true, { ...this.refReproceso(r), accionTomada: 'Reproceso F0288 dentro del mismo Expediente técnico' });
+    this.registrarEvento(id, usuario, 'Reproceso pendiente de asignación por Encargado',
+      'Reproceso F0288 pendiente de asignación',
+      'El reproceso queda a la espera de que un Encargado lo asigne a un Técnico de Hardware.', true,
+      { ...this.refReproceso(r), accionTomada: 'Pendiente de asignación por Encargado' });
     return r;
+  }
+
+  /**
+   * Fallas que exigen reproceso pero todavía no lo tienen: solo ocurre con expedientes guardados
+   * antes de que el reproceso existiera. Se listan para que un Encargado los complete en lugar de
+   * dejarlos trabados sin salida.
+   */
+  fallasSinReproceso(): ConfiguracionF0302[] {
+    return this.configuraciones().filter((c) =>
+      c.estado === 'Con falla' && c.falla?.requiereReprocesoF0288 && !c.falla.reprocesoId
+      && c.falla.estadoIncidencia !== 'LISTO_PARA_REINTENTO_F0302');
   }
 
   /**
@@ -3947,16 +4034,19 @@ export class DataService {
   asignarReprocesoF0288(idReproceso: string, tecnico: string, usuario: string, justificacion = ''): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
-    if (r.estado !== 'Requerido' && r.estado !== 'Asignado') {
+    // La asignación es potestad de los Encargados. Un Técnico de Hardware no se autoasigna
+    // reprocesos y un Técnico de Soporte no reparte trabajo de otra unidad: el que reporta la
+    // falla no decide quién la corrige.
+    if (!this.puedeAsignarReprocesos()) {
+      return 'Solo un Encargado puede asignar reprocesos F0288. El reproceso queda pendiente de asignación.';
+    }
+    if (r.estado !== 'Pendiente de asignación' && r.estado !== 'Asignado') {
       return 'El reproceso F0288 ya fue iniciado: no puede reasignarse.';
     }
     if (!tecnico.trim()) return 'Seleccione el Técnico de Hardware que atenderá el reproceso.';
     const esHardware = this.tecnicosHardwareConCarga().some((t) => t.nombreRol === tecnico.trim());
-    const clave = this.claveConectada();
-    const esEncargado = clave === 'enc-hardware' || clave === 'enc-soporte' || clave === 'admin';
-    if (!esHardware) {
-      if (!esEncargado) return 'El reproceso F0288 debe asignarse a un Técnico de Hardware. Solo un Encargado puede autorizar una excepción.';
-      if (!justificacion.trim()) return 'Justifique por qué este reproceso se asigna fuera de la Unidad de Hardware.';
+    if (!esHardware && !justificacion.trim()) {
+      return 'Justifique por qué este reproceso se asigna fuera de la Unidad de Hardware.';
     }
     this.actualizarReproceso(idReproceso, (x) => ({
       ...x, estado: 'Asignado', tecnicoAsignado: tecnico.trim(), asignadoPor: usuario,
@@ -3969,10 +4059,10 @@ export class DataService {
     this.registrarEvento(r.expediente, usuario, 'Rollback realizado a Hardware', 'Reproceso F0288 asignado',
       `El equipo ${r.inventario} regresa a la Unidad de ${actualizado.unidadAtiende} por ${r.tipoFalla}.`, true,
       { ...this.refReproceso(actualizado), accionTomada: 'Rollback a Hardware' });
-    this.registrarEvento(r.expediente, usuario, 'Reproceso asignado a Técnico de Hardware', 'Reproceso F0288 asignado',
+    this.registrarEvento(r.expediente, usuario, 'Reproceso asignado por Encargado', 'Reproceso F0288 asignado',
       esHardware
-        ? `${r.id} asignado a ${tecnico.trim()}.`
-        : `${r.id} asignado a ${tecnico.trim()} fuera de Hardware. Justificación del Encargado: ${justificacion.trim()}`,
+        ? `${r.id} asignado a ${tecnico.trim()} por ${usuario}.`
+        : `${r.id} asignado a ${tecnico.trim()} fuera de Hardware por ${usuario}. Justificación: ${justificacion.trim()}`,
       true, { ...this.refReproceso(actualizado), accionTomada: 'Asignación del reproceso F0288',
         justificacion: actualizado.justificacionUnidad });
     return null;
@@ -3982,9 +4072,16 @@ export class DataService {
   iniciarReprocesoF0288(idReproceso: string, usuario: string): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
-    if (r.estado === 'Requerido') return 'Asigne el reproceso F0288 a un Técnico de Hardware antes de iniciarlo.';
+    if (r.estado === 'Pendiente de asignación') {
+      return 'Un Encargado debe asignar el reproceso F0288 a un Técnico de Hardware antes de iniciarlo.';
+    }
     if (r.estado === 'En proceso') return 'Este reproceso F0288 ya está en proceso.';
     if (r.estado !== 'Asignado') return 'Este reproceso F0288 ya fue finalizado.';
+    // Solo lo trabaja el técnico asignado: nadie toma un reproceso que no le tocó.
+    const nombre = this.nombreConectado();
+    if (nombre && r.tecnicoAsignado && !r.tecnicoAsignado.includes(nombre) && !this.puedeAsignarReprocesos()) {
+      return `Este reproceso está asignado a ${r.tecnicoAsignado}. Solo un Encargado puede reasignarlo.`;
+    }
     this.actualizarReproceso(idReproceso, (x) => ({
       ...x, estado: 'En proceso', atendidoPor: usuario, fechaInicio: this.hoy(),
       cronometro: { fechaInicio: this.hoy(), horaInicio: this.horaCrono(), iniciadoPor: usuario,
@@ -4043,7 +4140,7 @@ export class DataService {
   finalizarReprocesoF0288(idReproceso: string, usuario: string, correccion: string, observaciones = ''): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
-    if (r.estado === 'Requerido' || r.estado === 'Asignado') return 'Inicie el reproceso F0288 antes de finalizarlo.';
+    if (r.estado === 'Pendiente de asignación' || r.estado === 'Asignado') return 'Inicie el reproceso F0288 antes de finalizarlo.';
     if (r.estado !== 'En proceso') return 'Este reproceso F0288 ya fue finalizado.';
     if (r.checklist.some((i) => i.estado === 'Pendiente')) {
       return 'Complete el Checklist de Reproceso F0288 antes de finalizarlo.';
@@ -4135,7 +4232,7 @@ export class DataService {
   devolverAConfiguracionF0302(idReproceso: string, usuario: string): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
-    if (r.estado === 'Requerido' || r.estado === 'Asignado' || r.estado === 'En proceso') {
+    if (r.estado === 'Pendiente de asignación' || r.estado === 'Asignado' || r.estado === 'En proceso') {
       return 'Finalice el reproceso F0288 antes de devolver el equipo a Configuración F0302.';
     }
     if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';

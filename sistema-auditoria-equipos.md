@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 40)**.
+nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 41)**.
 
 ---
 
@@ -2087,6 +2087,38 @@ Expediente único.
       37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó una
       expectativa de la ronda 39: el estado terminal de un reproceso corregido pasó de «Finalizado» a
       «Firmado». **Sin recorrido manual de clics en navegador.**
+41. **F0302 — el reproceso F0288 bajo control de los Encargados** (2026-08-06, segunda sesión del día).
+    * El reproceso **nace sin dueño**: `Pendiente de asignación` (antes «Requerido»), y hasta que un
+      Encargado decide nadie lo toca. El nombre del estado dice qué falta y de quién depende.
+    * **Solo Encargados asignan** (Hardware, Soporte y Administrador). El Técnico de Soporte reporta
+      la falla pero no reparte trabajo de otra unidad; el Técnico de Hardware **no se autoasigna** ni
+      puede iniciar un reproceso ajeno. La regla existe para que la carga de Hardware la reparta quien
+      la conoce: si el técnico eligiera, los reprocesos incómodos se quedarían sin dueño.
+    * **Dos vistas en una pantalla**: los Encargados ven la bandeja «Reprocesos F0288 pendientes de
+      asignación» (11 columnas del pedido) más el seguimiento de los asignados; el Técnico de Hardware
+      ve «Mis reprocesos F0288», **solo los suyos** —ver los pendientes sería poder tomarlos—.
+    * El modal de asignación muestra reprocesos activos, expedientes activos y pendientes por preparar
+      de cada técnico. La **carga alta advierte pero no bloquea**, y el aviso sale con el reproceso ya
+      asignado: bloquear sería decidir por el Encargado; ocultarlo, dejarlo decidir a ciegas.
+    * **Un solo reproceso abierto por expediente**: no se abre `-R2` con `-R1` abierto (`Ya existe un
+      reproceso abierto para este expediente. Debe cerrarse antes de generar uno nuevo.`) salvo
+      excepción justificada del Encargado. Dos reprocesos sobre la misma preparación se pisarían y el
+      historial no diría cuál dejó el equipo como quedó. El correlativo sale del **mayor número usado**,
+      no de la cantidad: contar la lista podía repetir un código ya existente.
+    * Trazabilidad: tres eventos nuevos («Reproceso F0288 requerido», «Reproceso F0288 generado»,
+      «Reproceso pendiente de asignación por Encargado») y uno renombrado («Reproceso asignado por
+      Encargado»). Todos guardan el **Encargado que asignó**, que antes de la asignación figura como
+      «Pendiente de asignación» —nombrarlo antes sería mentir sobre cuándo se decidió—.
+    * **Auditoría del §19**: ocho de los nueve puntos ya estaban cubiertos por las rondas 39 y 40. El
+      que sí apareció: `asegurarReprocesoDeFalla` —el rescate de expedientes anteriores a la regla—
+      existía pero **ningún botón lo llamaba**, así que una falla migrada que exigía reproceso quedaba
+      trabada. Ahora la bandeja de Encargados las lista y ofrece «Generar reproceso F0288»; el método
+      además exige ser Encargado, que antes no comprobaba.
+    * Verificado con `npm run build` limpio (5.455 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en nueve rutas y los dos JSON tocados) y
+      **68 casos, 0 fallos**, más las regresiones de las rondas 40 (95), 39 (108), 38 (58), 37 (31),
+      36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó una expectativa de la
+      ronda 40 por el evento renombrado. **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2124,6 +2156,11 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 41)**: recorrido manual en navegador de los dos perfiles de
+  `/reprocesos-f0288` —Encargado con la bandeja de asignación y el modal de carga; Técnico de
+  Hardware viendo solo lo suyo—, más el intento de generar `-R2` con `-R1` abierto y la excepción
+  justificada. Verificado con build limpio, smoke test HTTP y 68 casos contra datos reales, sin
+  clics reales.
 * **Nuevo pendiente (ronda 40)**: recorrido manual en navegador de `/reprocesos-f0288` —asignación
   desde el buscador de técnicos con carga, excepción fuera de Hardware, checklist de los siete tipos,
   evidencia obligatoria al marcar un ítem de corrección, cronómetro, intento de devolver sin firmar y

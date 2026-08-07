@@ -949,6 +949,7 @@ export type EstadoIncidenciaF0302 =
   | 'PENDIENTE_CORRECCION_SOPORTE'
   | 'PENDIENTE_REVISION_HARDWARE'
   | 'REPROCESO_F0288_REQUERIDO'
+  | 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
   | 'REPROCESO_F0288_ASIGNADO'
   | 'REPROCESO_F0288_EN_PROCESO'
   | 'REPROCESO_F0288_FINALIZADO'
@@ -1120,11 +1121,20 @@ export interface ReprocesoF0288 {
   evidenciaSoporte: string;
   fechaSolicitud: string;
   horaSolicitud: string;
-  /** Técnico al que se asignó el reproceso (rollback a Hardware). */
+  /**
+   * Técnico al que un Encargado asignó el reproceso (rollback a Hardware). Nace vacío: el
+   * reproceso queda pendiente de asignación y ningún técnico puede tomárselo por su cuenta.
+   */
   tecnicoAsignado: string;
+  /** Encargado que hizo la asignación. Solo los Encargados pueden asignar reprocesos. */
   asignadoPor: string;
   fechaAsignacion: string;
   horaAsignacion: string;
+  /**
+   * Justificación del Encargado al abrir un reproceso nuevo con otro todavía abierto sobre el
+   * mismo Expediente técnico. Sin ella el segundo reproceso no se crea.
+   */
+  justificacionReprocesoSimultaneo: string;
   /** Quien efectivamente lo trabajó (normalmente el asignado). */
   atendidoPor: string;
   fechaInicio: string;
@@ -1142,7 +1152,7 @@ export interface ReprocesoF0288 {
   resultado: ResultadoReproceso | '';
   /** Observación del resultado, obligatoria cuando el reproceso no quedó corregido. */
   observacionResultado: string;
-  estado: 'Requerido' | 'Asignado' | 'En proceso' | 'Finalizado' | 'Firmado' | 'No corregido';
+  estado: 'Pendiente de asignación' | 'Asignado' | 'En proceso' | 'Finalizado' | 'Firmado' | 'No corregido';
 }
 
 /**
@@ -1193,6 +1203,8 @@ export interface EventoTrazabilidad {
   tecnicoReporta?: string;
   /** Técnico de Hardware asignado al reproceso. */
   tecnicoHardware?: string;
+  /** Encargado que asignó el reproceso: la asignación nunca es automática ni del propio técnico. */
+  encargadoAsigno?: string;
   /** Resultado con el que se cerró el reproceso. */
   resultadoReproceso?: string;
   /** «Sí»/«No»: si la firma del Técnico de Hardware ya estaba registrada al momento del evento. */
