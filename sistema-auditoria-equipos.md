@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 41)**.
+nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 42)**.
 
 ---
 
@@ -2119,6 +2119,36 @@ Expediente único.
       **68 casos, 0 fallos**, más las regresiones de las rondas 40 (95), 39 (108), 38 (58), 37 (31),
       36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13). Se actualizó una expectativa de la
       ronda 40 por el evento renombrado. **Sin recorrido manual de clics en navegador.**
+42. **Reprocesos F0288 — la constancia firmada deja de existir solo al momento de firmar**
+    (2026-08-06, tercera sesión del día).
+    * **El problema real**: la constancia se armaba al pulsar «Descargar». Un reproceso firmado y
+      nunca descargado quedaba **sin documento** que lo respaldara, y después de firmar no había
+      dónde volver a verlo. Ahora se genera **al firmar**, dentro de `firmarReprocesoF0288`, sin
+      depender de que alguien pulse un botón.
+    * El documento tiene **código propio** (`CONST-REP-2026-0001`, correlativo por año) y **estado**
+      (`Pendiente de firma · Firmado · Generado · Disponible para consulta`). Al firmar queda en
+      «Disponible para consulta», que es la diferencia entre un documento que existe y uno que además
+      puede volver a abrirse. Guarda reproceso, expediente técnico original, expediente único,
+      inventario, técnico de Hardware y resultado: los datos por los que se busca.
+    * **Un solo visor para ocho pantallas** (`ui-constancia-reproceso`, en `shared/`). Si cada
+      pantalla lo dibujara por su cuenta, el documento se vería distinto según por dónde se entrara,
+      que es el problema que se está corrigiendo. El visor **no genera nada**: consulta, descarga y
+      registra quién lo abrió. Se abre desde detalle del reproceso, las dos bandejas, historial
+      técnico, expediente técnico, expediente único, Documentos generados y trazabilidad.
+    * En **Documentos generados**: las constancias del expediente abierto junto a sus F0288/F0302, y
+      un **catálogo global** filtrable por documento, código de reproceso, expediente técnico,
+      inventario, técnico de Hardware, fecha, resultado y estado.
+    * **Sin duplicados**: `registrarConstanciaReproceso` devuelve la existente si ya la hay.
+      Regenerarla cambiaría la huella de integridad de un documento ya firmado, que es justo lo que
+      un respaldo no debe hacer. La **consulta se anota una vez por usuario y documento**: la
+      trazabilidad debe decir quién lo consultó, no cuántas veces lo reabrió en la sesión.
+    * Cinco eventos nuevos (`Constancia de reproceso generada/firmada`, `Documento de reproceso
+      disponible para consulta/consultado/descargado`) con el código del documento y su estado.
+    * Verificado con `npm run build` limpio (5.332 s, 0 errores; solo las dos advertencias
+      preexistentes de presupuesto CSS), `ng serve` (HTTP 200 en ocho rutas y los dos JSON tocados) y
+      **54 casos, 0 fallos**, más las regresiones de las rondas 41 (68), 40 (95), 39 (108), 38 (58),
+      37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2156,6 +2186,10 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 42)**: recorrido manual en navegador de la constancia desde las ocho
+  pantallas —incluidos «Ver firma» y la descarga—, comprobando que abrirla varias veces no genera
+  documentos nuevos y que el catálogo de Documentos generados filtra por sus siete criterios.
+  Verificado con build limpio, smoke test HTTP y 54 casos contra datos reales, sin clics reales.
 * **Nuevo pendiente (ronda 41)**: recorrido manual en navegador de los dos perfiles de
   `/reprocesos-f0288` —Encargado con la bandeja de asignación y el modal de carga; Técnico de
   Hardware viendo solo lo suyo—, más el intento de generar `-R2` con `-R1` abierto y la excepción

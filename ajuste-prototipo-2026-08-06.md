@@ -386,3 +386,125 @@ src/app/features/reprocesos-f0288/reprocesos.component.ts        (bandeja de Enc
 public/assets/data/reprocesos-f0288.json                         (campo de control de reprocesos simultáneos)
 public/assets/data/trazabilidad.json                             (3 eventos nuevos, 1 renombrado, 12 completados)
 ```
+
+---
+
+# Parte 3 — La constancia del reproceso deja de existir solo en el momento de la firma
+
+**Fecha:** 6 de agosto de 2026, tercera sesión del día (ronda 42 del punto de control)
+**Alcance:** el mismo prototipo Angular; sin backend ni base de datos.
+
+## 1. El problema real
+
+La constancia se armaba **al pulsar «Descargar»**: el documento se construía en memoria, se bajaba
+el archivo y recién ahí se registraba. Dos consecuencias:
+
+* un reproceso firmado y nunca descargado quedaba **sin documento** que lo respaldara;
+* después de firmar no había dónde volver a verlo.
+
+Ahora la constancia se genera **al firmar**, dentro de `firmarReprocesoF0288`. No depende de que
+alguien pulse un botón.
+
+## 2. El documento
+
+Código propio `CONST-REP-2026-0001`, correlativo por año, y estado propio:
+
+```text
+Pendiente de firma   ·  el reproceso aún no se firmó, no hay documento
+Firmado              ·  la firma quedó registrada
+Generado             ·  el documento existe
+Disponible para consulta ·  guardado en el expediente, se puede abrir cuando sea
+```
+
+Al firmar queda en **«Disponible para consulta»**, que es la diferencia entre un documento que
+existe y uno que además puede volver a abrirse.
+
+Guarda además lo que hace falta para encontrarlo: reproceso, expediente técnico original,
+expediente único, inventario, técnico de Hardware y resultado.
+
+## 3. Un solo visor para ocho pantallas
+
+`ui-constancia-reproceso` vive en `shared/`. Si cada pantalla dibujara el documento por su cuenta,
+se vería distinto según por dónde se entrara — y ese es exactamente el problema que se está
+corrigiendo. El visor **no genera nada**: solo consulta, descarga y registra quién la abrió.
+
+Se abre desde:
+
+```text
+Detalle del reproceso            Historial técnico del equipo
+Bandeja de Encargados            Detalle del Expediente técnico original
+Mis reprocesos F0288             Detalle del Expediente único
+Documentos generados             Trazabilidad
+```
+
+Con «Ver firma» se muestra solo el bloque firmado; con «Descargar documento», el archivo simulado.
+
+## 4. Documentos generados
+
+Dos lugares: las constancias del expediente abierto, junto a sus F0288/F0302, y un **catálogo
+global** con todas, filtrable por documento, código de reproceso, expediente técnico, inventario,
+técnico de Hardware, fecha, resultado y estado. Los filtros van en un solo campo de búsqueda porque
+son datos de la misma fila; seis cajas separadas no ayudarían a encontrarlas.
+
+## 5. Sin duplicados
+
+```text
+Un reproceso firmado tiene una sola constancia principal.
+```
+
+`registrarConstanciaReproceso` devuelve la existente si ya la hay: consultarla o descargarla de
+nuevo abre la misma, con la misma huella de integridad. Volver a generarla cambiaría la huella de
+un documento ya firmado, que es justo lo que un respaldo no debe hacer.
+
+## 6. Trazabilidad
+
+```text
+Constancia de reproceso generada
+Constancia de reproceso firmada
+Documento de reproceso disponible para consulta
+Documento de reproceso consultado
+Documento de reproceso descargado
+```
+
+La consulta se anota **una vez por usuario y documento**: la trazabilidad debe decir quién lo
+consultó, no cuántas veces volvió a abrirlo en la misma sesión.
+
+## 7. Casos de prueba
+
+**54 casos, 0 fallos**: la constancia inexistente antes de firmar y creada al firmar; su código,
+estado y datos de filtrado; que consultarla, descargarla o regenerarla no duplica ni cambia la
+huella; el correlativo de dos documentos; que un reproceso «No corregido» también deja constancia;
+las cinco pantallas donde se abre; los dieciséis campos del contenido; los cinco eventos con sus
+nueve campos y el avance del estado del documento.
+
+Regresiones: **68** de la ronda 41, **95** de la 40, **108** de la 39, **58** de la 38, **31** de la
+37, **30** de la 36, **29** de la 35, **32** de la 34 y accesorios **CPU 12** y **Laptop 13**, todas
+0 fallos.
+
+## 8. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [5.332 seconds]`, 0 errores y las
+dos advertencias preexistentes de presupuesto CSS. `ng serve` con HTTP 200 en ocho rutas y los dos
+JSON tocados.
+
+**No hubo clics reales en un navegador** (sin Chromium/Playwright en esta sesión).
+
+## 9. Archivos tocados
+
+```text
+src/app/core/models/models.ts                                    (EstadoDocumento; código, hora, estado,
+                                                                  expediente técnico, inventario, técnico y
+                                                                  resultado en DocumentoGenerado; documento y
+                                                                  estadoDocumento en el evento)
+src/app/core/services/data.service.ts                            (constanciaDeReproceso, constanciasReproceso,
+                                                                  constanciasDeEquipo, generación al firmar,
+                                                                  registrarConsultaConstancia, contenido §6)
+src/app/shared/constancia-reproceso.ts                           (nuevo: el visor compartido)
+src/app/features/reprocesos-f0288/reprocesos.component.ts        (ver constancia en las dos tablas y el detalle)
+src/app/features/trazabilidad/trazabilidad.component.ts          (columna Constancia en el historial técnico)
+src/app/features/expediente-tecnico/expediente-tecnico.component.ts (constancia bajo el expediente original)
+src/app/features/expediente-unico/expediente-unico.component.ts  (constancia en la vista ejecutiva)
+src/app/features/generador-documentos/documentos.component.ts    (constancias del proceso + catálogo filtrable)
+public/assets/data/documentos-generados.json                     (código, estado y datos de filtrado)
+public/assets/data/trazabilidad.json                             (1 evento renombrado + 4 nuevos)
+```

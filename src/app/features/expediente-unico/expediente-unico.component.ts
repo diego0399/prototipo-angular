@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { Equipo, ExpedienteUnico } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe } from '../../shared/ui';
+import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 
 /**
  * Expediente único: aquí se hace la unión entre la solicitud/requerimiento, el usuario final,
@@ -15,7 +16,7 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
  */
 @Component({
   selector: 'app-expediente-unico',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe, ConstanciaReprocesoComponent],
   styles: `
     .exp-card { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
     .exp-card:hover { box-shadow: var(--shadow-2); border-color: var(--blue-500); }
@@ -400,6 +401,12 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                       <dt>Reproceso F0288 #{{ r.numero }}</dt>
                       <dd class="mono">{{ r.id }} · {{ r.estado }}
                         @if (r.correccionTecnica) { <div class="sub-cell">Corrección: {{ r.correccionTecnica }}</div> }
+                        @if (data.constanciaDeReproceso(r.id); as d) {
+                          <div class="sub-cell">
+                            Constancia {{ d.codigo }} · {{ d.estado }}
+                            <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(r.id)">Ver documento</button>
+                          </div>
+                        } @else { <div class="sub-cell">Constancia pendiente de firma</div> }
                       </dd>
                     }
                     @if (f.correccionSoporte; as k) {
@@ -620,6 +627,9 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
           </div>
         </ui-modal>
       }
+
+      <!-- Constancia del reproceso, consultable desde el expediente único -->
+      <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
     </div>
   `
 })
@@ -920,6 +930,8 @@ export class ExpedienteUnicoComponent {
     const inv = this.solicitudDe(x)?.equipoInventario ?? '';
     return inv ? (this.data.expTecnicoDeEquipo(inv)?.codigo ?? '') : '';
   }
+  /** Reproceso cuya constancia se consulta desde el expediente único. */
+  protected verConstancia = signal('');
   protected reprocesosDe(x: ExpedienteUnico) {
     return this.data.reprocesos().filter((r) => r.expediente === x.expediente).sort((a, b) => a.numero - b.numero);
   }

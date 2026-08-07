@@ -6,6 +6,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 
 /**
  * Reprocesos F0288 pendientes: la bandeja de Hardware para los equipos devueltos por una falla
@@ -15,7 +16,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
  */
 @Component({
   selector: 'app-reprocesos',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent],
   styles: `
     .rep-card { border-left: 4px solid var(--warn, #c9930a); }
     .rep-card.alta { border-left-color: var(--danger, #c0392b); }
@@ -105,6 +106,9 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                         <button class="btn btn-ghost btn-sm" (click)="abrir(r.id)">
                           {{ seleccion() === r.id ? 'Ocultar' : 'Ver detalle de falla' }}
                         </button>
+                        @if (data.constanciaDeReproceso(r.id)) {
+                          <button class="btn btn-outline btn-sm" (click)="verConstancia.set(r.id)">Ver constancia</button>
+                        }
                         <button class="btn btn-primary btn-sm" (click)="abrirAsignacion(r)">Asignar Técnico de Hardware</button>
                       </div>
                     </td>
@@ -166,11 +170,21 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                     <div class="sub-cell">{{ r.tecnicoAsignado.split('—')[0].trim() || 'Sin asignar' }}</div>
                     @if (esEncargado() && r.asignadoPor) { <div class="sub-cell">Asignó: {{ r.asignadoPor.split('—')[0].trim() }}</div> }
                   </td>
-                  <td><ui-badge [estado]="r.estado" /></td>
+                  <td>
+                    <ui-badge [estado]="r.estado" />
+                    @if (data.constanciaDeReproceso(r.id); as d) {
+                      <div class="sub-cell mono">{{ d.codigo }} · {{ d.estado }}</div>
+                    }
+                  </td>
                   <td style="text-align:right;">
-                    <button class="btn btn-ghost btn-sm" (click)="abrir(r.id)">
-                      {{ seleccion() === r.id ? 'Ocultar detalle' : 'Ver detalle' }}
-                    </button>
+                    <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                      <button class="btn btn-ghost btn-sm" (click)="abrir(r.id)">
+                        {{ seleccion() === r.id ? 'Ocultar detalle' : 'Ver detalle' }}
+                      </button>
+                      @if (data.constanciaDeReproceso(r.id)) {
+                        <button class="btn btn-outline btn-sm" (click)="verConstancia.set(r.id)">Ver constancia</button>
+                      }
+                    </div>
                   </td>
                 </tr>
               } @empty {
@@ -332,6 +346,13 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               <dl class="dl mt-2">
                 <dt>Resultado del reproceso</dt><dd><ui-badge [estado]="r.resultado" /></dd>
                 @if (r.observacionResultado) { <dt>Observación del resultado</dt><dd>{{ r.observacionResultado }}</dd> }
+                @if (data.constanciaDeReproceso(r.id); as d) {
+                  <dt>Constancia de Reproceso F0288</dt>
+                  <dd>
+                    <b class="mono">{{ d.codigo }}</b> · <ui-badge [estado]="d.estado ?? 'Generado'" />
+                    <div class="sub-cell">Generada el {{ d.fecha }} {{ d.hora }} · huella {{ d.hash }}</div>
+                  </dd>
+                }
               </dl>
             } @else if (r.estado === 'Finalizado') {
               <div class="alert warn mt-2">
@@ -352,7 +373,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                 <button class="btn btn-primary" (click)="devolver(r)">Devolver a Configuración F0302</button>
               }
               @if (r.firma) {
-                <button class="btn btn-outline" (click)="descargarConstancia(r)">Constancia de Reproceso F0288</button>
+                <button class="btn btn-outline" (click)="verConstancia.set(r.id)">Ver constancia</button>
               }
               <a class="btn btn-outline" routerLink="/trazabilidad" [queryParams]="{ inventario: r.inventario }">Ver trazabilidad</a>
             </div>
@@ -468,6 +489,9 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
           </div>
         </ui-modal>
       }
+
+      <!-- Visor de la constancia: la misma vista en todas las pantallas -->
+      <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
     </div>
   `
 })
@@ -477,6 +501,8 @@ export class ReprocesosComponent {
   private readonly toast = inject(ToastService);
 
   protected seleccion = signal('');
+  /** Reproceso cuya constancia se está viendo; '' cierra el visor. */
+  protected verConstancia = signal('');
   protected asignarAbierto = signal(false);
   protected firmaAbierta = signal(false);
   protected evArchivo = signal('');
@@ -655,17 +681,4 @@ export class ReprocesosComponent {
     this.toast.ok('Equipo devuelto a Configuración F0302', 'Soporte ya puede iniciar el nuevo intento F0302 sobre el mismo Expediente técnico.');
   }
 
-  protected descargarConstancia(r: ReprocesoF0288): void {
-    const lineas = this.data.constanciaReprocesoF0288(r.id);
-    if (typeof lineas === 'string') { this.toast.error('No se puede generar la constancia', lineas); return; }
-    const blob = new Blob([lineas.join('\n')], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Constancia-Reproceso-${r.id}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.data.registrarConstanciaReproceso(r.id, this.usuarioActual);
-    this.toast.ok('Constancia de Reproceso F0288 generada', `Se descargó la constancia del reproceso ${r.id}.`);
-  }
 }

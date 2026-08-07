@@ -4196,6 +4196,9 @@ export class DataService {
       ...x, firma, resultado, observacionResultado: observacionResultado.trim(), estado: estadoReproceso
     }));
     const firmado = this.reprocesoDe(idReproceso)!;
+    // La constancia se genera aquí, al firmar, no al descargarla: si dependiera de que alguien
+    // pulsara «Descargar», un reproceso firmado podría quedarse sin documento que lo respalde.
+    this.registrarConstanciaReproceso(idReproceso, usuario);
     this.registrarEvento(r.expediente, usuario, 'Firma de Técnico de Hardware registrada',
       resultado === 'Corregido' ? 'Reproceso F0288 firmado' : 'Reproceso F0288 no corregido',
       `${firma.nombre} — ${firma.cargo} (${firma.unidad}) · ${firma.fecha} ${firma.hora} · Resultado: ${resultado}`,
@@ -4261,19 +4264,24 @@ export class DataService {
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
     if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
     const eq = this.equipoDe(r.inventario);
+    const doc = this.constanciaDeReproceso(r.id);
     return [
       'SISGOST · Centro Nacional de Registros',
       'Constancia de Reproceso F0288',
       '='.repeat(60),
+      `Documento: ${doc?.codigo ?? 'Pendiente de generar'} · Estado: ${doc?.estado ?? 'Pendiente de firma'}`,
       `Código del reproceso: ${r.id}`,
       `Expediente técnico original: ${r.expedienteTecnico}`,
       `Expediente único: ${r.expedienteUnico || '—'}`,
       `Equipo: ${eq ? `${eq.marca} ${eq.modelo}` : '—'}`,
+      `Tipo de equipo: ${eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—'}`,
       `Número de inventario: ${r.inventario}`,
-      `Tipo de falla reportada: ${r.tipoFalla}`,
+      `Tipo de falla reportada en F0302: ${r.tipoFalla}`,
+      `Descripción de la falla: ${r.motivo}`,
       `Reportada por: ${r.solicitadoPor} · ${r.fechaSolicitud} ${r.horaSolicitud}`,
       `Observación de Soporte: ${r.observacionSoporte || '—'}`,
       `Evidencia reportada por Soporte: ${r.evidenciaSoporte || '—'}`,
+      `Encargado que asignó el reproceso: ${r.asignadoPor || '—'}${r.fechaAsignacion ? ` · ${r.fechaAsignacion} ${r.horaAsignacion}` : ''}`,
       `Técnico de Hardware asignado: ${r.tecnicoAsignado || '—'}`,
       '',
       'CHECKLIST DE REPROCESO F0288',
@@ -4287,11 +4295,11 @@ export class DataService {
         : ['  Sin evidencias adjuntas (el reproceso no implicó corrección técnica).']),
       '',
       `Tiempo trabajado: ${this.formatoDuracion(r.cronometro?.duracionMinutos ?? null) || 'menos de 1 min'}`,
-      `Inicio: ${r.cronometro?.fechaInicio ?? r.fechaInicio} ${r.cronometro?.horaInicio ?? ''}`.trim(),
-      `Finalización: ${r.cronometro?.fechaFin ?? r.fechaFin} ${r.cronometro?.horaFin ?? ''}`.trim(),
+      `Fecha de inicio: ${r.cronometro?.fechaInicio ?? r.fechaInicio} ${r.cronometro?.horaInicio ?? ''}`.trim(),
+      `Fecha de finalización: ${r.cronometro?.fechaFin ?? r.fechaFin} ${r.cronometro?.horaFin ?? ''}`.trim(),
       `Corrección técnica: ${r.correccionTecnica || '—'}`,
-      `Resultado: ${r.resultado || '—'}`,
-      `Observaciones: ${r.observacionResultado || r.observaciones || '—'}`,
+      `Resultado del reproceso: ${r.resultado || '—'}`,
+      `Observaciones del Técnico de Hardware: ${r.observacionResultado || r.observaciones || '—'}`,
       '',
       'FIRMA DEL TÉCNICO DE HARDWARE',
       '-'.repeat(60),
@@ -4304,23 +4312,77 @@ export class DataService {
     ];
   }
 
-  /**
-   * Deja registrada la constancia del reproceso como documento del expediente. Se guarda una sola
-   * vez por reproceso: volver a descargarla no genera un documento distinto ni una huella nueva.
-   */
-  registrarConstanciaReproceso(idReproceso: string, usuario: string): void {
-    const r = this.reprocesoDe(idReproceso);
-    if (!r?.firma) return;
-    if (this.documentos().some((d) => d.tipo === 'Constancia de reproceso F0288' && d.reproceso === r.id)) return;
-    this.documentos.update((list) => [
-      ...list,
-      { tipo: 'Constancia de reproceso F0288', expediente: r.expediente, reproceso: r.id,
-        generadoPor: usuario, fecha: this.hoy(), hash: this.hash() }
-    ]);
-    this.registrarEvento(r.expediente, usuario, 'Constancia de Reproceso F0288 generada', 'Reproceso F0288 firmado',
-      `Constancia interna del reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}.`, false,
-      { ...this.refReproceso(r), accionTomada: 'Constancia de Reproceso F0288' });
+  /** Constancia ya generada de un reproceso, si existe. */
+  constanciaDeReproceso(idReproceso: string): DocumentoGenerado | undefined {
+    return this.documentos().find((d) => d.tipo === 'Constancia de reproceso F0288' && d.reproceso === idReproceso);
   }
+  /** Todas las constancias de reproceso, de la más reciente a la más antigua. */
+  constanciasReproceso(): DocumentoGenerado[] {
+    return this.documentos()
+      .filter((d) => d.tipo === 'Constancia de reproceso F0288')
+      .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`));
+  }
+  /** Constancias de los reprocesos de un equipo, para el historial técnico. */
+  constanciasDeEquipo(inventario: string): DocumentoGenerado[] {
+    return this.constanciasReproceso().filter((d) => d.inventario === inventario);
+  }
+
+  /**
+   * Genera y guarda la constancia del reproceso **al firmarlo**. Antes solo existía mientras el
+   * técnico tenía la pantalla abierta: se veía en el momento de la firma y después no había dónde
+   * consultarla. Un documento firmado que no se puede volver a abrir no sirve como respaldo.
+   *
+   * Se guarda una sola vez por reproceso: consultarla o descargarla de nuevo abre la que ya existe,
+   * nunca genera otra ni cambia su huella de integridad.
+   */
+  registrarConstanciaReproceso(idReproceso: string, usuario: string): DocumentoGenerado | undefined {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r?.firma) return undefined;
+    const existente = this.constanciaDeReproceso(r.id);
+    if (existente) return existente;
+    const doc: DocumentoGenerado = {
+      tipo: 'Constancia de reproceso F0288',
+      codigo: this.siguienteCodigoPorAnio(`CONST-REP-${this.anioActual()}-`,
+        this.constanciasReproceso().map((d) => d.codigo ?? '')),
+      expediente: r.expediente, reproceso: r.id, expedienteTecnico: r.expedienteTecnico,
+      inventario: r.inventario, tecnicoHardware: r.tecnicoAsignado || r.atendidoPor,
+      resultado: r.resultado || '', estado: 'Disponible para consulta',
+      generadoPor: usuario, fecha: this.hoy(), hora: this.hora(), hash: this.hash()
+    };
+    this.documentos.update((list) => [...list, doc]);
+    const ref = { ...this.refReproceso(r), documento: doc.codigo, accionTomada: 'Constancia de Reproceso F0288' };
+    this.registrarEvento(r.expediente, usuario, 'Constancia de reproceso generada', 'Reproceso F0288 firmado',
+      `${doc.codigo} — constancia del reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}.`,
+      false, { ...ref, estadoDocumento: 'Generado' });
+    this.registrarEvento(r.expediente, usuario, 'Constancia de reproceso firmada', 'Reproceso F0288 firmado',
+      `Firmada por ${r.firma.nombre} — ${r.firma.cargo} el ${r.firma.fecha} ${r.firma.hora}.`,
+      false, { ...ref, estadoDocumento: 'Firmado' });
+    this.registrarEvento(r.expediente, usuario, 'Documento de reproceso disponible para consulta',
+      'Reproceso F0288 firmado',
+      'La constancia queda guardada en el expediente: puede consultarse y descargarse después.',
+      true, { ...ref, estadoDocumento: 'Disponible para consulta' });
+    return doc;
+  }
+
+  /**
+   * Registra que alguien abrió la constancia. Se anota una vez por usuario y documento: la
+   * trazabilidad debe decir quién la consultó, no cuántas veces la volvió a abrir en la sesión.
+   */
+  registrarConsultaConstancia(idReproceso: string, usuario: string, descargada = false): void {
+    const r = this.reprocesoDe(idReproceso);
+    const doc = this.constanciaDeReproceso(idReproceso);
+    if (!r || !doc) return;
+    const accion = descargada ? 'Documento de reproceso descargado' : 'Documento de reproceso consultado';
+    const clave = `${accion}·${doc.codigo}·${usuario}`;
+    if (this.consultasRegistradas.has(clave)) return;
+    this.consultasRegistradas.add(clave);
+    this.registrarEvento(r.expediente, usuario, accion, 'Reproceso F0288 firmado',
+      `${doc.codigo} — constancia del reproceso ${r.id}.`, false,
+      { ...this.refReproceso(r), documento: doc.codigo, estadoDocumento: doc.estado ?? 'Disponible para consulta',
+        accionTomada: descargada ? 'Descarga de la constancia' : 'Consulta de la constancia' });
+  }
+  /** Consultas ya anotadas en esta sesión, para no repetir el mismo evento en cada clic. */
+  private readonly consultasRegistradas = new Set<string>();
 
   /**
    * Registra la corrección de Soporte de una falla que NO requiere reproceso F0288 (red, dominio,

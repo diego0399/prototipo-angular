@@ -9,6 +9,7 @@ import {
   SoftwareF0302, SoftwareHeredadoF0288
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 
 /** Fila de la vista resumen: el eje principal de la trazabilidad es el equipo. */
 interface FilaTraza {
@@ -33,7 +34,7 @@ interface FilaTraza {
  */
 @Component({
   selector: 'app-trazabilidad',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent],
   styles: `
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
@@ -461,7 +462,7 @@ interface FilaTraza {
                 <div class="table-wrap">
                   <table class="tbl">
                     <thead>
-                      <tr><th>Reproceso</th><th>Exp. técnico</th><th>Origen</th><th>Técnico de Hardware</th><th>Tiempo</th><th>Corrección y evidencias</th><th>Firma y resultado</th><th>Estado</th></tr>
+                      <tr><th>Reproceso</th><th>Exp. técnico</th><th>Origen</th><th>Técnico de Hardware</th><th>Tiempo</th><th>Corrección y evidencias</th><th>Firma y resultado</th><th>Constancia</th><th>Estado</th></tr>
                     </thead>
                     <tbody>
                       @for (r of reprocesosEq(); track r.id) {
@@ -485,6 +486,13 @@ interface FilaTraza {
                               {{ r.resultado }}
                               <div class="sub-cell">{{ fr.nombre }} — {{ fr.cargo }} · {{ fr.fecha }} {{ fr.hora }}</div>
                             } @else { <span class="muted small">Sin firma</span> }
+                          </td>
+                          <td>
+                            @if (data.constanciaDeReproceso(r.id); as d) {
+                              <div class="mono">{{ d.codigo }}</div>
+                              <div class="sub-cell">{{ d.estado }}</div>
+                              <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(r.id)">Ver documento</button>
+                            } @else { <span class="muted small">Pendiente de firma</span> }
                           </td>
                           <td><ui-badge [estado]="r.estado" /></td>
                         </tr>
@@ -777,6 +785,9 @@ interface FilaTraza {
           }
         </ui-modal>
       }
+
+      <!-- Constancia de reproceso: se consulta desde el historial técnico del equipo -->
+      <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
     </div>
   `
 })
@@ -788,6 +799,8 @@ export class TrazabilidadComponent {
   readonly inventario = input<string>();
 
   protected seleccion = signal('');
+  /** Reproceso cuya constancia se está consultando desde el historial técnico. */
+  protected verConstancia = signal('');
   protected q = signal('');
   protected fAnio = signal('');
   protected fTipo = signal('');

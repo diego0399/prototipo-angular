@@ -805,6 +805,13 @@ export interface Garantia {
   nota: string;
 }
 
+/**
+ * Estado del documento generado. Los F0288/F0302 nacen «Generado»; la constancia de reproceso
+ * recorre «Pendiente de firma» → «Firmado» → «Disponible para consulta», que es lo que distingue
+ * un documento que existe de uno que además puede consultarse después.
+ */
+export type EstadoDocumento = 'Pendiente de firma' | 'Firmado' | 'Generado' | 'Disponible para consulta';
+
 export interface DocumentoGenerado {
   tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final' | 'Constancia de reproceso F0288';
   expediente: string;
@@ -817,6 +824,19 @@ export interface DocumentoGenerado {
    * acumular varias constancias, una por reproceso, y este campo es lo que las distingue.
    */
   reproceso?: string;
+  /** Código propio del documento (`CONST-REP-2026-0001`), en las constancias de reproceso. */
+  codigo?: string;
+  /** Hora de generación, para ordenar y para la trazabilidad de consulta. */
+  hora?: string;
+  estado?: EstadoDocumento;
+  /** Expediente técnico original al que pertenece la constancia. */
+  expedienteTecnico?: string;
+  /** Número de inventario del equipo, para poder filtrar los documentos por equipo. */
+  inventario?: string;
+  /** Técnico de Hardware que firmó la constancia del reproceso. */
+  tecnicoHardware?: string;
+  /** Resultado del reproceso que la constancia documenta. */
+  resultado?: string;
 }
 
 /** Resultado de un intento de aceptación del usuario final. */
@@ -1209,4 +1229,8 @@ export interface EventoTrazabilidad {
   resultadoReproceso?: string;
   /** «Sí»/«No»: si la firma del Técnico de Hardware ya estaba registrada al momento del evento. */
   firmaRegistrada?: string;
+  /** Documento consultado, generado o descargado (código de la constancia). */
+  documento?: string;
+  /** Estado del documento al momento del evento. */
+  estadoDocumento?: string;
 }

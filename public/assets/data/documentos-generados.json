@@ -96,6 +96,13 @@
     "reproceso": "EXP-PT-2026-0086-R1",
     "generadoPor": "Balmore Mejía — Técnico de Hardware",
     "fecha": "2026-07-01",
-    "hash": "a1f4…9c07"
+    "hash": "a1f4…9c07",
+    "codigo": "CONST-REP-2026-0001",
+    "hora": "11:46",
+    "estado": "Disponible para consulta",
+    "expedienteTecnico": "EXP-PT-2026-0086",
+    "inventario": "2201-0954-2023",
+    "tecnicoHardware": "Balmore Mejía — Técnico de Hardware",
+    "resultado": "Corregido"
   }
 ]

@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { Equipo, ExpedienteTecnico, UsuarioSistema } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.component';
+import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 
 /**
  * Expediente técnico: pertenece al EQUIPO y a su preparación técnica. No tiene relación
@@ -15,7 +16,7 @@ import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.componen
  */
 @Component({
   selector: 'app-expediente-tecnico',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, TecnicoBuscadorComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, TecnicoBuscadorComponent, ConstanciaReprocesoComponent],
   styles: `
     .tipo-tag { font-size: 12px; font-weight: 700; color: var(--navy-800); background: var(--blue-050); border: 1px solid var(--blue-100); border-radius: 8px; padding: 6px 12px; display: inline-block; }
     .sin-exp {
@@ -239,6 +240,12 @@ import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.componen
                   <ui-badge [estado]="estadoF0288(x)" />
                   @for (r of reprocesosDe(x); track r.id) {
                     <div class="sub-cell">Reproceso #{{ r.numero }}: {{ r.estado }} <span class="mono">{{ r.id }}</span></div>
+                    @if (data.constanciaDeReproceso(r.id); as d) {
+                      <div class="sub-cell">
+                        <span class="mono">{{ d.codigo }}</span> · {{ d.estado }}
+                        <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(r.id)">Ver documento</button>
+                      </div>
+                    }
                   }
                 </td>
                 <td><ui-badge [estado]="x.estado" /></td>
@@ -309,6 +316,9 @@ import { TecnicoBuscadorComponent } from '../../shared/tecnico-buscador.componen
           </div>
         </ui-modal>
       }
+
+      <!-- Constancia del reproceso, dentro del expediente técnico original -->
+      <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
     </div>
   `
 })
@@ -321,6 +331,8 @@ export class ExpedienteTecnicoComponent {
   readonly inventario = input<string>();
 
   protected invInput = signal('');
+  /** Reproceso cuya constancia se consulta desde el expediente técnico. */
+  protected verConstancia = signal('');
   protected catalogoAbierto = signal(false);
   protected qCat = signal('');
   /** Se trabaja preferentemente por Hardware; Soporte es la excepción y exige justificación. */
