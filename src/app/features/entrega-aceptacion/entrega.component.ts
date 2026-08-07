@@ -6,13 +6,16 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { RespuestaSiNo, TipoCorreccion } from '../../core/models/models';
+import { CorreccionNoConformidad, ResolucionInconformidad, RespuestaSiNo, TipoProblemaInconformidad } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
+import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
+import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
 
 @Component({
   selector: 'app-entrega',
-  imports: [RouterLink, SlicePipe, FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent],
+  imports: [RouterLink, SlicePipe, FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent,
+    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent],
   styles: `
     .conf-panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 18px; }
     .conf-panel .cp-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 8px; }
@@ -25,6 +28,10 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
     .noconf { border: 1px solid var(--danger-line, var(--line)); background: var(--danger-bg); border-radius: var(--r-md); padding: 14px 16px; }
     .hist { display: grid; gap: 8px; }
     .hist-item { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); padding: 10px 14px; }
+    .chk { display: grid; gap: 6px; margin-top: 6px; }
+    .chk-fila { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 13px; border-bottom: 1px dashed var(--line); padding-bottom: 6px; }
+    .pasos { list-style: none; padding: 0; display: grid; gap: 4px; font-size: 12.5px; color: var(--tx-3); }
+    .pasos li.hecho { color: var(--ok); }
   `,
   template: `
     <div class="page">
@@ -136,90 +143,135 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   </div>
 
                   <div class="noconf mt-2">
-                    <div class="cp-title">Atender no conformidad</div>
+                    <div class="cp-title">Atender inconformidad</div>
                     <dl class="dl">
                       <dt>Equipo</dt><dd>{{ e.equipo }}</dd>
                       <dt>N.º de inventario</dt><dd>{{ e.inventario }}</dd>
                       <dt>Expediente único</dt><dd class="mono">{{ unicoCod() }}</dd>
+                      <dt>Expediente técnico original</dt><dd class="mono">{{ expTecnico() || '—' }}</dd>
+                      <dt>F0302 relacionado</dt><dd>{{ f0302Relacionado() }}</dd>
                       <dt>Usuario final</dt><dd>{{ e.usuarioFinal }}</dd>
-                      <dt>Observación del usuario final</dt><dd>{{ ultimoIntento()?.observacion }}</dd>
-                      <dt>Fecha de la no conformidad</dt><dd>{{ ultimoIntento()?.fecha }} @if (ultimoIntento()?.hora) { · {{ ultimoIntento()?.hora }} }</dd>
+                      <dt>Observación del Usuario Final</dt><dd>{{ ultimoIntento()?.observacion }}</dd>
+                      <dt>Fecha de la inconformidad</dt><dd>{{ ultimoIntento()?.fecha }} @if (ultimoIntento()?.hora) { · {{ ultimoIntento()?.hora }} }</dd>
+                      <dt>Intento de conformidad</dt><dd>#{{ ultimoIntento()?.numero }}</dd>
                       <dt>Técnico que configuró</dt><dd>{{ e.tecnicoConfiguro }}</dd>
-                      <dt>Estado actual</dt><dd><ui-badge estado="Pendiente de corrección" /></dd>
+                      <dt>Estado actual</dt><dd><ui-badge [estado]="estadoIncidencia()" /></dd>
                       <dt>Acción a realizar</dt><dd>{{ accionSugerida() }}</dd>
                     </dl>
 
+                    <div class="alert mt-2">
+                      <span class="alert-ico">i</span>
+                      <span>Mientras la inconformidad esté abierta <b>no se cierra la entrega, no se habilita la garantía y no se permite descargo</b>. La inconformidad se resuelve igual que una falla de Configuración F0302.</span>
+                    </div>
+
                     @if (!puedeAtender()) {
-                      <p class="small muted mt-2">La corrección de la no conformidad debe registrarla un Técnico de Soporte.</p>
+                      <p class="small muted mt-2">La inconformidad debe atenderla un Técnico de Soporte o un Encargado.</p>
                     } @else {
                       @if (!correccionActiva() && !correccionLista()) {
-                        <!-- Paso 1: tipo de corrección + evaluación de nuevo Expediente técnico (spec §1) -->
+                        <!-- Paso 1: clasificación del problema y resolución (spec §5 y §6) -->
                         <div class="field mt-2">
-                          <label>Tipo de corrección <span class="req">*</span></label>
-                          <select class="control" [ngModel]="tipoCorreccion()" (ngModelChange)="tipoCorreccion.set($event)">
-                            <option value="Corrección de configuración">Corrección de configuración</option>
-                            <option value="Revisión técnica / Hardware">Revisión técnica / Hardware</option>
-                            <option value="Accesorios">Accesorios</option>
-                            <option value="Otro">Otro</option>
+                          <label>Tipo de problema <span class="req">*</span></label>
+                          <select class="control" [ngModel]="tipoProblema()" (ngModelChange)="cambiarTipo($event)">
+                            <option value="">Seleccione…</option>
+                            @for (t of tiposProblema; track t) { <option [value]="t">{{ t }}</option> }
                           </select>
+                          @if (tipoProblema()) { <span class="hint">{{ matriz().nota }}</span> }
                         </div>
-                        <div class="field mt-2">
-                          <label>¿La corrección requiere crear un nuevo Expediente técnico? <span class="req">*</span></label>
-                          <div class="opt-row">
-                            <label class="opt" [class.on]="requiereNuevoET() === 'Sí'"><input type="radio" name="reqet" [checked]="requiereNuevoET() === 'Sí'" (change)="requiereNuevoET.set('Sí')" /> Sí</label>
-                            <label class="opt" [class.on]="requiereNuevoET() === 'No'"><input type="radio" name="reqet" [checked]="requiereNuevoET() === 'No'" (change)="requiereNuevoET.set('No')" /> No</label>
+                        @if (matriz().pregunta) {
+                          <div class="field mt-2">
+                            <label>{{ matriz().pregunta }} <span class="req">*</span></label>
+                            <div class="opt-row">
+                              <label class="opt" [class.on]="respuestaDepende() === 'Sí'"><input type="radio" name="dep" [checked]="respuestaDepende() === 'Sí'" (change)="setDepende('Sí')" /> Sí</label>
+                              <label class="opt" [class.on]="respuestaDepende() === 'No'"><input type="radio" name="dep" [checked]="respuestaDepende() === 'No'" (change)="setDepende('No')" /> No</label>
+                            </div>
+                            <span class="hint">De esta respuesta depende si lo corrige Soporte o si el equipo vuelve a Hardware.</span>
                           </div>
-                          @if (requiereNuevoET() === 'Sí') {
-                            <span class="hint">Caso B (falla física / revisión de Hardware / accesorios): el equipo vuelve a Hardware <b>sin descargo</b>. Podrá crear un nuevo Expediente técnico y una nueva Preparación F0288; el reenvío se habilita al completar la revisión.</span>
-                          } @else if (requiereNuevoET() === 'No') {
-                            <span class="hint">Caso A (configuración / software / usuario / dominio): no se crea un nuevo Expediente técnico. Al finalizar la corrección se habilita el reenvío.</span>
-                          } @else {
-                            <span class="hint">No toda inconformidad genera un nuevo Expediente técnico: primero evalúe el tipo de falla.</span>
-                          }
-                        </div>
-                        @if (requiereNuevoET() === 'Sí') {
-                          <div class="field mt-2"><label>Motivo técnico <span class="req">*</span></label><input class="control" [ngModel]="motivoTecnico()" (ngModelChange)="motivoTecnico.set($event)" placeholder="Falla física, revisión de disco/memoria, accesorio faltante…" /></div>
-                          <div class="field mt-2"><label>Acción posterior <span class="req">*</span></label><input class="control" [ngModel]="accionPosterior()" (ngModelChange)="accionPosterior.set($event)" placeholder="Reingresar a Hardware y crear nuevo Expediente técnico…" /></div>
-                          <div class="field mt-2"><label>Responsable de revisión <span class="req">*</span></label><input class="control" [ngModel]="responsableRevision()" (ngModelChange)="responsableRevision.set($event)" placeholder="Técnico / encargado responsable de la revisión" /></div>
                         }
-                        <button class="btn btn-primary btn-sm mt-2" [disabled]="!puedeIniciar()" (click)="iniciar(e.expediente)">Iniciar corrección</button>
+                        @if (sugerencia()) {
+                          <div class="field mt-2">
+                            <label>Resolución <span class="req">*</span></label>
+                            <div class="opt-row">
+                              <label class="opt" [class.on]="resolucion() === 'Corrección F0302'"><input type="radio" name="reso" [checked]="resolucion() === 'Corrección F0302'" (change)="resolucion.set('Corrección F0302')" /> Corrección F0302</label>
+                              <label class="opt" [class.on]="resolucion() === 'Reproceso F0288'"><input type="radio" name="reso" [checked]="resolucion() === 'Reproceso F0288'" (change)="resolucion.set('Reproceso F0288')" /> Reproceso F0288</label>
+                            </div>
+                            <span class="hint">Sugerencia del sistema para «{{ tipoProblema() }}»: <b>{{ sugerencia() }}</b>.</span>
+                          </div>
+                          @if (resolucion() && resolucion() !== sugerencia()) {
+                            <div class="field mt-2">
+                              <label>Justificación de la excepción <span class="req">*</span></label>
+                              <textarea class="control" rows="2" [ngModel]="justificacion()" (ngModelChange)="justificacion.set($event)" placeholder="Por qué se resuelve distinto a lo sugerido"></textarea>
+                            </div>
+                          }
+                          @if (resolucion() === 'Reproceso F0288') {
+                            <span class="hint">Se generará un reproceso sobre el <b>mismo Expediente técnico</b> ({{ expTecnico() || '—' }}-R#). No se crea un Expediente técnico nuevo, y solo un <b>Encargado</b> puede asignarlo a un Técnico de Hardware.</span>
+                          }
+                        }
+                        <button class="btn btn-primary btn-sm mt-2" [disabled]="!puedeAtenderAhora()" (click)="atender(e.expediente)">Atender inconformidad</button>
                       }
 
                       @if (correccionActiva(); as cor) {
                         <div class="alert warn mt-2">
                           <span class="alert-ico">!</span>
-                          <span>Corrección <b>{{ cor.tipo }}</b> iniciada el {{ cor.fechaInicio }} · {{ cor.horaInicio }} por {{ cor.tecnico }}.@if (cor.requiereNuevoExpediente) {  Requiere nuevo Expediente técnico — el equipo volvió a Hardware para revisión (sin descargo).}</span>
+                          <span><b class="mono">{{ cor.id }}</b> — {{ cor.tipoProblema }} · resolución <b>{{ cor.resolucion }}</b>, iniciada el {{ cor.fechaInicio }} · {{ cor.horaInicio }} por {{ cor.tecnico }}.@if (cor.justificacionResolucion) {  Excepción justificada: {{ cor.justificacionResolucion }}}</span>
                         </div>
 
-                        @if (cor.requiereNuevoExpediente) {
-                          <!-- Caso B: revisión técnica con nuevo Expediente técnico (spec §3, §4) -->
+                        @if (cor.resolucion === 'Reproceso F0288') {
+                          <!-- La inconformidad la cierra Hardware: aquí solo se ve en qué va (spec §8, §10) -->
                           <dl class="dl mt-1">
-                            <dt>Motivo técnico</dt><dd>{{ cor.motivoTecnico }}</dd>
-                            <dt>Acción posterior</dt><dd>{{ cor.accionPosterior }}</dd>
-                            <dt>Responsable de revisión</dt><dd>{{ cor.responsableRevision }}</dd>
-                            <dt>Nuevo Expediente técnico</dt>
-                            <dd>@if (cor.expedienteTecnicoNuevo) { <span class="mono">{{ cor.expedienteTecnicoNuevo }}</span> — creado por inconformidad } @else { <span class="muted">Pendiente de crear</span> }</dd>
-                          </dl>
-                          <div class="row mt-2">
-                            @if (!cor.expedienteTecnicoNuevo) {
-                              <a class="btn btn-primary btn-sm" routerLink="/expediente-tecnico" [queryParams]="{ inventario: e.inventario }">Crear nuevo Expediente técnico</a>
+                            <dt>Reproceso F0288</dt><dd class="mono">{{ cor.reprocesoId || 'Pendiente de generar' }}</dd>
+                            <dt>Expediente técnico</dt><dd class="mono">{{ expTecnico() || '—' }} <span class="muted">— el mismo; no se crea uno nuevo</span></dd>
+                            @if (reprocesoActivo(); as r) {
+                              <dt>Estado del reproceso</dt><dd><ui-badge [estado]="r.estado" /></dd>
+                              <dt>Técnico de Hardware</dt><dd>{{ r.tecnicoAsignado || 'Pendiente de asignación por un Encargado' }}</dd>
+                              @if (r.resultado) { <dt>Resultado</dt><dd>{{ r.resultado }}</dd> }
                             }
-                            <a class="btn btn-outline btn-sm" routerLink="/preparacion-tecnica">Continuar a Preparación F0288</a>
+                          </dl>
+                          <ul class="pasos mt-1">
+                            @for (p of pasosReproceso(); track p.nombre) {
+                              <li [class.hecho]="p.hecho">{{ p.hecho ? '✓' : '○' }} {{ p.nombre }}</li>
+                            }
+                          </ul>
+                          <div class="row mt-2">
+                            <a class="btn btn-outline btn-sm" routerLink="/reprocesos-f0288">Ver reproceso F0288</a>
                             <a class="btn btn-outline btn-sm" routerLink="/trazabilidad" [queryParams]="{ inventario: e.inventario }">Ver historial técnico</a>
-                            <a class="btn btn-outline btn-sm" routerLink="/trazabilidad">Ver trazabilidad</a>
+                            @if (reprocesoActivo()?.firma) {
+                              <button class="btn btn-gold btn-sm" (click)="verConstanciaReproceso.set(cor.reprocesoId ?? '')">Ver constancia del reproceso</button>
+                            }
                           </div>
-                          @if (!revisionTecnicaLista()) {
-                            <div class="alert mt-2">
-                              <span class="alert-ico">i</span>
-                              <span>Complete la revisión técnica: cree el nuevo Expediente técnico y finalice la Preparación F0288. El registro de la corrección y el reenvío se habilitan cuando el equipo quede <b>Preparado</b>.</span>
-                            </div>
-                          }
-                        }
+                          <p class="small muted mt-1">El reproceso lo asigna un Encargado y lo firma el Técnico de Hardware. El formulario se reenvía cuando quede <b>finalizado y firmado</b>.</p>
+                        } @else if (cor.estado === 'Iniciada') {
+                          <!-- Checklist dinámico según el tipo de problema (spec §11) -->
+                          <div class="cp-title mt-2">Checklist de atención · {{ cor.tipoProblema }}</div>
+                          <div class="chk">
+                            @for (i of cor.checklist; track i.nombre) {
+                              <div class="chk-fila">
+                                <span>{{ i.nombre }} @if (i.implicaEvidencia) { <span class="hint">· exige evidencia si se marca</span> }</span>
+                                <span class="row">
+                                  <button class="btn btn-sm" [class.btn-primary]="i.estado === 'Realizado'" [class.btn-outline]="i.estado !== 'Realizado'" (click)="marcar(cor.id, i.nombre, 'Realizado')">Realizado</button>
+                                  <button class="btn btn-sm" [class.btn-primary]="i.estado === 'No aplica'" [class.btn-outline]="i.estado !== 'No aplica'" (click)="marcar(cor.id, i.nombre, 'No aplica')">No aplica</button>
+                                </span>
+                              </div>
+                            }
+                          </div>
 
-                        @if (!cor.requiereNuevoExpediente || revisionTecnicaLista()) {
+                          <div class="field mt-2">
+                            <label>Evidencia @if (exigeEvidencia(cor)) { <span class="req">*</span> } @else { <span class="hint">(opcional)</span> }</label>
+                            <div class="row">
+                              <input class="control" [ngModel]="archivoEvidencia()" (ngModelChange)="archivoEvidencia.set($event)" placeholder="captura-correccion.png" />
+                              <button class="btn btn-outline btn-sm" (click)="adjuntar(cor.id)">Adjuntar</button>
+                            </div>
+                            @if (cor.evidencias.length) {
+                              <ul class="small mt-1">
+                                @for (ev of cor.evidencias; track ev.archivo) { <li>{{ ev.archivo }} · {{ ev.tipo }} · {{ ev.fecha }} {{ ev.hora }}</li> }
+                              </ul>
+                            } @else if (exigeEvidencia(cor)) {
+                              <span class="hint" style="color: var(--danger);">La corrección implicó una intervención: adjunte la evidencia antes de finalizarla.</span>
+                            }
+                          </div>
+
                           <div class="field mt-2">
                             <label>Descripción de la corrección <span class="req">*</span></label>
-                            <textarea class="control" rows="2" [ngModel]="descCorreccion()" (ngModelChange)="descCorreccion.set($event)" placeholder="Qué se corrigió (configuración, software, revisión, accesorio…)"></textarea>
+                            <textarea class="control" rows="2" [ngModel]="descCorreccion()" (ngModelChange)="descCorreccion.set($event)" placeholder="Qué se corrigió (configuración, software, acceso, dominio, IP, DLP…)"></textarea>
                           </div>
                           <div class="field mt-2">
                             <label>¿Hubo complejidad? <span class="req">*</span></label>
@@ -233,16 +285,51 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                           } @else {
                             <div class="field mt-2"><label>Observación técnica <span class="hint">(opcional)</span></label><input class="control" [ngModel]="obsTecnica()" (ngModelChange)="obsTecnica.set($event)" /></div>
                           }
-                          <button class="btn btn-primary btn-sm mt-2" (click)="finalizar(cor.id)">Finalizar corrección</button>
+                          <div class="row mt-2">
+                            <button class="btn btn-primary btn-sm" (click)="finalizar(cor.id)">Finalizar corrección</button>
+                            <button class="btn btn-ghost btn-sm" (click)="escalarAbierto.set(!escalarAbierto())">La corrección requiere Hardware</button>
+                          </div>
+                          @if (escalarAbierto()) {
+                            <!-- §15: el problema resultó ser del equipo; se deriva sin empezar de nuevo -->
+                            <div class="field mt-2">
+                              <label>Motivo para derivar a reproceso F0288 <span class="req">*</span></label>
+                              <textarea class="control" rows="2" [ngModel]="motivoEscalar()" (ngModelChange)="motivoEscalar.set($event)" placeholder="Qué se encontró que requiere intervención de Hardware"></textarea>
+                              <button class="btn btn-outline btn-sm mt-1" (click)="escalar(cor.id)">Derivar a reproceso F0288</button>
+                              <span class="hint">Se genera un reproceso sobre el mismo Expediente técnico; lo asigna un Encargado.</span>
+                            </div>
+                          }
+                        } @else if (cor.estado === 'Finalizada') {
+                          <!-- §13: sin firma no se cierra -->
+                          <div class="respuesta mt-2">
+                            <b>Corrección finalizada.</b>
+                            <div class="small mt-1">{{ cor.descripcion }} · tiempo trabajado: {{ tiempoCorreccion(cor) }} · complejidad: {{ cor.huboComplejidad === 'Sí' ? 'Sí' : 'No' }}</div>
+                          </div>
+                          <div class="field mt-2">
+                            <label>Firma del Técnico de Soporte <span class="req">*</span></label>
+                            <input class="control" [ngModel]="firmaSoporte()" (ngModelChange)="firmaSoporte.set($event)" [placeholder]="usuarioActual()" />
+                            <span class="hint">Debe registrar la firma del Técnico de Soporte para finalizar la corrección.</span>
+                          </div>
+                          <button class="btn btn-primary btn-sm mt-1" (click)="firmar(cor.id)">Firmar corrección</button>
                         }
                       }
 
                       @if (correccionLista(); as cor) {
                         <div class="respuesta mt-2">
-                          <b>Corrección {{ cor.tipo }} finalizada.</b>
-                          <div class="small mt-1">{{ cor.descripcion }} · complejidad: {{ cor.huboComplejidad === 'Sí' ? 'Sí' : 'No' }}@if (cor.requiereNuevoExpediente && cor.expedienteTecnicoNuevo) {  · nuevo Expediente técnico {{ cor.expedienteTecnicoNuevo }}}</div>
+                          <b>Inconformidad resuelta — {{ cor.resultado }}.</b>
+                          <div class="small mt-1">
+                            {{ cor.id }} · {{ cor.tipoProblema }} · {{ cor.resolucion }}@if (cor.reprocesoId) {  · reproceso {{ cor.reprocesoId }}}
+                            @if (cor.descripcion) { <br />{{ cor.descripcion }} }
+                          </div>
                         </div>
-                        <button class="btn btn-primary btn-sm mt-2" (click)="reenviarAceptacion(e.expediente)">Reenviar formulario de aceptación</button>
+                        <div class="row mt-2">
+                          <button class="btn btn-primary btn-sm" (click)="reenviarAceptacion(e.expediente)">Reenviar formulario de conformidad</button>
+                          @if (cor.firma) {
+                            <button class="btn btn-gold btn-sm" (click)="verConstancia.set(cor.id)">Ver constancia de corrección</button>
+                          }
+                          @if (cor.reprocesoId) {
+                            <button class="btn btn-gold btn-sm" (click)="verConstanciaReproceso.set(cor.reprocesoId)">Ver constancia del reproceso</button>
+                          }
+                        </div>
                       }
                     }
                   </div>
@@ -271,18 +358,40 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 </div>
 
                 @if (verHistorial()) {
+                  <!-- §17: el historial muestra la inconformidad y cómo se resolvió, no solo el resultado -->
                   <div class="hist mt-2">
                     @for (i of intentos(); track i.id) {
                       <div class="hist-item">
                         <div class="row-between">
-                          <b>Intento de aceptación #{{ i.numero }}</b>
+                          <b>Formulario de conformidad intento #{{ i.numero }}</b>
                           <ui-badge [estado]="i.resultado" />
                         </div>
                         <div class="small muted">{{ i.fecha || i.fechaEnvio }} @if (i.hora) { · {{ i.hora }} }</div>
                         @if (i.observacion) { <div class="small">Observación: {{ i.observacion }}</div> }
                         @if (i.firma) { <div class="small">Firma: {{ i.firma }}</div> }
+                        @if (correccionDeIntento(i.numero); as cor) {
+                          <div class="small">Incidencia: {{ cor.tipoProblema }} — resuelta como {{ cor.resolucion }}</div>
+                          @if (cor.resolucion === 'Corrección F0302') {
+                            <div class="small">
+                              Corrección F0302: <span class="mono">{{ cor.id }}</span> — {{ estadoTexto(cor) }}
+                              @if (cor.firma) {
+                                <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(cor.id)">Ver constancia</button>
+                              }
+                            </div>
+                          } @else {
+                            <div class="small">
+                              Reproceso: <span class="mono">{{ cor.reprocesoId }}</span> — {{ estadoTexto(cor) }}
+                              @if (reprocesoDe(cor.reprocesoId)?.firma) {
+                                <button class="btn btn-ghost btn-sm" (click)="verConstanciaReproceso.set(cor.reprocesoId ?? '')">Ver constancia</button>
+                              }
+                            </div>
+                          }
+                        }
                         @if (i.correccionRealizada) { <div class="small">Corrección previa: {{ i.correccionRealizada }}</div> }
                       </div>
+                    }
+                    @if (estadoAcept() === 'Aceptado' && data.garantiaDe(e.expediente)) {
+                      <div class="hist-item"><b>Garantía habilitada</b> <span class="small muted">tras la aceptación del usuario final</span></div>
                     }
                   </div>
                 }
@@ -329,6 +438,9 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
           (seleccionar)="elegir($event)"
           (cerrar)="buscarAbierto.set(false)" />
       }
+
+      <ui-constancia-correccion [idCorreccion]="verConstancia()" (cerrado)="verConstancia.set('')" />
+      <ui-constancia-reproceso [idReproceso]="verConstanciaReproceso()" (cerrado)="verConstanciaReproceso.set('')" />
     </div>
   `
 })
@@ -392,51 +504,135 @@ export class EntregaComponent {
     const e = this.entrega();
     return e ? this.data.correccionListaParaReenvio(e.expediente) : undefined;
   });
-  /** Caso B: la revisión técnica está completa (nuevo Expediente técnico Preparado) y se puede registrar la corrección. */
-  protected readonly revisionTecnicaLista = computed(() => {
+  /** Reproceso F0288 de la inconformidad en curso, cuando la resolución fue de Hardware. */
+  protected readonly reprocesoActivo = computed(() => {
     const cor = this.correccionActiva();
-    return !!cor && cor.requiereNuevoExpediente && this.data.revisionTecnicaCompleta(cor);
+    return cor ? this.data.reprocesoDeCorreccion(cor) : undefined;
+  });
+  protected readonly pasosReproceso = computed(() => {
+    const cor = this.correccionActiva();
+    return cor ? this.data.pasosReprocesoInconformidad(cor) : [];
   });
   protected readonly unicoCod = computed(() => {
     const e = this.entrega();
     return e ? (this.data.expedienteUnicoDe(e.expediente)?.codigoUnico ?? e.expediente) : '';
   });
+  /** Expediente técnico original del equipo: el mismo sobre el que se abre el reproceso. */
+  protected readonly expTecnico = computed(() => {
+    const e = this.entrega();
+    return e ? (this.data.expTecnicoDeEquipo(e.inventario)?.codigo ?? '') : '';
+  });
+  protected readonly estadoIncidencia = computed(() => {
+    const e = this.entrega();
+    return this.data.textoEstadoIncidenciaConformidad(e ? this.data.estadoIncidenciaConformidad(e.expediente) : '');
+  });
 
-  /** Formulario de corrección de la no conformidad. */
-  protected tipoCorreccion = signal<TipoCorreccion>('Corrección de configuración');
-  /** Evaluación de nuevo Expediente técnico: '' sin responder · 'Sí' Caso B · 'No' Caso A. */
-  protected requiereNuevoET = signal<RespuestaSiNo>('');
-  protected motivoTecnico = signal('');
-  protected accionPosterior = signal('');
-  protected responsableRevision = signal('');
+  /** Clasificación de la inconformidad (spec §5, §6). */
+  protected readonly tiposProblema: TipoProblemaInconformidad[] = [
+    'Problema de configuración', 'Problema de software', 'Problema de usuario o credenciales',
+    'Problema de dominio', 'Problema de red', 'Problema de IP reservada', 'Problema con Agente DLP',
+    'Accesorio faltante', 'Falla física del equipo', 'Falla de disco', 'Falla de memoria',
+    'Problema de sistema operativo', 'Otro'
+  ];
+  protected tipoProblema = signal<TipoProblemaInconformidad | ''>('');
+  protected respuestaDepende = signal<RespuestaSiNo>('');
+  protected resolucion = signal<ResolucionInconformidad | ''>('');
+  protected justificacion = signal('');
+  protected archivoEvidencia = signal('');
   protected descCorreccion = signal('');
   protected hubo = signal<RespuestaSiNo>('');
   protected detalle = signal('');
   protected obsTecnica = signal('');
+  protected firmaSoporte = signal('');
+  protected escalarAbierto = signal(false);
+  protected motivoEscalar = signal('');
   protected verHistorial = signal(false);
+  protected verConstancia = signal('');
+  protected verConstanciaReproceso = signal('');
 
-  /** Habilita «Iniciar corrección»: exige responder si requiere nuevo ET y, si es Sí, los tres campos técnicos. */
-  protected puedeIniciar(): boolean {
-    if (this.requiereNuevoET() === '') return false;
-    if (this.requiereNuevoET() === 'Sí') {
-      return !!(this.motivoTecnico().trim() && this.accionPosterior().trim() && this.responsableRevision().trim());
-    }
+  /** Matriz del tipo elegido: qué sugiere y con qué pregunta se decide cuando depende. */
+  protected readonly matriz = computed(() => {
+    const t = this.tipoProblema();
+    return t ? this.data.matrizInconformidad(t) : { sugerencia: '' as const, pregunta: '', nota: '' };
+  });
+  /** Sugerencia ya resuelta; vacía mientras falte responder la pregunta del «Depende». */
+  protected readonly sugerencia = computed(() => {
+    const t = this.tipoProblema();
+    if (!t) return '';
+    return this.data.sugerenciaInconformidad(t, this.detalleDepende());
+  });
+
+  /** La respuesta del «Depende» viaja en el campo que corresponde al tipo elegido. */
+  private detalleDepende(): { revisionFisicaRed?: RespuestaSiNo; reinstalacionSO?: RespuestaSiNo } {
+    return this.tipoProblema() === 'Problema de red'
+      ? { revisionFisicaRed: this.respuestaDepende() }
+      : { reinstalacionSO: this.respuestaDepende() };
+  }
+
+  /** Cambiar el tipo reinicia la respuesta y la resolución: sugerir sobre una respuesta vieja engaña. */
+  protected cambiarTipo(valor: string): void {
+    this.tipoProblema.set(valor as TipoProblemaInconformidad | '');
+    this.respuestaDepende.set('');
+    this.justificacion.set('');
+    this.resolucion.set(this.sugerencia() || '');
+  }
+  protected setDepende(valor: RespuestaSiNo): void {
+    this.respuestaDepende.set(valor);
+    // Al responder la pregunta la sugerencia queda definida; se propone, sin bloquear el cambio.
+    this.resolucion.set(this.sugerencia() || '');
+  }
+
+  protected puedeAtenderAhora(): boolean {
+    if (!this.tipoProblema() || !this.sugerencia() || !this.resolucion()) return false;
+    if (this.resolucion() !== this.sugerencia() && !this.justificacion().trim()) return false;
     return true;
   }
 
-  /** Solo el Técnico de Soporte (o Enc. de Soporte / Administrador) registra la corrección. */
+  /** Solo el Técnico de Soporte (o Enc. de Soporte / Administrador) atiende la inconformidad. */
   protected puedeAtender(): boolean {
     const c = this.auth.usuario()?.clave;
     return c === 'tec-soporte' || c === 'enc-soporte' || c === 'admin';
   }
   protected accionSugerida(): string {
     const cor = this.correccionActiva();
-    if (cor?.requiereNuevoExpediente && !this.data.revisionTecnicaCompleta(cor)) {
-      return 'Crear el nuevo Expediente técnico y completar la Preparación F0288 (revisión técnica).';
+    if (cor?.resolucion === 'Reproceso F0288') {
+      const r = this.data.reprocesoDeCorreccion(cor);
+      if (!r?.tecnicoAsignado) return 'Un Encargado debe asignar el reproceso F0288 a un Técnico de Hardware.';
+      if (!r.firma) return 'Hardware debe completar y firmar el reproceso F0288.';
+      return 'Reenviar el formulario de conformidad (nuevo intento).';
     }
-    if (this.correccionActiva()) return 'Registrar la corrección realizada y finalizarla.';
-    if (this.correccionLista()) return 'Reenviar el formulario de aceptación (nuevo intento).';
-    return 'Clasificar la corrección y evaluar si requiere un nuevo Expediente técnico.';
+    if (cor?.estado === 'Finalizada') return 'Registrar la firma del Técnico de Soporte para cerrar la corrección.';
+    if (cor) return 'Completar el checklist, registrar la corrección y finalizarla.';
+    if (this.correccionLista()) return 'Reenviar el formulario de conformidad (nuevo intento).';
+    return 'Clasificar el problema y definir si se corrige en F0302 o requiere reproceso F0288.';
+  }
+
+  /** F0302 del proceso, para el panel de atención. */
+  protected f0302Relacionado(): string {
+    const e = this.entrega();
+    if (!e) return '—';
+    return e.f0302Generado ? `Generado · ${e.f0302Fecha}` : 'Pendiente';
+  }
+  protected exigeEvidencia(cor: CorreccionNoConformidad): boolean {
+    return this.data.correccionExigeEvidencia(cor);
+  }
+  protected tiempoCorreccion(cor: CorreccionNoConformidad): string {
+    return this.data.formatoDuracion(cor.cronometro?.duracionMinutos ?? null) || 'menos de 1 min';
+  }
+  protected correccionDeIntento(numero: number): CorreccionNoConformidad | undefined {
+    const e = this.entrega();
+    return e ? this.data.correccionesDe(e.expediente).find((c) => c.intentoNumero === numero) : undefined;
+  }
+  protected reprocesoDe(id?: string) {
+    return id ? this.data.reprocesoDe(id) : undefined;
+  }
+  protected estadoTexto(cor: CorreccionNoConformidad): string {
+    if (cor.estado === 'Firmada' || cor.estado === 'Cerrada por reproceso F0288') return 'Finalizada y firmada';
+    return cor.estado;
+  }
+  protected usuarioActual(): string {
+    const u = this.auth.usuario();
+    return `${u?.nombre} — ${u?.rol}`;
   }
 
   /**
@@ -463,33 +659,57 @@ export class EntregaComponent {
     this.toast.ok('Formulario reenviado', 'Se envió nuevamente el enlace al correo institucional del usuario final.');
   }
 
-  protected iniciar(id: string): void {
-    const u = this.auth.usuario();
-    const requiere = this.requiereNuevoET() === 'Sí';
-    const r = this.data.iniciarCorreccion(id, this.tipoCorreccion(), requiere, `${u?.nombre} — ${u?.rol}`, {
-      motivoTecnico: this.motivoTecnico(), accionPosterior: this.accionPosterior(), responsableRevision: this.responsableRevision()
-    });
-    if (typeof r === 'string') { this.toast.error('No se pudo iniciar la corrección', r); return; }
+  protected atender(id: string): void {
+    const r = this.data.atenderInconformidad(id, {
+      tipoProblema: this.tipoProblema(), resolucion: this.resolucion(),
+      justificacionResolucion: this.justificacion(), ...this.detalleDepende()
+    }, this.usuarioActual());
+    if (typeof r === 'string') { this.toast.error('No se pudo atender la inconformidad', r); return; }
     this.descCorreccion.set(''); this.hubo.set(''); this.detalle.set(''); this.obsTecnica.set('');
-    this.requiereNuevoET.set(''); this.motivoTecnico.set(''); this.accionPosterior.set(''); this.responsableRevision.set('');
-    this.toast.ok('Corrección iniciada', r.requiereNuevoExpediente
-      ? `${r.tipo}. Caso B: el equipo volvió a Hardware para revisión técnica; cree el nuevo Expediente técnico y complete la Preparación F0288.`
-      : `${r.tipo}. Registre la corrección realizada y finalícela para reenviar el formulario.`);
+    this.tipoProblema.set(''); this.respuestaDepende.set(''); this.resolucion.set(''); this.justificacion.set('');
+    this.toast.ok('Inconformidad en atención', r.resolucion === 'Reproceso F0288'
+      ? `${r.id} — se generó el reproceso ${r.reprocesoId} sobre el mismo Expediente técnico; un Encargado debe asignarlo.`
+      : `${r.id} — complete el checklist de «${r.tipoProblema}», registre la corrección y fírmela.`);
+  }
+
+  protected marcar(idCor: string, item: string, estado: 'Realizado' | 'No aplica'): void {
+    const err = this.data.marcarItemCorreccion(idCor, item, estado);
+    if (err) this.toast.error('No se pudo marcar el ítem', err);
+  }
+
+  protected adjuntar(idCor: string): void {
+    const err = this.data.agregarEvidenciaCorreccion(idCor, this.archivoEvidencia(), 'Evidencia de corrección', this.usuarioActual());
+    if (err) { this.toast.error('No se pudo adjuntar', err); return; }
+    this.archivoEvidencia.set('');
+    this.toast.ok('Evidencia adjuntada', 'Queda asociada a la corrección y al expediente.');
+  }
+
+  protected escalar(idCor: string): void {
+    const err = this.data.escalarAReprocesoF0288(idCor, this.usuarioActual(), this.motivoEscalar());
+    if (err) { this.toast.error('No se pudo derivar a reproceso', err); return; }
+    this.escalarAbierto.set(false); this.motivoEscalar.set('');
+    this.toast.ok('Derivada a reproceso F0288', 'Se generó el reproceso sobre el mismo Expediente técnico; un Encargado debe asignarlo.');
   }
 
   protected finalizar(idCor: string): void {
-    const err = this.data.finalizarCorreccion(idCor, {
+    const err = this.data.finalizarCorreccionF0302(idCor, {
       descripcion: this.descCorreccion(), huboComplejidad: this.hubo(),
       detalleComplejidad: this.detalle(), observacionTecnica: this.obsTecnica()
-    });
+    }, this.usuarioActual());
     if (err) { this.toast.error('Revise la corrección', err); return; }
-    this.toast.ok('Corrección finalizada', 'Ya puede reenviar el formulario de aceptación al usuario final.');
+    this.toast.ok('Corrección finalizada', 'Registre la firma del Técnico de Soporte para cerrarla.');
+  }
+
+  protected firmar(idCor: string): void {
+    const err = this.data.firmarCorreccionF0302(idCor, this.usuarioActual(), this.firmaSoporte());
+    if (err) { this.toast.error('No se pudo firmar', err); return; }
+    this.firmaSoporte.set('');
+    this.toast.ok('Corrección firmada', 'Se generó la constancia; ya puede reenviar el formulario de conformidad.');
   }
 
   protected reenviarAceptacion(id: string): void {
-    const u = this.auth.usuario();
-    const r = this.data.reenviarFormularioAceptacion(id, `${u?.nombre} — ${u?.rol}`);
+    const r = this.data.reenviarFormularioAceptacion(id, this.usuarioActual());
     if (typeof r === 'string') { this.toast.error('No se pudo reenviar', r); return; }
-    this.toast.ok('Formulario reenviado', 'Se creó un nuevo intento de aceptación y se envió el enlace al usuario final.');
+    this.toast.ok('Formulario reenviado', 'Se creó un nuevo intento de conformidad y se envió el enlace al usuario final.');
   }
 }

@@ -8,6 +8,7 @@ import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { AccesorioVerificado, DocumentoGenerado, EstadoDocumento, ExpedienteTecnico, FirmaProceso } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
+import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import {
   BuscarExpedienteTecnicoModalComponent, BuscarExpedienteUnicoModalComponent,
   FilaExpedienteTecnico, FilaExpedienteUnico, filaExpedienteTecnico, filaExpedienteUnico
@@ -31,7 +32,8 @@ interface FilaDoc {
   selector: 'app-documentos',
   imports: [
     FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent,
-    BuscarExpedienteUnicoModalComponent, BuscarExpedienteTecnicoModalComponent, ConstanciaReprocesoComponent
+    BuscarExpedienteUnicoModalComponent, BuscarExpedienteTecnicoModalComponent, ConstanciaReprocesoComponent,
+    ConstanciaCorreccionComponent
   ],
   styles: `
     .cat-busq { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
@@ -245,6 +247,44 @@ interface FilaDoc {
                       <td><ui-badge [estado]="d.estado ?? 'Generado'" /></td>
                       <td style="text-align:right;">
                         <button class="btn btn-outline btn-sm" (click)="verConstancia.set(d.reproceso ?? '')">Ver documento</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Constancias de las correcciones F0302 por inconformidad del proceso -->
+          @if (constanciasCorreccionDelProceso().length) {
+            <div class="card mt-2 table-wrap">
+              <div class="card-head">
+                <div>
+                  <h2>
+                    Constancias de Corrección F0302 por Inconformidad
+                    <ui-help texto="Documento que se genera al firmar la corrección de una inconformidad del usuario final. Queda guardado en el expediente y puede consultarse después, igual que la constancia de reproceso." />
+                  </h2>
+                  <p class="sub">Una constancia por corrección firmada por el Técnico de Soporte</p>
+                </div>
+                <span class="chip">{{ constanciasCorreccionDelProceso().length }}</span>
+              </div>
+              <table class="tbl">
+                <thead>
+                  <tr><th>Documento</th><th>Código de corrección</th><th>Tipo de problema</th><th>Usuario final</th><th>Inventario</th><th>Técnico de Soporte</th><th>Fecha</th><th>Estado</th><th style="text-align:right;">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  @for (d of constanciasCorreccionDelProceso(); track d.codigo) {
+                    <tr>
+                      <td class="mono main-cell">{{ d.codigo }}<div class="sub-cell">Constancia de Corrección F0302</div></td>
+                      <td class="mono">{{ d.correccion }}</td>
+                      <td>{{ d.tipoProblema || '—' }}</td>
+                      <td>{{ d.usuarioFinal || '—' }}</td>
+                      <td class="mono">{{ d.inventario }}</td>
+                      <td>{{ (d.tecnicoSoporte || '—').split('—')[0].trim() }}</td>
+                      <td class="mono">{{ d.fecha }}<div class="sub-cell">{{ d.hora }}</div></td>
+                      <td><ui-badge [estado]="d.estado ?? 'Generado'" /></td>
+                      <td style="text-align:right;">
+                        <button class="btn btn-outline btn-sm" (click)="verConstanciaCor.set(d.correccion ?? '')">Ver documento</button>
                       </td>
                     </tr>
                   }
@@ -507,19 +547,19 @@ interface FilaDoc {
           (cerrar)="buscarTecAbierto.set(false)" />
       }
 
-      <!-- Catálogo global de constancias de reproceso: se consultan sin depender del expediente abierto -->
+      <!-- Catálogo global de constancias: se consultan sin depender del expediente abierto -->
       <div class="card mt-3 table-wrap">
         <div class="card-head">
           <div>
-            <h2>Constancias de Reproceso F0288 generadas</h2>
-            <p class="sub">Documentos firmados de todos los reprocesos, disponibles para consulta</p>
+            <h2>Constancias generadas</h2>
+            <p class="sub">Documentos firmados de reprocesos F0288 y de correcciones F0302 por inconformidad</p>
           </div>
-          <span class="chip">{{ constanciasFiltradas().length }} de {{ data.constanciasReproceso().length }}</span>
+          <span class="chip">{{ constanciasFiltradas().length }} de {{ todasLasConstancias().length }}</span>
         </div>
         <div class="card-body">
           <div class="cat-busq">
             <input type="search" class="control" [ngModel]="qConstancia()" (ngModelChange)="qConstancia.set($event)"
-              placeholder="Buscar por documento, código de reproceso, expediente técnico, inventario, técnico de Hardware o fecha…" />
+              placeholder="Buscar por documento, código de reproceso o corrección, expediente técnico, inventario, técnico, usuario final o fecha…" />
             <select class="control" [ngModel]="estadoConstancia()" (ngModelChange)="estadoConstancia.set($event)">
               <option value="">Todos los estados</option>
               @for (e of estadosDocumento; track e) { <option [value]="e">{{ e }}</option> }
@@ -527,27 +567,31 @@ interface FilaDoc {
           </div>
           <table class="tbl">
             <thead>
-              <tr><th>Documento</th><th>Código de reproceso</th><th>Tipo</th><th>Expediente técnico</th><th>Inventario</th><th>Técnico de Hardware</th><th>Fecha</th><th>Estado</th><th style="text-align:right;">Acciones</th></tr>
+              <tr><th>Documento</th><th>Proceso relacionado</th><th>Tipo</th><th>Expediente técnico</th><th>Inventario</th><th>Técnico responsable</th><th>Fecha</th><th>Estado</th><th style="text-align:right;">Acciones</th></tr>
             </thead>
             <tbody>
               @for (d of constanciasFiltradas(); track d.codigo) {
                 <tr>
                   <td class="mono main-cell">{{ d.codigo }}</td>
-                  <td class="mono">{{ d.reproceso }}</td>
-                  <td>Reproceso F0288</td>
+                  <td class="mono">{{ d.reproceso || d.correccion }}</td>
+                  <td>{{ d.reproceso ? 'Reproceso F0288' : 'Corrección F0302 por inconformidad' }}</td>
                   <td class="mono">{{ d.expedienteTecnico }}</td>
                   <td class="mono">{{ d.inventario }}</td>
-                  <td>{{ (d.tecnicoHardware || '—').split('—')[0].trim() }}</td>
+                  <td>{{ (d.tecnicoHardware || d.tecnicoSoporte || '—').split('—')[0].trim() }}</td>
                   <td class="mono">{{ d.fecha }}<div class="sub-cell">{{ d.hora }}</div></td>
                   <td><ui-badge [estado]="d.estado ?? 'Generado'" /></td>
                   <td style="text-align:right;">
-                    <button class="btn btn-outline btn-sm" (click)="verConstancia.set(d.reproceso ?? '')">Ver documento</button>
+                    @if (d.reproceso) {
+                      <button class="btn btn-outline btn-sm" (click)="verConstancia.set(d.reproceso)">Ver documento</button>
+                    } @else {
+                      <button class="btn btn-outline btn-sm" (click)="verConstanciaCor.set(d.correccion ?? '')">Ver documento</button>
+                    }
                   </td>
                 </tr>
               } @empty {
                 <tr><td colspan="9" class="muted" style="text-align:center; padding: 24px;">
-                  @if (data.constanciasReproceso().length) { Ningún documento coincide con la búsqueda. }
-                  @else { Todavía no hay constancias de reproceso. Se generan al firmar un reproceso F0288. }
+                  @if (todasLasConstancias().length) { Ningún documento coincide con la búsqueda. }
+                  @else { Todavía no hay constancias. Se generan al firmar un reproceso F0288 o una corrección F0302 por inconformidad. }
                 </td></tr>
               }
             </tbody>
@@ -556,6 +600,7 @@ interface FilaDoc {
       </div>
 
       <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
+      <ui-constancia-correccion [idCorreccion]="verConstanciaCor()" (cerrado)="verConstanciaCor.set('')" />
     </div>
   `
 })
@@ -573,6 +618,8 @@ export class DocumentosComponent {
   protected buscarAbierto = signal(false);
   /** Reproceso cuya constancia se está consultando; '' cierra el visor. */
   protected verConstancia = signal('');
+  /** Corrección F0302 por inconformidad cuya constancia se está consultando. */
+  protected verConstanciaCor = signal('');
   protected qConstancia = signal('');
   protected estadoConstancia = signal('');
   protected readonly estadosDocumento: EstadoDocumento[] =
@@ -583,20 +630,33 @@ export class DocumentosComponent {
     const x = this.expediente();
     return x ? this.data.constanciasReproceso().filter((d) => d.expediente === x.expediente) : [];
   });
+  /** Constancias de corrección F0302 por inconformidad del expediente abierto. */
+  protected readonly constanciasCorreccionDelProceso = computed(() => {
+    const x = this.expediente();
+    return x ? this.data.constanciasCorreccion().filter((d) => d.expediente === x.expediente) : [];
+  });
+
+  /** Las dos familias de constancias juntas, de la más reciente a la más antigua. */
+  protected readonly todasLasConstancias = computed(() =>
+    [...this.data.constanciasReproceso(), ...this.data.constanciasCorreccion()]
+      .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`))
+  );
 
   /**
-   * Catálogo global de constancias con los filtros del pedido: documento, código de reproceso,
-   * expediente técnico, inventario, técnico de Hardware, fecha y estado. Se busca en un solo campo
-   * porque son los mismos datos de una fila y separar seis cajas no ayudaría a encontrarlas.
+   * Catálogo global de constancias con los filtros del pedido: documento, código de reproceso o
+   * corrección, expediente técnico, inventario, técnico responsable, usuario final, fecha y estado.
+   * Se busca en un solo campo porque son los mismos datos de una fila y separar siete cajas no
+   * ayudaría a encontrarlas.
    */
   protected readonly constanciasFiltradas = computed(() => {
     const q = this.qConstancia().toLowerCase().trim();
     const estado = this.estadoConstancia();
-    return this.data.constanciasReproceso().filter((d) => {
+    return this.todasLasConstancias().filter((d) => {
       if (estado && (d.estado ?? 'Generado') !== estado) return false;
       if (!q) return true;
-      return [d.codigo, d.reproceso, d.tipo, d.expedienteTecnico, d.inventario, d.tecnicoHardware,
-        d.resultado, d.fecha, d.generadoPor, 'reproceso f0288']
+      return [d.codigo, d.reproceso, d.correccion, d.tipo, d.expedienteTecnico, d.inventario,
+        d.tecnicoHardware, d.tecnicoSoporte, d.usuarioFinal, d.tipoProblema,
+        d.resultado, d.fecha, d.generadoPor]
         .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
   });

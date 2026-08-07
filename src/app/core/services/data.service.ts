@@ -4,12 +4,12 @@ import { forkJoin } from 'rxjs';
 import {
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
-  DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaReproceso, FilaValidacionLote,
-  EstadoAsignacionEquipo, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemReproceso, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
-  ReprocesoF0288, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
+  DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaCorreccion, EvidenciaReproceso, FilaValidacionLote,
+  EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
+  ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
-  TipoComentarioCaso, TipoCorreccion, TipoExpedienteTecnico, TipoFallaF0302, UsuarioSistema, VerificacionAccesorios,
+  TipoComentarioCaso, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
 import { AuthService } from './auth.service';
@@ -220,7 +220,7 @@ export class DataService {
       this.ingresosHardware.set(d.ingresosHardware ?? []);
       this.descargos.set(d.descargos ?? []);
       this.intentos.set(d.intentos ?? []);
-      this.correcciones.set(d.correcciones ?? []);
+      this.correcciones.set(this.normalizarCorrecciones(d.correcciones ?? []));
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
@@ -332,35 +332,34 @@ export class DataService {
   correccionesDe(id: string): CorreccionNoConformidad[] {
     return this.correcciones().filter((c) => c.expediente === id).sort((a, b) => b.intentoNumero - a.intentoNumero);
   }
-  /** Corrección abierta (Iniciada) del proceso, si hay una en curso. */
+  /** Corrección abierta del proceso: en curso, esperando firma o en manos de Hardware. */
   correccionActivaDe(id: string): CorreccionNoConformidad | undefined {
-    return this.correccionesDe(id).find((c) => c.estado === 'Iniciada');
+    return this.correccionesDe(id)
+      .find((c) => c.estado === 'Iniciada' || c.estado === 'Finalizada' || c.estado === 'Derivada a reproceso F0288');
   }
   /**
-   * Corrección lista para habilitar «Reenviar formulario de aceptación».
-   *  - Caso A (no requiere nuevo Expediente técnico): basta con que la corrección esté Finalizada.
-   *  - Caso B (requiere nuevo Expediente técnico): además de finalizada, la revisión técnica debe
-   *    estar completa, es decir, el nuevo Expediente técnico ya está «Preparado» (nuevo F0288 generado).
+   * Corrección lista para habilitar «Reenviar formulario de conformidad». La regla es la misma en
+   * los dos caminos: nadie reenvía el formulario hasta que alguien firmó lo que hizo.
+   *  - Corrección F0302: firmada por el Técnico de Soporte.
+   *  - Reproceso F0288: cerrado con la firma del Técnico de Hardware y resultado «Corregido».
    */
   correccionListaParaReenvio(id: string): CorreccionNoConformidad | undefined {
     if (this.estadoAceptacion(id) !== 'No conforme') return undefined;
     const ultimo = this.ultimoIntento(id);
-    const cor = this.correccionesDe(id).find((c) => c.estado === 'Finalizada' && c.intentoNumero === ultimo?.numero);
-    if (!cor) return undefined;
-    if (cor.requiereNuevoExpediente && !this.revisionTecnicaCompleta(cor)) return undefined;
-    return cor;
+    return this.correccionesDe(id).find((c) => c.intentoNumero === ultimo?.numero &&
+      (c.estado === 'Firmada' || c.estado === 'Cerrada por reproceso F0288'));
   }
-  /** Caso B: la revisión técnica está completa cuando su nuevo Expediente técnico ya quedó «Preparado». */
-  revisionTecnicaCompleta(cor: CorreccionNoConformidad): boolean {
-    if (!cor.requiereNuevoExpediente) return true;
-    const codigo = cor.expedienteTecnicoNuevo;
-    if (!codigo) return false;
-    const et = this.expedientesTecnicos().find((x) => x.codigo === codigo);
-    return et?.estado === 'Preparado';
+  /** Reproceso F0288 generado por una inconformidad, si esta corrección lo tiene. */
+  reprocesoDeCorreccion(cor: CorreccionNoConformidad): ReprocesoF0288 | undefined {
+    return cor.reprocesoId ? this.reprocesoDe(cor.reprocesoId) : undefined;
   }
-  /** Caso B en curso: hay una corrección que requiere nuevo Expediente técnico cuya revisión aún no termina. */
-  revisionTecnicaPendiente(id: string): CorreccionNoConformidad | undefined {
-    return this.correccionesDe(id).find((c) => c.requiereNuevoExpediente && !this.revisionTecnicaCompleta(c) &&
+  /** Corrección de inconformidad a la que pertenece un reproceso, si nació de una. */
+  correccionDeReproceso(idReproceso: string): CorreccionNoConformidad | undefined {
+    return this.correcciones().find((c) => c.reprocesoId === idReproceso);
+  }
+  /** Inconformidad cuyo reproceso F0288 todavía está en manos de Hardware. */
+  reprocesoPorInconformidadPendiente(id: string): CorreccionNoConformidad | undefined {
+    return this.correccionesDe(id).find((c) => c.estado === 'Derivada a reproceso F0288' &&
       c.intentoNumero === this.ultimoIntento(id)?.numero);
   }
   /** Procesos con una no conformidad vigente pendiente de atender (para el Técnico de Soporte). */
@@ -373,13 +372,6 @@ export class DataService {
   equipoPendienteRevision(inventario: string): boolean {
     const eq = this.equipoDe(inventario);
     return !!eq?.expediente && this.estadoAceptacion(eq.expediente) === 'No conforme';
-  }
-  /** true mientras hay una revisión técnica en Hardware por inconformidad abierta para el equipo. */
-  revisionHardwarePorInconformidad(inventario: string): boolean {
-    const eq = this.equipoDe(inventario);
-    if (!eq?.expediente) return false;
-    const cor = this.correccionActivaDe(eq.expediente);
-    return !!cor && cor.reingresoHardware;
   }
   /**
    * true mientras el equipo tiene un F0302 «Con falla» con su incidencia todavía abierta y aún no
@@ -626,11 +618,10 @@ export class DataService {
     if (!ultimoET) return true;
     if (ultimoET.estado !== 'Preparado' && ultimoET.estado !== 'Cerrado') return false;
     const hayReingresoPendiente = this.reingresoHardwarePendiente(inventario);
-    // Excepción: revisión técnica por inconformidad (Caso B). El equipo volvió a Hardware SIN
-    // descargo (aún no fue aceptado formalmente), por lo que la asignación sigue vigente; aun así
-    // se permite crear un nuevo Expediente técnico para la revisión mientras la corrección esté abierta.
-    if (this.revisionHardwarePorInconformidad(inventario)) return hayReingresoPendiente;
-    // Ya NO hay excepción por falla en F0302: una falla del mismo ciclo se atiende con un reproceso
+    // Ya no hay excepción por inconformidad del usuario final: una inconformidad se resuelve como
+    // una falla de F0302 —corrigiendo en configuración o con un reproceso F0288 sobre el mismo
+    // Expediente técnico—, nunca creando un expediente principal nuevo.
+    // Tampoco hay excepción por falla en F0302: una falla del mismo ciclo se atiende con un reproceso
     // F0288 dentro del expediente técnico vigente. Un expediente nuevo corresponde solo a un ciclo
     // nuevo —reingreso formal tras descargo, sustitución del equipo o autorización de jefatura—,
     // que es exactamente lo que exige la condición de abajo: reingreso pendiente y sin asignación.
@@ -1970,19 +1961,8 @@ export class DataService {
         `Expediente técnico ${nuevo.codigo} asignado a la Unidad de Hardware`, 'En preparación', '', false,
         { modulo: 'Expediente técnico', inventario: eq.inventario, expedienteTecnico: nuevo.codigo });
     }
-    // Caso B (no conformidad con revisión técnica): enlaza este Expediente técnico con la corrección
-    // abierta que lo originó y registra que fue creado por inconformidad (spec §3, §6, §7).
-    const proceso = this.equipoDe(eq.inventario)?.expediente ?? this.asignacionDeEquipo(eq.inventario)?.expediente ?? '';
-    const cor = proceso ? this.correccionActivaDe(proceso) : undefined;
-    if (cor && cor.requiereNuevoExpediente && !cor.expedienteTecnicoNuevo) {
-      this.correcciones.update((list) =>
-        list.map((c) => (c.id === cor.id ? { ...c, expedienteTecnicoNuevo: nuevo.codigo } : c)));
-      this.registrarEvento(cor.expediente, datos.creadoPor,
-        `Nuevo Expediente técnico ${nuevo.codigo} creado por inconformidad`, 'En preparación',
-        `Motivo: ${cor.tipo}. Relacionado con el intento de aceptación no conforme #${cor.intentoNumero}.`, true,
-        { modulo: 'Expediente técnico', estadoAnterior: 'Pendiente de revisión técnica', inventario: eq.inventario,
-          expedienteTecnico: nuevo.codigo, expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico });
-    }
+    // Una inconformidad ya no crea Expedientes técnicos: se atiende con una corrección F0302 o con
+    // un reproceso F0288 sobre el expediente que el equipo ya tiene.
     return nuevo;
   }
 
@@ -3621,8 +3601,44 @@ export class DataService {
       checklist: r.checklist?.length ? r.checklist : this.checklistReproceso(r.tipoFalla),
       evidencias: r.evidencias ?? [],
       resultado: r.resultado ?? '',
-      observacionResultado: r.observacionResultado ?? ''
+      observacionResultado: r.observacionResultado ?? '',
+      // Los reprocesos guardados antes de que la inconformidad usara este mecanismo vienen todos
+      // de una falla de F0302: es de donde salían.
+      origen: r.origen ?? 'Falla F0302'
     }));
+  }
+
+  /**
+   * Completa las correcciones de inconformidad guardadas por una versión anterior, cuando la
+   * atención se clasificaba como «tipo de corrección» y podía crear un Expediente técnico nuevo.
+   * El checklist queda vacío a propósito: nadie lo llenó entonces y el prototipo no inventa
+   * ítems marcados. La firma tampoco se fabrica —una corrección vieja sigue sin firmar—, así que
+   * el reenvío del formulario esperará a que alguien la registre, que es la regla nueva.
+   */
+  private normalizarCorrecciones(lista: CorreccionNoConformidad[]): CorreccionNoConformidad[] {
+    const tipoViejo: Record<string, TipoProblemaInconformidad> = {
+      'Corrección de configuración': 'Problema de configuración',
+      'Revisión técnica / Hardware': 'Falla física del equipo',
+      'Accesorios': 'Accesorio faltante',
+      'Otro': 'Otro'
+    };
+    return (lista ?? []).map((c) => {
+      const previo = c as CorreccionNoConformidad & { tipo?: string; requiereNuevoExpediente?: boolean };
+      const tipoProblema = c.tipoProblema ?? tipoViejo[previo.tipo ?? ''] ?? 'Otro';
+      const resolucion: ResolucionInconformidad = c.resolucion
+        ?? (previo.requiereNuevoExpediente ? 'Reproceso F0288' : 'Corrección F0302');
+      const estado = c.estado ?? 'Iniciada';
+      const estadoIncidencia: EstadoIncidenciaConformidad = c.estadoIncidencia
+        ?? (estado === 'Finalizada' ? 'CORRECCION_F0302_FINALIZADA'
+          : resolucion === 'Reproceso F0288' ? 'REPROCESO_F0288_REQUERIDO' : 'CORRECCION_F0302_EN_PROCESO');
+      return {
+        ...c, tipoProblema, resolucion, sugerencia: c.sugerencia ?? resolucion,
+        justificacionResolucion: c.justificacionResolucion ?? '',
+        usuarioFinal: c.usuarioFinal ?? this.ultimoIntento(c.expediente)?.usuarioFinal ?? '',
+        checklist: c.checklist ?? [], evidencias: c.evidencias ?? [],
+        resultado: c.resultado ?? '', estadoIncidencia, estado
+      };
+    });
   }
 
   /** Reprocesos F0288 de un Expediente técnico, del más reciente al más antiguo. */
@@ -4202,7 +4218,12 @@ export class DataService {
     this.registrarEvento(r.expediente, usuario, 'Firma de Técnico de Hardware registrada',
       resultado === 'Corregido' ? 'Reproceso F0288 firmado' : 'Reproceso F0288 no corregido',
       `${firma.nombre} — ${firma.cargo} (${firma.unidad}) · ${firma.fecha} ${firma.hora} · Resultado: ${resultado}`,
-      true, { ...this.refReproceso(firmado), accionTomada: 'Firma del reproceso F0288' });
+      true, { ...this.refReproceso(firmado), accionTomada: 'Firma del reproceso F0288',
+        origenReproceso: r.origen ?? 'Falla F0302' });
+    // Si el reproceso nació de una inconformidad, su firma es también la que cierra la incidencia
+    // de conformidad: quien responde por lo que se le hizo al equipo es quien lo firmó.
+    const inconformidad = this.correccionDeReproceso(idReproceso);
+    if (inconformidad) this.cerrarCorreccionPorReproceso(inconformidad, firmado, usuario);
 
     // El resultado decide el desenlace: solo «Corregido» devuelve el equipo a configuración.
     if (resultado === 'Corregido') {
@@ -4241,6 +4262,21 @@ export class DataService {
     if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
     if (r.resultado !== 'Corregido') {
       return `El reproceso cerró como «${r.resultado}»: el equipo no puede volver a Configuración F0302 hasta que el Encargado lo resuelva.`;
+    }
+    // Un reproceso por inconformidad no reabre el ciclo de configuración: el equipo ya se entregó.
+    // Soporte valida la configuración corregida y lo que sigue es reenviar el formulario.
+    if (r.origen === 'Inconformidad del usuario final') {
+      this.setEstadoSolicitud(r.expediente, 'Pendiente de reenvío del formulario de conformidad',
+        'Validar la configuración corregida y reenviar el formulario de conformidad');
+      this.expedientesUnicos.update((list) => list.map((x) => (x.expediente === r.expediente
+        ? { ...x, estado: 'Pendiente de corrección',
+            resumenEstado: `Reproceso F0288 ${r.id} firmado · pendiente de reenviar el formulario` } : x)));
+      this.registrarEvento(r.expediente, usuario, 'Configuración F0302 validada tras el reproceso',
+        'Listo para reenviar el formulario de conformidad',
+        `Tras el reproceso ${r.id} por inconformidad; el Expediente técnico ${r.expedienteTecnico} sigue siendo el mismo.`,
+        true, { ...this.refReproceso(r), origenReproceso: r.origen,
+          accionTomada: 'Validación de la configuración tras el reproceso' });
+      return null;
     }
     this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'LISTO_PARA_REINTENTO_F0302' }));
     this.setEstadoSolicitud(r.expediente, 'Pendiente de nuevo intento F0302', 'Nueva Configuración F0302 tras el reproceso F0288');
@@ -4383,6 +4419,133 @@ export class DataService {
   }
   /** Consultas ya anotadas en esta sesión, para no repetir el mismo evento en cada clic. */
   private readonly consultasRegistradas = new Set<string>();
+
+  // ---------- Constancia de Corrección F0302 por Inconformidad ----------
+  /** Constancia ya generada de una corrección por inconformidad, si existe. */
+  constanciaDeCorreccion(idCorreccion: string): DocumentoGenerado | undefined {
+    return this.documentos()
+      .find((d) => d.tipo === 'Constancia de corrección F0302 por inconformidad' && d.correccion === idCorreccion);
+  }
+  /** Todas las constancias de corrección, de la más reciente a la más antigua. */
+  constanciasCorreccion(): DocumentoGenerado[] {
+    return this.documentos()
+      .filter((d) => d.tipo === 'Constancia de corrección F0302 por inconformidad')
+      .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`));
+  }
+  /** Constancias de inconformidad de un equipo, para el historial técnico y el detalle del equipo. */
+  constanciasCorreccionDeEquipo(inventario: string): DocumentoGenerado[] {
+    return this.constanciasCorreccion().filter((d) => d.inventario === inventario);
+  }
+
+  /**
+   * Genera y guarda la constancia de la corrección **al firmarla**, con la misma regla que la del
+   * reproceso: una sola por corrección, y volver a pedirla devuelve la que ya existe en lugar de
+   * cambiar la huella de un documento firmado.
+   */
+  registrarConstanciaCorreccion(idCorreccion: string, usuario: string): DocumentoGenerado | undefined {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor?.firma) return undefined;
+    const existente = this.constanciaDeCorreccion(cor.id);
+    if (existente) return existente;
+    const doc: DocumentoGenerado = {
+      tipo: 'Constancia de corrección F0302 por inconformidad',
+      codigo: this.siguienteCodigoPorAnio(`CONST-COR-${this.anioActual()}-`,
+        this.constanciasCorreccion().map((d) => d.codigo ?? '')),
+      expediente: cor.expediente, correccion: cor.id,
+      expedienteTecnico: this.expTecnicoDeEquipo(cor.inventario)?.codigo,
+      inventario: cor.inventario, tecnicoSoporte: cor.tecnico, usuarioFinal: cor.usuarioFinal,
+      tipoProblema: cor.tipoProblema, resultado: cor.resultado || 'Corregido en F0302',
+      estado: 'Disponible para consulta',
+      generadoPor: usuario, fecha: this.hoy(), hora: this.hora(), hash: this.hash()
+    };
+    this.documentos.update((list) => [...list, doc]);
+    const ref = { ...this.refInconformidad(cor), documento: doc.codigo,
+      accionTomada: 'Constancia de Corrección F0302 por Inconformidad' };
+    this.registrarEvento(cor.expediente, usuario, 'Constancia de corrección generada', 'Corrección F0302 firmada',
+      `${doc.codigo} — constancia de la corrección ${cor.id} del intento de conformidad #${cor.intentoNumero}.`,
+      false, { ...ref, estadoDocumento: 'Generado' });
+    this.registrarEvento(cor.expediente, usuario, 'Constancia de corrección firmada', 'Corrección F0302 firmada',
+      `Firmada por ${cor.firma.nombre} — ${cor.firma.cargo} el ${cor.firma.fecha} ${cor.firma.hora}.`,
+      false, { ...ref, estadoDocumento: 'Firmado', firmaRegistrada: 'Sí' });
+    this.registrarEvento(cor.expediente, usuario, 'Documento de corrección disponible para consulta',
+      'Corrección F0302 firmada',
+      'La constancia queda guardada en el expediente: puede consultarse y descargarse después.',
+      true, { ...ref, estadoDocumento: 'Disponible para consulta', firmaRegistrada: 'Sí' });
+    return doc;
+  }
+
+  /** Consulta o descarga de la constancia de corrección; se anota una vez por usuario y documento. */
+  registrarConsultaConstanciaCorreccion(idCorreccion: string, usuario: string, descargada = false): void {
+    const cor = this.correccionDe(idCorreccion);
+    const doc = this.constanciaDeCorreccion(idCorreccion);
+    if (!cor || !doc) return;
+    const accion = descargada ? 'Documento de corrección descargado' : 'Documento de corrección consultado';
+    const clave = `${accion}·${doc.codigo}·${usuario}`;
+    if (this.consultasRegistradas.has(clave)) return;
+    this.consultasRegistradas.add(clave);
+    this.registrarEvento(cor.expediente, usuario, accion, 'Corrección F0302 firmada',
+      `${doc.codigo} — constancia de la corrección ${cor.id}.`, false,
+      { ...this.refInconformidad(cor), documento: doc.codigo,
+        estadoDocumento: doc.estado ?? 'Disponible para consulta',
+        accionTomada: descargada ? 'Descarga de la constancia' : 'Consulta de la constancia' });
+  }
+
+  /**
+   * Contenido de la Constancia de Corrección F0302 por Inconformidad: lo que quedó registrado
+   * durante la atención, sin recalcular nada.
+   */
+  constanciaCorreccionF0302(idCorreccion: string): string[] | string {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (!cor.firma) return 'La corrección aún no está firmada por el Técnico de Soporte.';
+    const doc = this.constanciaDeCorreccion(cor.id);
+    const eq = this.equipoDe(cor.inventario);
+    const unico = this.expedienteUnicoDe(cor.expediente);
+    return [
+      'CONSTANCIA DE CORRECCIÓN F0302 POR INCONFORMIDAD',
+      '='.repeat(60),
+      `Documento: ${doc?.codigo ?? '—'} · Estado: ${doc?.estado ?? 'Generado'}`,
+      `Código de corrección: ${cor.id}`,
+      `Expediente único: ${unico?.codigoUnico ?? '—'}`,
+      `Expediente técnico: ${this.expTecnicoDeEquipo(cor.inventario)?.codigo ?? '—'}`,
+      `Equipo: ${eq ? `${eq.marca} ${eq.modelo}` : '—'}`,
+      `Tipo de equipo: ${eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—'}`,
+      `Número de inventario: ${cor.inventario}`,
+      `Usuario final: ${cor.usuarioFinal}`,
+      `Intento de conformidad: #${cor.intentoNumero}`,
+      `Tipo de problema: ${cor.tipoProblema}`,
+      `Resolución: ${cor.resolucion}${cor.justificacionResolucion ? ` (excepción justificada: ${cor.justificacionResolucion})` : ''}`,
+      `Observación del Usuario Final: ${cor.observacionUsuario || '—'}`,
+      '',
+      'CHECKLIST DE ATENCIÓN',
+      '-'.repeat(60),
+      ...cor.checklist.map((i) => `  [${i.estado === 'Realizado' ? 'X' : i.estado === 'No aplica' ? '—' : ' '}] ${i.nombre}${i.nota ? ` · ${i.nota}` : ''}`),
+      '',
+      'EVIDENCIAS DE LA CORRECCIÓN',
+      '-'.repeat(60),
+      ...(cor.evidencias.length
+        ? cor.evidencias.map((e) => `  ${e.archivo} · ${e.tipo} · ${e.cargadaPor} · ${e.fecha} ${e.hora}`)
+        : ['  Sin evidencias adjuntas (la corrección no implicó intervención).']),
+      '',
+      `Corrección realizada: ${cor.descripcion || '—'}`,
+      `Técnico de Soporte: ${cor.tecnico}`,
+      `Fecha de inicio: ${cor.fechaInicio} ${cor.horaInicio}`.trim(),
+      `Fecha de finalización: ${cor.fechaFin} ${cor.horaFin}`.trim(),
+      `Tiempo trabajado: ${this.formatoDuracion(cor.cronometro?.duracionMinutos ?? null) || 'menos de 1 min'}`,
+      `Complejidad: ${cor.huboComplejidad === 'Sí' ? `Sí — ${cor.detalleComplejidad}` : 'No'}`,
+      `Observación técnica: ${cor.observacionTecnica || '—'}`,
+      `Resultado: ${cor.resultado || '—'}`,
+      '',
+      'FIRMA DEL TÉCNICO DE SOPORTE',
+      '-'.repeat(60),
+      `  ${cor.firma.nombre}`,
+      `  ${cor.firma.cargo} · ${cor.firma.unidad}`,
+      `  ${cor.firma.fecha} · ${cor.firma.hora}`,
+      `  ${cor.firma.firma}`,
+      '',
+      'Documento de demostración del prototipo SISGOST; las firmas son simuladas.'
+    ];
+  }
 
   /**
    * Registra la corrección de Soporte de una falla que NO requiere reproceso F0288 (red, dominio,
@@ -4693,7 +4856,9 @@ export class DataService {
       observacion: '',
       firma: '',
       correccionRelacionada: correccion?.id,
-      correccionRealizada: correccion ? `${correccion.tipo} — ${correccion.descripcion || 'corrección registrada'}` : undefined
+      correccionRealizada: correccion
+        ? `${correccion.tipoProblema} — ${correccion.resolucion}: ${correccion.descripcion || 'corrección registrada'}`
+        : undefined
     };
     this.intentos.update((list) => [...list, intento]);
     if (numero > 1) {
@@ -4739,7 +4904,7 @@ export class DataService {
     );
     this.registrarEvento(id, 'Sistema (formulario externo)',
       acepta ? `Usuario final aceptó la recepción del equipo (intento de aceptación #${nIntento})`
-             : `Usuario final marcó No conforme (intento de aceptación #${nIntento})`,
+             : `Formulario de conformidad marcado como No conforme (intento #${nIntento})`,
       acepta ? 'Entregado' : 'No conforme',
       'Respuesta registrada con fecha y hora y anexada al expediente único.', true,
       { modulo: 'Entrega y aceptación', estadoAnterior: 'Pendiente de aceptación', inventario: conf.inventario,
@@ -4793,6 +4958,17 @@ export class DataService {
       // El equipo entregado queda con la garantía habilitada.
       this.registrarEvento(id, 'Sistema', 'Equipo con garantía habilitada tras la aceptación del usuario final', 'Garantía habilitada',
         '', false, { modulo: 'Servicio de garantía', estadoAnterior: 'Pendiente de aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
+      // Aceptación después de una inconformidad: cierra la incidencia que quedó abierta y deja
+      // dicho en la trazabilidad que lo aceptado es el equipo ya corregido.
+      const previa = this.correccionesDe(id).find((c) => c.intentoNumero === nIntento - 1);
+      if (previa) {
+        this.actualizarCorreccion(previa.id, (c) => ({ ...c, estadoIncidencia: 'CONFORMIDAD_ACEPTADA' }));
+        this.registrarEvento(id, 'Sistema (formulario externo)', 'Formulario de conformidad aceptado', 'Entregado',
+          `Intento #${nIntento}, tras resolver la inconformidad ${previa.id} (${previa.tipoProblema}) como ${previa.resolucion}.`,
+          true, { ...this.refInconformidad(this.correccionDe(previa.id)!), intentoConformidad: nIntento,
+            accionTomada: 'Aceptación tras la corrección' });
+        this.actualizarCorreccion(previa.id, (c) => ({ ...c, estadoIncidencia: 'GARANTIA_HABILITADA' }));
+      }
     } else {
       // NO se habilita garantía: la entrega queda observada y el proceso pendiente de corrección.
       this.setEstadoSolicitud(id, 'No conforme', 'Atender la no conformidad y reenviar el formulario de aceptación');
@@ -4806,7 +4982,14 @@ export class DataService {
       // Trazabilidad granular de la no conformidad (spec §12).
       this.registrarEvento(id, 'Sistema (formulario externo)', 'Observación de inconformidad registrada', 'No conforme',
         observaciones || 'Inconformidad sin detalle', false,
-        { modulo: 'Entrega y aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
+        { modulo: 'Entrega y aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal,
+          intentoConformidad: nIntento });
+      // La incidencia queda abierta desde aquí: es lo que bloquea el cierre de la entrega y la
+      // garantía hasta que alguien la clasifique y la resuelva.
+      this.registrarEvento(id, 'Sistema', 'Incidencia de conformidad abierta', 'Pendiente de evaluación de la inconformidad',
+        'Soporte o el Encargado debe clasificar el problema y definir si se corrige en F0302 o requiere reproceso F0288.',
+        true, { modulo: 'Entrega y aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal,
+          intentoConformidad: nIntento, accionTomada: 'Apertura de la incidencia de conformidad' });
       this.registrarEvento(id, 'Sistema', 'Entrega observada', 'Observada',
         'La entrega no se cierra como aceptada mientras exista una inconformidad.', false,
         { modulo: 'Entrega y aceptación', estadoAnterior: 'Pendiente de aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
@@ -4820,132 +5003,529 @@ export class DataService {
     }
   }
 
-  // ---------- Atención de la no conformidad ----------
+  // ---------- Atención de la inconformidad ----------
   /**
-   * El Técnico de Soporte inicia la corrección de una no conformidad. No hay descargo (el equipo
-   * nunca fue aceptado) ni reinicio de contadores. Con tipo «Revisión técnica / Hardware» el
-   * equipo vuelve a Hardware para revisión (`reingresoHardware`), registrando un reingreso sin
-   * descargo. Devuelve la corrección creada, o un mensaje de validación.
+   * Matriz por tipo de problema: qué resolución sugiere el sistema y con qué pregunta se decide
+   * cuando el tipo por sí solo no alcanza. Es la misma idea de la matriz de fallas del F0302: lo
+   * que Soporte puede corregir sobre la configuración no vuelve a Hardware; lo que toca el equipo, sí.
    */
-  iniciarCorreccion(id: string, tipo: TipoCorreccion, requiereNuevoExpediente: boolean, tecnico: string,
-    extras: { motivoTecnico?: string; accionPosterior?: string; responsableRevision?: string } = {}): CorreccionNoConformidad | string {
-    const ultimo = this.ultimoIntento(id);
-    if (!ultimo || ultimo.resultado !== 'No conforme') return 'No hay una no conformidad vigente que atender en este proceso.';
-    if (this.correccionActivaDe(id)) return 'Ya existe una corrección en curso para esta no conformidad.';
-    // Caso B: si requiere nuevo Expediente técnico, el motivo técnico, la acción posterior y el
-    // responsable de revisión son obligatorios (spec §5).
-    if (requiereNuevoExpediente) {
-      if (!extras.motivoTecnico?.trim()) return 'Registre el motivo técnico de la revisión.';
-      if (!extras.accionPosterior?.trim()) return 'Registre la acción posterior prevista.';
-      if (!extras.responsableRevision?.trim()) return 'Indique el responsable de la revisión técnica.';
+  matrizInconformidad(tipo: TipoProblemaInconformidad): {
+    sugerencia: ResolucionInconformidad | 'Depende'; pregunta: string; nota: string;
+  } {
+    switch (tipo) {
+      case 'Problema de configuración':
+      case 'Problema de software':
+      case 'Problema de usuario o credenciales':
+      case 'Problema de dominio':
+      case 'Problema de IP reservada':
+      case 'Problema con Agente DLP':
+        return { sugerencia: 'Corrección F0302', pregunta: '',
+          nota: 'Lo resuelve Soporte sobre la configuración: no se genera reproceso ni vuelve a Hardware.' };
+      case 'Accesorio faltante':
+      case 'Falla física del equipo':
+      case 'Falla de disco':
+      case 'Falla de memoria':
+        return { sugerencia: 'Reproceso F0288', pregunta: '',
+          nota: 'Toca el equipo: se atiende con un reproceso F0288 sobre el mismo Expediente técnico.' };
+      case 'Problema de red':
+        return { sugerencia: 'Depende', pregunta: '¿Requiere revisión física de red (puerto, cable o adaptador)?',
+          nota: 'Un problema lógico de red lo corrige Soporte; uno físico lo revisa Hardware.' };
+      case 'Problema de sistema operativo':
+        return { sugerencia: 'Depende', pregunta: '¿Requiere reinstalación o reparación base del sistema operativo?',
+          nota: 'Un ajuste del sistema se corrige en F0302; reinstalar o reparar la base es reproceso F0288.' };
+      default:
+        return { sugerencia: 'Corrección F0302', pregunta: '',
+          nota: 'Sin tipo específico: si el problema resulta ser del equipo, justifique el reproceso F0288.' };
     }
-    const cor: CorreccionNoConformidad = {
-      id: this.siguienteCodigoPorAnio(`COR-${this.anioActual()}-`, this.correcciones().map((c) => c.id)),
-      expediente: id,
-      inventario: ultimo.inventario,
-      intentoNumero: ultimo.numero,
-      tipo,
-      requiereNuevoExpediente,
-      tecnico,
-      observacionUsuario: ultimo.observacion,
-      fechaInicio: this.hoy(),
-      horaInicio: this.hora(),
-      fechaFin: '',
-      horaFin: '',
-      descripcion: '',
-      huboComplejidad: '',
-      detalleComplejidad: '',
-      observacionTecnica: '',
-      motivoTecnico: extras.motivoTecnico?.trim() ?? '',
-      accionPosterior: extras.accionPosterior?.trim() ?? '',
-      responsableRevision: extras.responsableRevision?.trim() ?? '',
-      reingresoHardware: requiereNuevoExpediente,
-      estado: 'Iniciada'
-    };
-    this.correcciones.update((list) => [...list, cor]);
-    this.registrarEvento(id, tecnico, `No conformidad atendida por el Técnico de Soporte — ${tipo}`, 'En corrección',
-      cor.observacionUsuario, true,
-      { modulo: 'Entrega y aceptación', estadoAnterior: 'No conforme', inventario: cor.inventario,
-        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: ultimo.usuarioFinal });
-    this.registrarEvento(id, tecnico, `Tipo de corrección seleccionado: ${tipo}`, 'Corrección iniciada', '', false,
-      { modulo: 'Entrega y aceptación', inventario: cor.inventario, usuarioFinal: ultimo.usuarioFinal });
-    // Evaluación explícita de nuevo Expediente técnico (spec §1 y §6).
-    this.registrarEvento(id, tecnico, 'Evaluación de nuevo Expediente técnico realizada',
-      requiereNuevoExpediente ? 'Requiere nuevo Expediente técnico' : 'No requiere nuevo Expediente técnico',
-      requiereNuevoExpediente
-        ? `Motivo técnico: ${cor.motivoTecnico}. Acción posterior: ${cor.accionPosterior}. Responsable de revisión: ${cor.responsableRevision}.`
-        : 'La inconformidad se resuelve con una corrección de configuración; no se crea un nuevo Expediente técnico.',
-      true,
-      { modulo: 'Entrega y aceptación', inventario: cor.inventario,
-        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: ultimo.usuarioFinal });
-    if (requiereNuevoExpediente) {
-      // Caso B: el equipo vuelve a Hardware para revisión técnica, SIN descargo y sin reiniciar contadores.
-      this.registrarEvento(id, tecnico, 'No conformidad requiere revisión técnica', 'Pendiente de revisión técnica',
-        cor.motivoTecnico, true,
-        { modulo: 'Entrega y aceptación', inventario: cor.inventario, usuarioFinal: ultimo.usuarioFinal });
-      const previos = this.ingresosDeEquipo(cor.inventario);
-      const ingreso: IngresoHardware = {
-        idIngresoHardware: `${cor.inventario}-${String(previos.length + 1).padStart(2, '0')}`,
-        inventario: cor.inventario, numeroIngreso: previos.length + 1,
-        fechaIngreso: this.hoy(), horaIngreso: this.hora(), motivoIngreso: 'Reingreso por revisión técnica',
-        ingresadoPor: tecnico, estadoInicial: 'Pendiente de revisión', estadoFinal: '',
-        observaciones: `Revisión técnica por inconformidad del usuario final (sin descargo): ${cor.observacionUsuario}`
-      };
-      this.ingresosHardware.update((list) => [ingreso, ...list]);
-      this.registrarEvento(cor.inventario, tecnico,
-        `Equipo ${cor.inventario} enviado a flujo F0288 por revisión técnica (reingreso a Hardware sin descargo)`,
-        'Pendiente de revisión', 'No se descarga el equipo: aún no fue aceptado formalmente. Los contadores históricos no se reinician.', true,
-        { modulo: 'Ingreso a Hardware', estadoAnterior: 'No conforme', inventario: cor.inventario });
-    }
-    return cor;
   }
 
   /**
-   * Finaliza una corrección de no conformidad: registra técnico, tiempos, descripción y
-   * complejidad. Tras finalizarla se habilita reenviar el formulario de aceptación (nuevo intento).
-   * Devuelve null si se registró, o el mensaje de la validación que falló.
+   * Resolución sugerida ya resuelta. Los dos «Depende» los decide su propia pregunta: sin
+   * responderla la sugerencia queda vacía, y el sistema no se inventa una recomendación.
    */
-  finalizarCorreccion(idCorreccion: string, datos: {
-    descripcion: string; huboComplejidad: RespuestaSiNo; detalleComplejidad: string; observacionTecnica: string;
-  }): string | null {
-    const cor = this.correcciones().find((c) => c.id === idCorreccion);
-    if (!cor) return 'No se encontró la corrección indicada.';
-    if (cor.estado === 'Finalizada') return 'Esta corrección ya fue finalizada.';
-    // Caso B: no se finaliza hasta completar la revisión técnica (nuevo Expediente técnico Preparado).
-    if (cor.requiereNuevoExpediente && !this.revisionTecnicaCompleta(cor)) {
-      return 'Complete la revisión técnica: cree el nuevo Expediente técnico y finalice la Preparación F0288 antes de finalizar la corrección.';
+  sugerenciaInconformidad(tipo: TipoProblemaInconformidad,
+    detalle: { revisionFisicaRed?: RespuestaSiNo; reinstalacionSO?: RespuestaSiNo } = {}): ResolucionInconformidad | '' {
+    const m = this.matrizInconformidad(tipo);
+    if (m.sugerencia !== 'Depende') return m.sugerencia;
+    const respuesta = tipo === 'Problema de red' ? detalle.revisionFisicaRed : detalle.reinstalacionSO;
+    if (respuesta === 'Sí') return 'Reproceso F0288';
+    if (respuesta === 'No') return 'Corrección F0302';
+    return '';
+  }
+
+  /**
+   * Checklist de atención de la inconformidad, según el tipo de problema. Contiene lo que hace
+   * **Soporte**: cuando el caso deriva en reproceso, lo que hace Hardware vive en el Checklist de
+   * Reproceso F0288, no aquí — un mismo ítem no puede pertenecer a dos responsables.
+   */
+  checklistInconformidad(tipo: TipoProblemaInconformidad): ItemCorreccion[] {
+    const item = (nombre: string, implicaEvidencia = false): ItemCorreccion =>
+      ({ nombre, estado: 'Pendiente', implicaEvidencia, nota: '' });
+    switch (tipo) {
+      case 'Problema de configuración':
+        return [item('Revisar configuración reportada por el usuario'), item('Aplicar corrección', true),
+          item('Validar funcionamiento'), item('Adjuntar evidencia, si aplica'),
+          item('Registrar observación de Soporte')];
+      case 'Problema de software':
+        return [item('Revisar software solicitado'), item('Verificar Catálogo de Software'),
+          item('Instalar o ajustar software permitido', true), item('Registrar versión instalada'),
+          item('Adjuntar evidencia, si aplica')];
+      case 'Problema de usuario o credenciales':
+        return [item('Revisar usuario asignado'), item('Validar credenciales'), item('Corregir acceso', true),
+          item('Probar inicio de sesión'), item('Adjuntar evidencia, si aplica')];
+      case 'Problema de dominio':
+        return [item('Revisar nombre del equipo'), item('Revisar unión a dominio'),
+          item('Validar ingreso al dominio', true), item('Registrar mensaje de error, si aplica'),
+          item('Adjuntar evidencia', true)];
+      case 'Problema de IP reservada':
+        return [item('Revisar si requiere reserva de IP'), item('Validar IP registrada'),
+          item('Validar MAC del equipo'), item('Revisar solicitud simulada enviada a Servidores'),
+          item('Corregir información si aplica', true)];
+      case 'Problema con Agente DLP':
+        // La captura es obligatoria: del estado del Agente DLP no queda rastro fuera de la pantalla.
+        return [item('Revisar instalación/configuración del Agente DLP'), item('Validar estado del agente'),
+          item('Adjuntar captura obligatoria', true), item('Registrar observación')];
+      case 'Problema de red':
+        return [item('Revisar conectividad reportada por el usuario'), item('Validar configuración lógica de red'),
+          item('Verificar punto de red y adaptador'), item('Aplicar corrección, si aplica', true),
+          item('Adjuntar evidencia, si aplica')];
+      case 'Problema de sistema operativo':
+        return [item('Revisar el sistema operativo instalado'), item('Aplicar ajuste o actualización, si aplica', true),
+          item('Validar funcionamiento'), item('Registrar mensaje de error, si aplica'),
+          item('Adjuntar evidencia, si aplica')];
+      case 'Accesorio faltante':
+        return [item('Revisar observación del Usuario Final'), item('Identificar accesorio faltante'),
+          item('Registrar evidencia, si aplica'), item('Enviar a reproceso F0288')];
+      case 'Falla física del equipo':
+      case 'Falla de disco':
+      case 'Falla de memoria':
+        return [item('Revisar observación del Usuario Final'), item('Registrar evidencia, si aplica'),
+          item('Enviar a reproceso F0288')];
+      default:
+        return [item('Revisar observación del Usuario Final'), item('Diagnosticar el problema reportado'),
+          item('Aplicar corrección', true), item('Validar con el usuario final'),
+          item('Adjuntar evidencia, si aplica')];
     }
-    if (!datos.descripcion.trim()) return 'Describa la corrección realizada.';
-    if (datos.huboComplejidad === '') return 'Indique si hubo complejidad en la corrección.';
-    if (datos.huboComplejidad === 'Sí' && !datos.detalleComplejidad.trim()) return 'Detalle la complejidad de la corrección.';
-    this.correcciones.update((list) =>
-      list.map((c) => (c.id === idCorreccion
-        ? { ...c, estado: 'Finalizada', fechaFin: this.hoy(), horaFin: this.hora(),
-            descripcion: datos.descripcion.trim(), huboComplejidad: datos.huboComplejidad,
-            detalleComplejidad: datos.detalleComplejidad.trim(), observacionTecnica: datos.observacionTecnica.trim() }
-        : c))
-    );
-    // Documento de corrección asociado al F0302 del expediente (registro de la corrección).
-    this.actualizarAnexo(cor.expediente, 'Configuración F0302', 'Corrección registrada',
-      `${cor.tipo}: ${datos.descripcion.trim()}`);
-    this.registrarEvento(cor.expediente, cor.tecnico, `Corrección finalizada (${cor.tipo})`, 'Corrección finalizada',
-      datos.descripcion.trim(), true,
-      { modulo: 'Entrega y aceptación', estadoAnterior: 'Corrección iniciada', inventario: cor.inventario,
-        expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico,
-        complejidad: datos.huboComplejidad === 'Sí' ? 'Con complejidad' : 'Sin complejidad' });
+  }
+
+  /**
+   * Pasos que le tocan a Hardware cuando la inconformidad deriva en reproceso. No son un checklist
+   * que alguien marque a mano: se leen del estado real del reproceso, para que la pantalla de
+   * Soporte muestre en qué va sin poder adelantarlo.
+   */
+  pasosReprocesoInconformidad(cor: CorreccionNoConformidad): { nombre: string; hecho: boolean }[] {
+    const r = this.reprocesoDeCorreccion(cor);
+    return [
+      { nombre: 'Reproceso F0288 generado sobre el Expediente técnico', hecho: !!r },
+      { nombre: 'Encargado asigna Técnico de Hardware', hecho: !!r?.tecnicoAsignado },
+      { nombre: 'Hardware completa el Checklist de Reproceso F0288', hecho: r?.estado === 'Finalizado' || !!r?.firma },
+      { nombre: 'Hardware firma el reproceso', hecho: !!r?.firma }
+    ];
+  }
+
+  /** Equivalencia con el tipo de falla del F0302: el reproceso ya sabe qué checklist usar para cada uno. */
+  private tipoFallaEquivalente(tipo: TipoProblemaInconformidad): TipoFallaF0302 {
+    switch (tipo) {
+      case 'Accesorio faltante': return 'Accesorio faltante';
+      case 'Falla física del equipo': return 'Falla física del equipo';
+      case 'Falla de disco': return 'Falla de disco';
+      case 'Falla de memoria': return 'Falla de memoria';
+      case 'Problema de sistema operativo': return 'Problema de sistema operativo';
+      case 'Problema de red': return 'Problema de red';
+      case 'Problema de dominio': return 'No permite ingreso a dominio';
+      default: return 'Otro';
+    }
+  }
+
+  /** Datos de referencia comunes a los eventos de una inconformidad. */
+  private refInconformidad(cor: CorreccionNoConformidad): Partial<EventoTrazabilidad> {
+    return {
+      modulo: 'Entrega y aceptación', inventario: cor.inventario,
+      expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico,
+      expedienteTecnico: this.expTecnicoDeEquipo(cor.inventario)?.codigo,
+      usuarioFinal: cor.usuarioFinal, correccion: cor.id, intentoConformidad: cor.intentoNumero,
+      tipoProblema: cor.tipoProblema, resolucion: cor.resolucion,
+      reproceso: cor.reprocesoId, firmaRegistrada: cor.firma ? 'Sí' : 'No'
+    };
+  }
+
+  /**
+   * Estado de la incidencia de conformidad del proceso, derivado de lo que realmente pasó: del
+   * último intento mientras nadie la atiende, de la corrección cuando ya se atiende, y del cierre
+   * cuando el usuario final aceptó.
+   */
+  estadoIncidenciaConformidad(id: string): EstadoIncidenciaConformidad | '' {
+    const ultimo = this.ultimoIntento(id);
+    if (!ultimo) return '';
+    if (ultimo.resultado === 'Aceptado') {
+      return this.garantiaDe(id) ? 'GARANTIA_HABILITADA' : 'CONFORMIDAD_ACEPTADA';
+    }
+    if (ultimo.resultado === 'Pendiente de firma') {
+      return ultimo.numero > 1 ? 'FORMULARIO_CONFORMIDAD_REENVIADO' : '';
+    }
+    const cor = this.correccionesDe(id).find((c) => c.intentoNumero === ultimo.numero);
+    return cor?.estadoIncidencia ?? 'PENDIENTE_EVALUACION_INCONFORMIDAD';
+  }
+
+  /** Texto legible del estado de la incidencia de conformidad, para no mostrar la jerga del código. */
+  textoEstadoIncidenciaConformidad(estado: EstadoIncidenciaConformidad | ''): string {
+    switch (estado) {
+      case 'CONFORMIDAD_NO_ACEPTADA': return 'Conformidad no aceptada';
+      case 'INCIDENCIA_CONFORMIDAD_REGISTRADA': return 'Incidencia de conformidad registrada';
+      case 'PENDIENTE_EVALUACION_INCONFORMIDAD': return 'Pendiente de evaluación de la inconformidad';
+      case 'CORRECCION_F0302_REQUERIDA': return 'Corrección F0302 requerida';
+      case 'CORRECCION_F0302_EN_PROCESO': return 'Corrección F0302 en proceso';
+      case 'CORRECCION_F0302_FINALIZADA': return 'Corrección F0302 finalizada';
+      case 'CORRECCION_F0302_FIRMADA': return 'Corrección F0302 firmada';
+      case 'REPROCESO_F0288_REQUERIDO': return 'Reproceso F0288 requerido';
+      case 'REPROCESO_F0288_PENDIENTE_ASIGNACION': return 'Reproceso F0288 pendiente de asignación';
+      case 'REPROCESO_F0288_ASIGNADO': return 'Reproceso F0288 asignado';
+      case 'REPROCESO_F0288_FINALIZADO': return 'Reproceso F0288 finalizado';
+      case 'REPROCESO_F0288_FIRMADO': return 'Reproceso F0288 firmado';
+      case 'LISTO_PARA_REENVIO_CONFORMIDAD': return 'Listo para reenviar el formulario de conformidad';
+      case 'FORMULARIO_CONFORMIDAD_REENVIADO': return 'Formulario de conformidad reenviado';
+      case 'CONFORMIDAD_ACEPTADA': return 'Conformidad aceptada';
+      case 'GARANTIA_HABILITADA': return 'Garantía habilitada';
+      default: return 'Pendiente de corrección';
+    }
+  }
+
+  private actualizarCorreccion(idCorreccion: string, cambio: (c: CorreccionNoConformidad) => CorreccionNoConformidad): void {
+    this.correcciones.update((list) => list.map((c) => (c.id === idCorreccion ? cambio(c) : c)));
+  }
+
+  /** La corrección de inconformidad indicada. */
+  correccionDe(idCorreccion: string): CorreccionNoConformidad | undefined {
+    return this.correcciones().find((c) => c.id === idCorreccion);
+  }
+
+  /**
+   * Soporte atiende la inconformidad: clasifica el problema y define si se resuelve corrigiendo la
+   * configuración (F0302) o si hay que devolver el equipo a Hardware con un reproceso F0288. No se
+   * crea un Expediente técnico principal nuevo en ninguno de los dos casos, ni se descarga el
+   * equipo —nunca fue aceptado— ni se reinician contadores.
+   */
+  atenderInconformidad(id: string, datos: {
+    tipoProblema: TipoProblemaInconformidad | ''; resolucion: ResolucionInconformidad | '';
+    justificacionResolucion?: string; revisionFisicaRed?: RespuestaSiNo; reinstalacionSO?: RespuestaSiNo;
+  }, tecnico: string): CorreccionNoConformidad | string {
+    const ultimo = this.ultimoIntento(id);
+    if (!ultimo || ultimo.resultado !== 'No conforme') return 'No hay una inconformidad vigente que atender en este proceso.';
+    if (this.correccionActivaDe(id)) return 'Ya existe una atención en curso para esta inconformidad.';
+    if (!datos.tipoProblema) return 'Clasifique el tipo de problema reportado por el Usuario Final.';
+    const matriz = this.matrizInconformidad(datos.tipoProblema);
+    const sugerencia = this.sugerenciaInconformidad(datos.tipoProblema, datos);
+    if (!sugerencia) return `Responda: ${matriz.pregunta}`;
+    if (!datos.resolucion) return 'Defina si la inconformidad se resuelve con corrección F0302 o con reproceso F0288.';
+    const justificacion = (datos.justificacionResolucion ?? '').trim();
+    // Apartarse de la sugerencia se puede, pero con motivo: es la diferencia entre una decisión
+    // técnica y saltarse la clasificación.
+    if (datos.resolucion !== sugerencia && !justificacion) {
+      return `La clasificación sugiere «${sugerencia}». Justifique por qué se resuelve como «${datos.resolucion}».`;
+    }
+    // Un solo reproceso abierto por Expediente técnico: dos correcciones simultáneas sobre la misma
+    // preparación se pisarían y el historial no diría cuál dejó el equipo como está.
+    if (datos.resolucion === 'Reproceso F0288') {
+      const codigoTec = this.expTecnicoDeEquipo(ultimo.inventario)?.codigo;
+      const abierto = codigoTec ? this.reprocesoAbiertoDeExpTecnico(codigoTec) : undefined;
+      if (abierto) {
+        return `Ya existe un reproceso abierto para este expediente (${abierto.id}, ${abierto.estado}). Debe cerrarse antes de generar uno nuevo.`;
+      }
+    }
+    const esReproceso = datos.resolucion === 'Reproceso F0288';
+    const cor: CorreccionNoConformidad = {
+      id: this.siguienteCodigoPorAnio(`COR-F0302-${this.anioActual()}-`, this.correcciones().map((c) => c.id)),
+      expediente: id, inventario: ultimo.inventario, intentoNumero: ultimo.numero,
+      tipoProblema: datos.tipoProblema, resolucion: datos.resolucion, sugerencia,
+      justificacionResolucion: justificacion,
+      revisionFisicaRed: datos.revisionFisicaRed ?? '', reinstalacionSO: datos.reinstalacionSO ?? '',
+      tecnico, observacionUsuario: ultimo.observacion, usuarioFinal: ultimo.usuarioFinal,
+      fechaInicio: this.hoy(), horaInicio: this.hora(), fechaFin: '', horaFin: '',
+      cronometro: esReproceso ? undefined : {
+        fechaInicio: this.hoy(), horaInicio: this.horaCrono(), iniciadoPor: tecnico,
+        fechaFin: '', horaFin: '', finalizadoPor: '', duracionMinutos: null
+      },
+      checklist: this.checklistInconformidad(datos.tipoProblema),
+      evidencias: [], descripcion: '', huboComplejidad: '', detalleComplejidad: '', observacionTecnica: '',
+      resultado: '', firma: undefined, reprocesoId: undefined,
+      estadoIncidencia: esReproceso ? 'REPROCESO_F0288_REQUERIDO' : 'CORRECCION_F0302_REQUERIDA',
+      estado: esReproceso ? 'Derivada a reproceso F0288' : 'Iniciada'
+    };
+    this.correcciones.update((list) => [...list, cor]);
+    this.registrarEvento(id, tecnico, 'Incidencia de conformidad registrada', 'Inconformidad en atención',
+      `${cor.id} — intento de conformidad #${cor.intentoNumero}: ${cor.observacionUsuario}`, true,
+      { ...this.refInconformidad(cor), accionTomada: 'Atención de la inconformidad' });
+    this.registrarEvento(id, tecnico, 'Tipo de problema de inconformidad seleccionado', 'Inconformidad clasificada',
+      `${cor.tipoProblema}. ${matriz.nota}`, false,
+      { ...this.refInconformidad(cor), accionTomada: 'Clasificación del problema' });
+    this.registrarEvento(id, tecnico, `Resolución definida como ${cor.resolucion}`,
+      esReproceso ? 'Reproceso F0288 requerido' : 'Corrección F0302 requerida',
+      justificacion
+        ? `Sugerencia del sistema: ${sugerencia}. Justificación de la excepción: ${justificacion}`
+        : `Coincide con la sugerencia del sistema (${sugerencia}).`,
+      true, { ...this.refInconformidad(cor), justificacion, accionTomada: `Resolución: ${cor.resolucion}` });
+
+    if (esReproceso) {
+      const r = this.abrirReprocesoPorInconformidad(cor, tecnico);
+      this.actualizarCorreccion(cor.id, (c) => ({
+        ...c, reprocesoId: r.id, estadoIncidencia: 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
+      }));
+      const conReproceso = this.correccionDe(cor.id)!;
+      this.setEstadoSolicitud(id, 'Reproceso F0288 por inconformidad',
+        'Asignación del reproceso F0288 por un Encargado');
+      this.registrarEvento(id, tecnico, 'Reproceso F0288 generado por inconformidad',
+        'Reproceso F0288 pendiente de asignación',
+        `${r.id} — reproceso #${r.numero} sobre el Expediente técnico ${r.expedienteTecnico}. No se crea un Expediente técnico nuevo por la inconformidad.`,
+        true, { ...this.refInconformidad(conReproceso), tecnicoHardware: 'Sin asignar',
+          origenReproceso: 'Inconformidad del usuario final',
+          accionTomada: 'Reproceso F0288 dentro del mismo Expediente técnico' });
+      this.registrarEvento(id, tecnico, 'Reproceso pendiente de asignación por Encargado',
+        'Reproceso F0288 pendiente de asignación',
+        'Solo un Encargado puede asignarlo a un Técnico de Hardware.', true,
+        { ...this.refInconformidad(conReproceso), origenReproceso: 'Inconformidad del usuario final',
+          accionTomada: 'Pendiente de asignación por Encargado' });
+      return conReproceso;
+    }
+    this.actualizarCorreccion(cor.id, (c) => ({ ...c, estadoIncidencia: 'CORRECCION_F0302_EN_PROCESO' }));
+    this.setEstadoSolicitud(id, 'Corrección F0302 por inconformidad', 'Registrar y firmar la corrección F0302');
+    this.registrarEvento(id, tecnico, 'Corrección F0302 iniciada', 'Corrección F0302 en proceso',
+      `${cor.id} — checklist de «${cor.tipoProblema}». No se crea un nuevo Expediente técnico.`, true,
+      { ...this.refInconformidad(cor), accionTomada: 'Inicio de la corrección F0302' });
+    return this.correccionDe(cor.id)!;
+  }
+
+  /**
+   * Abre el reproceso F0288 de una inconformidad sobre el Expediente técnico que el equipo ya
+   * tiene. Es el mismo mecanismo de las fallas de F0302 —código derivado `…-R1`, sin dueño hasta
+   * que un Encargado lo asigne—: lo único que cambia es de dónde vino el problema.
+   */
+  private abrirReprocesoPorInconformidad(cor: CorreccionNoConformidad, usuario: string): ReprocesoF0288 {
+    const tecnico = this.expTecnicoDeEquipo(cor.inventario)?.codigo ?? cor.inventario;
+    const numero = Math.max(0, ...this.reprocesosDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
+    const tipoFalla = this.tipoFallaEquivalente(cor.tipoProblema);
+    const reproceso: ReprocesoF0288 = {
+      id: `${tecnico}-R${numero}`, expedienteTecnico: tecnico, expediente: cor.expediente,
+      expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico ?? '',
+      inventario: cor.inventario, numero,
+      origen: 'Inconformidad del usuario final', correccionRelacionada: cor.id,
+      intentoConformidad: cor.intentoNumero, usuarioFinal: cor.usuarioFinal,
+      observacionUsuarioFinal: cor.observacionUsuario,
+      tipoFalla, motivo: `Inconformidad del usuario final — ${cor.tipoProblema}: ${cor.observacionUsuario}`,
+      // El equipo ya está con el usuario final: un reproceso por inconformidad no espera turno.
+      prioridad: 'Alta',
+      unidadAtiende: 'Hardware', justificacionUnidad: '',
+      solicitadoPor: usuario, observacionSoporte: cor.observacionUsuario, evidenciaSoporte: '',
+      fechaSolicitud: this.hoy(), horaSolicitud: this.hora(),
+      tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
+      justificacionReprocesoSimultaneo: '',
+      atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
+      checklist: this.checklistReproceso(tipoFalla), evidencias: [], correccionTecnica: '',
+      observaciones: '', firma: undefined, resultado: '', observacionResultado: '',
+      estado: 'Pendiente de asignación'
+    };
+    this.reprocesos.update((list) => [reproceso, ...list]);
+    return reproceso;
+  }
+
+  /** Marca un ítem del checklist de la corrección. Solo mientras la corrección está abierta. */
+  marcarItemCorreccion(idCorreccion: string, nombreItem: string, estado: ItemCorreccion['estado'], nota = ''): string | null {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (cor.estado !== 'Iniciada') return 'La corrección ya no admite cambios en su checklist.';
+    this.actualizarCorreccion(idCorreccion, (c) => ({
+      ...c, checklist: c.checklist.map((i) => (i.nombre === nombreItem ? { ...i, estado, nota: nota || i.nota } : i))
+    }));
+    return null;
+  }
+
+  /** Adjunta una evidencia simulada a la corrección, con su código y el expediente del proceso. */
+  agregarEvidenciaCorreccion(idCorreccion: string, archivo: string, tipo: string, usuario: string): string | null {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (cor.estado !== 'Iniciada') return 'La corrección ya no admite nuevas evidencias.';
+    if (!archivo.trim()) return 'Indique el nombre del archivo de evidencia.';
+    const evidencia: EvidenciaCorreccion = {
+      archivo: archivo.trim(), tipo: tipo.trim() || 'Evidencia de corrección',
+      fecha: this.hoy(), hora: this.hora(), cargadaPor: usuario,
+      correccion: cor.id, expediente: cor.expediente
+    };
+    this.actualizarCorreccion(idCorreccion, (c) => ({ ...c, evidencias: [...c.evidencias, evidencia] }));
+    this.registrarEvento(cor.expediente, usuario, 'Evidencia de corrección registrada', 'Corrección F0302 en proceso',
+      `${evidencia.archivo} · ${evidencia.tipo}`, false,
+      { ...this.refInconformidad(cor), evidencia: evidencia.archivo,
+        accionTomada: 'Evidencia adjuntada a la corrección F0302' });
     return null;
   }
 
   /**
-   * Reenvía el formulario de aceptación tras corregir una no conformidad: crea un NUEVO intento
-   * (Pendiente de firma) con un token nuevo, sin sobrescribir los anteriores. Requiere que la
-   * corrección del último intento No conforme esté finalizada. Devuelve la conformidad reenviada
-   * o un mensaje de validación.
+   * ¿Esta corrección exige evidencia? Solo cuando se marcó algún ítem que produce algo que
+   * adjuntar: revisar y no cambiar nada no deja captura que mostrar.
+   */
+  correccionExigeEvidencia(cor: CorreccionNoConformidad): boolean {
+    return cor.checklist.some((i) => i.implicaEvidencia && i.estado === 'Realizado');
+  }
+
+  /**
+   * Durante la corrección se descubre que el problema es del equipo: la inconformidad pasa a
+   * reproceso F0288 sin volver a empezar y sin crear un Expediente técnico nuevo.
+   */
+  escalarAReprocesoF0288(idCorreccion: string, usuario: string, motivo: string): string | null {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (cor.estado !== 'Iniciada') return 'Solo una corrección en curso puede derivarse a reproceso F0288.';
+    if (!motivo.trim()) return 'Indique por qué la corrección requiere intervención de Hardware.';
+    const codigoTec = this.expTecnicoDeEquipo(cor.inventario)?.codigo;
+    const abierto = codigoTec ? this.reprocesoAbiertoDeExpTecnico(codigoTec) : undefined;
+    if (abierto) {
+      return `Ya existe un reproceso abierto para este expediente (${abierto.id}, ${abierto.estado}). Debe cerrarse antes de generar uno nuevo.`;
+    }
+    const crono = cor.cronometro ? this.detenerCronometro(cor.cronometro, usuario) : undefined;
+    this.actualizarCorreccion(idCorreccion, (c) => ({
+      ...c, resolucion: 'Reproceso F0288', justificacionResolucion: motivo.trim(),
+      cronometro: crono, estado: 'Derivada a reproceso F0288', estadoIncidencia: 'REPROCESO_F0288_REQUERIDO'
+    }));
+    const derivada = this.correccionDe(idCorreccion)!;
+    const r = this.abrirReprocesoPorInconformidad(derivada, usuario);
+    this.actualizarCorreccion(idCorreccion, (c) => ({
+      ...c, reprocesoId: r.id, estadoIncidencia: 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
+    }));
+    const conReproceso = this.correccionDe(idCorreccion)!;
+    this.setEstadoSolicitud(cor.expediente, 'Reproceso F0288 por inconformidad',
+      'Asignación del reproceso F0288 por un Encargado');
+    this.registrarEvento(cor.expediente, usuario, 'Resolución definida como Reproceso F0288',
+      'Reproceso F0288 requerido', `Durante la corrección ${cor.id}: ${motivo.trim()}`, true,
+      { ...this.refInconformidad(conReproceso), justificacion: motivo.trim(),
+        accionTomada: 'Escalamiento de la corrección F0302 a reproceso F0288' });
+    this.registrarEvento(cor.expediente, usuario, 'Reproceso F0288 generado por inconformidad',
+      'Reproceso F0288 pendiente de asignación',
+      `${r.id} — reproceso #${r.numero} sobre el Expediente técnico ${r.expedienteTecnico}.`, true,
+      { ...this.refInconformidad(conReproceso), origenReproceso: 'Inconformidad del usuario final',
+        tecnicoHardware: 'Sin asignar', accionTomada: 'Reproceso F0288 dentro del mismo Expediente técnico' });
+    return null;
+  }
+
+  /**
+   * Finaliza el trabajo de la corrección F0302: detiene el cronómetro y guarda el tiempo trabajado.
+   * Exige el checklist resuelto, la descripción y la evidencia cuando hubo intervención. No la
+   * cierra: el cierre es la firma del Técnico de Soporte.
+   */
+  finalizarCorreccionF0302(idCorreccion: string, datos: {
+    descripcion: string; huboComplejidad: RespuestaSiNo; detalleComplejidad: string; observacionTecnica: string;
+  }, usuario = ''): string | null {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (cor.estado === 'Derivada a reproceso F0288' || cor.estado === 'Cerrada por reproceso F0288') {
+      return 'Esta inconformidad se atiende con un reproceso F0288: la cierra el Técnico de Hardware.';
+    }
+    if (cor.estado !== 'Iniciada') return 'Esta corrección ya fue finalizada.';
+    if (cor.checklist.some((i) => i.estado === 'Pendiente')) {
+      return 'Complete el checklist de la corrección antes de finalizarla.';
+    }
+    if (!datos.descripcion.trim()) return 'Describa la corrección realizada.';
+    if (this.correccionExigeEvidencia(cor) && cor.evidencias.length === 0) {
+      return 'La corrección implicó una intervención: adjunte la evidencia antes de finalizarla.';
+    }
+    if (datos.huboComplejidad === '') return 'Indique si hubo complejidad en la corrección.';
+    if (datos.huboComplejidad === 'Sí' && !datos.detalleComplejidad.trim()) return 'Detalle la complejidad de la corrección.';
+    const quien = usuario || cor.tecnico;
+    const crono = cor.cronometro ? this.detenerCronometro(cor.cronometro, quien) : undefined;
+    this.actualizarCorreccion(idCorreccion, (c) => ({
+      ...c, estado: 'Finalizada', estadoIncidencia: 'CORRECCION_F0302_FINALIZADA',
+      fechaFin: this.hoy(), horaFin: this.hora(), cronometro: crono,
+      descripcion: datos.descripcion.trim(), huboComplejidad: datos.huboComplejidad,
+      detalleComplejidad: datos.detalleComplejidad.trim(), observacionTecnica: datos.observacionTecnica.trim()
+    }));
+    const fin = this.correccionDe(idCorreccion)!;
+    this.actualizarAnexo(cor.expediente, 'Configuración F0302', 'Corrección registrada',
+      `${cor.tipoProblema}: ${datos.descripcion.trim()}`);
+    this.registrarEvento(cor.expediente, quien, 'Corrección F0302 finalizada', 'Corrección F0302 finalizada',
+      datos.descripcion.trim(), true,
+      { ...this.refInconformidad(fin), tiempo: this.formatoDuracion(crono?.duracionMinutos ?? null) || 'menos de 1 min',
+        complejidad: datos.huboComplejidad === 'Sí' ? 'Con complejidad' : 'Sin complejidad',
+        accionTomada: 'Corrección F0302 registrada' });
+    return null;
+  }
+
+  /**
+   * Firma del Técnico de Soporte: es lo que cierra la corrección. Sin ella la corrección queda
+   * finalizada pero sin responsable, y el formulario de conformidad no puede reenviarse.
+   */
+  firmarCorreccionF0302(idCorreccion: string, usuario: string, firmaSimulada = ''): string | null {
+    const cor = this.correccionDe(idCorreccion);
+    if (!cor) return 'No se encontró la corrección indicada.';
+    if (cor.estado === 'Iniciada') return 'Finalice la corrección F0302 antes de firmarla.';
+    if (cor.estado !== 'Finalizada') return 'Esta corrección ya fue firmada.';
+    const firmante = (firmaSimulada || usuario).trim();
+    if (!firmante) return 'Debe registrar la firma del Técnico de Soporte para finalizar la corrección.';
+    const u = this.usuarios().find((x) => firmante.startsWith(x.nombre));
+    const firma: FirmaCorreccion = {
+      nombre: u?.nombre ?? firmante.split('—')[0].trim(),
+      cargo: u?.rol ?? firmante.split('—')[1]?.trim() ?? 'Técnico de Soporte',
+      unidad: u?.unidad ?? 'Soporte',
+      fecha: this.hoy(), hora: this.hora(),
+      firma: `Firmado electrónicamente (simulado) por ${firmante}`
+    };
+    this.actualizarCorreccion(idCorreccion, (c) => ({
+      ...c, firma, estado: 'Firmada', estadoIncidencia: 'LISTO_PARA_REENVIO_CONFORMIDAD',
+      resultado: 'Corregido en F0302'
+    }));
+    const firmada = this.correccionDe(idCorreccion)!;
+    // La constancia se genera aquí, al firmar: un documento que dependiera de que alguien pulse
+    // «Descargar» dejaría correcciones firmadas sin respaldo que consultar después.
+    this.registrarConstanciaCorreccion(idCorreccion, usuario);
+    this.registrarEvento(cor.expediente, usuario, 'Firma de Técnico de Soporte registrada', 'Corrección F0302 firmada',
+      `${firma.nombre} — ${firma.cargo} (${firma.unidad}) · ${firma.fecha} ${firma.hora}`, true,
+      { ...this.refInconformidad(firmada), firmaRegistrada: 'Sí', accionTomada: 'Firma de la corrección F0302' });
+    this.setEstadoSolicitud(cor.expediente, 'Pendiente de reenvío del formulario de conformidad',
+      'Reenviar el formulario de conformidad al usuario final');
+    return null;
+  }
+
+  /**
+   * Cierra la inconformidad cuando su reproceso F0288 se firma. Solo «Corregido» habilita el
+   * reenvío del formulario: con cualquier otro resultado el caso queda en manos del Encargado.
+   */
+  private cerrarCorreccionPorReproceso(cor: CorreccionNoConformidad, r: ReprocesoF0288, usuario: string): void {
+    const corregido = r.resultado === 'Corregido';
+    this.actualizarCorreccion(cor.id, (c) => ({
+      ...c, fechaFin: this.hoy(), horaFin: this.hora(),
+      resultado: corregido ? 'Corregido con reproceso F0288' : 'No corregido',
+      descripcion: c.descripcion || r.correccionTecnica,
+      estado: corregido ? 'Cerrada por reproceso F0288' : c.estado,
+      estadoIncidencia: corregido ? 'LISTO_PARA_REENVIO_CONFORMIDAD' : 'REPROCESO_F0288_FINALIZADO'
+    }));
+    const cerrada = this.correccionDe(cor.id)!;
+    this.registrarEvento(cor.expediente, usuario, 'Reproceso F0288 finalizado y firmado',
+      corregido ? 'Listo para reenviar el formulario de conformidad' : 'Pendiente de evaluación del Encargado',
+      `${r.id} — resultado: ${r.resultado}. Inconformidad ${cor.id} del intento #${cor.intentoNumero}.`, true,
+      { ...this.refInconformidad(cerrada), origenReproceso: 'Inconformidad del usuario final',
+        tecnicoHardware: r.tecnicoAsignado || r.atendidoPor, resultadoReproceso: r.resultado || 'Pendiente',
+        firmaRegistrada: 'Sí', accionTomada: corregido ? 'Cierre de la inconformidad por reproceso F0288' : 'Evaluación del Encargado' });
+    if (corregido) {
+      this.setEstadoSolicitud(cor.expediente, 'Pendiente de reenvío del formulario de conformidad',
+        'Reenviar el formulario de conformidad al usuario final');
+    }
+  }
+
+  /**
+   * Reenvía el formulario de conformidad tras resolver la inconformidad: crea un NUEVO intento
+   * (Pendiente de firma) con un token nuevo, sin sobrescribir los anteriores. Exige que la
+   * corrección F0302 esté firmada por Soporte o que el reproceso F0288 esté firmado por Hardware.
+   * Devuelve la conformidad reenviada o un mensaje de validación.
    */
   reenviarFormularioAceptacion(id: string, usuario: string): Conformidad | string {
-    if (this.estadoAceptacion(id) !== 'No conforme') return 'No hay una no conformidad vigente para reenviar el formulario.';
+    if (this.estadoAceptacion(id) !== 'No conforme') return 'No hay una inconformidad vigente para reenviar el formulario.';
     const cor = this.correccionListaParaReenvio(id);
-    if (!cor) return 'Debe finalizar la corrección antes de reenviar el formulario de aceptación.';
+    if (!cor) {
+      const abierta = this.correccionActivaDe(id);
+      if (abierta?.estado === 'Derivada a reproceso F0288') {
+        return 'El reproceso F0288 debe estar finalizado y firmado antes de reenviar el formulario de conformidad.';
+      }
+      if (abierta?.estado === 'Finalizada') {
+        return 'Debe registrar la firma del Técnico de Soporte para finalizar la corrección.';
+      }
+      return 'Debe resolver la inconformidad y firmarla antes de reenviar el formulario de conformidad.';
+    }
     const conf = this.conformidadDeProceso(id);
     const s = this.solicitud(id);
     if (!conf || !s) return 'No se encontró el formulario de conformidad de este proceso.';
@@ -4969,14 +5549,15 @@ export class DataService {
         ? { ...x, estado: 'En entrega', resumenEstado: 'Corrección realizada · pendiente de firma' }
         : x))
     );
-    this.setEstadoSolicitud(id, 'Pendiente de aceptación', 'Respuesta del formulario de aceptación reenviado');
-    this.actualizarAnexo(id, 'Formulario de conformidad', 'Pendiente de respuesta', 'Formulario reenviado tras la corrección');
-    this.registrarEvento(id, usuario, 'Formulario de aceptación reenviado tras la corrección', 'Pendiente de aceptación',
-      `Corrección ${cor.id} (${cor.tipo}).` +
-        (cor.requiereNuevoExpediente && cor.expedienteTecnicoNuevo ? ` Nuevo Expediente técnico: ${cor.expedienteTecnicoNuevo}.` : '') +
-        ` Enlace único ${nuevoToken}.`, true,
-      { modulo: 'Entrega y aceptación', estadoAnterior: 'No conforme', inventario: conf.inventario,
-        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: conf.usuarioFinal });
+    this.setEstadoSolicitud(id, 'Pendiente de aceptación', 'Respuesta del formulario de conformidad reenviado');
+    this.actualizarAnexo(id, 'Formulario de conformidad', 'Pendiente de respuesta', 'Formulario reenviado tras resolver la inconformidad');
+    this.actualizarCorreccion(cor.id, (c) => ({ ...c, estadoIncidencia: 'FORMULARIO_CONFORMIDAD_REENVIADO' }));
+    this.registrarEvento(id, usuario, 'Formulario de conformidad reenviado', 'Pendiente de aceptación',
+      `${cor.id} (${cor.tipoProblema}) resuelta como ${cor.resolucion}` +
+        (cor.reprocesoId ? ` con el reproceso ${cor.reprocesoId}` : '') +
+        `. Enlace único ${nuevoToken}.`, true,
+      { ...this.refInconformidad(this.correccionDe(cor.id)!), estadoAnterior: 'No conforme',
+        accionTomada: 'Reenvío del formulario de conformidad' });
     const confActualizada = this.conformidadDeProceso(id)!;
     this.crearIntentoAceptacion(id, confActualizada, cor);
     return confActualizada;

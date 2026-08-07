@@ -813,7 +813,8 @@ export interface Garantia {
 export type EstadoDocumento = 'Pendiente de firma' | 'Firmado' | 'Generado' | 'Disponible para consulta';
 
 export interface DocumentoGenerado {
-  tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final' | 'Constancia de reproceso F0288';
+  tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final' | 'Constancia de reproceso F0288'
+    | 'Constancia de corrección F0302 por inconformidad';
   expediente: string;
   generadoPor: string;
   fecha: string;
@@ -837,6 +838,14 @@ export interface DocumentoGenerado {
   tecnicoHardware?: string;
   /** Resultado del reproceso que la constancia documenta. */
   resultado?: string;
+  /** Código de la corrección F0302 por inconformidad, en su constancia. */
+  correccion?: string;
+  /** Técnico de Soporte que firmó la constancia de corrección. */
+  tecnicoSoporte?: string;
+  /** Usuario final que reportó la inconformidad que la constancia documenta. */
+  usuarioFinal?: string;
+  /** Tipo de problema clasificado en la inconformidad, para filtrar el catálogo. */
+  tipoProblema?: string;
 }
 
 /** Resultado de un intento de aceptación del usuario final. */
@@ -874,60 +883,154 @@ export interface IntentoAceptacion {
   correccionRealizada?: string;
 }
 
-/** Clasificación de la corrección que atiende una no conformidad. */
-export type TipoCorreccion =
-  | 'Corrección de configuración'
-  | 'Revisión técnica / Hardware'
-  | 'Accesorios'
+/**
+ * Tipo de problema que el usuario final reporta al marcar inconformidad. Cumple el mismo papel
+ * que el tipo de falla del F0302: de él salen el checklist de atención y la resolución sugerida.
+ */
+export type TipoProblemaInconformidad =
+  | 'Problema de configuración'
+  | 'Problema de software'
+  | 'Problema de usuario o credenciales'
+  | 'Problema de dominio'
+  | 'Problema de red'
+  | 'Problema de IP reservada'
+  | 'Problema con Agente DLP'
+  | 'Accesorio faltante'
+  | 'Falla física del equipo'
+  | 'Falla de disco'
+  | 'Falla de memoria'
+  | 'Problema de sistema operativo'
   | 'Otro';
 
 /**
- * Corrección de una no conformidad, registrada por el Técnico de Soporte. El equipo NO se
- * descarga (nunca fue aceptado formalmente) ni se reinician contadores históricos.
+ * Cómo se resuelve la inconformidad. Es la misma disyuntiva de una falla en F0302: lo que Soporte
+ * puede corregir sobre la configuración no vuelve a Hardware, y lo que toca el equipo sí.
+ */
+export type ResolucionInconformidad = 'Corrección F0302' | 'Reproceso F0288';
+
+/** Resultado con el que se cierra la atención de una inconformidad. */
+export type ResultadoInconformidad =
+  | 'Corregido en F0302'
+  | 'Corregido con reproceso F0288'
+  | 'No corregido';
+
+/**
+ * Estado de la incidencia de conformidad, desde que el usuario final marca No conforme hasta que
+ * acepta y la garantía inicia. Mientras no llegue a `CONFORMIDAD_ACEPTADA` la entrega no cierra.
+ */
+export type EstadoIncidenciaConformidad =
+  | 'CONFORMIDAD_NO_ACEPTADA'
+  | 'INCIDENCIA_CONFORMIDAD_REGISTRADA'
+  | 'PENDIENTE_EVALUACION_INCONFORMIDAD'
+  | 'CORRECCION_F0302_REQUERIDA'
+  | 'CORRECCION_F0302_EN_PROCESO'
+  | 'CORRECCION_F0302_FINALIZADA'
+  | 'CORRECCION_F0302_FIRMADA'
+  | 'REPROCESO_F0288_REQUERIDO'
+  | 'REPROCESO_F0288_PENDIENTE_ASIGNACION'
+  | 'REPROCESO_F0288_ASIGNADO'
+  | 'REPROCESO_F0288_FINALIZADO'
+  | 'REPROCESO_F0288_FIRMADO'
+  | 'LISTO_PARA_REENVIO_CONFORMIDAD'
+  | 'FORMULARIO_CONFORMIDAD_REENVIADO'
+  | 'CONFORMIDAD_ACEPTADA'
+  | 'GARANTIA_HABILITADA';
+
+/**
+ * Ítem del checklist de atención de la inconformidad. Cambia según el tipo de problema: revisar
+ * credenciales no tiene nada que ver con revisar un disco.
+ */
+export interface ItemCorreccion {
+  nombre: string;
+  estado: 'Realizado' | 'Pendiente' | 'No aplica';
+  /**
+   * true en los ítems que producen algo que adjuntar (instalación, cambio de acceso, captura del
+   * Agente DLP). Marcar uno hace obligatoria la evidencia.
+   */
+  implicaEvidencia?: boolean;
+  nota: string;
+}
+
+/** Evidencia simulada adjuntada durante la corrección F0302 por inconformidad. */
+export interface EvidenciaCorreccion {
+  archivo: string;
+  tipo: string;
+  fecha: string;
+  hora: string;
+  cargadaPor: string;
+  /** Código de la corrección y expediente del proceso: la evidencia se guarda con ambos. */
+  correccion: string;
+  expediente: string;
+}
+
+/** Firma simulada del Técnico de Soporte que cierra la corrección F0302 por inconformidad. */
+export interface FirmaCorreccion {
+  nombre: string;
+  cargo: string;
+  unidad: string;
+  fecha: string;
+  hora: string;
+  /** Firma simulada del prototipo (no hay firma electrónica real). */
+  firma: string;
+}
+
+/**
+ * Atención de una inconformidad del usuario final. Se resuelve igual que una falla detectada en
+ * F0302: se clasifica el problema, se decide si lo corrige Soporte sobre la configuración o si
+ * requiere volver a Hardware, y se cierra con firma.
+ *  - `resolucion` = «Corrección F0302»: Soporte corrige, no se toca el Expediente técnico y la
+ *    corrección cierra con la firma del Técnico de Soporte.
+ *  - `resolucion` = «Reproceso F0288»: se genera un reproceso `…-R1` sobre el MISMO Expediente
+ *    técnico (`reprocesoId`), lo asigna un Encargado y lo firma el Técnico de Hardware.
  *
- * No toda inconformidad genera un nuevo Expediente técnico: tras elegir el tipo, el técnico
- * evalúa explícitamente `requiereNuevoExpediente`.
- *  - Caso A (`requiereNuevoExpediente` = false): configuración / software / usuario / dominio;
- *    se corrige sin volver a Hardware y, al finalizarla, se habilita reenviar el formulario.
- *  - Caso B (`requiereNuevoExpediente` = true): falla física / revisión de Hardware / accesorios;
- *    el equipo vuelve a Hardware (`reingresoHardware`) SIN descargo, se permite crear un nuevo
- *    Expediente técnico (`expedienteTecnicoNuevo`) y una nueva Preparación F0288, y el reenvío se
- *    habilita solo cuando esa revisión/preparación se completa. Requiere además motivo técnico,
- *    acción posterior y responsable de revisión.
+ * En ninguno de los dos casos se crea un Expediente técnico principal nuevo, ni se descarga el
+ * equipo (nunca fue aceptado formalmente), ni se reinician contadores históricos.
  */
 export interface CorreccionNoConformidad {
-  /** Código propio de la corrección (COR-AÑO-####). */
+  /** Código propio de la corrección (COR-F0302-AÑO-####). */
   id: string;
   expediente: string;
   inventario: string;
   /** Número del intento No conforme que esta corrección atiende. */
   intentoNumero: number;
-  tipo: TipoCorreccion;
-  /** Evaluación explícita: ¿la corrección requiere crear un nuevo Expediente técnico? */
-  requiereNuevoExpediente: boolean;
-  /** Técnico de Soporte que corrigió. */
+  /** Clasificación del problema reportado por el usuario final. */
+  tipoProblema: TipoProblemaInconformidad;
+  /** Resolución elegida por Soporte o el Encargado. */
+  resolucion: ResolucionInconformidad;
+  /** Lo que la matriz sugiere para ese tipo de problema (§7 y §8). */
+  sugerencia: ResolucionInconformidad;
+  /** Justificación obligatoria cuando la resolución elegida no coincide con la sugerida. */
+  justificacionResolucion: string;
+  /** «Problema de red»: ¿la revisión es física? Es lo que decide entre corregir en F0302 o ir a Hardware. */
+  revisionFisicaRed?: RespuestaSiNo;
+  /** «Problema de sistema operativo»: ¿requiere reinstalación o reparación base? Misma disyuntiva. */
+  reinstalacionSO?: RespuestaSiNo;
+  /** Técnico de Soporte que atiende la inconformidad. */
   tecnico: string;
   /** Copia de la observación del usuario final que motivó la corrección. */
   observacionUsuario: string;
+  usuarioFinal: string;
   fechaInicio: string;
   horaInicio: string;
   fechaFin: string;
   horaFin: string;
+  /** Cronómetro de la corrección: arranca al atender la inconformidad y se detiene al finalizarla. */
+  cronometro?: Cronometro;
+  /** Checklist de atención, según el tipo de problema. */
+  checklist: ItemCorreccion[];
+  evidencias: EvidenciaCorreccion[];
   descripcion: string;
   huboComplejidad: RespuestaSiNo;
   detalleComplejidad: string;
   observacionTecnica: string;
-  /** Caso B: motivo técnico de la revisión (obligatorio cuando requiere nuevo Expediente técnico). */
-  motivoTecnico: string;
-  /** Caso B: acción posterior prevista (obligatoria cuando requiere nuevo Expediente técnico). */
-  accionPosterior: string;
-  /** Caso B: responsable de la revisión técnica (obligatorio cuando requiere nuevo Expediente técnico). */
-  responsableRevision: string;
-  /** Caso B: código del nuevo Expediente técnico creado por la inconformidad, una vez que existe. */
-  expedienteTecnicoNuevo?: string;
-  /** true cuando la corrección implicó reingreso a Hardware / revisión técnica (equivale a Caso B). */
-  reingresoHardware: boolean;
-  estado: 'Iniciada' | 'Finalizada';
+  resultado: ResultadoInconformidad | '';
+  /** Firma del Técnico de Soporte: sin ella la corrección F0302 no se finaliza. */
+  firma?: FirmaCorreccion;
+  /** Reproceso F0288 generado por esta inconformidad, cuando la resolución es de Hardware. */
+  reprocesoId?: string;
+  /** Estado de la incidencia de conformidad; avanza con cada paso de la atención. */
+  estadoIncidencia: EstadoIncidenciaConformidad;
+  estado: 'Iniciada' | 'Finalizada' | 'Firmada' | 'Derivada a reproceso F0288' | 'Cerrada por reproceso F0288';
 }
 
 /**
@@ -1126,6 +1229,19 @@ export interface ReprocesoF0288 {
   inventario: string;
   /** Reproceso #1, #2… dentro del mismo Expediente técnico. */
   numero: number;
+  /**
+   * Qué originó el reproceso. El mecanismo es el mismo —código derivado, asignación del Encargado,
+   * checklist, firma—, pero el desenlace cambia: una falla de F0302 devuelve el equipo a
+   * configuración, y una inconformidad además obliga a reenviar el formulario de conformidad.
+   */
+  origen?: 'Falla F0302' | 'Inconformidad del usuario final';
+  /** Corrección de inconformidad que generó el reproceso, cuando el origen es una inconformidad. */
+  correccionRelacionada?: string;
+  /** Intento de conformidad No conforme que lo originó. */
+  intentoConformidad?: number;
+  /** Usuario final que reportó la inconformidad, y lo que observó. */
+  usuarioFinal?: string;
+  observacionUsuarioFinal?: string;
   tipoFalla: TipoFallaF0302;
   /** Motivo del reproceso, tomado de la falla que lo originó. */
   motivo: string;
@@ -1233,4 +1349,14 @@ export interface EventoTrazabilidad {
   documento?: string;
   /** Estado del documento al momento del evento. */
   estadoDocumento?: string;
+  /** Tipo de problema clasificado en la inconformidad del usuario final. */
+  tipoProblema?: string;
+  /** Resolución definida para la inconformidad: corrección F0302 o reproceso F0288. */
+  resolucion?: string;
+  /** Código de la corrección F0302 por inconformidad a la que pertenece el evento. */
+  correccion?: string;
+  /** Número del intento de conformidad al que se refiere el evento. */
+  intentoConformidad?: number;
+  /** Origen del reproceso F0288: falla en F0302 o inconformidad del usuario final. */
+  origenReproceso?: string;
 }

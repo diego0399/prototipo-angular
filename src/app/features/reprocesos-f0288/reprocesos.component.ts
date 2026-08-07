@@ -96,7 +96,7 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
                     <td class="mono">{{ r.expedienteUnico || '—' }}</td>
                     <td class="mono">{{ r.inventario }}</td>
                     <td>{{ tipoEquipo(r) }}<div class="sub-cell">{{ equipoTxt(r) }}</div></td>
-                    <td>{{ r.tipoFalla }}</td>
+                    <td>{{ r.tipoFalla }}<div class="sub-cell">{{ origen(r) }}</div></td>
                     <td>{{ r.solicitadoPor.split('—')[0].trim() }}<div class="sub-cell">{{ r.solicitadoPor.split('—')[1] || '' }}</div></td>
                     <td class="mono">{{ r.fechaSolicitud }}<div class="sub-cell">{{ r.horaSolicitud }}</div></td>
                     <td><ui-badge [estado]="r.prioridad === 'Alta' ? 'Carga alta' : 'Carga baja'" /><div class="sub-cell">{{ r.prioridad }}</div></td>
@@ -165,7 +165,7 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
                   <td class="mono">{{ r.expedienteTecnico }}</td>
                   <td>{{ equipoTxt(r) }}</td>
                   <td class="mono">{{ r.inventario }}</td>
-                  <td>{{ r.tipoFalla }}</td>
+                  <td>{{ r.tipoFalla }}<div class="sub-cell">{{ origen(r) }}</div></td>
                   <td class="mono">{{ r.fechaAsignacion || '—' }}
                     <div class="sub-cell">{{ r.tecnicoAsignado.split('—')[0].trim() || 'Sin asignar' }}</div>
                     @if (esEncargado() && r.asignadoPor) { <div class="sub-cell">Asignó: {{ r.asignadoPor.split('—')[0].trim() }}</div> }
@@ -218,6 +218,13 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
               <dt>Código del reproceso</dt><dd class="mono">{{ r.id }}</dd>
               <dt>Expediente único</dt><dd class="mono">{{ r.expedienteUnico || '—' }}</dd>
               <dt>Equipo</dt><dd>{{ equipoTxt(r) }} · <span class="mono">{{ r.inventario }}</span></dd>
+              <dt>Origen del reproceso</dt><dd>{{ origen(r) }}</dd>
+              @if (r.origen === 'Inconformidad del usuario final') {
+                <dt>Usuario final</dt><dd>{{ r.usuarioFinal || '—' }}</dd>
+                <dt>Intento de conformidad</dt><dd>#{{ r.intentoConformidad }}</dd>
+                <dt>Observación del Usuario Final</dt><dd>{{ r.observacionUsuarioFinal || '—' }}</dd>
+                <dt>Corrección relacionada</dt><dd class="mono">{{ r.correccionRelacionada || '—' }}</dd>
+              }
               <dt>Tipo de falla reportada en F0302</dt><dd>{{ r.tipoFalla }}</dd>
               <dt>Observación de Soporte</dt><dd>{{ r.observacionSoporte || '—' }}</dd>
               <dt>Evidencia reportada por Soporte</dt><dd>{{ r.evidenciaSoporte || 'Sin evidencia adjunta' }}</dd>
@@ -573,6 +580,16 @@ export class ReprocesosComponent {
   protected equipoTxt(r: ReprocesoF0288): string {
     const eq = this.data.equipoDe(r.inventario);
     return eq ? `${eq.marca} ${eq.modelo}` : '—';
+  }
+
+  /**
+   * De dónde vino el reproceso. Importa para atenderlo: uno por inconformidad tiene al usuario
+   * final esperando con el equipo ya entregado, y termina reenviando el formulario de conformidad.
+   */
+  protected origen(r: ReprocesoF0288): string {
+    return r.origen === 'Inconformidad del usuario final'
+      ? `Inconformidad del usuario final${r.intentoConformidad ? ` · intento #${r.intentoConformidad}` : ''}`
+      : 'Falla detectada en F0302';
   }
 
   /** «CPU» / «Laptop»: el vocabulario del formulario, no el «Desktop» del inventario. */

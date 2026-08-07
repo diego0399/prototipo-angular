@@ -10,6 +10,7 @@ import {
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
+import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 
 /** Fila de la vista resumen: el eje principal de la trazabilidad es el equipo. */
 interface FilaTraza {
@@ -34,7 +35,8 @@ interface FilaTraza {
  */
 @Component({
   selector: 'app-trazabilidad',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent,
+    ConstanciaCorreccionComponent],
   styles: `
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
@@ -267,6 +269,13 @@ interface FilaTraza {
                     @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
                     @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
                     @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
+                    @if (e.tipoProblema) { <span class="m-chip">Tipo de problema: <b>{{ e.tipoProblema }}</b></span> }
+                    @if (e.resolucion) { <span class="m-chip">Resolución: <b>{{ e.resolucion }}</b></span> }
+                    @if (e.correccion) { <span class="m-chip">Corrección: <b class="mono">{{ e.correccion }}</b></span> }
+                    @if (e.intentoConformidad) { <span class="m-chip">Intento de conformidad: <b>#{{ e.intentoConformidad }}</b></span> }
+                    @if (e.origenReproceso) { <span class="m-chip">Origen del reproceso: <b>{{ e.origenReproceso }}</b></span> }
+                    @if (e.documento) { <span class="m-chip">Documento: <b class="mono">{{ e.documento }}</b></span> }
+                    @if (e.estadoDocumento) { <span class="m-chip">Estado del documento: <b>{{ e.estadoDocumento }}</b></span> }
                     @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
                     @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
                     @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
@@ -469,7 +478,10 @@ interface FilaTraza {
                         <tr>
                           <td class="mono">{{ r.id }}<div class="sub-cell">Reproceso #{{ r.numero }} · prioridad {{ r.prioridad }}</div></td>
                           <td class="mono">{{ r.expedienteTecnico }}<div class="sub-cell">El mismo expediente</div></td>
-                          <td>{{ r.tipoFalla }}<div class="sub-cell" style="max-width: 220px;">{{ r.motivo }}</div></td>
+                          <td>{{ r.tipoFalla }}
+                            <div class="sub-cell">{{ r.origen === 'Inconformidad del usuario final' ? 'Inconformidad del usuario final' : 'Falla detectada en F0302' }}</div>
+                            <div class="sub-cell" style="max-width: 220px;">{{ r.motivo }}</div>
+                          </td>
                           <td>{{ (r.tecnicoAsignado || 'Sin asignar').split('—')[0].trim() }}
                             <div class="sub-cell">Reportó: {{ r.solicitadoPor.split('—')[0].trim() }} · {{ r.fechaSolicitud }}</div>
                             @if (r.justificacionUnidad) { <div class="sub-cell">Excepción: {{ r.justificacionUnidad }}</div> }
@@ -501,8 +513,53 @@ interface FilaTraza {
                   </table>
                 </div>
                 <span class="hint">
-                  Un reproceso corrige la preparación por una falla detectada en F0302 y se registra <b>dentro del mismo
-                  Expediente técnico</b>: no crea uno nuevo, no repite el F0288 original y no cuenta como «vez preparado».
+                  Un reproceso corrige la preparación por una falla detectada en F0302 —o por una inconformidad del
+                  usuario final— y se registra <b>dentro del mismo Expediente técnico</b>: no crea uno nuevo, no repite
+                  el F0288 original y no cuenta como «vez preparado».
+                </span>
+              }
+
+              <!-- Inconformidades del usuario final: cómo se resolvió cada una (spec §17) -->
+              @if (inconformidadesEq().length) {
+                <div class="sec-title mt-3">Inconformidades del usuario final</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead>
+                      <tr><th>Corrección</th><th>Intento</th><th>Tipo de problema</th><th>Resolución</th><th>Técnico de Soporte</th><th>Resultado</th><th>Constancia</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (c of inconformidadesEq(); track c.id) {
+                        <tr>
+                          <td class="mono">{{ c.id }}<div class="sub-cell" style="max-width: 220px;">{{ c.observacionUsuario }}</div></td>
+                          <td>#{{ c.intentoNumero }}<div class="sub-cell">{{ c.usuarioFinal }}</div></td>
+                          <td>{{ c.tipoProblema }}</td>
+                          <td>{{ c.resolucion }}
+                            @if (c.reprocesoId) { <div class="sub-cell mono">{{ c.reprocesoId }}</div> }
+                            @if (c.justificacionResolucion) { <div class="sub-cell">Excepción: {{ c.justificacionResolucion }}</div> }
+                          </td>
+                          <td>{{ c.tecnico.split('—')[0].trim() }}
+                            @if (c.firma; as f) { <div class="sub-cell">Firmó {{ f.fecha }} {{ f.hora }}</div> }
+                          </td>
+                          <td>{{ c.resultado || '—' }}</td>
+                          <td>
+                            @if (data.constanciaDeCorreccion(c.id); as d) {
+                              <div class="mono">{{ d.codigo }}</div>
+                              <div class="sub-cell">{{ d.estado }}</div>
+                              <button class="btn btn-ghost btn-sm" (click)="verConstanciaCor.set(c.id)">Ver documento</button>
+                            } @else if (c.reprocesoId && data.constanciaDeReproceso(c.reprocesoId)) {
+                              <div class="sub-cell">Constancia del reproceso</div>
+                              <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(c.reprocesoId)">Ver documento</button>
+                            } @else { <span class="muted small">Pendiente de firma</span> }
+                          </td>
+                          <td><ui-badge [estado]="c.estado" /></td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <span class="hint">
+                  Una inconformidad se resuelve igual que una falla de F0302: se clasifica, se corrige en configuración
+                  o con un reproceso F0288 sobre el mismo Expediente técnico, y se cierra con firma.
                 </span>
               }
             }
@@ -732,6 +789,13 @@ interface FilaTraza {
                     @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
                     @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
                     @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
+                    @if (e.tipoProblema) { <span class="m-chip">Tipo de problema: <b>{{ e.tipoProblema }}</b></span> }
+                    @if (e.resolucion) { <span class="m-chip">Resolución: <b>{{ e.resolucion }}</b></span> }
+                    @if (e.correccion) { <span class="m-chip">Corrección: <b class="mono">{{ e.correccion }}</b></span> }
+                    @if (e.intentoConformidad) { <span class="m-chip">Intento de conformidad: <b>#{{ e.intentoConformidad }}</b></span> }
+                    @if (e.origenReproceso) { <span class="m-chip">Origen del reproceso: <b>{{ e.origenReproceso }}</b></span> }
+                    @if (e.documento) { <span class="m-chip">Documento: <b class="mono">{{ e.documento }}</b></span> }
+                    @if (e.estadoDocumento) { <span class="m-chip">Estado del documento: <b>{{ e.estadoDocumento }}</b></span> }
                     @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
                     @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
                     @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
@@ -786,8 +850,9 @@ interface FilaTraza {
         </ui-modal>
       }
 
-      <!-- Constancia de reproceso: se consulta desde el historial técnico del equipo -->
+      <!-- Constancias: se consultan desde el historial técnico del equipo -->
       <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
+      <ui-constancia-correccion [idCorreccion]="verConstanciaCor()" (cerrado)="verConstanciaCor.set('')" />
     </div>
   `
 })
@@ -801,6 +866,8 @@ export class TrazabilidadComponent {
   protected seleccion = signal('');
   /** Reproceso cuya constancia se está consultando desde el historial técnico. */
   protected verConstancia = signal('');
+  /** Corrección F0302 por inconformidad cuya constancia se está consultando. */
+  protected verConstanciaCor = signal('');
   protected q = signal('');
   protected fAnio = signal('');
   protected fTipo = signal('');
@@ -1135,6 +1202,18 @@ export class TrazabilidadComponent {
     return d ? this.data.reprocesosDeEquipo(d.equipo.inventario) : [];
   });
 
+  /**
+   * Inconformidades del usuario final atendidas sobre este equipo. Van junto a los reprocesos
+   * porque son la otra puerta de entrada al mismo mecanismo de corrección.
+   */
+  protected readonly inconformidadesEq = computed(() => {
+    const d = this.detalle();
+    if (!d) return [];
+    return this.data.correcciones()
+      .filter((c) => c.inventario === d.equipo.inventario)
+      .sort((a, b) => b.intentoNumero - a.intentoNumero);
+  });
+
   /** Resultado legible de un F0302 para la pestaña de configuraciones. */
   protected resultadoF0302(c: ConfiguracionF0302): string {
     if (c.estado === 'Con falla') return 'Con falla';
@@ -1202,7 +1281,9 @@ export class TrazabilidadComponent {
       e.usuarioFinal || e.tiempo || e.complejidad || e.nombreEquipo || e.ipReservada ||
       e.mac || e.estadoSolicitudIP || e.justificacion ||
       e.tipoFalla || e.requiereReproceso || e.accionTomada || e.reproceso || e.evidencia ||
-      e.tecnicoReporta || e.tecnicoHardware || e.resultadoReproceso || e.firmaRegistrada);
+      e.tecnicoReporta || e.tecnicoHardware || e.resultadoReproceso || e.firmaRegistrada ||
+      e.documento || e.estadoDocumento || e.tipoProblema || e.resolucion || e.correccion ||
+      e.intentoConformidad || e.origenReproceso);
   }
 
   private readonly iconos: Record<string, string> = {

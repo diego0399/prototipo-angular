@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 42)**.
+nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 43)**.
 
 ---
 
@@ -2149,6 +2149,42 @@ Expediente único.
       **54 casos, 0 fallos**, más las regresiones de las rondas 41 (68), 40 (95), 39 (108), 38 (58),
       37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13).
       **Sin recorrido manual de clics en navegador.**
+43. **Inconformidad del usuario final — se resuelve igual que una falla de Configuración F0302**
+    (2026-08-06, cuarta sesión del día).
+    * **El problema real**: la inconformidad tenía un camino propio y más débil. Se clasificaba con
+      cuatro «tipos de corrección», se preguntaba a mano si hacía falta un **Expediente técnico
+      nuevo** y, si la respuesta era sí, se creaba uno con su reingreso a Hardware —justo lo que las
+      rondas 39-42 habían quitado del flujo de fallas— y la corrección cerraba **sin firma de nadie**.
+    * Ahora entra por el mismo mecanismo: **trece tipos de problema** con matriz de sugerencia
+      (configuración/software/usuario/dominio/IP/DLP → corrección F0302; accesorio/falla física/disco/
+      memoria → reproceso F0288; red y sistema operativo **dependen** de su propia pregunta, y sin
+      responderla el sistema no sugiere nada). Apartarse de la sugerencia exige justificación escrita.
+    * **Corrección F0302**: checklist propio por tipo de problema, evidencia obligatoria en los ítems
+      que intervienen, cronómetro, código `COR-F0302-2026-0001` y cierre con **firma del Técnico de
+      Soporte** («Debe registrar la firma del Técnico de Soporte para finalizar la corrección.»).
+    * **Reproceso F0288 por inconformidad**: `EXP-PT-2026-0095-R1` sobre el **mismo Expediente
+      técnico**, nace sin dueño, **solo un Encargado lo asigna** y lo cierra la firma del Técnico de
+      Hardware. Guarda su origen, el usuario final y el intento de conformidad, porque atenderlo no es
+      igual: el equipo ya está entregado. Un solo reproceso abierto por expediente (regla de la r41).
+      Si la corrección descubre que el problema es del equipo, se **deriva** sin volver a empezar.
+    * Mientras la inconformidad esté abierta **no se cierra la entrega, no se habilita la garantía y no
+      se permite descargo**; el estado de la incidencia avanza por los dieciséis estados del pedido y
+      se muestra en palabras. Los intentos nunca se sobrescriben y el historial dice qué pasó entre uno
+      y otro. El reenvío del formulario exige firma —de Soporte o de Hardware, según el camino—.
+    * **Constancia de Corrección F0302 por Inconformidad**: se genera al firmar, con código
+      `CONST-COR-2026-0001`, estado «Disponible para consulta», una sola por corrección y sin cambiar
+      la huella al volver a pedirla. Visor propio `ui-constancia-correccion` en `shared/`, hermano del
+      de reproceso, abierto desde historial técnico, expediente único, equipo, Documentos generados,
+      trazabilidad y Entrega y aceptación. El catálogo global ahora lista las dos familias.
+    * **Se quitó** `revisionHardwarePorInconformidad`, el evento «Nuevo Expediente técnico creado por
+      inconformidad», los campos del Caso B y el tipo `TipoCorreccion`. Las correcciones viejas se
+      migran con el checklist vacío a propósito y sin firma inventada: la regla nueva aplicada a datos
+      viejos, no un estado fabricado.
+    * Verificado con `npm run build` limpio (5.246 s, 0 errores; solo las dos advertencias preexistentes
+      de presupuesto CSS), `ng serve` (HTTP 200 en siete rutas y los dos JSON consultados) y **142
+      casos, 0 fallos**, más las regresiones de las rondas 42 (54), 41 (68), 40 (95), 39 (108), 38 (58),
+      37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2186,6 +2222,10 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 43)**: recorrido manual en navegador del ciclo completo de inconformidad
+  —marcar No conforme, clasificar, corregir en F0302 con checklist y evidencia, firmar, reenviar y
+  aceptar— y del camino de reproceso F0288 por inconformidad con asignación de un Encargado.
+  Verificado con build limpio, smoke test HTTP y 142 casos contra el servicio, sin clics reales.
 * **Nuevo pendiente (ronda 42)**: recorrido manual en navegador de la constancia desde las ocho
   pantallas —incluidos «Ver firma» y la descarga—, comprobando que abrirla varias veces no genera
   documentos nuevos y que el catálogo de Documentos generados filtra por sus siete criterios.

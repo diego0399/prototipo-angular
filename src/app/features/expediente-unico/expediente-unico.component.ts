@@ -8,6 +8,7 @@ import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { Equipo, ExpedienteUnico } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe } from '../../shared/ui';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
+import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 
 /**
  * Expediente único: aquí se hace la unión entre la solicitud/requerimiento, el usuario final,
@@ -16,7 +17,8 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
  */
 @Component({
   selector: 'app-expediente-unico',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe, ConstanciaReprocesoComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe,
+    ConstanciaReprocesoComponent, ConstanciaCorreccionComponent],
   styles: `
     .exp-card { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
     .exp-card:hover { box-shadow: var(--shadow-2); border-color: var(--blue-500); }
@@ -413,6 +415,22 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
                       <dt>Corrección de Soporte</dt><dd>{{ k.descripcion }} <div class="sub-cell">{{ k.tecnico }} · {{ k.fecha }} {{ k.hora }}</div></dd>
                     }
                   }
+                  @for (c of inconformidadesDe(x); track c.id) {
+                    <dt>Inconformidad · intento #{{ c.intentoNumero }}</dt>
+                    <dd>
+                      {{ c.tipoProblema }} — resuelta como <b>{{ c.resolucion }}</b>
+                      <div class="sub-cell">{{ c.observacionUsuario }}</div>
+                      <div class="sub-cell mono">{{ c.id }}@if (c.reprocesoId) {  · {{ c.reprocesoId }}} · {{ c.estado }}</div>
+                      @if (data.constanciaDeCorreccion(c.id); as d) {
+                        <div class="sub-cell">
+                          Constancia {{ d.codigo }} · {{ d.estado }}
+                          <button class="btn btn-ghost btn-sm" (click)="verConstanciaCor.set(c.id)">Ver documento</button>
+                        </div>
+                      } @else if (c.resolucion === 'Corrección F0302') {
+                        <div class="sub-cell">Constancia pendiente de firma</div>
+                      }
+                    </dd>
+                  }
                   <dt>Usuario final</dt><dd>{{ solicitudDe(x)?.destinatario }} — {{ solicitudDe(x)?.unidadDestino }}</dd>
                   <dt>Correo institucional</dt><dd>{{ solicitudDe(x)?.correoDestinatario }}</dd>
                 </dl>
@@ -628,8 +646,9 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
         </ui-modal>
       }
 
-      <!-- Constancia del reproceso, consultable desde el expediente único -->
+      <!-- Constancias consultables desde el expediente único -->
       <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
+      <ui-constancia-correccion [idCorreccion]="verConstanciaCor()" (cerrado)="verConstanciaCor.set('')" />
     </div>
   `
 })
@@ -932,8 +951,14 @@ export class ExpedienteUnicoComponent {
   }
   /** Reproceso cuya constancia se consulta desde el expediente único. */
   protected verConstancia = signal('');
+  /** Corrección F0302 por inconformidad cuya constancia se consulta. */
+  protected verConstanciaCor = signal('');
   protected reprocesosDe(x: ExpedienteUnico) {
     return this.data.reprocesos().filter((r) => r.expediente === x.expediente).sort((a, b) => a.numero - b.numero);
+  }
+  /** Inconformidades del usuario final registradas sobre este expediente. */
+  protected inconformidadesDe(x: ExpedienteUnico) {
+    return this.data.correccionesDe(x.expediente);
   }
   /** Configuración F0302 del proceso: aporta el nombre del equipo y la reserva de IP al expediente. */
   protected configDe(x: ExpedienteUnico) { return this.data.configuracionDe(x.expediente); }

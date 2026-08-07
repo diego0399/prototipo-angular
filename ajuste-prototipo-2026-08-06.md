@@ -508,3 +508,169 @@ src/app/features/generador-documentos/documentos.component.ts    (constancias de
 public/assets/data/documentos-generados.json                     (código, estado y datos de filtrado)
 public/assets/data/trazabilidad.json                             (1 evento renombrado + 4 nuevos)
 ```
+
+---
+
+# Parte 4 — La inconformidad del usuario final se resuelve como una falla de F0302
+
+**Fecha:** 6 de agosto de 2026, cuarta sesión del día (ronda 43 del punto de control)
+**Alcance:** el mismo prototipo Angular; sin backend ni base de datos.
+
+## 1. El problema real
+
+La inconformidad tenía su propio camino, más débil que el de una falla de configuración: se
+clasificaba con cuatro «tipos de corrección», se preguntaba a mano si hacía falta un **Expediente
+técnico nuevo** y, si la respuesta era sí, se creaba uno y se registraba un reingreso a Hardware.
+Eso multiplicaba expedientes por un problema del mismo ciclo —justo lo que las rondas 39 a 42
+habían quitado del flujo de fallas— y cerraba la corrección **sin firma de nadie**.
+
+Ahora la inconformidad entra por el mismo mecanismo: se clasifica el problema, la matriz sugiere
+cómo resolverlo, y se corrige en F0302 o con un **reproceso F0288 sobre el mismo Expediente
+técnico**. En ninguno de los dos casos se crea un Expediente técnico principal nuevo.
+
+## 2. Clasificar antes de resolver
+
+Trece tipos de problema (§5). De cada uno sale la resolución sugerida:
+
+```text
+Corrección F0302   configuración · software · usuario o credenciales · dominio ·
+                   IP reservada · Agente DLP
+Reproceso F0288    accesorio faltante · falla física · disco · memoria
+Depende            red  ·  sistema operativo
+```
+
+Los dos «Depende» los decide su propia pregunta —¿la revisión de red es física?, ¿el sistema
+operativo requiere reinstalación o reparación base?—, igual que en la matriz de fallas de F0302.
+Sin responderla el sistema **no sugiere nada**: no se inventa una recomendación.
+
+Apartarse de la sugerencia se puede, pero con justificación escrita. Es la diferencia entre una
+decisión técnica y saltarse la clasificación.
+
+## 3. Corrección F0302: checklist propio y firma
+
+El checklist cambia con el tipo de problema (§11): revisar credenciales no tiene nada que ver con
+revisar un disco. Los ítems que **intervienen** —instalar software, corregir un acceso, la captura
+del Agente DLP— hacen obligatoria la evidencia; revisar y no tocar nada no deja captura que
+mostrar.
+
+La corrección se registra con código propio `COR-F0302-2026-0001`, cronómetro, descripción,
+complejidad y evidencias. Y cierra con **firma del Técnico de Soporte**:
+
+```text
+Debe registrar la firma del Técnico de Soporte para finalizar la corrección.
+```
+
+Sin ella la corrección queda finalizada pero sin responsable, y el formulario no puede reenviarse.
+
+## 4. Reproceso F0288 por inconformidad
+
+Cuando el problema es del equipo se genera `EXP-PT-2026-0095-R1` sobre el **mismo Expediente
+técnico**, con el mecanismo completo de las rondas 40 y 41: nace sin dueño, **solo un Encargado lo
+asigna**, el Técnico de Hardware no se autoasigna, y lo cierra su firma. El reproceso guarda de
+dónde vino —`origen`, usuario final, intento de conformidad y la corrección relacionada—, porque
+atenderlo no es igual: el equipo ya está entregado y hay alguien esperándolo.
+
+Solo un reproceso abierto por Expediente técnico, la misma regla de la ronda 41.
+
+Si durante la corrección se descubre que el problema es del equipo (§15), se **deriva** sin volver
+a empezar: la misma corrección pasa a reproceso F0288 con su motivo.
+
+## 5. Nada se cierra mientras la inconformidad esté abierta
+
+```text
+No se cierra la entrega.       No se habilita la garantía.
+No se acepta el expediente.    No se permite descargo.
+```
+
+El descargo ya exigía aceptación y garantía; el resto ahora tiene además un **estado de incidencia**
+propio que avanza paso a paso (§16), desde `CONFORMIDAD_NO_ACEPTADA` hasta `GARANTIA_HABILITADA`,
+y que la pantalla muestra en palabras, no en jerga.
+
+## 6. Los intentos no se sobrescriben
+
+Cada envío del formulario sigue siendo un intento histórico. El historial ahora dice también qué
+pasó entre uno y otro:
+
+```text
+Formulario de conformidad intento #1: No conforme
+Incidencia: Problema de software — resuelta como Corrección F0302
+Corrección F0302: COR-F0302-2026-0001 — Finalizada y firmada
+Formulario de conformidad intento #2: Conforme
+Garantía habilitada
+```
+
+## 7. Constancia de Corrección F0302 por Inconformidad
+
+Se genera **al firmar**, con la misma regla de la ronda 42: código propio `CONST-COR-2026-0001`,
+estado `Disponible para consulta`, una sola por corrección, y volver a pedirla devuelve la que ya
+existe en lugar de cambiar la huella de un documento firmado. La consulta se anota una vez por
+usuario y documento.
+
+Su visor `ui-constancia-correccion` vive en `shared/` —hermano del de reproceso— y se abre desde
+historial técnico, expediente único, detalle del equipo, Documentos generados, trazabilidad y la
+propia pantalla de Entrega y aceptación. Si la inconformidad se resolvió con reproceso, el
+documento es la **constancia de reproceso** ya existente; ambas conviven en el catálogo global,
+ahora filtrable por documento, código de reproceso o corrección, expediente técnico, inventario,
+técnico responsable, usuario final, fecha, resultado y estado.
+
+## 8. Lo que se quitó
+
+```text
+revisionHardwarePorInconformidad()   la excepción que permitía un Expediente técnico nuevo
+«Nuevo Expediente técnico creado por inconformidad»   el evento y su rama
+requiereNuevoExpediente / expedienteTecnicoNuevo      los campos del Caso B
+TipoCorreccion (cuatro valores)                        sustituido por los trece tipos de problema
+```
+
+Las correcciones guardadas por versiones anteriores se migran: su tipo viejo se traduce, el
+checklist queda **vacío a propósito** —nadie lo llenó entonces— y la firma no se fabrica, así que
+el reenvío esperará a que alguien la registre. Es la regla nueva aplicada a datos viejos, no un
+estado inventado.
+
+## 9. Casos de prueba
+
+**142 casos, 0 fallos**: el bloqueo de cierre, garantía y descargo; los trece tipos de la matriz y
+los dos «Depende» resueltos por su pregunta; la justificación de la excepción; el código de la
+corrección y sus datos; el reenvío bloqueado sin firma y el mensaje literal del pedido; la
+constancia generada al firmar, sin duplicados, y las pantallas donde se abre; el reproceso R1 con
+origen de inconformidad, la asignación solo por Encargados y el cierre por firma de Hardware; el
+correlativo R2 en un segundo intento; el reproceso «No corregido» que no habilita el reenvío; el
+checklist por tipo; los dieciséis estados; y los trece eventos de trazabilidad.
+
+Regresiones: **54** de la ronda 42, **68** de la 41, **95** de la 40, **108** de la 39, **58** de
+la 38, **31** de la 37, **30** de la 36, **29** de la 35, **32** de la 34 y accesorios **CPU 12** y
+**Laptop 13**, todas 0 fallos.
+
+## 10. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [5.246 seconds]`, 0 errores y las
+dos advertencias preexistentes de presupuesto CSS. `ng serve` con HTTP 200 en siete rutas y los dos
+JSON consultados.
+
+**No hubo clics reales en un navegador** (sin Chromium/Playwright en esta sesión). Tampoco se
+sembraron datos: el flujo de inconformidad se genera en la demo, como ya ocurría con los intentos
+y las correcciones —no hay JSON semilla de ninguno de los dos.
+
+## 11. Archivos tocados
+
+```text
+src/app/core/models/models.ts                                    (TipoProblemaInconformidad,
+                                                                  ResolucionInconformidad, ResultadoInconformidad,
+                                                                  EstadoIncidenciaConformidad, ItemCorreccion,
+                                                                  EvidenciaCorreccion, FirmaCorreccion;
+                                                                  CorreccionNoConformidad rehecha; origen y datos de
+                                                                  inconformidad en ReprocesoF0288; campos nuevos en
+                                                                  DocumentoGenerado y EventoTrazabilidad)
+src/app/core/services/data.service.ts                            (matrizInconformidad, sugerenciaInconformidad,
+                                                                  checklistInconformidad, atenderInconformidad,
+                                                                  escalarAReprocesoF0288, finalizarCorreccionF0302,
+                                                                  firmarCorreccionF0302, constancia de corrección,
+                                                                  cierre por reproceso, migración, y la eliminación
+                                                                  del camino del Expediente técnico nuevo)
+src/app/shared/constancia-correccion.ts                          (nuevo: visor de la constancia)
+src/app/features/entrega-aceptacion/entrega.component.ts         (panel «Atender inconformidad» completo)
+src/app/features/reprocesos-f0288/reprocesos.component.ts        (origen del reproceso en bandejas y detalle)
+src/app/features/trazabilidad/trazabilidad.component.ts          (inconformidades del equipo, origen y chips nuevos)
+src/app/features/expediente-unico/expediente-unico.component.ts  (inconformidades y su constancia)
+src/app/features/generador-documentos/documentos.component.ts    (constancias de corrección + catálogo unificado)
+```
