@@ -5,8 +5,9 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { Equipo, ExpedienteUnico } from '../../core/models/models';
+import { ExpedienteUnico } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 
@@ -18,23 +19,49 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
 @Component({
   selector: 'app-expediente-unico',
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe,
-    ConstanciaReprocesoComponent, ConstanciaCorreccionComponent],
+    ConstanciaReprocesoComponent, ConstanciaCorreccionComponent, IconComponent],
   styles: `
     .exp-card { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
     .exp-card:hover { box-shadow: var(--shadow-2); border-color: var(--blue-500); }
     .exp-cod { font-family: var(--font-brand); font-size: 20px; color: var(--navy-900); }
     .exp-sel { border-color: var(--blue-500); box-shadow: 0 0 0 2px var(--blue-100); }
-    .paso-final { border: 2px solid var(--gold-500); box-shadow: 0 0 0 4px var(--gold-100), var(--shadow-1); }
-    .paso-final .card-head { background: linear-gradient(90deg, var(--gold-100), transparent 60%); border-radius: var(--r-lg) var(--r-lg) 0 0; }
-    .resumen-proceso dt { min-width: 190px; }
     .bloqueado { opacity: .55; pointer-events: none; }
-    .sin-asig {
-      display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .05em;
-      color: var(--tx-3); background: var(--surface-2); border: 1px dashed var(--line-strong);
-      border-radius: 999px; padding: 3px 9px; white-space: nowrap;
+
+    /* Proceso guiado: un paso por bloque, separados por una línea y no por tarjetas anidadas. */
+    .crear { border-color: var(--gold-500); }
+    .paso { padding: 16px 0; border-top: 1px solid var(--line); }
+    .paso:first-of-type { padding-top: 4px; border-top: 0; }
+    .paso-t { display: flex; align-items: center; gap: 9px; font-size: 14px; color: var(--navy-900); margin-bottom: 10px; }
+    .paso-t .n {
+      display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+      background: var(--navy-900); color: #fff; font-size: 12px; font-weight: 700;
     }
-    .busq-filtros { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
-    @media (max-width: 800px) { .busq-filtros { grid-template-columns: 1fr; } }
+    /* Estado de cada requisito en una línea, en vez de un párrafo explicando la regla. */
+    .chk { font-size: 13px; margin-top: 8px; display: flex; align-items: center; gap: 7px; }
+    .chk.ok { color: var(--ok); }
+    .chk.pend { color: var(--tx-3); }
+    .chk b { color: var(--navy-900); }
+    .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 20px; margin-top: 8px; }
+    .datos span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tx-3); }
+    .datos b { font-size: 13px; font-weight: 500; color: var(--navy-900); }
+    .datos b + b { font-weight: 400; color: var(--tx-2); font-size: 12.5px; }
+    .valida { margin-top: 14px; padding-top: 10px; border-top: 1px dashed var(--line); }
+    .resumen { background: var(--surface-2); border-radius: var(--r-md); padding: 12px 16px; margin-top: 14px; }
+    .resumen .r-t { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 4px; }
+    /* Filtros rápidos del buscador de solicitudes. */
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-f {
+      border: 1px solid var(--line-strong); background: var(--surface); color: var(--tx-2);
+      border-radius: 999px; padding: 5px 13px; font-size: 12px; cursor: pointer;
+    }
+    .chip-f:hover { border-color: var(--blue-500); }
+    .chip-f.on { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
+    .det-fila { background: var(--surface-2); }
+    .listo { display: flex; align-items: center; gap: 12px; font-size: 14px; }
+    .listo-ico {
+      display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+      background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok-line); font-size: 17px;
+    }
     .cat-busq { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .cat-busq input[type='search'] { flex: 1 1 320px; font-size: 13.5px; padding: 10px 14px; }
     .cat-busq select { max-width: 190px; }
@@ -67,129 +94,167 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
         </div>
       </div>
 
-      <!-- Crear Expediente único (solo Encargado de Soporte) -->
-      <div class="card mb-3 paso-final">
+      <!--
+        Crear Expediente único: proceso guiado de tres pasos. Cada paso aparece cuando el anterior
+        está resuelto, para que la pantalla muestre una decisión a la vez en lugar de todo junto.
+      -->
+      <div class="card mb-3 crear">
         <div class="card-head">
           <div>
             <h2>Crear Expediente único</h2>
-            <p class="sub">Seleccione la solicitud, el equipo preparado y el técnico de configuración</p>
+            <p class="sub">Solicitud · Equipo preparado · Confirmación</p>
           </div>
-          <ui-help texto="Solo el Encargado de Soporte crea el Expediente único: selecciona la solicitud, busca un equipo preparado, verifica su expediente técnico y asigna al técnico de configuración." />
+          <ui-help texto="El Encargado de Soporte elige la solicitud y el equipo preparado; el expediente técnico, el F0288 y el técnico que preparó se completan solos a partir del equipo. Solo falta asignar al técnico de configuración." />
         </div>
         <div class="card-body">
           @if (!esEncSoporte()) {
-            <div class="alert warn mb-2">
-              <span class="alert-ico">!</span>
-              <span>Esta acción corresponde al <b>Encargado de Soporte</b>. Su rol puede consultar el avance, pero no crear el Expediente único.</span>
-            </div>
+            <p class="small muted mb-2">Solo el <b>Encargado de Soporte</b> crea el Expediente único. Su rol puede consultar el avance.</p>
           }
 
           <div [class.bloqueado]="!esEncSoporte()">
-            <div class="field mb-2" style="max-width: 480px;">
-              <label>Solicitud / requerimiento <span class="req">*</span></label>
-              <select class="control" [(ngModel)]="procesoSel">
-                <option value="" disabled>Seleccione la solicitud…</option>
-                @for (s of procesos(); track s.expediente) {
-                  <option [value]="s.expediente">{{ s.expediente }} — {{ s.tipoEquipo | tipoRequerimiento }} · {{ s.destinatario }}</option>
-                }
-              </select>
-              @if (procesos().length === 0) {
-                <span class="hint">Todas las solicitudes ya tienen Expediente único.</span>
-              }
-            </div>
-
-            @if (proceso(); as p) {
-              <div class="stepper mb-2">
+            @if (creado(); as nuevo) {
+              <!-- Confirmación: lo creado y el único paso que sigue -->
+              <div class="listo">
+                <span class="listo-ico"><ui-icon name="check" [size]="18" /></span>
+                <div>
+                  Expediente único <b class="mono">{{ nuevo.codigoUnico }}</b> creado correctamente.
+                  <p class="small muted">Configuración F0302 habilitada para {{ tecnicoConfigDe(nuevo) }}.</p>
+                </div>
+              </div>
+              <div class="row mt-2">
+                <button class="btn btn-gold" (click)="irAConfiguracion(nuevo)">Continuar a Configuración F0302</button>
+                <button class="btn btn-ghost" (click)="creado.set(null)">Crear otro expediente único</button>
+              </div>
+            } @else {
+              <div class="stepper mb-3">
                 @for (paso of pasos(); track paso.lbl; let i = $index) {
                   <div class="step" [class.done]="paso.done" [class.now]="!paso.done && (i === 0 || pasos()[i - 1].done)">
-                    <span class="dot">{{ paso.done ? '✓' : i + 1 }}</span>
+                    <span class="dot">@if (paso.done) { <ui-icon name="check" [size]="12" /> } @else { {{ i + 1 }} }</span>
                     <span class="lbl">{{ paso.lbl }}</span>
                   </div>
                 }
               </div>
 
-              <div class="grid grid-2">
-                <dl class="dl resumen-proceso">
-                  <dt>Solicitud / requerimiento</dt><dd>{{ p.expediente }} · {{ p.tipoEquipo | tipoRequerimiento }}</dd>
-                  <dt>Usuario final</dt><dd>{{ p.destinatario }} — {{ p.unidadDestino }}</dd>
-                  <dt>Correo institucional</dt><dd>{{ p.correoDestinatario }}</dd>
-                  <dt>Equipo preparado</dt>
-                  <dd>
-                    @if (equipoProceso(); as e) {
-                      {{ e | marcaModelo }} · {{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} {{ e.condicion.toLowerCase() }} · inv. {{ e.inventario }}
-                      @if (!asigProceso()) {
-                        <button class="btn btn-ghost btn-sm" style="margin-left: 8px;" (click)="abrirBusqueda()">Cambiar</button>
-                      }
-                    } @else {
-                      <span class="row">
-                        <button class="btn btn-outline btn-sm" (click)="abrirBusqueda()">🔍 Buscar equipo preparado</button>
-                        <span class="sin-asig">SIN ASIGNACIÓN</span>
-                      </span>
-                    }
-                  </dd>
-                  <dt>Estado del proceso</dt><dd><ui-badge [estado]="p.estado" /></dd>
-                </dl>
-                <dl class="dl resumen-proceso">
-                  <dt>Expediente técnico</dt>
-                  <dd>
-                    @if (expTecProceso(); as t) {
-                      {{ t.codigo }} · {{ t.tipoExpediente }} <ui-badge [estado]="t.estado" />
-                    } @else {
-                      <span class="row">
-                        <button class="btn btn-outline btn-sm" (click)="abrirBusquedaTec()">📁 Buscar expediente técnico</button>
-                        <span class="muted small">o seleccione el equipo preparado.</span>
-                      </span>
-                    }
-                  </dd>
-                  <dt>Preparación F0288</dt>
-                  <dd>
-                    @if (prepProceso(); as pr) { <ui-badge [estado]="pr.estado" /> }
-                    @else { <span class="muted">—</span> }
-                  </dd>
-                  <dt>Técnico de preparación</dt>
-                  <dd>{{ expTecProceso()?.tecnicoPreparacion || '—' }}</dd>
-                  <dt>Técnico de configuración</dt>
-                  <dd>
-                    <select class="control" style="max-width: 320px;" [(ngModel)]="tecnicoConfig">
-                      <option value="" disabled>Seleccione al técnico de configuración…</option>
-                      @for (t of tecnicosSoporte(); track t.usuario) {
-                        <option [value]="t.nombre + ' — ' + t.rol">{{ t.nombre }} — {{ t.rol }}</option>
-                      }
-                    </select>
-                  </dd>
-                </dl>
-              </div>
+              <!-- ── Paso 1: solicitud con equipo ya asignado ── -->
+              <section class="paso">
+                <h3 class="paso-t"><span class="n">1</span> Solicitud</h3>
+                @if (proceso(); as p) {
+                  <p class="chk" [class.ok]="!!asigProceso()" [class.pend]="!asigProceso()">
+                    <ui-icon [name]="asigProceso() ? 'check' : 'clock'" [size]="14" />
+                    {{ asigProceso() ? 'Solicitud con equipo asignado' : 'Solicitud sin equipo asignado' }}
+                  </p>
+                  <div class="datos">
+                    <div><span>Solicitud</span><b class="mono">{{ p.expediente }}</b></div>
+                    <div><span>Tipo</span><b>{{ p.tipoEquipo | tipoRequerimiento }}</b></div>
+                    <div><span>Usuario final</span><b>{{ p.destinatario }} — {{ p.unidadDestino }}</b></div>
+                    <div><span>Correo institucional</span><b>{{ p.correoDestinatario }}</b></div>
+                    <div><span>Estado</span><b>{{ p.estado }}</b></div>
+                  </div>
+                  @if (!asigProceso()) {
+                    <div class="alert warn mt-2">
+                      <span class="alert-ico">!</span>
+                      <span>Esta solicitud aún no tiene equipo asignado y no puede crear Expediente único.</span>
+                    </div>
+                    <a class="btn btn-outline btn-sm mt-1" routerLink="/asignacion">Ir a Asignación de equipo</a>
+                  }
+                  <button class="btn btn-ghost btn-sm mt-1" (click)="abrirBusquedaSol()">Cambiar solicitud</button>
+                } @else {
+                  <button class="btn btn-primary" (click)="abrirBusquedaSol()">Buscar solicitud / requerimiento</button>
+                  <span class="hint">Solo aparecen solicitudes con un equipo preparado y asignado al usuario final.</span>
+                }
+              </section>
 
-              @if (!puedeCrear()) {
-                <div class="alert warn mt-2">
-                  <span class="alert-ico">!</span>
-                  <span>Para crear el Expediente único debe existir una solicitud, un <b>equipo preparado</b>, un <b>Expediente técnico completado</b> (F0288 finalizado) y un <b>Técnico de Configuración</b> asignado.</span>
-                </div>
+              <!-- ── Paso 2: el equipo llega de la asignación; aquí solo se revisa ── -->
+              @if (equipoProceso(); as e) {
+                <section class="paso">
+                  <h3 class="paso-t"><span class="n">2</span> Equipo asignado</h3>
+                  <p class="chk ok"><ui-icon name="check" [size]="14" /> Equipo preparado y asignado al usuario final</p>
+                  <div class="datos">
+                    <div><span>Inventario</span><b class="mono">{{ e.inventario }}</b></div>
+                    <div><span>Tipo</span><b>{{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }}</b></div>
+                    <div><span>Marca / modelo</span><b>{{ e | marcaModelo }}</b></div>
+                    <div><span>Estado de asignación</span><b>{{ estadoEquipo(e.inventario) }} · {{ data.estadoAsignacionEquipo(e.inventario) }}</b></div>
+                  </div>
+                  @if (expTecProceso(); as t) {
+                    <p class="chk" [class.ok]="t.estado === 'Preparado'" [class.pend]="t.estado !== 'Preparado'">
+                      <ui-icon [name]="t.estado === 'Preparado' ? 'check' : 'clock'" [size]="14" />
+                      Expediente técnico <b class="mono">{{ t.codigo }}</b>
+                      {{ t.estado === 'Preparado' ? 'completado' : '— ' + t.estado }}
+                    </p>
+                    <p class="chk" [class.ok]="f0288Listo()" [class.pend]="!f0288Listo()">
+                      <ui-icon [name]="f0288Listo() ? 'check' : 'clock'" [size]="14" /> F0288 {{ textoF0288() }}
+                    </p>
+                    <div class="datos">
+                      <div><span>Técnico de preparación</span><b>{{ t.tecnicoPreparacion.split('—')[0].trim() }}</b></div>
+                      <div><span>Fecha de preparación</span><b class="mono">{{ prepProceso()?.fecha || t.fecha }}</b></div>
+                    </div>
+                  } @else {
+                    <p class="chk pend"><ui-icon name="clock" [size]="14" /> Este equipo aún no tiene expediente técnico</p>
+                  }
+                  <span class="hint">El equipo viene de la asignación al usuario final; se cambia desde <a routerLink="/asignacion">Asignación de equipo</a>.</span>
+                </section>
               }
-              <div class="row mt-2" style="justify-content: flex-end;">
-                <button class="btn btn-gold btn-lg" [disabled]="!puedeCrear()" (click)="crearUnico()">
-                  Crear Expediente único y continuar a configuración
-                </button>
-              </div>
-            } @else {
-              <p class="muted small">Seleccione una solicitud para iniciar la creación del Expediente único.</p>
+
+              <!-- ── Paso 3: técnico de configuración y confirmación ── -->
+              @if (equipoProceso()) {
+                <section class="paso">
+                  <h3 class="paso-t"><span class="n">3</span> Confirmación</h3>
+                  @if (tecnicoConfig(); as t) {
+                    <p class="chk ok"><ui-icon name="check" [size]="14" /> Técnico de configuración asignado</p>
+                    <div class="datos">
+                      <div><span>Técnico de configuración</span><b>{{ t }}</b></div>
+                      @if (cargaDe(t); as c) {
+                        <div><span>Carga laboral</span><b>{{ c.carga }} · {{ c.configuraciones }} configuraciones activas</b></div>
+                      }
+                    </div>
+                    <button class="btn btn-ghost btn-sm mt-1" (click)="buscarTecnicoAbierto.set(true)">Cambiar técnico</button>
+                  } @else {
+                    <button class="btn btn-primary" (click)="buscarTecnicoAbierto.set(true)">Buscar técnico de configuración</button>
+                    <span class="hint">Se muestra su carga laboral y disponibilidad antes de asignarlo.</span>
+                  }
+
+                  <!-- Validaciones como checklist, no como párrafo -->
+                  <div class="valida">
+                    @for (v of validaciones(); track v.lbl) {
+                      <p class="chk" [class.ok]="v.ok" [class.pend]="!v.ok">
+                        <ui-icon [name]="v.ok ? 'check' : 'clock'" [size]="14" />
+                        {{ v.ok ? v.lbl : 'Falta ' + v.falta }}
+                      </p>
+                    }
+                  </div>
+
+                  <div class="resumen">
+                    <div class="r-t">Resumen para crear Expediente único</div>
+                    <div class="datos">
+                      <div><span>Solicitud</span><b class="mono">{{ proceso()?.expediente }}</b><b>{{ proceso()?.tipoEquipo | tipoRequerimiento }}</b></div>
+                      <div><span>Usuario final</span><b>{{ proceso()?.destinatario }}</b><b>{{ proceso()?.correoDestinatario }}</b></div>
+                      <div><span>Equipo</span><b class="mono">{{ equipoProceso()?.inventario }}</b><b>{{ equipoProceso()?.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} · {{ equipoProceso()?.marca }} {{ equipoProceso()?.modelo }}</b></div>
+                      <div><span>Expediente técnico</span><b class="mono">{{ expTecProceso()?.codigo || '—' }}</b><b>F0288 {{ textoF0288() }}</b></div>
+                      <div><span>Técnico de preparación</span><b>{{ expTecProceso()?.tecnicoPreparacion?.split('—')?.[0]?.trim() || '—' }}</b></div>
+                      <div><span>Técnico de configuración</span><b>{{ tecnicoConfig() || 'Pendiente' }}</b></div>
+                    </div>
+                  </div>
+
+                  <button class="btn btn-gold btn-lg mt-2" [disabled]="!puedeCrear()" (click)="crearUnico()">
+                    Crear Expediente único
+                  </button>
+                  @if (falta(); as f) { <span class="hint">{{ f }}</span> }
+                </section>
+              }
             }
           </div>
         </div>
       </div>
 
       <!-- Catálogo de expedientes únicos: buscador + filtros + tabla compacta -->
-      @if (auth.esTecnico()) {
-        <div class="alert mb-2">
-          <span class="alert-ico">i</span>
-          <span>Vista filtrada por usuario: solo se muestran los <b>expedientes únicos donde usted participa</b> o tiene tareas asignadas.</span>
-        </div>
-      }
       <div class="card mb-2">
         <div class="card-head">
           <div>
             <h2>Buscar Expediente único</h2>
-            <p class="sub">Catálogo filtrable: no dependa de listas largas ni de revisión manual</p>
+            <p class="sub">
+              @if (auth.esTecnico()) { Solo los expedientes donde usted participa }
+              @else { Busque por expediente, solicitud, inventario o usuario final }
+            </p>
           </div>
         </div>
         <div class="card-body">
@@ -509,14 +574,14 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
 
             @if (x.estado === 'Aceptado' || x.estado === 'Cerrado') {
               <div class="alert ok mb-2">
-                <span class="alert-ico">✓</span>
+                <span class="alert-ico"><ui-icon name="check" [size]="13" /></span>
                 <span>El expediente permanece <b>disponible para registrar casos de garantía</b> después de la aceptación del usuario final.</span>
                 <a class="btn btn-outline btn-sm" routerLink="/garantia" style="margin-left: auto;">Servicio de garantía</a>
               </div>
             }
 
             <details class="acc">
-              <summary>Ver contenido del expediente ({{ x.anexos.length }} elementos) <span class="acc-arrow">▶</span></summary>
+              <summary>Ver contenido del expediente ({{ x.anexos.length }} elementos) <span class="acc-arrow"><ui-icon name="chevron" [size]="13" /></span></summary>
               <div class="acc-body table-wrap">
                 <table class="tbl">
                   <thead><tr><th>Elemento</th><th>Detalle</th><th>Estado</th><th>Fecha</th></tr></thead>
@@ -535,7 +600,7 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
             </details>
 
             <details class="acc mt-1">
-              <summary>Ver trazabilidad resumida <span class="acc-arrow">▶</span></summary>
+              <summary>Ver trazabilidad resumida <span class="acc-arrow"><ui-icon name="chevron" [size]="13" /></span></summary>
               <div class="acc-body">
                 <div class="timeline">
                   @for (e of hitosDe(x); track $index) {
@@ -555,47 +620,66 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
         }
       }
 
-      <!-- Búsqueda de equipos preparados -->
-      @if (buscarAbierto()) {
-        <ui-modal titulo="Buscar equipo preparado" sub="Solo se muestran equipos preparados, no asignados y con expediente técnico completado" (cerrar)="buscarAbierto.set(false)">
-          <div class="busq-filtros">
-            <input class="control" type="search" placeholder="Inventario, marca o modelo…" [(ngModel)]="q" />
-            <select class="control" [(ngModel)]="fTipo">
-              <option value="">Tipo: todos</option>
-              <option value="Laptop">Laptop</option>
-              <option value="Desktop">CPU / Desktop</option>
-            </select>
-            <select class="control" [(ngModel)]="fCond">
-              <option value="">Condición: todas</option>
-              <option value="Nuevo">Nuevo</option>
-              <option value="Usado">Usado</option>
-            </select>
+      <!-- Paso 1 · Búsqueda de solicitudes: solo las que ya tienen equipo asignado -->
+      @if (buscarSolAbierto()) {
+        <ui-modal titulo="Buscar solicitud / requerimiento" sub="Solo solicitudes con equipo preparado y asignado al usuario final" (cerrar)="buscarSolAbierto.set(false)">
+          <div class="field mb-2">
+            <input class="control" type="search" placeholder="Código, tipo, usuario final, correo, inventario, estado o fecha…" [(ngModel)]="qSol" />
           </div>
-
+          <div class="chips mb-2">
+            @for (fx of filtrosSolicitud; track fx) {
+              <button class="chip-f" [class.on]="fSol() === fx" (click)="fSol.set(fx)">{{ fx }}</button>
+            }
+          </div>
           <div class="table-wrap">
             <table class="tbl">
               <thead>
-                <tr><th>Inventario</th><th>Equipo</th><th>Expediente técnico</th><th>Preparación</th><th>Asignación</th><th style="text-align:right;"></th></tr>
+                <tr><th>Código</th><th>Tipo</th><th>Usuario final</th><th>Equipo asignado</th><th>Inventario</th><th>Asignación</th><th>F0288</th><th>Estado</th><th style="text-align:right;">Acción</th></tr>
               </thead>
               <tbody>
-                @for (e of disponibles(); track e.inventario) {
+                @for (s of solicitudesFiltradas(); track s.expediente) {
                   <tr>
-                    <td class="mono main-cell">{{ e.inventario }}</td>
+                    <td class="mono main-cell">{{ s.expediente }}</td>
+                    <td>{{ s.tipoEquipo | tipoRequerimiento }}</td>
+                    <td>{{ s.destinatario }}<div class="sub-cell">{{ s.correoDestinatario }}</div></td>
+                    <td>{{ equipoAsignadoTexto(s.expediente) }}</td>
+                    <td class="mono">{{ inventarioDe(s.expediente) }}</td>
+                    <td><ui-badge estado="Asignado" /></td>
+                    <td><ui-badge [estado]="estadoF0288De(inventarioDe(s.expediente))" /></td>
+                    <td><ui-badge [estado]="s.estado" /></td>
                     <td>
-                      <div class="main-cell">{{ e | marcaModelo }}</div>
-                      <div class="sub-cell">{{ e.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · {{ e.condicion.toLowerCase() }}</div>
-                    </td>
-                    <td class="mono">{{ data.expTecnicoDeEquipo(e.inventario)?.codigo }}</td>
-                    <td><ui-badge [estado]="'Preparado'" /></td>
-                    <td><ui-badge [estado]="'No asignado'" /></td>
-                    <td>
-                      <div class="row" style="justify-content: flex-end;">
-                        <button class="btn btn-primary btn-sm" (click)="seleccionarEquipo(e)">Seleccionar</button>
+                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                        <button class="btn btn-ghost btn-sm" (click)="detalleSol.set(detalleSol() === s.expediente ? '' : s.expediente)">
+                          {{ detalleSol() === s.expediente ? 'Ocultar' : 'Ver detalle' }}
+                        </button>
+                        <button class="btn btn-primary btn-sm" (click)="seleccionarSolicitud(s.expediente)">Seleccionar</button>
                       </div>
                     </td>
                   </tr>
+                  @if (detalleSol() === s.expediente) {
+                    <tr>
+                      <td colspan="9" class="det-fila">
+                        <div class="datos">
+                          <div><span>Requerimiento</span><b>{{ s.descripcion }}</b></div>
+                          <div><span>Dirección / gerencia</span><b>{{ s.direccionGerencia }}</b></div>
+                          <div><span>Carné</span><b class="mono">{{ s.carne }}</b></div>
+                          <div><span>Expediente técnico</span><b class="mono">{{ expTecnicoDeSolicitud(s.expediente) }}</b></div>
+                          <div><span>Técnico de preparación</span><b>{{ tecnicoPreparoDe(s.expediente) }}</b></div>
+                          <div><span>Fecha de la solicitud</span><b class="mono">{{ s.fecha }}</b></div>
+                        </div>
+                      </td>
+                    </tr>
+                  }
                 } @empty {
-                  <tr><td colspan="6" class="muted" style="text-align:center; padding: 22px;">No hay equipos preparados disponibles. Prepare equipos con Expediente técnico + F0288.</td></tr>
+                  <tr><td colspan="9" class="muted" style="text-align:center; padding: 26px;">
+                    @if (data.solicitudesParaExpedienteUnico().length) {
+                      Ninguna solicitud coincide con la búsqueda.
+                    } @else {
+                      <b>No hay solicitudes disponibles para crear Expediente único.</b>
+                      <div class="mt-1">Solo se muestran solicitudes que ya tienen un equipo preparado y asignado al usuario final.</div>
+                      <a class="btn btn-outline btn-sm mt-2" routerLink="/asignacion" (click)="buscarSolAbierto.set(false)">Ir a Asignación de equipo</a>
+                    }
+                  </td></tr>
                 }
               </tbody>
             </table>
@@ -603,42 +687,49 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
         </ui-modal>
       }
 
-      <!-- Catálogo de expedientes técnicos completados -->
-      @if (buscarTecAbierto()) {
-        <ui-modal titulo="Buscar expediente técnico" sub="Solo expedientes técnicos completados, con F0288 finalizado y equipo preparado sin asignar" (cerrar)="buscarTecAbierto.set(false)">
-          <div class="field mb-2">
-            <input class="control" type="search"
-              placeholder="Código, inventario, marca, modelo, tipo de equipo, técnico o fecha…"
-              [(ngModel)]="qTec" />
-          </div>
+      <!-- Paso 3 · Búsqueda del técnico de configuración -->
+      @if (buscarTecnicoAbierto()) {
+        <ui-modal titulo="Buscar técnico de configuración" sub="Se muestra la carga de trabajo de cada técnico antes de asignarlo" (cerrar)="buscarTecnicoAbierto.set(false)">
           <div class="table-wrap">
             <table class="tbl">
               <thead>
-                <tr><th>Expediente técnico</th><th>Inventario</th><th>Equipo</th><th>Técnico que preparó</th><th>Fecha</th><th>F0288</th><th style="text-align:right;"></th></tr>
+                <tr><th>Nombre</th><th>Rol</th><th>Unidad</th><th>Carga laboral</th><th>Configuraciones activas</th><th>Disponibilidad</th><th style="text-align:right;">Acción</th></tr>
               </thead>
               <tbody>
-                @for (r of tecnicosDisponibles(); track r.tec.codigo) {
+                @for (t of tecnicosSoporte(); track t.nombreRol) {
                   <tr>
+                    <td class="main-cell">{{ t.usuario.nombre }}</td>
+                    <td>{{ t.usuario.rol }}</td>
+                    <td>{{ t.usuario.unidad }}</td>
+                    <td><ui-badge [estado]="t.carga" /></td>
+                    <td class="mono">{{ t.configuraciones }}</td>
+                    <td>{{ t.disponibilidad }}</td>
                     <td>
-                      <div class="mono main-cell">{{ r.tec.codigo }}</div>
-                      <div class="sub-cell">{{ r.tec.tipoExpediente }}</div>
-                    </td>
-                    <td class="mono">{{ r.equipo.inventario }}</td>
-                    <td>
-                      <div class="main-cell">{{ r.equipo | marcaModelo }}</div>
-                      <div class="sub-cell">{{ r.equipo.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · {{ r.equipo.condicion.toLowerCase() }}</div>
-                    </td>
-                    <td>{{ r.tec.tecnicoPreparacion.split('—')[0].trim() }}</td>
-                    <td class="mono">{{ r.tec.fecha }}</td>
-                    <td><ui-badge [estado]="'Completada'" /></td>
-                    <td>
-                      <div class="row" style="justify-content: flex-end;">
-                        <button class="btn btn-primary btn-sm" (click)="seleccionarTec(r.equipo.inventario)">Seleccionar</button>
+                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                        <button class="btn btn-ghost btn-sm" (click)="detalleTec.set(detalleTec() === t.nombreRol ? '' : t.nombreRol)">
+                          {{ detalleTec() === t.nombreRol ? 'Ocultar' : 'Ver detalle' }}
+                        </button>
+                        <button class="btn btn-primary btn-sm" (click)="seleccionarTecnico(t.nombreRol)">Seleccionar</button>
                       </div>
                     </td>
                   </tr>
+                  @if (detalleTec() === t.nombreRol) {
+                    <tr>
+                      <td colspan="7" class="det-fila">
+                        <div class="datos">
+                          <div><span>Configuraciones F0302 sin cerrar</span><b>{{ t.configuraciones }}</b></div>
+                          <div><span>Procesos donde ya configura</span><b>{{ t.procesos }}</b></div>
+                          <div><span>Carga total</span><b>{{ t.total }} · {{ t.carga }}</b></div>
+                          <div><span>Usuario del sistema</span><b class="mono">{{ t.usuario.usuario }}</b></div>
+                          @if (t.usuario.direccionAsignada) {
+                            <div><span>Dirección asignada</span><b>{{ t.usuario.direccionAsignada }}</b></div>
+                          }
+                        </div>
+                      </td>
+                    </tr>
+                  }
                 } @empty {
-                  <tr><td colspan="7" class="muted" style="text-align:center; padding: 22px;">No hay expedientes técnicos completados listos para anexar con esa búsqueda.</td></tr>
+                  <tr><td colspan="7" class="muted" style="text-align:center; padding: 22px;">No hay técnicos de Soporte activos.</td></tr>
                 }
               </tbody>
             </table>
@@ -795,32 +886,38 @@ export class ExpedienteUnicoComponent {
       ? this.casoActivo.expediente()
       : ''
   );
-  protected equipoSel = signal('');
   protected tecnicoConfig = signal('');
-  protected buscarAbierto = signal(false);
-  protected q = signal('');
-  protected fTipo = signal('');
-  protected fCond = signal('');
-  protected buscarTecAbierto = signal(false);
-  protected qTec = signal('');
+  /** Buscadores de los pasos 1 y 3: el select largo se sustituyó por catálogos con detalle. */
+  protected buscarSolAbierto = signal(false);
+  protected qSol = signal('');
+  protected fSol = signal('Todas');
+  protected detalleSol = signal('');
+  protected buscarTecnicoAbierto = signal(false);
+  protected detalleTec = signal('');
+
+  /**
+   * Filtros rápidos del catálogo. Ya no hace falta uno de «Sin Expediente único» ni de
+   * «Pendientes»: la lista solo trae solicitudes con equipo asignado y sin expediente, así que
+   * ambos filtrarían cero.
+   */
+  protected readonly filtrosSolicitud = ['Todas', 'Requerimiento de CPU', 'Requerimiento de Laptop'];
 
   protected readonly esEncSoporte = computed(() => this.auth.usuario()?.clave === 'enc-soporte');
 
-  /** Solicitudes que aún no tienen Expediente único. */
-  protected readonly procesos = computed(() =>
-    this.data.solicitudes().filter((s) => !this.data.expedienteUnicoDe(s.expediente))
-  );
   protected readonly proceso = computed(() =>
     this.procesoSel() ? this.data.solicitud(this.procesoSel()) : undefined
   );
   protected readonly asigProceso = computed(() =>
     this.procesoSel() ? this.data.asignacionDe(this.procesoSel()) : undefined
   );
-  /** Equipo del proceso: el ya asignado a la solicitud, o el seleccionado en la búsqueda. */
+  /**
+   * Equipo del proceso: siempre el de la asignación al usuario final. Ya no se busca a mano aquí
+   * —el equipo del Expediente único es el que se asignó antes—, así que si la solicitud no tiene
+   * asignación tampoco hay equipo que consolidar.
+   */
   protected readonly equipoProceso = computed(() => {
     const asig = this.asigProceso();
-    if (asig) return this.data.equipoDe(asig.equipoInventario);
-    return this.equipoSel() ? this.data.equipoDe(this.equipoSel()) : undefined;
+    return asig ? this.data.equipoDe(asig.equipoInventario) : undefined;
   });
   protected readonly expTecProceso = computed(() => {
     const e = this.equipoProceso();
@@ -831,80 +928,145 @@ export class ExpedienteUnicoComponent {
     return t ? this.data.preparacionPorCodigo(t.codigo) : undefined;
   });
 
+  /**
+   * Tres pasos visibles, no seis. El expediente técnico y el F0288 no son un paso propio: se
+   * completan al elegir el equipo preparado, así que se muestran como resultado del paso 2.
+   */
   protected readonly pasos = computed(() => [
-    { lbl: 'Solicitud seleccionada', done: !!this.proceso() },
-    { lbl: 'Equipo preparado seleccionado', done: !!this.equipoProceso() },
-    { lbl: 'Expediente técnico completado (F0288)', done: this.expTecProceso()?.estado === 'Preparado' },
-    { lbl: 'Técnico de configuración asignado', done: !!this.tecnicoConfig() },
-    { lbl: 'Crear Expediente único', done: false },
-    { lbl: 'Continuar a Configuración F0302', done: false }
+    { lbl: 'Solicitud', done: !!this.proceso() },
+    { lbl: 'Equipo asignado', done: !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' },
+    { lbl: 'Confirmación', done: this.puedeCrear() }
   ]);
 
+  /**
+   * Mismos requisitos de siempre, más los dos que ahora son explícitos: la solicitud debe traer su
+   * equipo asignado (de ahí sale `equipoProceso`) y no puede tener ya un Expediente único.
+   */
   protected readonly puedeCrear = computed(() =>
     this.esEncSoporte() && !!this.proceso() && !!this.proceso()?.correoDestinatario &&
-    !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' && !!this.tecnicoConfig()
+    !!this.asigProceso() && !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' &&
+    !this.data.expedienteUnicoDe(this.procesoSel()) && !!this.tecnicoConfig()
   );
 
-  protected readonly tecnicosSoporte = computed(() =>
-    this.data.usuarios().filter((u) => u.clave === 'tec-soporte')
-  );
+  /** ¿El F0288 del equipo elegido está finalizado y firmado? */
+  protected f0288Listo(): boolean {
+    const prep = this.prepProceso();
+    return prep?.estado === 'Completada' && prep?.firma?.estado === 'Firmado';
+  }
+  protected textoF0288(): string {
+    const prep = this.prepProceso();
+    if (!prep) return 'sin registrar';
+    if (prep.estado !== 'Completada') return prep.estado.toLowerCase();
+    return prep.firma?.estado === 'Firmado' ? 'finalizado y firmado' : 'finalizado, pendiente de firma';
+  }
 
-  /** Solo equipos preparados, con expediente técnico y no asignados. */
-  protected readonly disponibles = computed(() => {
-    const q = this.q().toLowerCase().trim();
-    return this.data.equiposDisponiblesParaAsignar().filter((e) => {
-      if (this.fTipo() && e.tipo !== this.fTipo()) return false;
-      if (this.fCond() && e.condicion !== this.fCond()) return false;
+  /**
+   * Los cinco requisitos como checklist, con el verbo de lo que falta. Sustituye al párrafo que
+   * repetía la regla completa aunque solo faltara un dato.
+   */
+  protected readonly validaciones = computed(() => [
+    { lbl: 'Solicitud con equipo asignado', falta: 'seleccionar una solicitud con equipo asignado', ok: !!this.proceso() && !!this.asigProceso() },
+    { lbl: 'Equipo preparado', falta: 'que el equipo esté preparado', ok: !!this.equipoProceso() },
+    { lbl: 'Expediente técnico completado', falta: 'un expediente técnico completado', ok: this.expTecProceso()?.estado === 'Preparado' },
+    { lbl: 'F0288 firmado', falta: 'finalizar y firmar el F0288 del equipo', ok: this.f0288Listo() },
+    { lbl: 'Técnico de configuración asignado', falta: 'asignar técnico de configuración', ok: !!this.tecnicoConfig() }
+  ]);
+
+  /**
+   * Qué falta, en una línea. Es el primer requisito sin cumplir: quien lo lee necesita saber qué
+   * hacer ahora, no la norma entera.
+   */
+  protected falta(): string {
+    if (this.puedeCrear()) return '';
+    if (!this.esEncSoporte()) return 'Solo el Encargado de Soporte puede crear el Expediente único.';
+    if (!this.proceso()) return 'Seleccione la solicitud.';
+    if (this.data.expedienteUnicoDe(this.procesoSel())) return 'Esta solicitud ya tiene un Expediente único.';
+    if (!this.asigProceso() || !this.equipoProceso()) {
+      return 'Esta solicitud aún no tiene equipo asignado y no puede crear Expediente único.';
+    }
+    if (!this.proceso()?.correoDestinatario) return 'La solicitud no tiene correo institucional del usuario final.';
+    if (this.expTecProceso()?.estado !== 'Preparado') return 'El expediente técnico del equipo aún no está completado (F0288).';
+    return 'Asigne al técnico de configuración.';
+  }
+
+  /** Estado de preparación del equipo, para mostrarlo junto a los datos autocompletados. */
+  protected estadoEquipo(inventario: string): string {
+    return this.data.estadoPreparacionEquipo(inventario);
+  }
+
+  /** Expediente único recién creado: la pantalla pasa a confirmación y al paso siguiente. */
+  protected creado = signal<ExpedienteUnico | null>(null);
+
+  /** Deja el caso activo sembrado y abre Configuración F0302, que es lo que sigue. */
+  protected irAConfiguracion(x: ExpedienteUnico): void {
+    this.casoActivo.seleccionar(x.expediente);
+    this.router.navigate(['/configuracion']);
+  }
+
+  /** Técnicos de Soporte con su carga: el modal del paso 3 la muestra antes de asignar. */
+  protected readonly tecnicosSoporte = computed(() => this.data.tecnicosSoporteConCarga());
+  protected cargaDe(nombreRol: string) {
+    return this.tecnicosSoporte().find((t) => t.nombreRol === nombreRol);
+  }
+
+  /**
+   * Catálogo de solicitudes del paso 1: solo las que ya tienen equipo asignado al usuario final,
+   * con su preparación terminada y sin Expediente único. El filtro vive en el servicio; aquí solo
+   * se busca y se separa por tipo de requerimiento.
+   */
+  protected readonly solicitudesFiltradas = computed(() => {
+    const q = this.qSol().toLowerCase().trim();
+    const filtro = this.fSol();
+    return this.data.solicitudesParaExpedienteUnico().filter((s) => {
+      if (filtro === 'Requerimiento de CPU' && s.tipoEquipo !== 'Desktop') return false;
+      if (filtro === 'Requerimiento de Laptop' && s.tipoEquipo !== 'Laptop') return false;
       if (!q) return true;
-      return `${e.inventario} ${e.marca} ${e.modelo} ${e.serie}`.toLowerCase().includes(q);
+      return [s.expediente, this.data.tipoRequerimientoTexto(s), s.destinatario, s.correoDestinatario,
+        s.unidadDestino, s.estado, s.fecha, s.descripcion, this.inventarioDe(s.expediente),
+        this.equipoAsignadoTexto(s.expediente), this.expTecnicoDeSolicitud(s.expediente)]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
   });
 
-  /**
-   * Catálogo de expedientes técnicos listos para anexar: completados (Preparado), con F0288
-   * finalizado y cuyo equipo sigue sin asignar. Permite buscar por código, inventario, marca,
-   * modelo, tipo de equipo, técnico que preparó o fecha.
-   */
-  protected readonly tecnicosDisponibles = computed(() => {
-    const q = this.qTec().toLowerCase().trim();
-    return this.data.equiposDisponiblesParaAsignar()
-      .map((equipo) => ({ equipo, tec: this.data.expTecnicoDeEquipo(equipo.inventario)! }))
-      .filter(({ equipo, tec }) => {
-        if (!q) return true;
-        return `${tec.codigo} ${equipo.inventario} ${equipo.marca} ${equipo.modelo} ${tec.tipoEquipo} ${tec.tipoExpediente} ${tec.tecnicoPreparacion} ${tec.fecha} ${tec.estado}`
-          .toLowerCase().includes(q);
-      });
-  });
-
-  protected abrirBusqueda(): void {
-    const s = this.proceso();
-    if (!s) {
-      this.toast.warn('Seleccione primero la solicitud', 'Elija la solicitud antes de buscar el equipo preparado.');
-      return;
-    }
-    this.fTipo.set(s.tipoEquipo);
-    this.q.set('');
-    this.buscarAbierto.set(true);
+  /** Datos del equipo ya asignado a la solicitud, para las columnas del catálogo. */
+  protected inventarioDe(id: string): string {
+    return this.data.asignacionDe(id)?.equipoInventario ?? '';
+  }
+  protected equipoAsignadoTexto(id: string): string {
+    const e = this.data.equipoDe(this.inventarioDe(id));
+    return e ? `${e.marca} ${e.modelo}` : '—';
+  }
+  protected expTecnicoDeSolicitud(id: string): string {
+    return this.data.expTecnicoDeEquipo(this.inventarioDe(id))?.codigo ?? '—';
+  }
+  protected tecnicoPreparoDe(id: string): string {
+    const t = this.data.expTecnicoDeEquipo(this.inventarioDe(id));
+    return t ? t.tecnicoPreparacion.split('—')[0].trim() : '—';
   }
 
-  protected abrirBusquedaTec(): void {
-    if (!this.proceso()) {
-      this.toast.warn('Seleccione primero la solicitud', 'Elija la solicitud antes de buscar el expediente técnico a anexar.');
-      return;
-    }
-    this.qTec.set('');
-    this.buscarTecAbierto.set(true);
+  /** Estado del F0288 del equipo, tal como se muestra en el buscador y en el resumen. */
+  protected estadoF0288De(inventario: string): string {
+    const tec = this.data.expTecnicoDeEquipo(inventario);
+    const prep = tec ? this.data.preparacionPorCodigo(tec.codigo) : undefined;
+    return prep?.estado || 'Sin registrar';
   }
 
-  protected seleccionarEquipo(e: Equipo): void {
-    this.equipoSel.set(e.inventario);
-    this.buscarAbierto.set(false);
+  protected abrirBusquedaSol(): void {
+    this.qSol.set('');
+    this.fSol.set('Todas');
+    this.detalleSol.set('');
+    this.buscarSolAbierto.set(true);
   }
 
-  /** Anexar por expediente técnico: selecciona el equipo preparado al que pertenece. */
-  protected seleccionarTec(inventario: string): void {
-    this.equipoSel.set(inventario);
-    this.buscarTecAbierto.set(false);
+  protected seleccionarSolicitud(id: string): void {
+    this.procesoSel.set(id);
+    this.buscarSolAbierto.set(false);
+  }
+
+  protected seleccionarTecnico(nombreRol: string): void {
+    this.tecnicoConfig.set(nombreRol);
+    this.buscarTecnicoAbierto.set(false);
+    this.detalleTec.set('');
   }
 
   protected crearUnico(): void {
@@ -914,27 +1076,20 @@ export class ExpedienteUnicoComponent {
       return;
     }
     if (!p || !this.puedeCrear()) {
-      this.toast.warn('Datos incompletos', 'Para crear el Expediente único debe existir una solicitud, un equipo preparado, un Expediente técnico completado y un Técnico de Configuración asignado.');
+      this.toast.warn('Falta un dato', this.falta());
       return;
     }
     const u = this.auth.usuario();
     const quien = `${u?.nombre} — ${u?.rol}`;
-    // Si el equipo aún no está asignado a la solicitud, se registra la asignación en este paso.
-    if (!this.asigProceso()) {
-      const eq = this.equipoProceso()!;
-      const error = this.data.asignarEquipo(p.expediente, eq.inventario, quien, '', p.tipoEquipo === 'Laptop');
-      if (error) {
-        this.toast.error('No se puede asignar el equipo', error);
-        return;
-      }
-    }
+    // El equipo ya viene de la asignación al usuario final: esta pantalla ya no la registra.
     const creado = this.data.crearExpedienteUnico(p.expediente, this.tecnicoConfig(), quien);
     if (creado) {
-      this.toast.ok(`Expediente único ${creado.codigoUnico} creado`, 'La Configuración F0302 quedó habilitada para el técnico asignado.');
+      this.toast.ok(`${creado.codigoUnico} creado`, 'Configuración F0302 habilitada.');
       this.detalle.set(creado);
-      this.verDetalle.set(true);
+      // La tarjeta de creación pasa a confirmación: lo creado y el paso que sigue, nada más.
+      this.creado.set(creado);
+      this.verDetalle.set(false);
       this.procesoSel.set('');
-      this.equipoSel.set('');
       this.tecnicoConfig.set('');
     } else {
       this.toast.error('No fue posible crear el Expediente único', 'Verifique el equipo preparado y los datos del proceso.');

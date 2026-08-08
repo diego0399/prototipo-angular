@@ -5,6 +5,7 @@ import { Conformidad } from '../../core/models/models';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 
 /**
  * Vista EXTERNA del formulario de conformidad. Simula el enlace único que el
@@ -13,7 +14,7 @@ import { BadgeComponent } from '../../shared/ui';
  */
 @Component({
   selector: 'app-conformidad',
-  imports: [FormsModule, SlicePipe, BadgeComponent],
+  imports: [FormsModule, SlicePipe, BadgeComponent, IconComponent],
   styles: `
     :host { display: block; min-height: 100vh; background: var(--bg); }
     .banda {
@@ -161,7 +162,7 @@ import { BadgeComponent } from '../../shared/ui';
               </button>
             } @else {
               <div class="gracias" [class.mala]="conf()?.estado === 'No conforme'">
-                <div class="g-ico">{{ conf()?.estado === 'No conforme' ? '!' : '✓' }}</div>
+                <div class="g-ico"><ui-icon [name]="conf()?.estado === 'No conforme' ? 'alert' : 'check'" [size]="28" /></div>
                 <h2>{{ conf()?.estado === 'No conforme' ? 'Inconformidad registrada' : 'Conformidad registrada' }}</h2>
                 <p class="muted mt-1" style="max-width: 52ch; margin-inline: auto;">
                   @if (conf()?.estado === 'No conforme') {

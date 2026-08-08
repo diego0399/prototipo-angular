@@ -7,11 +7,12 @@ import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPreparacion } from '../../shared/buscar-expediente';
 
 @Component({
   selector: 'app-preparacion',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent, IconComponent],
   styles: `
     .item-row { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
     .item-row:last-child { border-bottom: 0; }
@@ -134,7 +135,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
               }
             </div>
             @if (opciones().length > (prep() ? 1 : 0)) {
-              <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)">🔍 Buscar otros expedientes</button>
+              <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)"><ui-icon name="search" [size]="14" /> Buscar otros expedientes</button>
             }
           </div>
           @if (auth.esTecnico()) {
@@ -229,7 +230,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                     la hora y el técnico que inició; el evento se anota en la trazabilidad del equipo.
                   </p>
                 </div>
-                <button class="btn btn-gold btn-lg" [disabled]="p.estado === 'Completada'" (click)="iniciar(p)">▶ Iniciar preparación</button>
+                <button class="btn btn-gold btn-lg" [disabled]="p.estado === 'Completada'" (click)="iniciar(p)"><ui-icon name="chevron" [size]="14" /> Iniciar preparación</button>
               </div>
             } @else if (enCurso(p)) {
               <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
@@ -430,7 +431,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                     (change)="toggleSeccion(p, sec, $event)" /> Seleccionar todo
                 </label>
               }
-              <span class="acc-arrow">▶</span>
+              <span class="acc-arrow"><ui-icon name="chevron" [size]="13" /></span>
             </summary>
             <div class="acc-body">
               @for (item of sec.items; track item.nombre) {
@@ -477,7 +478,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
         <!-- Secciones ocultas por checklist dinámico -->
         @if (p.seccionesOcultas.length > 0) {
           <details class="acc subtle mt-1">
-            <summary class="muted">Secciones ocultas por el checklist dinámico ({{ p.seccionesOcultas.length }}) <span class="acc-arrow">▶</span></summary>
+            <summary class="muted">Secciones ocultas por el checklist dinámico ({{ p.seccionesOcultas.length }}) <span class="acc-arrow"><ui-icon name="chevron" [size]="13" /></span></summary>
             <div class="acc-body">
               @for (o of p.seccionesOcultas; track o.nombre) {
                 <p class="small"><b>{{ o.nombre }}</b> — <span class="muted">{{ o.motivo }}</span></p>

@@ -601,6 +601,100 @@ export class DataService {
       this.estadoAsignacionEquipo(e.inventario) === 'No asignado'
     );
   }
+
+  /**
+   * Equipos que pueden asignarse a un usuario final: los preparados y sin asignación, con su F0288
+   * finalizado y firmado, y sin trabajo abierto sobre la preparación. Un equipo con un reproceso
+   * F0288 sin cerrar o con una falla de F0302 sin resolver está preparado en el papel, pero
+   * entregarlo sería empezar un proceso nuevo sobre algo que todavía no termina el anterior.
+   */
+  equiposParaAsignar(): Equipo[] {
+    return this.equiposDisponiblesParaAsignar().filter((e) => {
+      const tec = this.expTecnicoDeEquipo(e.inventario);
+      if (!tec) return false;
+      const prep = this.preparacionPorCodigo(tec.codigo);
+      if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
+      if (this.reprocesoAbiertoDeExpTecnico(tec.codigo)) return false;
+      const proceso = this.equipoDe(e.inventario)?.expediente;
+      if (proceso && (this.expedienteUnicoDe(proceso) || this.fallaVigenteDe(proceso))) return false;
+      return true;
+    });
+  }
+
+  /**
+   * Requerimientos que pueden recibir un equipo: sin asignación vigente, sin Expediente único y en
+   * un estado que todavía admite asignación. Los cerrados, entregados o en entrega ya pasaron de
+   * fase; ofrecerlos abriría una asignación sobre un proceso terminado.
+   */
+  solicitudesParaAsignar(): Solicitud[] {
+    const cerrados = ['Cerrado', 'Cancelado', 'Entregado', 'Pendiente de aceptación', 'No conforme'];
+    return this.solicitudes().filter((s) =>
+      !cerrados.includes(s.estado) &&
+      !this.asignacionDe(s.expediente)?.vigente &&
+      !this.expedienteUnicoDe(s.expediente)
+    );
+  }
+
+  /**
+   * Solicitudes que pueden convertirse en Expediente único. El equipo **no se busca aquí**: llega
+   * desde la asignación al usuario final, que es el paso anterior del proceso. Por eso solo se
+   * listan las solicitudes que ya lo tienen, y con su preparación terminada:
+   *
+   *  - asignación vigente con equipo (sin ella no hay nada que consolidar);
+   *  - expediente técnico del equipo en «Preparado» y su F0288 finalizado y firmado;
+   *  - sin reproceso F0288 abierto ni falla de F0302 sin resolver: el equipo estaría preparado en
+   *    el papel pero no listo para entregar;
+   *  - sin Expediente único previo, y sin procesos ya terminados (entregados o cerrados), que no
+   *    tienen nada que consolidar.
+   *
+   * El F0288 se exige **cuando existe el registro**: es la misma tolerancia que aplica
+   * `crearExpedienteUnico` con los expedientes anteriores a que el F0288 se guardara aparte. Si la
+   * lista fuera más estricta que la creación, mostraría menos de lo que el sistema sí permite.
+   */
+  solicitudesParaExpedienteUnico(): Solicitud[] {
+    return this.solicitudes().filter((s) => {
+      if (s.estado === 'Entregado' || s.estado === 'Cerrado') return false;
+      if (this.expedienteUnicoDe(s.expediente)) return false;
+      const asig = this.asignacionDe(s.expediente);
+      const inventario = asig?.vigente ? asig.equipoInventario : '';
+      if (!inventario) return false;
+      const tec = this.expTecnicoDeEquipo(inventario);
+      if (tec?.estado !== 'Preparado') return false;
+      const prep = this.preparacionPorCodigo(tec.codigo);
+      if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
+      if (this.reprocesoAbiertoDeExpTecnico(tec.codigo)) return false;
+      if (this.fallaVigenteDe(s.expediente)) return false;
+      return true;
+    });
+  }
+
+  /**
+   * Técnicos de Soporte con su carga de trabajo, para elegir a quién se le asigna la configuración.
+   * La carga cuenta los F0302 sin cerrar y los procesos donde ya figura como técnico de
+   * configuración: repartir sin ver esto es cómo se satura siempre al mismo.
+   */
+  tecnicosSoporteConCarga(): {
+    usuario: UsuarioSistema; nombreRol: string; configuraciones: number; procesos: number;
+    total: number; carga: string; disponibilidad: string;
+  }[] {
+    return this.usuarios()
+      .filter((u) => u.clave === 'tec-soporte' && u.estado !== 'Inactivo')
+      .map((usuario) => {
+        const nombreRol = `${usuario.nombre} — ${usuario.rol}`;
+        const configuraciones = this.configuraciones()
+          .filter((c) => c.tecnico.includes(usuario.nombre) && c.estado !== 'Completada').length;
+        const procesos = this.asignaciones()
+          .filter((a) => (a.responsablesFase?.tecnicoConfiguracion ?? '').includes(usuario.nombre)
+            && a.responsablesFase?.estadoConfiguracion !== 'Completada').length;
+        const total = configuraciones + procesos;
+        return {
+          usuario, nombreRol, configuraciones, procesos, total,
+          carga: total >= 3 ? 'Carga alta' : total >= 1 ? 'Carga media' : 'Carga baja',
+          disponibilidad: total >= 3 ? 'Ocupado' : 'Disponible'
+        };
+      })
+      .sort((a, b) => a.total - b.total);
+  }
   /**
    * Un equipo puede recibir un NUEVO expediente técnico si nunca tuvo uno, o si su último
    * expediente técnico ya quedó «Preparado» o «Cerrado» (por un Descargo) Y su ingreso a
@@ -1978,6 +2072,8 @@ export class DataService {
     const tec = this.expTecnicoDe(id);
     const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
     if (!s || !asig || !tec || tec.estado !== 'Preparado' || (prep && prep.estado !== 'Completada')) return null;
+    // Una solicitud pertenece a un solo Expediente único: si ya lo tiene, no se crea otro.
+    if (this.expedienteUnicoDe(id)) return null;
 
     // EXP-AÑO-CORRELATIVO: el correlativo del Expediente único también se reinicia por año.
     const codigo = this.siguienteCodigoPorAnio(

@@ -1,11 +1,17 @@
 import { Component, input } from '@angular/core';
 
-/** Íconos de línea (estilo minimalista) usados en la navegación y encabezados. */
+/**
+ * Íconos de línea (estilo minimalista) de toda la interfaz: navegación, encabezados, estados,
+ * checklists, botones y tablas. Se dibujan aquí y no con emojis porque un emoji cambia de forma y
+ * de color según el sistema operativo y la fuente: el mismo estado terminaba viéndose distinto en
+ * cada equipo. El trazo hereda `currentColor`, así que un texto en verde dibuja su icono en verde.
+ */
 @Component({
   selector: 'ui-icon',
-  styles: `:host { display: inline-flex; } svg { width: var(--icon-size, 18px); height: var(--icon-size, 18px); }`,
+  styles: `:host { display: inline-flex; vertical-align: -.14em; } svg { width: var(--icon-size, 18px); height: var(--icon-size, 18px); }`,
   template: `
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"
+      aria-hidden="true" [style.--icon-size.px]="size()">
       @switch (name()) {
         @case ('panel') { <rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/> }
         @case ('inbox') { <path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13l3.5 7v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/> }
@@ -33,10 +39,29 @@ import { Component, input } from '@angular/core';
         @case ('map') { <path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14"/><path d="M15 6v14"/> }
         @case ('undo') { <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/> }
         @case ('layers') { <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/> }
+        @case ('search') { <circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4.5 4.5"/> }
+        @case ('x') { <path d="M18 6 6 18M6 6l12 12"/> }
+        @case ('circle') { <circle cx="12" cy="12" r="8"/> }
+        @case ('check-circle') { <circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-5.5"/> }
+        @case ('x-circle') { <circle cx="12" cy="12" r="9"/><path d="M15 9 9 15M9 9l6 6"/> }
+        @case ('monitor') { <rect x="2" y="4" width="20" height="12" rx="2"/><path d="M9 20h6M12 16v4"/> }
+        @case ('laptop') { <rect x="4" y="5" width="16" height="11" rx="2"/><path d="M2 20h20"/> }
+        @case ('user') { <circle cx="12" cy="8" r="4"/><path d="M5 21v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1"/> }
+        @case ('lock') { <rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/> }
+        @case ('image') { <rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.7"/><path d="m4 18 5-5 4 4 3-2.5 4 3.5"/> }
+        @case ('pen') { <path d="M12 3 4 11l-1 6 6-1 8-8-5-5z"/><path d="m14.5 5.5 4 4"/> }
+        @case ('handshake') { <path d="m3 11 4-4h3l2 1.7L14 7h3l4 4-5.5 6-2.5-2.2L10.5 17 3 11z"/> }
+        @case ('arrow-down') { <path d="M12 4v14"/><path d="m6 12.5 6 5.5 6-5.5"/> }
+        @case ('arrow-up') { <path d="M12 20V6"/><path d="m6 11.5 6-5.5 6 5.5"/> }
+        @case ('info') { <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/> }
+        @case ('edit') { <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m14.5 6.5 3 3"/> }
+        @case ('chevron') { <path d="m9 5 7 7-7 7"/> }
       }
     </svg>
   `
 })
 export class IconComponent {
   readonly name = input.required<string>();
+  /** Tamaño en píxeles. Sin valor, manda la variable `--icon-size` del contenedor (18 por defecto). */
+  readonly size = input<number | undefined>(undefined);
 }

@@ -11,6 +11,7 @@ import {
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
+import { IconComponent } from '../../shared/icon';
 
 /** Fila de la vista resumen: el eje principal de la trazabilidad es el equipo. */
 interface FilaTraza {
@@ -36,7 +37,7 @@ interface FilaTraza {
 @Component({
   selector: 'app-trazabilidad',
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent],
+    ConstanciaCorreccionComponent, IconComponent],
   styles: `
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
@@ -251,7 +252,7 @@ interface FilaTraza {
               <div class="tl-item" [class.hito]="e.hito">
                 <div class="tl-when">{{ e.fecha }} · {{ e.hora }} <span class="muted">· {{ e.expediente }}</span></div>
                 <div class="tl-what">
-                  <span class="tl-ico">{{ icono(e) }}</span>{{ e.accion }}
+                  <span class="tl-ico"><ui-icon [name]="icono(e)" [size]="14" /></span>{{ e.accion }}
                   <span class="tl-estado"><ui-badge [estado]="e.estado" /></span>
                 </div>
                 <div class="tl-who">{{ e.usuario }}</div>
@@ -772,7 +773,7 @@ interface FilaTraza {
                   <div class="tl-item" [class.hito]="e.hito">
                     <div class="tl-when">{{ e.fecha }} · {{ e.hora }}</div>
                     <div class="tl-what">
-                      <span class="tl-ico">{{ icono(e) }}</span>{{ e.accion }}
+                      <span class="tl-ico"><ui-icon [name]="icono(e)" [size]="14" /></span>{{ e.accion }}
                       <span class="tl-estado"><ui-badge [estado]="e.estado" /></span>
                     </div>
                     <div class="tl-who">{{ e.usuario }}</div>
@@ -1286,23 +1287,25 @@ export class TrazabilidadComponent {
       e.intentoConformidad || e.origenReproceso);
   }
 
+  /** Icono por módulo, del set de `ui-icon`. Antes eran emojis: cada sistema los dibujaba distinto. */
   private readonly iconos: Record<string, string> = {
-    'Inventario de Hardware': '📦',
-    'Ingreso a Hardware': '📥',
-    'Descargo': '📤',
-    'Expediente técnico': '📁',
-    'Preparación técnica F0288': '🛠️',
-    'Asignación de equipo': '👤',
-    'Expediente único': '🗂️',
-    'Configuración F0302': '💻',
-    'Entrega y aceptación': '🤝',
-    'Servicio de garantía': '🛡️',
-    'Reporte final de auditoría': '📄',
-    'Generador de documentos': '⬇️',
-    'Solicitudes': '📨'
+    'Inventario de Hardware': 'box',
+    'Ingreso a Hardware': 'arrow-down',
+    'Descargo': 'arrow-up',
+    'Expediente técnico': 'folder',
+    'Preparación técnica F0288': 'tool',
+    'Asignación de equipo': 'user',
+    'Expediente único': 'archive',
+    'Configuración F0302': 'monitor',
+    'Entrega y aceptación': 'handshake',
+    'Servicio de garantía': 'shield',
+    'Reporte final de auditoría': 'file',
+    'Generador de documentos': 'download',
+    'Reprocesos F0288': 'undo',
+    'Solicitudes': 'mail'
   };
 
   protected icono(e: EventoTrazabilidad): string {
-    return this.iconos[e.modulo ?? ''] ?? '•';
+    return this.iconos[e.modulo ?? ''] ?? 'circle';
   }
 }

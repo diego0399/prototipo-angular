@@ -5,6 +5,7 @@ import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CategoriaSoftware, EtapaSoftware, SoftwareCatalogo, TipoLicencia } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 
 /**
  * Estado editable del formulario de alta/edición. Las versiones permitidas se manejan como lista
@@ -32,7 +33,7 @@ const FORM_VACIO: FormularioSoftware = {
 
 @Component({
   selector: 'app-catalogo-software',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent],
   styles: `
     .filtros { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
     .filtros input { max-width: 280px; }
@@ -261,7 +262,7 @@ const FORM_VACIO: FormularioSoftware = {
                       {{ v }}
                       @if (v === form().versionVigente) { <span class="marca">· VIGENTE</span> }
                     </span>
-                    <button class="ver-quitar" type="button" [attr.aria-label]="'Quitar ' + v" (click)="quitarVersion(v)">✕</button>
+                    <button class="ver-quitar" type="button" [attr.aria-label]="'Quitar ' + v" (click)="quitarVersion(v)"><ui-icon name="x" [size]="12" /></button>
                   </div>
                 }
               </div>

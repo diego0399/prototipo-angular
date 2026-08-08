@@ -1,5 +1,6 @@
 import { Component, Pipe, PipeTransform, computed, input, output } from '@angular/core';
 import { Equipo } from '../core/models/models';
+import { IconComponent } from './icon';
 
 /** Clasifica un estado libre en una variante visual del badge. */
 export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 'gold' | 'neutral' {
@@ -44,6 +45,7 @@ export class HelpTipComponent {
 /** Ventana modal simple para detalles y vistas previas de documentos. */
 @Component({
   selector: 'ui-modal',
+  imports: [IconComponent],
   template: `
     <div class="modal-backdrop" (click)="cerrar.emit()">
       <div class="modal" (click)="$event.stopPropagation()">
@@ -52,7 +54,9 @@ export class HelpTipComponent {
             <h3>{{ titulo() }}</h3>
             @if (sub()) { <p class="sub">{{ sub() }}</p> }
           </div>
-          <button class="btn btn-ghost btn-sm" type="button" (click)="cerrar.emit()">✕ Cerrar</button>
+          <button class="btn btn-ghost btn-sm" type="button" (click)="cerrar.emit()">
+            <ui-icon name="x" [size]="14" /> Cerrar
+          </button>
         </div>
         <div class="card-body">
           <ng-content />

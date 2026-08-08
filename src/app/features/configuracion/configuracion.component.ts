@@ -11,11 +11,12 @@ import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
 
 @Component({
   selector: 'app-configuracion',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent, IconComponent],
   styles: `
     .sw-row td .chk { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
     .cap-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -70,7 +71,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
             }
           </div>
           @if (opciones().length > 1) {
-            <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)">🔍 Buscar expediente</button>
+            <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)"><ui-icon name="search" [size]="14" /> Buscar expediente</button>
           }
         </div>
         @if (auth.esTecnico()) {
@@ -94,7 +95,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                     la hora y el técnico que inició; el evento se anota en la trazabilidad del equipo.
                   </p>
                 </div>
-                <button class="btn btn-gold btn-lg" [disabled]="c.estado === 'Completada'" (click)="iniciar(c)">▶ Iniciar configuración</button>
+                <button class="btn btn-gold btn-lg" [disabled]="c.estado === 'Completada'" (click)="iniciar(c)"><ui-icon name="chevron" [size]="14" /> Iniciar configuración</button>
               </div>
             } @else if (enCurso(c)) {
               <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
@@ -192,7 +193,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   @for (s of hs; track s.codigoSoftware) {
                     <tr class="sw-row heredado">
                       <td class="main-cell">
-                        <span class="candado" title="Bloqueado: instalado en la Preparación F0288">🔒</span> {{ s.nombre }}
+                        <span class="candado" title="Bloqueado: instalado en la Preparación F0288"><ui-icon name="lock" [size]="13" /></span> {{ s.nombre }}
                         <div class="sub-cell">{{ s.categoria }} · {{ s.item }}</div>
                       </td>
                       <td class="mono">{{ s.version }}</td>
@@ -521,7 +522,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 <p class="sub">El intento F0302 se conserva y la incidencia queda en el mismo Expediente técnico</p>
               </div>
               <button class="btn btn-outline btn-sm" (click)="fallaAbierto.set(!fallaAbierto())">
-                {{ fallaAbierto() ? 'Cancelar' : '⚠ Reportar falla en la configuración' }}
+                @if (fallaAbierto()) { Cancelar } @else { <ui-icon name="alert" [size]="14" /> Reportar falla en la configuración }
               </button>
             </div>
             @if (fallaAbierto()) {
@@ -949,7 +950,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   }
                   @if (c.datos.estadoSolicitudIP === 'Enviada') {
                     <div class="alert ok mt-2">
-                      <span class="alert-ico">✓</span>
+                      <span class="alert-ico"><ui-icon name="check" [size]="13" /></span>
                       <span>Solicitud enviada de forma simulada el {{ c.datos.fechaSolicitudIP }}. Ya puede enviar el formulario de conformidad.</span>
                     </div>
                   } @else {

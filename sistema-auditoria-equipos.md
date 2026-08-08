@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **6 de agosto de 2026 (ronda 43)**.
+nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 47)**.
 
 ---
 
@@ -2185,6 +2185,118 @@ Expediente único.
       casos, 0 fallos**, más las regresiones de las rondas 42 (54), 41 (68), 40 (95), 39 (108), 38 (58),
       37 (31), 36 (30), 35 (29) y 34 (32) y accesorios (CPU 12, Laptop 13).
       **Sin recorrido manual de clics en navegador.**
+44. **Expediente único — la pantalla de creación pasa a ser un proceso guiado de tres pasos**
+    (2026-08-07). Rediseño de experiencia de uso: **no cambia ninguna regla ni servicio**.
+    * **El problema**: la tarjeta mostraba todo a la vez —stepper de **seis** pasos, dos columnas
+      de fichas técnicas, dos buscadores y un párrafo con la regla completa aunque faltara un solo
+      dato—. Lo que más pesaba: el **expediente técnico figuraba como paso propio con su propio
+      buscador**, cuando ya está determinado por el equipo preparado; se buscaba dos veces lo mismo.
+    * Ahora son **tres pasos**: Solicitud · Equipo preparado · Confirmación. El expediente técnico y
+      el F0288 son el **resultado** del paso 2, no un paso. El paso 2 se marca cumplido con la misma
+      condición que ya exigía el botón (expediente técnico en «Preparado»).
+    * **Progresiva**: al entrar solo se ve el paso 1; el 2 aparece con la solicitud elegida y el 3 con
+      el equipo. Elegir el equipo **autocompleta** expediente técnico, F0288, técnico que preparó y
+      estado del equipo. El buscador por expediente técnico se conserva como enlace secundario: sigue
+      siendo una forma válida de encontrar el equipo, pero ya no es una segunda búsqueda obligatoria.
+    * **Mensajes cortos**: una línea con ✅/⏳ por requisito y, bajo el botón, `falta()` con la frase
+      del primer requisito sin cumplir en lugar de la norma entera (la misma frase aparece en el aviso
+      si se fuerza el botón). Antes de crear, **resumen compacto** de siete datos.
+    * **Botones con jerarquía**: «Crear expediente único» hace una cosa (ya no dice «y continuar a
+      configuración»); al crearlo la tarjeta se vuelve **confirmación** con el código y «Continuar a
+      Configuración F0302», más «Crear otro expediente único».
+    * **Menos ruido**: fuera el borde dorado de 2 px con halo, el degradado de la cabecera, el alert
+      azul de «vista filtrada» (pasó a subtítulo), el chip «SIN ASIGNACIÓN» y las dos columnas de `<dl>`
+      con etiquetas largas. `crearUnico()`, `puedeCrear()`, el catálogo, la vista ejecutiva, los dos
+      modales de búsqueda y las constancias quedaron intactos.
+    * Verificado con `npm run build` limpio (8.011 s, 0 errores; solo las dos advertencias preexistentes
+      de presupuesto CSS), `ng serve` (HTTP 200 en `/`, `/expediente-unico` y `/configuracion`) y las
+      **doce baterías en verde: 672 casos, 0 fallos**.
+      **Sin recorrido manual de clics en navegador.**
+45. **Expediente único — cada uno de los tres pasos pasa a tener su propio buscador**
+    (2026-08-07, segunda sesión del día). Experiencia de uso; la lógica del proceso no cambia.
+    * **Lo que faltaba tras la ronda 44**: el paso 1 seguía siendo un **select largo** de solicitudes
+      y el paso 3 un select de técnicos. Un desplegable obliga a reconocer el caso por una línea de
+      texto: no muestra correo, estado, fecha ni —en los técnicos— cuánto trabajo tienen encima.
+    * **Paso 1**: modal con código, tipo, usuario final, correo, estado y fecha, buscador libre y cinco
+      filtros rápidos (Todas · Requerimiento de CPU · Requerimiento de Laptop · Pendientes · Sin
+      Expediente único). Se listan **todas** las solicitudes: esconder las ya usadas dejaría al usuario
+      buscando una que sí existe. Las usadas ofrecen **«Ver expediente existente»**, no «Seleccionar»,
+      y esa regla quedó también en el servicio —`crearExpedienteUnico` devuelve `null` si la solicitud
+      ya tiene expediente—: una regla que solo se sostiene porque la pantalla no ofrece el botón no es
+      una regla. Cambiar de solicitud descarta el equipo elegido antes.
+    * **Paso 2**: el modal de equipos ahora trae serie, expediente técnico con su técnico y estado del
+      F0288, y busca por todos ellos; con eso **se eliminó el buscador aparte de expedientes técnicos**
+      (era una segunda forma de hacer lo mismo). Además ya no se ofrecen equipos con **reproceso F0288
+      sin cerrar ni falla F0302 abierta**: están preparados en el papel, pero no listos para entregar.
+    * **Paso 3**: modal de técnicos con nombre, rol, unidad, carga laboral, configuraciones activas y
+      disponibilidad, con «Ver detalle». `tecnicosSoporteConCarga()` es el hermano del de Hardware de
+      la ronda 40. Repartir sin ver la carga es cómo se satura siempre al mismo técnico.
+    * **Validaciones como checklist** de cinco líneas con el verbo de lo que falta, **resumen final**
+      «Resumen para crear Expediente único» y confirmación posterior con «Continuar a Configuración
+      F0302». `puedeCrear()` y `crearUnico()` conservan su lógica.
+    * Verificado con `npm run build` limpio (6.281 s, 0 errores; solo las dos advertencias preexistentes
+      de presupuesto CSS), `ng serve` (HTTP 200 en cuatro rutas y el JSON de solicitudes) y **75 casos,
+      0 fallos**, más las doce baterías anteriores (672 casos, 0 fallos).
+      **Sin recorrido manual de clics en navegador.**
+46. **Expediente único — el equipo viene de la asignación, no de una búsqueda en esta pantalla**
+    (2026-08-07, tercera sesión del día).
+    * **El error corregido**: el catálogo ofrecía **solicitudes sin equipo asignado**. Elegir una
+      llevaba a un callejón: el paso 2 pedía buscar un equipo preparado y, al crear, la pantalla
+      **registraba la asignación por su cuenta** — trabajo del módulo Asignación de equipo.
+    * `solicitudesParaExpedienteUnico()` deja pasar solo las que tienen **asignación vigente con
+      equipo**, expediente técnico en «Preparado», **F0288 finalizado y firmado**, sin reproceso
+      abierto ni falla F0302 sin resolver, sin Expediente único y no entregadas ni cerradas. El F0288
+      se exige **cuando existe el registro**: la misma tolerancia de `crearExpedienteUnico`, porque una
+      lista más estricta que la creación escondería casos que el sistema sí permite crear.
+    * **Con los datos actuales solo queda `SOL-2026-0144`**: las entrantes no tienen equipo asignado,
+      0139/0141/0145 ya tienen Expediente único y las demás están cerradas. No es un defecto de la
+      pantalla: es el estado real de los datos, que es lo que la corrección pedía dejar a la vista.
+    * El modal confirma la asignación con columnas de **equipo asignado, inventario, estado de
+      asignación y F0288**, y si no hay ninguna muestra el mensaje del pedido con salida a Asignación
+      de equipo. Filtros rápidos reducidos a tres (Todas · CPU · Laptop): los otros dos filtrarían cero.
+    * El **paso 2 dejó de ser una búsqueda**: pasó a llamarse «Equipo asignado», es de solo lectura y
+      autocompleta inventario, tipo, marca/modelo, estado de asignación, expediente técnico, F0288,
+      técnico de preparación y fecha, con enlace a Asignación de equipo para cambiarlo donde
+      corresponde. Se eliminaron el modal de equipos preparados y la rama de `crearUnico()` que
+      asignaba: ya no podía ejecutarse y dejaba a dos módulos capaces de asignar el mismo equipo.
+    * `puedeCrear()` suma dos condiciones antes implícitas —asignación vigente y sin Expediente único
+      previo—, y con una solicitud sin equipo la pantalla responde «Esta solicitud aún no tiene equipo
+      asignado y no puede crear Expediente único.»
+    * Verificado con `npm run build` limpio (6.189 s, 0 errores; solo las dos advertencias preexistentes
+      de presupuesto CSS), `ng serve` (HTTP 200 en cuatro rutas) y **75 casos, 0 fallos** reescritos
+      sobre las reglas nuevas, más las doce baterías anteriores (672 casos, 0 fallos).
+      **Sin recorrido manual de clics en navegador.**
+47. **Interfaz sin emojis y selección de requerimiento en Asignación de equipo**
+    (2026-08-08).
+    * **Emojis fuera de toda la interfaz**: un emoji cambia de forma y de color según el sistema
+      operativo y la fuente, así que el mismo estado se veía distinto en cada equipo. Se
+      reemplazaron por iconos de trazo que heredan `currentColor`. Ya existía `ui-icon` en
+      `shared/icon.ts` (lo usaban navegación y encabezado), así que se **amplió** en vez de crear otro:
+      +17 iconos (`search`, `x`, `circle`, `check-circle`, `x-circle`, `monitor`, `laptop`, `user`,
+      `lock`, `image`, `pen`, `handshake`, `arrow-down`, `arrow-up`, `info`, `edit`, `chevron`) y un
+      input `size` para los usos en línea. Tocó catálogo de software, F0302, Descargo, Entrega,
+      Conformidad, Documentos, Guía, F0288, Expediente único, Trazabilidad (13 iconos de módulo) y el
+      botón «Cerrar» de todos los modales.
+    * **Asignación de equipo**: el `select` de solicitudes pasó a botón **«Buscar requerimiento»** con
+      el modal **«Seleccionar requerimiento»** —código, tipo, usuario final, correo, descripción,
+      fecha, estado y acción—, búsqueda libre y **siete filtros rápidos**. «Prioridad alta» son los que
+      llevan 3+ días en su fase: la espera es el único dato de urgencia que el prototipo captura.
+      Cada fila abre su detalle con los nueve datos del pedido.
+    * `solicitudesParaAsignar()` deja fuera los ya asignados, los que tienen Expediente único y los que
+      pasaron de fase. Los ya asignados **no desaparecen**: salen al buscarlos por código o nombre, sin
+      «Seleccionar» y con **«Ver asignación existente»** —esconderlos dejaría al usuario buscando uno
+      que sí existe—.
+    * El **filtro de tipo dejó de ser editable**: un requerimiento de CPU solo muestra CPU. Antes se
+      podía elegir el tipo equivocado y recibir la advertencia *después*; esa advertencia se eliminó.
+      `equiposParaAsignar()` exige además **F0288 finalizado y firmado** y descarta equipos con
+      reproceso abierto, falla F0302 sin resolver o Expediente único.
+    * **Resumen de asignación** antes de confirmar, checklist de cuatro validaciones con iconos y botón
+      **«Confirmar asignación»**. `asignarEquipo()` y sus reglas (laptops solo Soporte, motivo del CPU
+      nuevo desde Hardware, caso activo para Expediente único) quedaron intactas. `memorandoBloqueado`
+      pasó a `soloEncSoporte`: la regla se nombra por lo que hace, no por el documento que la origina.
+    * Verificado con `npm run build` limpio (7.273 s, 0 errores), `ng serve` (HTTP 200 en seis rutas) y
+      **101 casos, 0 fallos**, más las trece baterías anteriores (747 casos, 0 fallos).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2222,6 +2334,20 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 47)**: revisión visual de los iconos en navegador —tamaño y alineación
+  junto al texto en badges, checklists, botones y tablas— y del catálogo «Seleccionar requerimiento»
+  con sus siete filtros. Verificado por código y con 101 casos, sin clics reales.
+* **Nuevo pendiente (ronda 46)**: los datos semilla dejan una sola solicitud disponible para crear
+  Expediente único (`SOL-2026-0144`). Evaluar si conviene sembrar otra asignación completa para que
+  la demo del flujo pueda repetirse sin reiniciar los datos.
+* **Nuevo pendiente (ronda 45)**: recorrido manual de los tres modales del Expediente único
+  —filtros rápidos y «Ver expediente existente» en solicitudes, búsqueda por serie y expediente
+  técnico en equipos, y la carga laboral en técnicos—. Verificado con build limpio, smoke test HTTP
+  y 75 casos contra el componente y el servicio, sin clics reales.
+* **Nuevo pendiente (ronda 44)**: recorrido visual de los tres pasos del Expediente único en
+  navegador —paso 1 solo al entrar, aparición del paso 2 y del 3, autocompletado al elegir el equipo,
+  y la confirmación con «Continuar a Configuración F0302»—. Verificado con build limpio, smoke test
+  HTTP y las doce baterías, sin clics reales.
 * **Nuevo pendiente (ronda 43)**: recorrido manual en navegador del ciclo completo de inconformidad
   —marcar No conforme, clasificar, corregir en F0302 con checklist y evidencia, firmar, reenviar y
   aceptar— y del camino de reproceso F0288 por inconformidad con asignación de un Encargado.

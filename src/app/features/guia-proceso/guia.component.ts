@@ -5,6 +5,7 @@ import { DataService } from '../../core/services/data.service';
 import { rolesDeRuta } from '../../core/config/permisos';
 import { Equipo } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 
 type EstadoPaso = 'Pendiente' | 'En proceso' | 'Finalizado' | 'Bloqueado' | 'Disponible' | 'Reingresado' | 'Cerrado' | 'No aplica';
 
@@ -30,7 +31,7 @@ interface AccesoRapido {
  */
 @Component({
   selector: 'app-guia-proceso',
-  imports: [RouterLink, BadgeComponent, HelpTipComponent],
+  imports: [RouterLink, BadgeComponent, HelpTipComponent, IconComponent],
   styles: `
     .buscador { position: relative; max-width: 520px; }
     .buscador .lupa { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--tx-3); font-size: 14px; }
@@ -88,7 +89,7 @@ interface AccesoRapido {
       <div class="card card-pad mb-3">
         <div class="sec-title" style="margin-bottom: 8px;">Equipo a recorrer</div>
         <div class="buscador mb-1">
-          <span class="lupa">🔍</span>
+          <span class="lupa"><ui-icon name="search" [size]="15" /></span>
           <input class="control" placeholder="Buscar por inventario, marca, modelo, expediente o usuario final…"
             [value]="q()" (input)="buscar($event)" />
         </div>
@@ -124,7 +125,7 @@ interface AccesoRapido {
           <div class="card-body">
             @for (p of pasos(); track p.n) {
               <div class="paso" [class.fin]="p.estado === 'Finalizado'" [class.curso]="p.estado === 'En proceso' || p.estado === 'Disponible'">
-                <span class="p-num">{{ p.estado === 'Finalizado' ? '✓' : p.n }}</span>
+                <span class="p-num">@if (p.estado === 'Finalizado') { <ui-icon name="check" [size]="13" /> } @else { {{ p.n }} }</span>
                 <div class="p-body">
                   <div class="p-info">
                     <div class="p-tit">{{ p.titulo }}</div>

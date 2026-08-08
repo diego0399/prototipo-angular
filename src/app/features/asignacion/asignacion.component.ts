@@ -6,6 +6,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { Equipo } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 
 /**
  * Asignación de equipo a usuario final. Solo se asignan equipos del Inventario de Hardware
@@ -13,14 +14,34 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
  */
 @Component({
   selector: 'app-asignacion',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe,
+    IconComponent],
   styles: `
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
     .resumen-eq .eq-datos { font-size: 12.5px; color: var(--tx-2); margin-top: 3px; }
     .fase-tbl { font-size: 12.5px; }
-    .busq-filtros { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .busq-filtros { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-bottom: 14px; }
     @media (max-width: 800px) { .busq-filtros { grid-template-columns: 1fr; } }
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+    .chip-f {
+      border: 1px solid var(--line-strong); background: var(--surface); color: var(--tx-2);
+      border-radius: 999px; padding: 5px 13px; font-size: 12px; cursor: pointer;
+    }
+    .chip-f:hover { border-color: var(--blue-500); }
+    .chip-f.on { background: var(--navy-900); border-color: var(--navy-900); color: #fff; }
+    .det-fila { background: var(--surface-2); }
+    .datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 6px 20px; }
+    .datos span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tx-3); }
+    .datos b { font-size: 13px; font-weight: 500; color: var(--navy-900); display: block; }
+    .datos b + b { font-weight: 400; color: var(--tx-2); font-size: 12.5px; }
+    .resumen-asig { background: var(--surface-2); border-radius: var(--r-md); padding: 12px 16px; margin-top: 14px; }
+    .resumen-asig .r-t { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 6px; }
+    .valida { margin-top: 12px; }
+    .chk { font-size: 13px; margin-top: 6px; display: flex; align-items: center; gap: 7px; }
+    .chk.ok { color: var(--ok); }
+    .chk.pend { color: var(--tx-3); }
+    .chk b { color: var(--navy-900); }
   `,
   template: `
     <div class="page">
@@ -51,62 +72,70 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
         </div>
         <div class="card-body">
           <div class="form-grid">
-            <div class="field">
-              <label>Solicitud / requerimiento <span class="req">*</span></label>
-              <select class="control" [(ngModel)]="solicitudSel" [disabled]="!esEncargado()">
-                <option value="" disabled>Seleccione una solicitud entrante…</option>
-                @for (s of entrantes(); track s.expediente) {
-                  <option [value]="s.expediente">{{ s.expediente }} — {{ s.tipoEquipo | tipoRequerimiento }} · {{ s.descripcion }}</option>
-                }
-              </select>
-              @if (entrantes().length === 0) {
-                <span class="hint">No hay solicitudes entrantes pendientes de asignación.</span>
-              }
-            </div>
-
-            <div class="field">
-              <label>Usuario a quien se asignará</label>
-              <input class="control" readonly [value]="sol() ? sol()!.destinatario + ' — ' + sol()!.unidadDestino : '—'" />
-            </div>
-
+            <!-- Paso 1: el requerimiento se elige en un catálogo, no en un desplegable largo -->
             <div class="field full">
-              <label>
-                Equipo preparado <span class="req">*</span>
-                <ui-help texto="La búsqueda solo muestra equipos preparados (F0288 finalizado), con expediente técnico y no asignados. Los equipos pendientes de preparación no aparecen." />
-              </label>
-              @if (equipo(); as e) {
+              <label>Requerimiento <span class="req">*</span></label>
+              @if (sol(); as s) {
                 <div class="resumen-eq">
-                  <div class="row-between">
+                  <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
                     <div>
-                      <div class="eq-nombre">{{ e | marcaModelo }}</div>
-                      <div class="eq-datos">
-                        {{ e.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · inventario {{ e.inventario }} ·
-                        {{ e.procesador }} · {{ e.ram.split('·')[0].trim() }}
-                      </div>
-                      <div class="eq-datos">
-                        Expediente técnico <b class="mono">{{ expTecEquipo()?.codigo }}</b> ·
-                        F0288 <ui-badge [estado]="'Completada'" /> ·
-                        <ui-badge [estado]="'Preparado'" />
-                      </div>
+                      <div class="eq-nombre mono">{{ s.expediente }}</div>
+                      <div class="eq-datos">{{ s.tipoEquipo | tipoRequerimiento }} · {{ s.destinatario }} — {{ s.unidadDestino }}</div>
+                      <div class="eq-datos">{{ s.correoDestinatario }}</div>
                     </div>
                     <div class="row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
-                      <ui-badge [estado]="e.condicion" />
-                      <button class="btn btn-outline btn-sm" (click)="abrirBusqueda()" [disabled]="!esEncargado()">Cambiar equipo</button>
+                      <ui-badge [estado]="s.estado" />
+                      <button class="btn btn-outline btn-sm" (click)="abrirBusquedaSol()" [disabled]="!esEncargado()">Cambiar requerimiento</button>
                     </div>
                   </div>
                 </div>
+                <span class="hint">Requerimiento seleccionado correctamente. Ahora seleccione un equipo preparado compatible.</span>
               } @else {
                 <div class="row">
-                  <button class="btn btn-outline" (click)="abrirBusqueda()" [disabled]="!esEncargado()">🔍 Buscar equipo preparado</button>
-                  <span class="hint">Solo aparecen equipos preparados, con expediente técnico y no asignados.</span>
+                  <button class="btn btn-primary" (click)="abrirBusquedaSol()" [disabled]="!esEncargado()">
+                    <ui-icon name="search" [size]="15" /> Buscar requerimiento
+                  </button>
+                  <span class="hint">Seleccione un requerimiento pendiente para iniciar la asignación del equipo.</span>
                 </div>
               }
             </div>
 
-            @if (tipoNoCoincide()) {
-              <div class="full alert warn">
-                <span class="alert-ico">!</span>
-                <span>La solicitud pide <b>{{ sol()?.tipoEquipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }}</b> y el equipo seleccionado es <b>{{ equipo()?.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }}</b>. Verifique la selección.</span>
+            <!-- Paso 2: equipo preparado, ya filtrado por el tipo que pide el requerimiento -->
+            @if (sol(); as s) {
+              <div class="field full">
+                <label>
+                  Equipo preparado <span class="req">*</span>
+                  <ui-help texto="Solo se muestran equipos del tipo que pide el requerimiento: preparados, con F0288 finalizado y firmado, sin asignación activa y sin reproceso ni falla abierta." />
+                </label>
+                @if (equipo(); as e) {
+                  <div class="resumen-eq">
+                    <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
+                      <div>
+                        <div class="eq-nombre">{{ e | marcaModelo }}</div>
+                        <div class="eq-datos">
+                          {{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} · inventario {{ e.inventario }} ·
+                          {{ e.procesador }} · {{ e.ram.split('·')[0].trim() }}
+                        </div>
+                        <div class="eq-datos">
+                          Expediente técnico <b class="mono">{{ expTecEquipo()?.codigo }}</b> ·
+                          F0288 <ui-badge [estado]="estadoF0288(e.inventario)" /> ·
+                          <ui-badge estado="Preparado" />
+                        </div>
+                      </div>
+                      <div class="row" style="flex-direction: column; align-items: flex-end; gap: 8px;">
+                        <ui-badge [estado]="e.condicion" />
+                        <button class="btn btn-outline btn-sm" (click)="abrirBusqueda()" [disabled]="!esEncargado()">Cambiar equipo</button>
+                      </div>
+                    </div>
+                  </div>
+                } @else {
+                  <div class="row">
+                    <button class="btn btn-primary" (click)="abrirBusqueda()" [disabled]="!esEncargado()">
+                      <ui-icon name="search" [size]="15" /> Buscar equipo preparado
+                    </button>
+                    <span class="hint">Solo {{ s.tipoEquipo === 'Desktop' ? 'CPU' : 'laptops' }} con F0288 firmado y sin asignación.</span>
+                  </div>
+                }
               </div>
             }
 
@@ -135,7 +164,7 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
               </div>
             }
 
-            @if (memorandoBloqueado()) {
+            @if (soloEncSoporte()) {
               <div class="full alert danger">
                 <span class="alert-ico">!</span>
                 <span>Esta solicitud es un <b>Requerimiento de Laptop</b>. La asignación solo puede ser registrada por el <b>Encargado de Soporte</b>.</span>
@@ -168,12 +197,35 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
               </div>
             }
           </div>
+
+          <!-- Resumen y validaciones antes de confirmar -->
+          @if (sol(); as s) {
+            @if (equipo(); as e) {
+              <div class="resumen-asig">
+                <div class="r-t">Resumen de asignación</div>
+                <div class="datos">
+                  <div><span>Requerimiento</span><b class="mono">{{ s.expediente }}</b><b>{{ s.tipoEquipo | tipoRequerimiento }}</b></div>
+                  <div><span>Usuario final</span><b>{{ s.destinatario }}</b><b>{{ s.correoDestinatario }}</b></div>
+                  <div><span>Equipo seleccionado</span><b class="mono">{{ e.inventario }}</b><b>{{ e | marcaModelo }}</b></div>
+                  <div><span>Expediente técnico</span><b class="mono">{{ expTecEquipo()?.codigo || '—' }}</b><b>F0288 {{ textoF0288() }}</b></div>
+                </div>
+              </div>
+            }
+            <div class="valida">
+              @for (v of validaciones(); track v.lbl) {
+                <p class="chk" [class.ok]="v.ok" [class.pend]="!v.ok">
+                  <ui-icon [name]="v.ok ? 'check' : 'clock'" [size]="14" />
+                  {{ v.ok ? v.lbl : v.falta }}
+                </p>
+              }
+            </div>
+          }
         </div>
         <div class="card-foot">
           <span class="small muted" style="margin-right: auto;">Después de asignar: <b>crear el Expediente único y continuar a configuración</b>.</span>
           <button class="btn btn-primary btn-lg" (click)="asignar()"
-            [disabled]="!esEncargado() || !solicitudSel() || !equipoSel() || hardwareLaptop() || memorandoBloqueado()">
-            Asignar equipo
+            [disabled]="!esEncargado() || !solicitudSel() || !equipoSel() || hardwareLaptop() || soloEncSoporte()">
+            Confirmar asignación
           </button>
         </div>
       </div>
@@ -192,7 +244,7 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                 <span class="mono">{{ a.expediente }}</span>
                 <span class="muted small">{{ data.equipoDe(a.equipoInventario) | marcaModelo }} · {{ a.usuarioFinal }}</span>
                 <ui-badge [estado]="a.estado" />
-                <span class="acc-arrow">▶</span>
+                <span class="acc-arrow"><ui-icon name="chevron" [size]="13" /></span>
               </summary>
               <div class="acc-body">
                 <div class="grid grid-2">
@@ -235,16 +287,89 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
         </div>
       </div>
 
-      <!-- Búsqueda de equipos preparados -->
+      <!-- Paso 1 · Catálogo de requerimientos -->
+      @if (buscarSolAbierto()) {
+        <ui-modal titulo="Seleccionar requerimiento" sub="Solo requerimientos pendientes, sin equipo asignado" (cerrar)="buscarSolAbierto.set(false)">
+          <div class="field mb-2">
+            <input class="control" type="search"
+              placeholder="Código, tipo, usuario final, correo, unidad, descripción, estado o fecha…" [(ngModel)]="qSol" />
+          </div>
+          <div class="chips mb-2">
+            @for (fx of filtrosSol; track fx) {
+              <button class="chip-f" [class.on]="fSol() === fx" (click)="fSol.set(fx)">{{ fx }}</button>
+            }
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>Código</th><th>Tipo</th><th>Usuario final</th><th>Correo</th><th>Descripción</th><th>Fecha</th><th>Estado</th><th style="text-align:right;">Acción</th></tr>
+              </thead>
+              <tbody>
+                @for (s of solicitudesFiltradas(); track s.expediente) {
+                  <tr>
+                    <td class="mono main-cell">{{ s.expediente }}</td>
+                    <td>{{ s.tipoEquipo | tipoRequerimiento }}</td>
+                    <td>{{ s.destinatario }}<div class="sub-cell">{{ s.unidadDestino }}</div></td>
+                    <td class="sub-cell">{{ s.correoDestinatario }}</td>
+                    <td class="sub-cell" style="max-width: 220px;">{{ s.descripcion }}</td>
+                    <td class="mono">{{ s.fecha }}</td>
+                    <td><ui-badge [estado]="s.estado" /></td>
+                    <td>
+                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                        <button class="btn btn-ghost btn-sm" (click)="detalleSol.set(detalleSol() === s.expediente ? '' : s.expediente)">
+                          <ui-icon name="eye" [size]="13" /> {{ detalleSol() === s.expediente ? 'Ocultar' : 'Ver detalle' }}
+                        </button>
+                        @if (asignacionDe(s.expediente); as a) {
+                          <button class="btn btn-outline btn-sm" (click)="verAsignacionExistente(s.expediente)">Ver asignación existente</button>
+                        } @else {
+                          <button class="btn btn-primary btn-sm" (click)="seleccionarSolicitud(s.expediente)">Seleccionar</button>
+                        }
+                      </div>
+                    </td>
+                  </tr>
+                  @if (detalleSol() === s.expediente) {
+                    <tr>
+                      <td colspan="8" class="det-fila">
+                        @if (asignacionDe(s.expediente); as a) {
+                          <p class="chk pend">
+                            <ui-icon name="alert" [size]="14" />
+                            Este requerimiento ya tiene el equipo <b class="mono">{{ a.equipoInventario }}</b> asignado.
+                          </p>
+                        }
+                        <div class="datos">
+                          <div><span>Código</span><b class="mono">{{ s.expediente }}</b></div>
+                          <div><span>Tipo</span><b>{{ s.tipoEquipo | tipoRequerimiento }}</b></div>
+                          <div><span>Usuario final</span><b>{{ s.destinatario }}</b></div>
+                          <div><span>Correo institucional</span><b>{{ s.correoDestinatario }}</b></div>
+                          <div><span>Dirección o unidad</span><b>{{ s.unidadDestino }} · {{ s.direccionGerencia }}</b></div>
+                          <div><span>Descripción</span><b>{{ s.descripcion }}</b></div>
+                          <div><span>Fecha de registro</span><b class="mono">{{ s.fecha }}</b></div>
+                          <div><span>Estado</span><b>{{ s.estado }} · {{ s.diasEnFase }} días en fase</b></div>
+                          <div><span>Observaciones</span><b>{{ s.nota || s.pendiente || '—' }}</b></div>
+                        </div>
+                        @if (!asignacionDe(s.expediente)) {
+                          <button class="btn btn-primary btn-sm mt-2" (click)="seleccionarSolicitud(s.expediente)">Seleccionar requerimiento</button>
+                        }
+                      </td>
+                    </tr>
+                  }
+                } @empty {
+                  <tr><td colspan="8" class="muted" style="text-align:center; padding: 26px;">
+                    @if (data.solicitudesParaAsignar().length) { Ningún requerimiento coincide con la búsqueda. }
+                    @else { No hay requerimientos pendientes disponibles para asignación. }
+                  </td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Paso 2 · Catálogo de equipos preparados del tipo que pide el requerimiento -->
       @if (buscarAbierto()) {
-        <ui-modal titulo="Buscar equipo preparado" sub="Solo se muestran equipos preparados, no asignados y con expediente técnico completado" (cerrar)="buscarAbierto.set(false)">
+        <ui-modal titulo="Buscar equipo preparado" sub="Preparados, con F0288 firmado, sin asignación y sin reproceso ni falla abierta" (cerrar)="buscarAbierto.set(false)">
           <div class="busq-filtros">
-            <input class="control" type="search" placeholder="Inventario, marca o modelo…" [(ngModel)]="q" />
-            <select class="control" [(ngModel)]="fTipo">
-              <option value="">Tipo: todos</option>
-              <option value="Laptop">Laptop</option>
-              <option value="Desktop">CPU / Desktop</option>
-            </select>
+            <input class="control" type="search" placeholder="Inventario, marca, modelo, serie o expediente técnico…" [(ngModel)]="q" />
             <select class="control" [(ngModel)]="fCond">
               <option value="">Condición: todas</option>
               <option value="Nuevo">Nuevo</option>
@@ -255,19 +380,19 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
           <div class="table-wrap">
             <table class="tbl">
               <thead>
-                <tr><th>Inventario</th><th>Equipo</th><th>Expediente técnico</th><th>Preparación</th><th>Asignación</th><th style="text-align:right;"></th></tr>
+                <tr><th>Inventario</th><th>Tipo</th><th>Marca / modelo</th><th>Serie</th><th>Expediente técnico</th><th>F0288</th><th style="text-align:right;">Acción</th></tr>
               </thead>
               <tbody>
                 @for (e of disponibles(); track e.inventario) {
                   <tr>
                     <td class="mono main-cell">{{ e.inventario }}</td>
-                    <td>
-                      <div class="main-cell">{{ e | marcaModelo }}</div>
-                      <div class="sub-cell">{{ e.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · {{ e.condicion.toLowerCase() }}</div>
+                    <td>{{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }}<div class="sub-cell">{{ e.condicion.toLowerCase() }}</div></td>
+                    <td>{{ e | marcaModelo }}</td>
+                    <td class="mono sub-cell">{{ e.serie }}</td>
+                    <td class="mono">{{ data.expTecnicoDeEquipo(e.inventario)?.codigo }}
+                      <div class="sub-cell">{{ data.expTecnicoDeEquipo(e.inventario)?.tecnicoPreparacion?.split('—')?.[0]?.trim() }}</div>
                     </td>
-                    <td class="mono">{{ data.expTecnicoDeEquipo(e.inventario)?.codigo }}</td>
-                    <td><ui-badge [estado]="'Preparado'" /></td>
-                    <td><ui-badge [estado]="'No asignado'" /></td>
+                    <td><ui-badge [estado]="estadoF0288(e.inventario)" /></td>
                     <td>
                       <div class="row" style="justify-content: flex-end;">
                         <button class="btn btn-primary btn-sm" (click)="seleccionarEquipo(e)">Seleccionar</button>
@@ -275,7 +400,9 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                     </td>
                   </tr>
                 } @empty {
-                  <tr><td colspan="6" class="muted" style="text-align:center; padding: 22px;">No hay equipos preparados disponibles con esos filtros. Prepare equipos desde Expediente técnico + F0288.</td></tr>
+                  <tr><td colspan="7" class="muted" style="text-align:center; padding: 26px;">
+                    No hay equipos preparados compatibles con este requerimiento.
+                  </td></tr>
                 }
               </tbody>
             </table>
@@ -299,10 +426,17 @@ export class AsignacionComponent {
   protected observacion = signal('');
   protected intento = signal(false);
 
-  // Búsqueda de equipos preparados
+  // Catálogo de requerimientos (paso 1)
+  protected buscarSolAbierto = signal(false);
+  protected qSol = signal('');
+  protected fSol = signal('Todos');
+  protected detalleSol = signal('');
+  protected readonly filtrosSol = ['Todos', 'Requerimiento de CPU', 'Requerimiento de Laptop',
+    'Pendientes de asignación', 'Sin equipo asignado', 'Prioridad alta', 'Más recientes'];
+
+  // Catálogo de equipos preparados (paso 2)
   protected buscarAbierto = signal(false);
   protected q = signal('');
-  protected fTipo = signal('');
   protected fCond = signal('');
 
   constructor() {
@@ -312,9 +446,40 @@ export class AsignacionComponent {
     });
   }
 
-  protected readonly entrantes = computed(() =>
-    this.data.solicitudes().filter((s) => s.estado === 'Entrante')
-  );
+  /**
+   * Catálogo del paso 1: los requerimientos que todavía pueden recibir equipo. Los que ya lo
+   * tienen aparecen **solo cuando se los busca por su código o su nombre**, y sin acción de
+   * seleccionar: esconderlos del todo dejaría al usuario buscando uno que sí existe.
+   */
+  protected readonly solicitudesFiltradas = computed(() => {
+    const q = this.qSol().toLowerCase().trim();
+    const filtro = this.fSol();
+    const asignables = this.data.solicitudesParaAsignar();
+    const base = q
+      ? [...asignables, ...this.data.solicitudes().filter((s) => !asignables.includes(s))]
+      : asignables;
+    const lista = base.filter((s) => {
+      if (filtro === 'Requerimiento de CPU' && s.tipoEquipo !== 'Desktop') return false;
+      if (filtro === 'Requerimiento de Laptop' && s.tipoEquipo !== 'Laptop') return false;
+      if (filtro === 'Pendientes de asignación' && s.estado !== 'Entrante') return false;
+      if (filtro === 'Sin equipo asignado' && !!this.asignacionDe(s.expediente)) return false;
+      // «Prioridad alta»: los que llevan más tiempo esperando en su fase.
+      if (filtro === 'Prioridad alta' && s.diasEnFase < 3) return false;
+      if (!q) return true;
+      return [s.expediente, this.data.tipoRequerimientoTexto(s), s.destinatario, s.correoDestinatario,
+        s.unidadDestino, s.direccionGerencia, s.descripcion, s.estado, s.fecha]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+    return filtro === 'Más recientes'
+      ? [...lista].sort((a, b) => b.fecha.localeCompare(a.fecha))
+      : lista;
+  });
+
+  /** Asignación vigente del requerimiento, si ya tiene equipo. */
+  protected asignacionDe(id: string) {
+    const a = this.data.asignacionDe(id);
+    return a?.vigente ? a : undefined;
+  }
 
   protected readonly sol = computed(() =>
     this.solicitudSel() ? this.data.solicitud(this.solicitudSel()) : undefined
@@ -332,11 +497,28 @@ export class AsignacionComponent {
     this.sol()?.tipoEquipo === 'Laptop' || this.equipo()?.tipo === 'Laptop'
   );
 
-  protected readonly tipoNoCoincide = computed(() => {
-    const s = this.sol();
-    const e = this.equipo();
-    return !!s && !!e && s.tipoEquipo !== e.tipo;
-  });
+  /** Estado del F0288 del equipo, para el badge del resumen y del catálogo. */
+  protected estadoF0288(inventario: string): string {
+    const tec = this.data.expTecnicoDeEquipo(inventario);
+    const prep = tec ? this.data.preparacionPorCodigo(tec.codigo) : undefined;
+    return prep?.estado || 'Sin registrar';
+  }
+  protected textoF0288(): string {
+    const tec = this.expTecEquipo();
+    const prep = tec ? this.data.preparacionPorCodigo(tec.codigo) : undefined;
+    if (!prep) return 'sin registrar';
+    if (prep.estado !== 'Completada') return prep.estado.toLowerCase();
+    return prep.firma?.estado === 'Firmado' ? 'finalizado y firmado' : 'finalizado, pendiente de firma';
+  }
+
+  /** Requisitos de la asignación, como checklist con icono en lugar de un párrafo. */
+  protected readonly validaciones = computed(() => [
+    { lbl: 'Requerimiento seleccionado', falta: 'Falta seleccionar el requerimiento', ok: !!this.sol() },
+    { lbl: 'Equipo preparado seleccionado', falta: 'Falta seleccionar el equipo preparado', ok: !!this.equipo() },
+    { lbl: 'F0288 validado', falta: 'Falta el F0288 finalizado y firmado del equipo',
+      ok: !!this.equipo() && this.textoF0288() === 'finalizado y firmado' },
+    { lbl: 'Asignación confirmada', falta: 'Pendiente confirmar asignación', ok: false }
+  ]);
 
   /** El responsable de asignación se toma del usuario conectado (no es campo libre). */
   protected readonly rol = computed(() => this.auth.usuario()?.clave ?? '');
@@ -346,8 +528,11 @@ export class AsignacionComponent {
     return u ? `${u.nombre} — ${u.rol}` : '—';
   });
 
-  /** Memorando: solo el Encargado de Soporte registra la asignación. */
-  protected readonly memorandoBloqueado = computed(() =>
+  /**
+   * Requerimientos originados en un documento de dirección: solo el Encargado de Soporte registra
+   * la asignación. El valor `origenTipo` es del modelo de datos; en pantalla nunca se nombra.
+   */
+  protected readonly soloEncSoporte = computed(() =>
     this.sol()?.origenTipo === 'Memorando' && this.rol() !== 'enc-soporte' && !!this.sol()
   );
 
@@ -365,24 +550,52 @@ export class AsignacionComponent {
     this.intento() && this.requiereMotivo() && !this.observacion().trim()
   );
 
-  /** Solo equipos preparados, con expediente técnico y no asignados. */
+  /**
+   * Equipos del paso 2: los asignables, **del tipo que pide el requerimiento**. El tipo ya no es
+   * un filtro que el usuario pueda cambiar: buscar una laptop para un requerimiento de CPU solo
+   * llevaba a una advertencia después de elegirla.
+   */
   protected readonly disponibles = computed(() => {
     const q = this.q().toLowerCase().trim();
-    return this.data.equiposDisponiblesParaAsignar().filter((e) => {
-      if (this.fTipo() && e.tipo !== this.fTipo()) return false;
+    const tipo = this.sol()?.tipoEquipo;
+    return this.data.equiposParaAsignar().filter((e) => {
+      if (tipo && e.tipo !== tipo) return false;
       if (this.fCond() && e.condicion !== this.fCond()) return false;
       if (!q) return true;
-      return `${e.inventario} ${e.marca} ${e.modelo} ${e.serie}`.toLowerCase().includes(q);
+      const tec = this.data.expTecnicoDeEquipo(e.inventario);
+      return [e.inventario, e.marca, e.modelo, e.serie, e.tipo === 'Desktop' ? 'CPU' : 'Laptop',
+        tec?.codigo, tec?.tecnicoPreparacion, this.estadoF0288(e.inventario)]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
     });
   });
 
+  protected abrirBusquedaSol(): void {
+    this.qSol.set('');
+    this.fSol.set('Todos');
+    this.detalleSol.set('');
+    this.buscarSolAbierto.set(true);
+  }
+
+  /** Cambiar de requerimiento descarta el equipo elegido: era para el requerimiento anterior. */
+  protected seleccionarSolicitud(id: string): void {
+    if (this.solicitudSel() !== id) this.equipoSel.set('');
+    this.solicitudSel.set(id);
+    this.buscarSolAbierto.set(false);
+  }
+
+  /** Un requerimiento con equipo ya asignado no se reasigna desde aquí: solo se consulta. */
+  protected verAsignacionExistente(id: string): void {
+    const a = this.asignacionDe(id);
+    this.buscarSolAbierto.set(false);
+    this.toast.warn('Requerimiento ya asignado',
+      `${id} ya tiene el equipo ${a?.equipoInventario} asignado a ${a?.usuarioFinal}. Se muestra en «Asignaciones registradas».`);
+  }
+
   protected abrirBusqueda(): void {
     if (!this.solicitudSel()) {
-      this.toast.warn('Seleccione primero la solicitud', 'Elija la solicitud entrante antes de buscar el equipo.');
+      this.toast.warn('Seleccione primero el requerimiento', 'Elija el requerimiento antes de buscar el equipo.');
       return;
     }
-    const s = this.sol();
-    this.fTipo.set(s?.tipoEquipo ?? '');
     this.q.set('');
     this.buscarAbierto.set(true);
   }
@@ -407,7 +620,7 @@ export class AsignacionComponent {
       this.toast.warn('Seleccione el equipo', 'Busque y seleccione un equipo preparado del Inventario de Hardware.');
       return;
     }
-    if (this.memorandoBloqueado()) {
+    if (this.soloEncSoporte()) {
       this.toast.error('Asignación no permitida', 'Esta solicitud es un Requerimiento de Laptop. La asignación solo puede ser registrada por el Encargado de Soporte.');
       return;
     }

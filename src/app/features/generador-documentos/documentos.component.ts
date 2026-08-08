@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { AccesorioVerificado, DocumentoGenerado, EstadoDocumento, ExpedienteTecnico, FirmaProceso } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import {
@@ -33,8 +34,7 @@ interface FilaDoc {
   imports: [
     FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent,
     BuscarExpedienteUnicoModalComponent, BuscarExpedienteTecnicoModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent
-  ],
+    ConstanciaCorreccionComponent, IconComponent],
   styles: `
     .cat-busq { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .cat-busq input[type='search'] { flex: 1 1 340px; font-size: 13.5px; padding: 10px 14px; }
@@ -89,7 +89,7 @@ interface FilaDoc {
               }
             </div>
             @if (opcionesTec().length > 1) {
-              <button class="btn btn-outline btn-sm" (click)="buscarTecAbierto.set(true)">🔍 Buscar expediente</button>
+              <button class="btn btn-outline btn-sm" (click)="buscarTecAbierto.set(true)"><ui-icon name="search" [size]="14" /> Buscar expediente</button>
             }
           </div>
           @if (auth.esTecnico()) {
@@ -159,7 +159,7 @@ interface FilaDoc {
               }
             </div>
             @if (opciones().length > 1) {
-              <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)">🔍 Buscar expediente</button>
+              <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)"><ui-icon name="search" [size]="14" /> Buscar expediente</button>
             }
           </div>
           @if (auth.esTecnico()) {

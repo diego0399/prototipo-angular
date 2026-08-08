@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { CorreccionNoConformidad, ResolucionInconformidad, RespuestaSiNo, TipoProblemaInconformidad } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
@@ -15,7 +16,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
 @Component({
   selector: 'app-entrega',
   imports: [RouterLink, SlicePipe, FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent,
-    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent],
+    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent, IconComponent],
   styles: `
     .conf-panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 18px; }
     .conf-panel .cp-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 8px; }
@@ -57,7 +58,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
             }
           </div>
           @if (opciones().length > 1) {
-            <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)">🔍 Buscar expediente</button>
+            <button class="btn btn-outline btn-sm" (click)="buscarAbierto.set(true)"><ui-icon name="search" [size]="14" /> Buscar expediente</button>
           }
         </div>
         @if (auth.esTecnico()) {
@@ -228,7 +229,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                           </dl>
                           <ul class="pasos mt-1">
                             @for (p of pasosReproceso(); track p.nombre) {
-                              <li [class.hecho]="p.hecho">{{ p.hecho ? '✓' : '○' }} {{ p.nombre }}</li>
+                              <li [class.hecho]="p.hecho"><ui-icon [name]="p.hecho ? 'check' : 'circle'" [size]="13" /> {{ p.nombre }}</li>
                             }
                           </ul>
                           <div class="row mt-2">

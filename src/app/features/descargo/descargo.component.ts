@@ -5,6 +5,7 @@ import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { AccionPosteriorDescargo, Equipo, MotivoDescargo } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { BuscarEquipoAsignadoModalComponent, FilaEquipoAsignado, filaEquipoAsignado } from '../../shared/buscar-expediente';
 
 const MOTIVOS: MotivoDescargo[] = [
@@ -23,7 +24,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
  */
 @Component({
   selector: 'app-descargo',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent, IconComponent],
   styles: `
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
@@ -83,7 +84,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
                 </div>
               } @else {
                 <div class="row">
-                  <button class="btn btn-outline" (click)="abrirBusqueda()" [disabled]="!puedeRegistrar()">🔍 Buscar equipo asignado</button>
+                  <button class="btn btn-outline" (click)="abrirBusqueda()" [disabled]="!puedeRegistrar()"><ui-icon name="search" [size]="14" /> Buscar equipo asignado</button>
                   <span class="hint">Solo aparecen equipos con asignación vigente.</span>
                 </div>
               }
