@@ -12,6 +12,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import { IconComponent } from '../../shared/icon';
+import { LineaTiempoComponent } from '../../shared/linea-tiempo';
 
 /** Fila de la vista resumen: el eje principal de la trazabilidad es el equipo. */
 interface FilaTraza {
@@ -37,7 +38,7 @@ interface FilaTraza {
 @Component({
   selector: 'app-trazabilidad',
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent, IconComponent],
+    ConstanciaCorreccionComponent, LineaTiempoComponent],
   styles: `
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
@@ -98,7 +99,7 @@ interface FilaTraza {
             Trazabilidad
             <ui-help texto="El eje principal de la trazabilidad es el equipo (número de inventario): su recorrido inicia desde el ingreso al Inventario de Hardware, antes incluso de que exista una solicitud. También puede consultarse por solicitud, expediente técnico, expediente único, usuario final, técnico o garantía." />
           </h1>
-          <p class="page-sub">Recorrido completo de cada equipo, desde el ingreso al inventario hasta la garantía.</p>
+          <p class="page-sub">Recorrido cronológico del equipo desde su ingreso hasta entrega, garantía o reproceso.</p>
         </div>
       </div>
 
@@ -247,54 +248,7 @@ interface FilaTraza {
           </div>
         </div>
         <div class="card-body">
-          <div class="timeline">
-            @for (e of eventos(); track $index) {
-              <div class="tl-item" [class.hito]="e.hito">
-                <div class="tl-when">{{ e.fecha }} · {{ e.hora }} <span class="muted">· {{ e.expediente }}</span></div>
-                <div class="tl-what">
-                  <span class="tl-ico"><ui-icon [name]="icono(e)" [size]="14" /></span>{{ e.accion }}
-                  <span class="tl-estado"><ui-badge [estado]="e.estado" /></span>
-                </div>
-                <div class="tl-who">{{ e.usuario }}</div>
-                @if (e.observacion) { <div class="tl-note">{{ e.observacion }}</div> }
-                @if (tieneDetalle(e)) {
-                  <div class="tl-meta">
-                    @if (e.modulo) { <span class="m-chip">Módulo: <b>{{ e.modulo }}</b></span> }
-                    @if (e.estadoAnterior) { <span class="m-chip cambio">{{ e.estadoAnterior }} → <b>{{ e.estado }}</b></span> }
-                    @if (e.tiempo) { <span class="m-chip">Tiempo: <b>{{ e.tiempo }}</b></span> }
-                    @if (e.complejidad) { <span class="m-chip">Complejidad: <b>{{ e.complejidad }}</b></span> }
-                    @if (e.inventario) { <span class="m-chip">Inventario: <b class="mono">{{ e.inventario }}</b></span> }
-                    @if (e.nombreEquipo) { <span class="m-chip">Nombre del equipo: <b class="mono">{{ e.nombreEquipo }}</b></span> }
-                    @if (e.ipReservada) { <span class="m-chip">IP reservada: <b class="mono">{{ e.ipReservada }}</b></span> }
-                    @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
-                    @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
-                    @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
-                    @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
-                    @if (e.tipoProblema) { <span class="m-chip">Tipo de problema: <b>{{ e.tipoProblema }}</b></span> }
-                    @if (e.resolucion) { <span class="m-chip">Resolución: <b>{{ e.resolucion }}</b></span> }
-                    @if (e.correccion) { <span class="m-chip">Corrección: <b class="mono">{{ e.correccion }}</b></span> }
-                    @if (e.intentoConformidad) { <span class="m-chip">Intento de conformidad: <b>#{{ e.intentoConformidad }}</b></span> }
-                    @if (e.origenReproceso) { <span class="m-chip">Origen del reproceso: <b>{{ e.origenReproceso }}</b></span> }
-                    @if (e.documento) { <span class="m-chip">Documento: <b class="mono">{{ e.documento }}</b></span> }
-                    @if (e.estadoDocumento) { <span class="m-chip">Estado del documento: <b>{{ e.estadoDocumento }}</b></span> }
-                    @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
-                    @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
-                    @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
-                    @if (e.tecnicoReporta) { <span class="m-chip">Reportó (Soporte): <b>{{ e.tecnicoReporta }}</b></span> }
-                    @if (e.tecnicoHardware) { <span class="m-chip">Técnico de Hardware: <b>{{ e.tecnicoHardware }}</b></span> }
-                    @if (e.resultadoReproceso) { <span class="m-chip">Resultado del reproceso: <b>{{ e.resultadoReproceso }}</b></span> }
-                    @if (e.firmaRegistrada) { <span class="m-chip">Firma registrada: <b>{{ e.firmaRegistrada }}</b></span> }
-                    @if (e.evidencia) { <span class="m-chip">Evidencia: <b>{{ e.evidencia }}</b></span> }
-                    @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
-                    @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
-                    @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
-                  </div>
-                }
-              </div>
-            } @empty {
-              <p class="muted">No hay eventos registrados para esta consulta.</p>
-            }
-          </div>
+          <ui-linea-tiempo [eventos]="eventos()" orden="desc" [mostrarExpediente]="true" />
         </div>
       </div>
 
@@ -751,70 +705,10 @@ interface FilaTraza {
 
             <!-- ── Trazabilidad ── -->
             @case ('traza') {
-              <div class="field mb-2" style="max-width: 320px;">
-                <label>Tipo de evento</label>
-                <select class="control" [(ngModel)]="fEvento">
-                  <option value="">Todos los eventos</option>
-                  @for (m of modulosDeLinea(); track m) { <option [value]="m">{{ m }}</option> }
-                </select>
-              </div>
-
-              <div class="alert mb-2">
-                <span class="alert-ico">i</span>
-                <span>
-                  Recorrido en orden cronológico: ingreso al inventario → expediente técnico → cronómetro y
-                  preparación F0288 → equipo preparado → asignación → expediente único → cronómetro y
-                  configuración F0302 → entrega y aceptación → garantía y sus casos.
-                </span>
-              </div>
-
-              <div class="timeline">
-                @for (e of lineaFiltrada(); track $index) {
-                  <div class="tl-item" [class.hito]="e.hito">
-                    <div class="tl-when">{{ e.fecha }} · {{ e.hora }}</div>
-                    <div class="tl-what">
-                      <span class="tl-ico"><ui-icon [name]="icono(e)" [size]="14" /></span>{{ e.accion }}
-                      <span class="tl-estado"><ui-badge [estado]="e.estado" /></span>
-                    </div>
-                    <div class="tl-who">{{ e.usuario }}</div>
-                    @if (e.observacion) { <div class="tl-note">{{ e.observacion }}</div> }
-                    @if (tieneDetalle(e)) {
-                      <div class="tl-meta">
-                        @if (e.modulo) { <span class="m-chip">Módulo: <b>{{ e.modulo }}</b></span> }
-                        @if (e.estadoAnterior) { <span class="m-chip cambio">{{ e.estadoAnterior }} → <b>{{ e.estado }}</b></span> }
-                        @if (e.tiempo) { <span class="m-chip">Tiempo: <b>{{ e.tiempo }}</b></span> }
-                        @if (e.complejidad) { <span class="m-chip">Complejidad: <b>{{ e.complejidad }}</b></span> }
-                        @if (e.nombreEquipo) { <span class="m-chip">Nombre del equipo: <b class="mono">{{ e.nombreEquipo }}</b></span> }
-                        @if (e.ipReservada) { <span class="m-chip">IP reservada: <b class="mono">{{ e.ipReservada }}</b></span> }
-                    @if (e.mac) { <span class="m-chip">MAC: <b class="mono">{{ e.mac }}</b></span> }
-                    @if (e.estadoSolicitudIP) { <span class="m-chip">Solicitud de reserva de IP: <b>{{ e.estadoSolicitudIP }}</b></span> }
-                    @if (e.justificacion) { <span class="m-chip">Justificación: <b>{{ e.justificacion }}</b></span> }
-                    @if (e.tipoFalla) { <span class="m-chip">Tipo de falla: <b>{{ e.tipoFalla }}</b></span> }
-                    @if (e.tipoProblema) { <span class="m-chip">Tipo de problema: <b>{{ e.tipoProblema }}</b></span> }
-                    @if (e.resolucion) { <span class="m-chip">Resolución: <b>{{ e.resolucion }}</b></span> }
-                    @if (e.correccion) { <span class="m-chip">Corrección: <b class="mono">{{ e.correccion }}</b></span> }
-                    @if (e.intentoConformidad) { <span class="m-chip">Intento de conformidad: <b>#{{ e.intentoConformidad }}</b></span> }
-                    @if (e.origenReproceso) { <span class="m-chip">Origen del reproceso: <b>{{ e.origenReproceso }}</b></span> }
-                    @if (e.documento) { <span class="m-chip">Documento: <b class="mono">{{ e.documento }}</b></span> }
-                    @if (e.estadoDocumento) { <span class="m-chip">Estado del documento: <b>{{ e.estadoDocumento }}</b></span> }
-                    @if (e.requiereReproceso) { <span class="m-chip">Requiere reproceso F0288: <b>{{ e.requiereReproceso }}</b></span> }
-                    @if (e.accionTomada) { <span class="m-chip">Acción tomada: <b>{{ e.accionTomada }}</b></span> }
-                    @if (e.reproceso) { <span class="m-chip">Reproceso: <b class="mono">{{ e.reproceso }}</b></span> }
-                    @if (e.tecnicoReporta) { <span class="m-chip">Reportó (Soporte): <b>{{ e.tecnicoReporta }}</b></span> }
-                    @if (e.tecnicoHardware) { <span class="m-chip">Técnico de Hardware: <b>{{ e.tecnicoHardware }}</b></span> }
-                    @if (e.resultadoReproceso) { <span class="m-chip">Resultado del reproceso: <b>{{ e.resultadoReproceso }}</b></span> }
-                    @if (e.firmaRegistrada) { <span class="m-chip">Firma registrada: <b>{{ e.firmaRegistrada }}</b></span> }
-                    @if (e.evidencia) { <span class="m-chip">Evidencia: <b>{{ e.evidencia }}</b></span> }
-                        @if (e.expedienteTecnico) { <span class="m-chip">Exp. técnico: <b class="mono">{{ e.expedienteTecnico }}</b></span> }
-                        @if (e.expedienteUnico) { <span class="m-chip">Exp. único: <b class="mono">{{ e.expedienteUnico }}</b></span> }
-                        @if (e.usuarioFinal) { <span class="m-chip">Usuario final: <b>{{ e.usuarioFinal }}</b></span> }
-                      </div>
-                    }
-                  </div>
-                } @empty {
-                  <p class="muted small">No hay eventos del tipo seleccionado para este equipo.</p>
-                }
-              </div>
+              <p class="hint mb-2">
+                Recorrido cronológico del equipo desde su ingreso hasta entrega, garantía o reproceso.
+              </p>
+              <ui-linea-tiempo [eventos]="lineaCompleta()" orden="asc" />
             }
 
             <!-- ── Descargos ── -->
@@ -1251,15 +1145,6 @@ export class TrazabilidadComponent {
     return d ? this.data.lineaTiempoEquipo(d.equipo.inventario) : [];
   });
 
-  protected readonly modulosDeLinea = computed(() =>
-    [...new Set(this.lineaCompleta().map((e) => e.modulo).filter((m): m is string => !!m))]
-  );
-
-  protected readonly lineaFiltrada = computed(() => {
-    const m = this.fEvento();
-    return m ? this.lineaCompleta().filter((e) => e.modulo === m) : this.lineaCompleta();
-  });
-
   protected documentosDeFila(d: FilaTraza): DocumentoGenerado[] {
     const ids = new Set([d.solicitudId, d.tec?.codigo].filter(Boolean));
     return this.data.documentos().filter((doc) => ids.has(doc.expediente));
@@ -1277,35 +1162,6 @@ export class TrazabilidadComponent {
     return [...filtrados].sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
   });
 
-  protected tieneDetalle(e: EventoTrazabilidad): boolean {
-    return !!(e.modulo || e.estadoAnterior || e.inventario || e.expedienteTecnico || e.expedienteUnico ||
-      e.usuarioFinal || e.tiempo || e.complejidad || e.nombreEquipo || e.ipReservada ||
-      e.mac || e.estadoSolicitudIP || e.justificacion ||
-      e.tipoFalla || e.requiereReproceso || e.accionTomada || e.reproceso || e.evidencia ||
-      e.tecnicoReporta || e.tecnicoHardware || e.resultadoReproceso || e.firmaRegistrada ||
-      e.documento || e.estadoDocumento || e.tipoProblema || e.resolucion || e.correccion ||
-      e.intentoConformidad || e.origenReproceso);
-  }
-
-  /** Icono por módulo, del set de `ui-icon`. Antes eran emojis: cada sistema los dibujaba distinto. */
-  private readonly iconos: Record<string, string> = {
-    'Inventario de Hardware': 'box',
-    'Ingreso a Hardware': 'arrow-down',
-    'Descargo': 'arrow-up',
-    'Expediente técnico': 'folder',
-    'Preparación técnica F0288': 'tool',
-    'Asignación de equipo': 'user',
-    'Expediente único': 'archive',
-    'Configuración F0302': 'monitor',
-    'Entrega y aceptación': 'handshake',
-    'Servicio de garantía': 'shield',
-    'Reporte final de auditoría': 'file',
-    'Generador de documentos': 'download',
-    'Reprocesos F0288': 'undo',
-    'Solicitudes': 'mail'
-  };
-
-  protected icono(e: EventoTrazabilidad): string {
-    return this.iconos[e.modulo ?? ''] ?? 'circle';
-  }
+  // El dibujo de cada evento —icono, chips y detalle— vive ahora en `ui-linea-tiempo`, que es la
+  // misma línea de tiempo para la vista por proceso y para el historial técnico del equipo.
 }

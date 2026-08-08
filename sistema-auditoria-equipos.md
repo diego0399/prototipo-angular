@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 50)**.
+nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 51)**.
 
 ---
 
@@ -2378,6 +2378,34 @@ Expediente único.
       y **111 casos, 0 fallos** —los nuevos nombran el caso reportado y comprueban dónde queda—, más
       las catorce baterías anteriores (848 casos, 0 fallos).
       **Sin recorrido manual de clics en navegador.**
+51. **Trazabilidad — dos niveles de lectura, sin perder auditoría**
+    (2026-08-08, quinta sesión del día).
+    * **El problema**: cada consulta, validación y autocompletado se mostraba como evento propio, al
+      mismo nivel que el ingreso al inventario o la firma de un F0288. El recorrido de un equipo eran
+      **54 renglones** donde solo unos veinte contaban algo del proceso.
+    * **Vista resumida** (por defecto): un renglón por hito, con las consultas y validaciones **dentro
+      de su detalle**. **Vista detallada**: todos los eventos, para auditoría. Las dos leen los mismos
+      eventos; solo cambia el agrupamiento. Con `2201-0954-2023`: de 54 renglones a **21**.
+    * **Qué es hito**: no bastaba el campo `hito` —hay pasos claramente principales guardados sin la
+      marca (la asignación, el cierre del F0288, el documento F0302)—, así que el título también se
+      reconoce por lo que dice. Y un evento de **apoyo no encabeza grupo aunque venga marcado como
+      hito**: la marca sirve para lo que el texto no distingue, no para rescatar una consulta.
+    * El agrupador recorre **en orden cronológico** —da igual cómo llegue la lista— porque un hito
+      resume lo que pasó **antes** de él. Si quedan eventos sin hito posterior, el más reciente encabeza
+      su propio grupo: es actividad en curso. La batería comprueba que **cada evento aparece exactamente
+      una vez** entre hitos y pasos.
+    * **Ver detalle** con fecha, hora, usuario, rol, módulo, acción, estados anterior y nuevo, los datos
+      técnicos del evento, observaciones y los pasos agrupados con su hora. En el renglón quedan solo
+      **módulo y estado**: los treinta y tantos `m-chip` por evento desaparecieron.
+    * **Filtros por etapa** (Inventario · Expediente técnico · F0288 · Asignación · Expediente único ·
+      F0302 · Conformidad · Garantía · Descargo · Reproceso · Documentos), ofreciendo solo las presentes.
+    * **Una sola línea de tiempo**: la pantalla dibujaba los eventos **dos veces** con bloques casi
+      idénticos de ~40 líneas; ahora las dos vistas usan `shared/linea-tiempo.ts` y el componente pasó
+      de 1312 a 1198 líneas. Textos superiores reducidos a una frase.
+    * Verificado con `npm run build` limpio (7.303 s, 0 errores), `ng serve` (HTTP 200 en cinco rutas) y
+      **72 casos, 0 fallos**, más las quince baterías anteriores (959 casos, 0 fallos; una expectativa
+      de la r47 actualizada porque el icono por módulo se mudó al componente compartido).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2415,6 +2443,9 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 51)**: revisión visual de la línea de tiempo en navegador —el cambio de
+  vista, el detalle desplegable y los filtros por etapa—, y repasar la clasificación hito/apoyo con
+  eventos de otros equipos, que hoy solo está probada contra el recorrido de `2201-0954-2023`.
 * **Nuevo pendiente (ronda 50)**: `SOL-2026-0150` queda fuera de los dos flujos porque su estado dice
   `Asignada` pero su asignación está cerrada (`vigente: false`) y conserva el inventario. Evaluar si
   el descargo debería limpiar `equipoInventario` y devolver la solicitud a un estado asignable, o si

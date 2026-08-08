@@ -488,3 +488,132 @@ src/app/features/asignacion/asignacion.component.ts
                                           (el catálogo ya no se amplía al buscar; bloqueo al
                                            seleccionar; columna Correo en la tabla de modificación)
 ```
+
+---
+
+# Parte 5 — Trazabilidad con dos niveles de lectura
+
+**Fecha:** 8 de agosto de 2026, quinta sesión del día (ronda 51 del punto de control)
+**Alcance:** cómo se muestran los eventos; **no se borró ni se dejó de registrar ninguno**.
+
+## 1. El problema
+
+Cada consulta, validación y autocompletado se mostraba como un evento propio, al mismo nivel que
+el ingreso al inventario o la firma de un F0288. El recorrido de un equipo eran **54 renglones**
+donde solo unos veinte contaban algo del proceso.
+
+## 2. Vista resumida y vista detallada
+
+```text
+Vista resumida    un renglón por hito; lo demás, dentro de su detalle   (por defecto)
+Vista detallada   todos los eventos, uno por uno, para auditoría
+```
+
+Las dos leen **exactamente los mismos eventos**: lo único que cambia es cómo se agrupan. Con el
+equipo `2201-0954-2023` la resumida pasa de 54 renglones a **21**.
+
+## 3. Qué es hito y qué es apoyo
+
+No bastaba con el campo `hito` que ya traía cada evento: en los datos hay pasos claramente
+principales guardados sin esa marca —la asignación del equipo, el cierre del F0288, el documento
+F0302—. Así que el título también se reconoce por lo que dice:
+
+```text
+Hito     ingreso al inventario · expediente técnico creado · F0288 iniciada/finalizada ·
+         documento F0288 · equipo preparado · asignación · expediente único · F0302
+         iniciada/finalizada · documento F0302 · conformidad enviada/aceptada · garantía ·
+         descargo · reingreso · reproceso F0288 · firma · corrección F0302
+Apoyo    consultas, búsquedas en la base institucional, autocompletados, catálogo de software,
+         selecciones, checklists cargados, modales abiertos, descargas de documentos
+```
+
+Un evento de apoyo **no encabeza grupo aunque venga marcado como hito**: la marca sirve para lo
+que el texto no alcanza a distinguir, no para rescatar una consulta.
+
+## 4. El ejemplo del pedido
+
+```text
+Consulta de inventario realizada
+Equipo encontrado en base institucional simulada     →  Equipo ingresado al Inventario de Hardware
+Datos autocompletados desde base institucional              (los tres, dentro de «Ver detalle»)
+Equipo ingresado al Inventario de Hardware
+```
+
+El agrupador recorre **en orden cronológico** —da igual cómo llegue la lista— porque un hito
+resume lo que pasó **antes** de él: la consulta y el autocompletado explican el ingreso, no al
+revés. Y si al final quedan eventos sin hito posterior, el más reciente encabeza su propio grupo:
+son actividad en curso y esconderlos sería perder lo último que ocurrió.
+
+La batería comprueba que **cada evento aparece exactamente una vez** entre hitos y pasos.
+
+## 5. Ver detalle
+
+Fecha, hora, usuario, rol, módulo, acción, estado anterior y nuevo, los datos técnicos que traiga
+el evento —inventario, expedientes, tiempos, evidencias, documento— y las observaciones. Debajo,
+los pasos registrados con su hora.
+
+El rol sale de su campo propio o de la parte «— Rol» del usuario, que es como se guardan los
+eventos antiguos.
+
+## 6. Renglón compacto y sin exceso de chips
+
+```text
+2026-08-08 · 12:39
+Equipo ingresado al Inventario de Hardware
+Samuel Cruz — Encargado de Hardware
+Inventario de Hardware   [Pendiente de preparación]   Ver detalle
+```
+
+Los treinta y tantos `m-chip` que se dibujaban en cada evento **desaparecieron del renglón**: solo
+quedan el módulo y el estado. Todo lo demás está en el detalle.
+
+## 7. Filtros por etapa
+
+Inventario · Expediente técnico · F0288 · Asignación · Expediente único · F0302 · Conformidad ·
+Garantía · Descargo · Reproceso · Documentos. Solo se ofrecen las etapas presentes en los eventos
+que se están viendo: un filtro que no filtra nada sobra.
+
+## 8. Una sola línea de tiempo
+
+La pantalla dibujaba los eventos **dos veces**, con dos bloques de plantilla casi idénticos de unas
+cuarenta líneas cada uno —la vista por proceso y el historial técnico del equipo—. Ahora las dos
+usan `ui-linea-tiempo` de `shared`: el componente de trazabilidad pasó de 1312 a 1198 líneas y el
+comportamiento nuevo se escribió una sola vez.
+
+## 9. Textos más breves
+
+El subtítulo de la pantalla y el aviso del historial se reemplazaron por una línea:
+
+```text
+Recorrido cronológico del equipo desde su ingreso hasta entrega, garantía o reproceso.
+```
+
+## 10. Casos de prueba
+
+**72 casos, 0 fallos**: las dos vistas y cuál abre por defecto; once títulos que deben ser hito y
+diez que deben ser apoyo, tomados de los eventos reales; que la marca `hito` no rescata a los de
+apoyo; el ejemplo del pedido reducido a un solo renglón con sus tres pasos dentro; que ningún
+evento se pierde ni se duplica al agrupar; los once campos del detalle; el renglón compacto sin
+`m-chip`; las diez etapas; los textos breves; y que la pantalla ya no dibuja eventos por su cuenta.
+
+Regresiones: las quince baterías anteriores, **959 casos, 0 fallos**. Se actualizó una expectativa
+de la ronda 47 —el icono por módulo ahora vive en el componente compartido—.
+
+## 11. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [7.303 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en `/`, `/trazabilidad`, `/expediente-unico`, `/asignacion` y
+`/generador-documentos`.
+
+**No hubo clics reales en un navegador**: el agrupamiento quedó verificado contra los eventos
+semilla, que es donde se ve el efecto.
+
+## 12. Archivos tocados
+
+```text
+src/app/shared/linea-tiempo.ts                          (nuevo: las dos vistas, el agrupador,
+                                                         el detalle y los filtros por etapa)
+src/app/features/trazabilidad/trazabilidad.component.ts (usa la línea de tiempo compartida; se
+                                                         eliminaron los dos bloques duplicados,
+                                                         los chips, el icono y el filtro por módulo)
+```
