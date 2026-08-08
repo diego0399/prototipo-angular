@@ -6,7 +6,7 @@ import {
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, CorreccionNoConformidad, Cronometro, Descargo,
   DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaCorreccion, EvidenciaReproceso, FilaValidacionLote,
   EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
+  FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
   TipoComentarioCaso, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, UsuarioSistema, VerificacionAccesorios,
@@ -622,17 +622,56 @@ export class DataService {
   }
 
   /**
-   * Requerimientos que pueden recibir un equipo: sin asignación vigente, sin Expediente único y en
-   * un estado que todavía admite asignación. Los cerrados, entregados o en entrega ya pasaron de
-   * fase; ofrecerlos abriría una asignación sobre un proceso terminado.
+   * Requerimientos que pueden recibir un equipo. Es el filtro **base** del flujo de nueva
+   * asignación: ningún filtro rápido ni búsqueda puede saltárselo.
+   *
+   * Se exige que el requerimiento no tenga equipo **por ningún camino**: ni número de inventario
+   * asociado, ni registro de asignación —vigente o no—, ni estado «Asignada». Comprobar solo la
+   * asignación vigente dejaba pasar los casos en que la asignación se cerró (p. ej. por descargo)
+   * pero el requerimiento se quedó con su inventario y su estado: aparecían aquí como si no
+   * tuvieran equipo.
    */
   solicitudesParaAsignar(): Solicitud[] {
-    const cerrados = ['Cerrado', 'Cancelado', 'Entregado', 'Pendiente de aceptación', 'No conforme'];
+    const yaAsignada = ['Asignada', 'En configuración', 'Pendiente de aceptación', 'No conforme',
+      'Entregado', 'Cerrado', 'Cancelado'];
     return this.solicitudes().filter((s) =>
-      !cerrados.includes(s.estado) &&
-      !this.asignacionDe(s.expediente)?.vigente &&
-      !this.expedienteUnicoDe(s.expediente)
+      !yaAsignada.includes(s.estado) &&
+      !s.equipoInventario &&
+      !this.asignacionDe(s.expediente) &&
+      !this.expedienteUnicoDe(s.expediente) &&
+      !this.conformidadDeProceso(s.expediente) &&
+      !this.garantiaDe(s.expediente)
     );
+  }
+
+  /** true si el requerimiento ya tiene equipo por cualquiera de sus rastros. */
+  solicitudYaTieneEquipo(id: string): boolean {
+    const s = this.solicitud(id);
+    return !!s && (!!s.equipoInventario || !!this.asignacionDe(id) || s.estado === 'Asignada');
+  }
+
+  /**
+   * Asignaciones que todavía se pueden corregir: las que tienen equipo pero **aún no tienen
+   * Expediente único**. Es el mismo corte que usa `casoModificacionAsignacion`: en cuanto el
+   * expediente existe, el equipo deja de ser un dato suelto de la asignación y pasa a ser la base
+   * del F0302, de sus evidencias y de sus firmas.
+   */
+  asignacionesModificables(): Asignacion[] {
+    return this.asignaciones().filter((a) => a.vigente && !!a.equipoInventario &&
+      !this.expedienteUnicoDe(a.expediente) &&
+      !this.configuracionIniciada(a.expediente) &&
+      !this.conformidadDeProceso(a.expediente) &&
+      !this.garantiaDe(a.expediente));
+  }
+
+  /**
+   * Validación de respaldo del flujo de nueva asignación: bloquea seleccionar un requerimiento que
+   * ya tiene equipo aunque, por un dato desalineado, hubiera llegado hasta el listado.
+   */
+  validarSolicitudParaAsignar(id: string): string | null {
+    if (!this.solicitudYaTieneEquipo(id)) return null;
+    return 'Esta solicitud ya tiene un equipo asignado. No puede seleccionarse para una nueva asignación. '
+      + 'Use la opción Modificar asignación si necesita corregirla.';
   }
 
   /**
@@ -1653,6 +1692,165 @@ export class DataService {
     this.registrarEvento(id, responsable, `Equipo ${inventario} (preparado) asignado al usuario final`, 'Asignada', observacion, true,
       { modulo: 'Asignación de equipo', estadoAnterior: 'No asignado', inventario, expedienteTecnico: tec.codigo, usuarioFinal: nueva.usuarioFinal });
     return null;
+  }
+
+  // ---------- Modificación de una asignación ya registrada ----------
+  /** Solo los Encargados y el Administrador corrigen asignaciones; los técnicos consultan. */
+  puedeModificarAsignaciones(): boolean {
+    const c = this.claveConectada();
+    return c === 'enc-soporte' || c === 'enc-hardware' || c === 'admin';
+  }
+
+  /** true si alguna Configuración F0302 del proceso ya arrancó, se completó o quedó con falla. */
+  configuracionIniciada(id: string): boolean {
+    return this.configuraciones().some((c) => c.expediente === id &&
+      (!!c.cronometro?.horaInicio || c.estado === 'Completada' || c.estado === 'Con falla'));
+  }
+
+  /**
+   * Hasta dónde se puede corregir una asignación ya hecha. La regla no es el permiso sino **cuánto
+   * proceso hay encima**: el corte está en el Expediente único. Mientras el equipo es solo un dato
+   * de la asignación, se corrige; en cuanto el expediente existe, ese equipo pasa a ser la base del
+   * F0302, de sus evidencias y de sus firmas, y cambiarlo dejaría todo eso apuntando a otro equipo.
+   */
+  casoModificacionAsignacion(id: string): {
+    caso: 'Modificable' | 'Con Expediente único' | 'Configuración iniciada' | 'Conformidad enviada';
+    permiteCambioEquipo: boolean; aviso: string;
+  } {
+    if (this.conformidadDeProceso(id)) {
+      return {
+        caso: 'Conformidad enviada', permiteCambioEquipo: false,
+        aviso: 'Esta asignación ya fue enviada a conformidad o aceptada por el usuario final. No puede modificarse directamente desde Asignación de Equipo.'
+      };
+    }
+    if (this.configuracionIniciada(id)) {
+      return {
+        caso: 'Configuración iniciada', permiteCambioEquipo: false,
+        aviso: 'Esta asignación ya tiene configuración F0302 iniciada. No puede modificarse directamente. Debe gestionarse mediante corrección, reproceso, anulación controlada o nuevo flujo según corresponda.'
+      };
+    }
+    if (this.expedienteUnicoDe(id)) {
+      return {
+        caso: 'Con Expediente único', permiteCambioEquipo: false,
+        aviso: 'Esta asignación ya tiene Expediente único creado y no puede modificarse desde Asignación de Equipo. Debe gestionarse desde el flujo correspondiente del expediente.'
+      };
+    }
+    return { caso: 'Modificable', permiteCambioEquipo: true, aviso: '' };
+  }
+
+  /**
+   * Cambia el equipo de una asignación ya registrada. **No sobrescribe**: apila la corrección en
+   * el historial de la asignación con el equipo anterior, el nuevo y el motivo, libera el equipo
+   * anterior y arrastra el cambio a lo que ya dependía de él (solicitud, expediente único y la
+   * configuración F0302 todavía sin iniciar).
+   */
+  modificarAsignacion(id: string, nuevoInventario: string, motivo: string, observacion: string,
+    usuario: string, rol = ''): string | null {
+    if (!this.puedeModificarAsignaciones()) {
+      return 'Solo un Encargado o el Administrador puede modificar una asignación.';
+    }
+    const asig = this.asignacionDe(id);
+    if (!asig?.vigente) return 'Este requerimiento no tiene una asignación vigente que modificar.';
+    if (!motivo.trim()) return 'Debe justificar el motivo de la modificación de la asignación.';
+    // El corte vuelve a comprobarse aquí y no solo en la lista: una pantalla que no ofrece el botón
+    // no es una regla, y a esta función se puede llegar con el caso ya avanzado.
+    const caso = this.casoModificacionAsignacion(id);
+    if (!caso.permiteCambioEquipo) return caso.aviso;
+    const anterior = asig.equipoInventario;
+    if (nuevoInventario === anterior) return 'El equipo seleccionado es el mismo que ya estaba asignado.';
+    const eq = this.equipoDe(nuevoInventario);
+    const s = this.solicitud(id);
+    if (!eq || !s) return 'Verifique el requerimiento y el equipo seleccionados.';
+    if (eq.tipo !== s.tipoEquipo) {
+      return `El requerimiento pide ${this.tipoRequerimientoTexto(s)} y el equipo seleccionado es de otro tipo.`;
+    }
+    // El equipo nuevo pasa por el mismo filtro que una asignación nueva: preparado, con F0288
+    // firmado, libre y sin trabajo abierto.
+    if (!this.equiposParaAsignar().some((x) => x.inventario === nuevoInventario)) {
+      return 'El equipo seleccionado no está disponible para asignación: revise su preparación, su F0288 o si ya tiene trabajo abierto.';
+    }
+    const tec = this.expTecnicoDeEquipo(nuevoInventario)!;
+    const estadoAnterior = s.estado;
+
+    // El equipo anterior queda libre; el nuevo toma su lugar.
+    this.equipos.update((list) => list.map((e) =>
+      e.inventario === anterior ? { ...e, expediente: '' }
+        : e.inventario === nuevoInventario ? { ...e, expediente: id } : e));
+    this.solicitudes.update((list) =>
+      list.map((x) => (x.expediente === id ? { ...x, equipoInventario: nuevoInventario } : x)));
+
+    const modificacion: ModificacionAsignacion = {
+      fecha: this.hoy(), hora: this.hora(), equipoAnterior: anterior, equipoNuevo: nuevoInventario,
+      usuarioFinal: asig.usuarioFinal, motivo: motivo.trim(), observacion: observacion.trim(),
+      encargado: usuario, rol, estadoAnterior, estadoNuevo: s.estado, soloObservacion: false
+    };
+    this.asignaciones.update((list) => list.map((a) => (a.expediente === id
+      ? {
+          ...a, equipoInventario: nuevoInventario, tipoEquipo: eq.tipo, condicion: eq.condicion,
+          observacion: observacion.trim() || a.observacion,
+          responsablesFase: {
+            ...a.responsablesFase, expedienteTecnico: tec.codigo,
+            unidadPreparacion: tec.unidadResponsable, tecnicoPreparacion: tec.tecnicoPreparacion
+          },
+          modificaciones: [...(a.modificaciones ?? []), modificacion]
+        }
+      : a)));
+
+    // No hay Expediente único ni Configuración F0302 que arrastrar: la corrección solo se permite
+    // antes de que existan, justamente para no tener que reescribir lo que ya se armó sobre ellos.
+    const ref = {
+      modulo: 'Asignación de equipo', inventario: nuevoInventario, expedienteTecnico: tec.codigo,
+      usuarioFinal: asig.usuarioFinal, rol, equipoAnterior: anterior,
+      equipoNuevo: nuevoInventario, motivo: motivo.trim()
+    };
+    this.registrarEvento(id, usuario, 'Asignación modificada por Encargado', 'Asignación corregida',
+      `Equipo anterior ${anterior} → equipo nuevo ${nuevoInventario}. Motivo: ${motivo.trim()}` +
+        (observacion.trim() ? ` Observación: ${observacion.trim()}` : ''), true,
+      { ...ref, estadoAnterior });
+    this.registrarEvento(id, usuario, 'Equipo anterior liberado', 'Disponible para asignación',
+      `${anterior} queda disponible para asignación: no tenía configuración iniciada.`, false,
+      { ...ref, inventario: anterior, estadoAnterior: 'Asignado' });
+    this.registrarEvento(id, usuario, 'Nuevo equipo asociado al requerimiento', 'Asignada',
+      `${nuevoInventario} · ${eq.marca} ${eq.modelo} · Expediente técnico ${tec.codigo}.`, true,
+      { ...ref, estadoAnterior: 'No asignado' });
+    return null;
+  }
+
+  /**
+   * Observación administrativa sobre una asignación que ya no admite cambiar el equipo. No altera
+   * el proceso: deja dicho en el expediente qué se observó y quién lo observó.
+   */
+  registrarObservacionAsignacion(id: string, texto: string, usuario: string, rol = ''): string | null {
+    if (!this.puedeModificarAsignaciones()) {
+      return 'Solo un Encargado o el Administrador puede registrar observaciones administrativas.';
+    }
+    const asig = this.asignacionDe(id);
+    if (!asig) return 'Este requerimiento no tiene una asignación registrada.';
+    if (!texto.trim()) return 'Escriba la observación administrativa.';
+    const caso = this.casoModificacionAsignacion(id);
+    const registro: ModificacionAsignacion = {
+      fecha: this.hoy(), hora: this.hora(), equipoAnterior: asig.equipoInventario,
+      equipoNuevo: asig.equipoInventario, usuarioFinal: asig.usuarioFinal, motivo: texto.trim(),
+      observacion: texto.trim(), encargado: usuario, rol,
+      estadoAnterior: caso.caso, estadoNuevo: caso.caso, soloObservacion: true
+    };
+    this.asignaciones.update((list) => list.map((a) => (a.expediente === id
+      ? { ...a, modificaciones: [...(a.modificaciones ?? []), registro] } : a)));
+    this.registrarEvento(id, usuario, 'Observación administrativa registrada', caso.caso, texto.trim(), false,
+      { modulo: 'Asignación de equipo', inventario: asig.equipoInventario, usuarioFinal: asig.usuarioFinal,
+        rol, motivo: texto.trim(), expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
+    return null;
+  }
+
+  /** Deja constancia de que una modificación se intentó sobre un proceso que ya no la admite. */
+  registrarModificacionRechazada(id: string, usuario: string, rol = ''): void {
+    const caso = this.casoModificacionAsignacion(id);
+    if (caso.permiteCambioEquipo) return;
+    this.registrarEvento(id, usuario, 'Modificación rechazada por estado avanzado del proceso', caso.caso,
+      caso.aviso, false,
+      { modulo: 'Asignación de equipo', inventario: this.asignacionDe(id)?.equipoInventario,
+        usuarioFinal: this.asignacionDe(id)?.usuarioFinal, rol,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico });
   }
 
   // ---------- Descargo y reingreso a Hardware ----------

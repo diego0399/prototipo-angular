@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -14,8 +15,8 @@ import { IconComponent } from '../../shared/icon';
  */
 @Component({
   selector: 'app-asignacion',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe,
-    IconComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent,
+    TipoRequerimientoPipe, IconComponent],
   styles: `
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
@@ -38,6 +39,17 @@ import { IconComponent } from '../../shared/icon';
     .resumen-asig { background: var(--surface-2); border-radius: var(--r-md); padding: 12px 16px; margin-top: 14px; }
     .resumen-asig .r-t { font-size: 11px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 6px; }
     .valida { margin-top: 12px; }
+    /* Las dos acciones de la pantalla, una al lado de la otra. */
+    .acciones { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+    .acc-op {
+      display: flex; align-items: center; gap: 11px; text-align: left; cursor: pointer;
+      border: 1px solid var(--line-strong); background: var(--surface); border-radius: var(--r-md);
+      padding: 13px 16px; color: var(--tx-2);
+    }
+    .acc-op:hover { border-color: var(--blue-500); }
+    .acc-op.on { border-color: var(--navy-900); box-shadow: 0 0 0 2px var(--blue-100); color: var(--navy-900); }
+    .acc-op b { display: block; font-size: 13.5px; color: var(--navy-900); }
+    .acc-op small { font-size: 11.5px; color: var(--tx-3); }
     .chk { font-size: 13px; margin-top: 6px; display: flex; align-items: center; gap: 7px; }
     .chk.ok { color: var(--ok); }
     .chk.pend { color: var(--tx-3); }
@@ -63,11 +75,28 @@ import { IconComponent } from '../../shared/icon';
         </div>
       }
 
+      <!--
+        Dos acciones separadas: asignar por primera vez y corregir una asignación ya hecha. Se
+        separan porque no comparten reglas: la corrección exige motivo y depende de cuánto proceso
+        haya encima del equipo.
+      -->
+      <div class="acciones mb-3">
+        <button class="acc-op" [class.on]="modo() === 'nueva'" (click)="modo.set('nueva')">
+          <ui-icon name="plus" [size]="16" />
+          <span><b>Nueva asignación</b><small>Requerimientos que todavía no tienen equipo</small></span>
+        </button>
+        <button class="acc-op" [class.on]="modo() === 'modificar'" (click)="modo.set('modificar')">
+          <ui-icon name="edit" [size]="16" />
+          <span><b>Modificar asignación existente</b><small>Solo para corregir errores administrativos</small></span>
+        </button>
+      </div>
+
+      @if (modo() === 'nueva') {
       <div class="card mb-3">
         <div class="card-head">
           <div>
             <h2>Nueva asignación</h2>
-            <p class="sub">Seleccione la solicitud entrante y busque un equipo preparado y no asignado</p>
+            <p class="sub">Solo requerimientos sin equipo asociado, y equipos preparados del tipo que piden</p>
           </div>
         </div>
         <div class="card-body">
@@ -229,6 +258,143 @@ import { IconComponent } from '../../shared/icon';
           </button>
         </div>
       </div>
+      }
+
+      @if (modo() === 'modificar') {
+        <!-- Corrección de una asignación ya registrada -->
+        <div class="card mb-3">
+          <div class="card-head">
+            <div>
+              <h2>Modificar asignación existente</h2>
+              <p class="sub">Solo para corregir errores administrativos; exige motivo y depende del avance del proceso</p>
+            </div>
+          </div>
+          <div class="card-body">
+            @if (!puedeModificar()) {
+              <p class="chk pend">
+                <ui-icon name="alert" [size]="14" />
+                Su rol puede consultar las asignaciones, pero no modificarlas. La corrección corresponde a un Encargado o al Administrador.
+              </p>
+            }
+            @if (asigSel(); as a) {
+              <div class="resumen-eq">
+                <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
+                  <div>
+                    <div class="eq-nombre mono">{{ a.expediente }}</div>
+                    <div class="eq-datos">{{ a.usuarioFinal }}</div>
+                    <div class="eq-datos">
+                      Equipo actual <b class="mono">{{ a.equipoInventario }}</b> ·
+                      {{ data.equipoDe(a.equipoInventario) | marcaModelo }} ·
+                      asignado el {{ a.fecha }} por {{ a.responsableAsignacion }}
+                    </div>
+                  </div>
+                  <button class="btn btn-outline btn-sm" (click)="abrirBusquedaAsig()">Cambiar asignación a corregir</button>
+                </div>
+              </div>
+
+              @if (caso(); as c) {
+                <p class="chk" [class.ok]="c.permiteCambioEquipo" [class.pend]="!c.permiteCambioEquipo">
+                  <ui-icon [name]="c.permiteCambioEquipo ? 'check' : 'alert'" [size]="14" />
+                  {{ c.caso === 'Modificable' ? 'La asignación aún no tiene Expediente único: puede corregirse.' : c.aviso }}
+                </p>
+
+                @if (c.permiteCambioEquipo && puedeModificar()) {
+                  <div class="field mt-2">
+                    <label>Equipo nuevo <span class="req">*</span></label>
+                    @if (equipoNuevo(); as e) {
+                      <div class="resumen-eq">
+                        <div class="row-between" style="flex-wrap: wrap; gap: 12px;">
+                          <div>
+                            <div class="eq-nombre">{{ e | marcaModelo }}</div>
+                            <div class="eq-datos">
+                              {{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} · inventario {{ e.inventario }} ·
+                              expediente técnico <b class="mono">{{ data.expTecnicoDeEquipo(e.inventario)?.codigo }}</b> ·
+                              F0288 <ui-badge [estado]="estadoF0288(e.inventario)" />
+                            </div>
+                          </div>
+                          <button class="btn btn-outline btn-sm" (click)="abrirBusquedaEquipoMod()">Cambiar equipo</button>
+                        </div>
+                      </div>
+                    } @else {
+                      <button class="btn btn-primary" (click)="abrirBusquedaEquipoMod()">
+                        <ui-icon name="search" [size]="15" /> Buscar equipo preparado
+                      </button>
+                      <span class="hint">Mismas reglas que una asignación nueva: preparado, F0288 firmado, libre y del tipo del requerimiento.</span>
+                    }
+                  </div>
+
+                  <div class="field mt-2">
+                    <label>Motivo de modificación <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [(ngModel)]="motivoMod"
+                      placeholder="Ej.: se seleccionó equipo incorrecto por error administrativo."></textarea>
+                  </div>
+                  <div class="field mt-2">
+                    <label>Observación <span class="req">*</span></label>
+                    <textarea class="control" rows="2" [(ngModel)]="observacionMod"
+                      placeholder="Qué se revisó o acordó antes de corregir la asignación."></textarea>
+                  </div>
+                  <label class="opt mt-1" [class.on]="confirmaEncargado()" style="display: flex;">
+                    <input type="checkbox" [checked]="confirmaEncargado()" (change)="confirmaEncargado.set(!confirmaEncargado())" />
+                    Confirmo como Encargado la modificación de esta asignación <span class="req">*</span>
+                  </label>
+                  <button class="btn btn-primary btn-lg mt-2" [disabled]="!puedeGuardarMod()" (click)="guardarModificacion()">
+                    Guardar modificación
+                  </button>
+                  @if (faltaMod(); as f) { <span class="hint">{{ f }}</span> }
+                } @else {
+                  <!-- Proceso avanzado: se consulta y se observa, no se cambia el equipo -->
+                  <div class="row mt-2">
+                    <a class="btn btn-outline btn-sm" routerLink="/expediente-unico">Ver expediente</a>
+                    <a class="btn btn-outline btn-sm" routerLink="/trazabilidad" [queryParams]="{ inventario: a.equipoInventario }">Ver historial técnico</a>
+                    <a class="btn btn-outline btn-sm" routerLink="/trazabilidad">Ver trazabilidad</a>
+                    @if (c.caso === 'Conformidad enviada') {
+                      <a class="btn btn-outline btn-sm" routerLink="/descargo">Gestionar descargo</a>
+                    }
+                  </div>
+                  @if (puedeModificar()) {
+                    <div class="field mt-2">
+                      <label>Observación administrativa</label>
+                      <textarea class="control" rows="2" [(ngModel)]="observacionAdmin"
+                        placeholder="Deje constancia de lo observado; no cambia el equipo asignado."></textarea>
+                      <button class="btn btn-outline btn-sm mt-1" (click)="guardarObservacion()">Registrar observación administrativa</button>
+                    </div>
+                  }
+                }
+              }
+
+              @if (a.modificaciones?.length) {
+                <div class="sec-title mt-3">Historial de modificaciones</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Equipo anterior</th><th>Equipo nuevo</th><th>Motivo</th><th>Modificado por</th><th>Estado</th></tr></thead>
+                    <tbody>
+                      @for (m of a.modificaciones; track m.fecha + m.hora) {
+                        <tr>
+                          <td class="mono">{{ m.fecha }}<div class="sub-cell">{{ m.hora }}</div></td>
+                          <td class="mono">{{ m.soloObservacion ? '—' : m.equipoAnterior }}</td>
+                          <td class="mono">{{ m.soloObservacion ? '—' : m.equipoNuevo }}</td>
+                          <td class="sub-cell" style="max-width: 260px;">{{ m.motivo }}
+                            @if (m.observacion && m.observacion !== m.motivo) { <div>{{ m.observacion }}</div> }
+                          </td>
+                          <td>{{ m.encargado.split('—')[0].trim() }}<div class="sub-cell">{{ m.rol }}</div></td>
+                          <td>{{ m.soloObservacion ? 'Observación administrativa' : m.estadoAnterior + ' → ' + m.estadoNuevo }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            } @else {
+              <div class="row">
+                <button class="btn btn-primary" (click)="abrirBusquedaAsig()">
+                  <ui-icon name="search" [size]="15" /> Buscar asignación existente
+                </button>
+                <span class="hint">Busque la asignación por requerimiento, inventario, usuario final o fecha.</span>
+              </div>
+            }
+          </div>
+        </div>
+      }
 
       <div class="card">
         <div class="card-head">
@@ -289,7 +455,7 @@ import { IconComponent } from '../../shared/icon';
 
       <!-- Paso 1 · Catálogo de requerimientos -->
       @if (buscarSolAbierto()) {
-        <ui-modal titulo="Seleccionar requerimiento" sub="Solo requerimientos pendientes, sin equipo asignado" (cerrar)="buscarSolAbierto.set(false)">
+        <ui-modal titulo="Seleccionar requerimiento para asignación" sub="Solo requerimientos pendientes, sin equipo asociado" (cerrar)="buscarSolAbierto.set(false)">
           <div class="field mb-2">
             <input class="control" type="search"
               placeholder="Código, tipo, usuario final, correo, unidad, descripción, estado o fecha…" [(ngModel)]="qSol" />
@@ -319,23 +485,13 @@ import { IconComponent } from '../../shared/icon';
                         <button class="btn btn-ghost btn-sm" (click)="detalleSol.set(detalleSol() === s.expediente ? '' : s.expediente)">
                           <ui-icon name="eye" [size]="13" /> {{ detalleSol() === s.expediente ? 'Ocultar' : 'Ver detalle' }}
                         </button>
-                        @if (asignacionDe(s.expediente); as a) {
-                          <button class="btn btn-outline btn-sm" (click)="verAsignacionExistente(s.expediente)">Ver asignación existente</button>
-                        } @else {
-                          <button class="btn btn-primary btn-sm" (click)="seleccionarSolicitud(s.expediente)">Seleccionar</button>
-                        }
+                        <button class="btn btn-primary btn-sm" (click)="seleccionarSolicitud(s.expediente)">Seleccionar</button>
                       </div>
                     </td>
                   </tr>
                   @if (detalleSol() === s.expediente) {
                     <tr>
                       <td colspan="8" class="det-fila">
-                        @if (asignacionDe(s.expediente); as a) {
-                          <p class="chk pend">
-                            <ui-icon name="alert" [size]="14" />
-                            Este requerimiento ya tiene el equipo <b class="mono">{{ a.equipoInventario }}</b> asignado.
-                          </p>
-                        }
                         <div class="datos">
                           <div><span>Código</span><b class="mono">{{ s.expediente }}</b></div>
                           <div><span>Tipo</span><b>{{ s.tipoEquipo | tipoRequerimiento }}</b></div>
@@ -347,16 +503,89 @@ import { IconComponent } from '../../shared/icon';
                           <div><span>Estado</span><b>{{ s.estado }} · {{ s.diasEnFase }} días en fase</b></div>
                           <div><span>Observaciones</span><b>{{ s.nota || s.pendiente || '—' }}</b></div>
                         </div>
-                        @if (!asignacionDe(s.expediente)) {
-                          <button class="btn btn-primary btn-sm mt-2" (click)="seleccionarSolicitud(s.expediente)">Seleccionar requerimiento</button>
-                        }
+                        <button class="btn btn-primary btn-sm mt-2" (click)="seleccionarSolicitud(s.expediente)">Seleccionar requerimiento</button>
                       </td>
                     </tr>
                   }
                 } @empty {
                   <tr><td colspan="8" class="muted" style="text-align:center; padding: 26px;">
-                    @if (data.solicitudesParaAsignar().length) { Ningún requerimiento coincide con la búsqueda. }
-                    @else { No hay requerimientos pendientes disponibles para asignación. }
+                    @if (data.solicitudesParaAsignar().length) {
+                      Ningún requerimiento coincide con la búsqueda.
+                    } @else {
+                      <b>No hay solicitudes pendientes sin equipo asignado.</b>
+                      <div class="mt-1">Solo se muestran solicitudes que aún no cuentan con una asignación de equipo.</div>
+                    }
+                  </td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Corrección · Catálogo de asignaciones ya registradas -->
+      @if (buscarAsigAbierto()) {
+        <ui-modal titulo="Buscar asignación existente" sub="Solo asignaciones con equipo y sin Expediente único creado" (cerrar)="buscarAsigAbierto.set(false)">
+          <div class="field mb-2">
+            <input class="control" type="search"
+              placeholder="Requerimiento, inventario, usuario final, correo, tipo de equipo, fecha o estado…" [(ngModel)]="qAsig" />
+          </div>
+          <div class="chips mb-2">
+            @for (fx of filtrosAsig; track fx) {
+              <button class="chip-f" [class.on]="fAsig() === fx" (click)="fAsig.set(fx)">{{ fx }}</button>
+            }
+          </div>
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>Código</th><th>Tipo</th><th>Usuario final</th><th>Correo</th><th>Equipo asignado</th><th>Inventario</th><th>Fecha de asignación</th><th>Estado</th><th style="text-align:right;">Acción</th></tr>
+              </thead>
+              <tbody>
+                @for (a of asignacionesFiltradas(); track a.expediente) {
+                  <tr>
+                    <td class="mono main-cell">{{ a.expediente }}</td>
+                    <td>{{ a.tipoEquipo === 'Desktop' ? 'Requerimiento de CPU' : 'Requerimiento de Laptop' }}</td>
+                    <td>{{ a.usuarioFinal }}</td>
+                    <td class="sub-cell">{{ data.solicitud(a.expediente)?.correoDestinatario }}</td>
+                    <td>{{ data.equipoDe(a.equipoInventario) | marcaModelo }}</td>
+                    <td class="mono">{{ a.equipoInventario }}</td>
+                    <td class="mono">{{ a.fecha }}</td>
+                    <td><ui-badge estado="Asignado sin Expediente único" /></td>
+                    <td>
+                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
+                        <button class="btn btn-ghost btn-sm" (click)="detalleAsig.set(detalleAsig() === a.expediente ? '' : a.expediente)">
+                          <ui-icon name="eye" [size]="13" /> {{ detalleAsig() === a.expediente ? 'Ocultar' : 'Ver detalle' }}
+                        </button>
+                        <button class="btn btn-primary btn-sm" [disabled]="!puedeModificar()" (click)="seleccionarAsignacion(a.expediente)">
+                          Modificar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  @if (detalleAsig() === a.expediente) {
+                    <tr>
+                      <td colspan="9" class="det-fila">
+                        <div class="datos">
+                          <div><span>Requerimiento</span><b class="mono">{{ a.expediente }}</b></div>
+                          <div><span>Usuario final</span><b>{{ a.usuarioFinal }}</b></div>
+                          <div><span>Equipo asignado</span><b class="mono">{{ a.equipoInventario }}</b><b>{{ data.equipoDe(a.equipoInventario) | marcaModelo }}</b></div>
+                          <div><span>Expediente técnico</span><b class="mono">{{ a.responsablesFase.expedienteTecnico || '—' }}</b></div>
+                          <div><span>Expediente único</span><b class="mono">{{ data.expedienteUnicoDe(a.expediente)?.codigoUnico || 'Sin crear' }}</b></div>
+                          <div><span>Fecha de asignación</span><b class="mono">{{ a.fecha }}</b></div>
+                          <div><span>Asignado por</span><b>{{ a.responsableAsignacion }}</b></div>
+                          <div><span>Estado</span><b>Asignado sin Expediente único</b></div>
+                        </div>
+                      </td>
+                    </tr>
+                  }
+                } @empty {
+                  <tr><td colspan="9" class="muted" style="text-align:center; padding: 26px;">
+                    @if (data.asignacionesModificables().length) {
+                      Ninguna asignación coincide con la búsqueda.
+                    } @else {
+                      <b>No hay asignaciones disponibles para modificar.</b>
+                      <div class="mt-1">Solo pueden modificarse asignaciones que aún no tienen Expediente único creado.</div>
+                    }
                   </td></tr>
                 }
               </tbody>
@@ -431,13 +660,40 @@ export class AsignacionComponent {
   protected qSol = signal('');
   protected fSol = signal('Todos');
   protected detalleSol = signal('');
+  /**
+   * Filtros del catálogo de nueva asignación. «Pendientes de asignación» y «Sin equipo asociado»
+   * describen lo mismo que ya garantiza la lista; se mantienen porque son la forma en que el
+   * usuario nombra lo que busca, no porque filtren algo distinto.
+   */
   protected readonly filtrosSol = ['Todos', 'Requerimiento de CPU', 'Requerimiento de Laptop',
-    'Pendientes de asignación', 'Sin equipo asignado', 'Prioridad alta', 'Más recientes'];
+    'Pendientes de asignación', 'Sin equipo asociado', 'Más recientes'];
 
   // Catálogo de equipos preparados (paso 2)
   protected buscarAbierto = signal(false);
   protected q = signal('');
   protected fCond = signal('');
+
+  /** Acción de la pantalla: asignar por primera vez o corregir una asignación ya hecha. */
+  protected modo = signal<'nueva' | 'modificar'>('nueva');
+
+  // Corrección de asignaciones existentes
+  protected buscarAsigAbierto = signal(false);
+  protected qAsig = signal('');
+  protected fAsig = signal('Asignaciones recientes');
+  protected detalleAsig = signal('');
+  protected asigSelId = signal('');
+  protected equipoNuevoSel = signal('');
+  protected motivoMod = signal('');
+  protected observacionMod = signal('');
+  protected observacionAdmin = signal('');
+  protected confirmaEncargado = signal(false);
+  /** true mientras el buscador de equipos se abrió desde la corrección y no desde una asignación nueva. */
+  private paraModificacion = signal(false);
+  /**
+   * Filtros de la corrección. Los de «Con Expediente único», «En proceso de configuración» y
+   * «Finalizadas» desaparecieron: esas asignaciones ya no se listan aquí, así que filtrarían cero.
+   */
+  protected readonly filtrosAsig = ['Asignaciones recientes', 'Requerimiento de CPU', 'Requerimiento de Laptop'];
 
   constructor() {
     effect(() => {
@@ -454,17 +710,14 @@ export class AsignacionComponent {
   protected readonly solicitudesFiltradas = computed(() => {
     const q = this.qSol().toLowerCase().trim();
     const filtro = this.fSol();
-    const asignables = this.data.solicitudesParaAsignar();
-    const base = q
-      ? [...asignables, ...this.data.solicitudes().filter((s) => !asignables.includes(s))]
-      : asignables;
-    const lista = base.filter((s) => {
+    // El catálogo **siempre** parte de los requerimientos sin equipo: ni la búsqueda por texto ni
+    // «Todos» pueden ampliarlo. Antes, escribir en el buscador agregaba el resto de solicitudes
+    // —así aparecían las ya asignadas—, y eso es justo lo que este flujo no debe ofrecer.
+    const lista = this.data.solicitudesParaAsignar().filter((s) => {
       if (filtro === 'Requerimiento de CPU' && s.tipoEquipo !== 'Desktop') return false;
       if (filtro === 'Requerimiento de Laptop' && s.tipoEquipo !== 'Laptop') return false;
       if (filtro === 'Pendientes de asignación' && s.estado !== 'Entrante') return false;
-      if (filtro === 'Sin equipo asignado' && !!this.asignacionDe(s.expediente)) return false;
-      // «Prioridad alta»: los que llevan más tiempo esperando en su fase.
-      if (filtro === 'Prioridad alta' && s.diasEnFase < 3) return false;
+      if (filtro === 'Sin equipo asociado' && !!this.asignacionDe(s.expediente)) return false;
       if (!q) return true;
       return [s.expediente, this.data.tipoRequerimientoTexto(s), s.destinatario, s.correoDestinatario,
         s.unidadDestino, s.direccionGerencia, s.descripcion, s.estado, s.fecha]
@@ -479,6 +732,125 @@ export class AsignacionComponent {
   protected asignacionDe(id: string) {
     const a = this.data.asignacionDe(id);
     return a?.vigente ? a : undefined;
+  }
+
+  // ---------- Corrección de asignaciones ----------
+  protected readonly puedeModificar = computed(() => this.data.puedeModificarAsignaciones());
+  protected readonly asigSel = computed(() =>
+    this.asigSelId() ? this.data.asignaciones().find((a) => a.expediente === this.asigSelId()) : undefined
+  );
+  /** Requerimiento de la asignación en corrección: de él sale el tipo de equipo permitido. */
+  protected readonly solAsig = computed(() =>
+    this.asigSelId() ? this.data.solicitud(this.asigSelId()) : undefined
+  );
+  protected readonly caso = computed(() =>
+    this.asigSelId() ? this.data.casoModificacionAsignacion(this.asigSelId()) : undefined
+  );
+  protected readonly equipoNuevo = computed(() =>
+    this.equipoNuevoSel() ? this.data.equipoDe(this.equipoNuevoSel()) : undefined
+  );
+
+  /** Fase del proceso; en este catálogo todas son «Asignado sin Expediente único», y se busca por ella. */
+  protected estadoProceso(id: string): string {
+    if (this.data.conformidadDeProceso(id)) return 'Conformidad enviada';
+    if (this.data.configuracionIniciada(id)) return 'Configuración F0302 iniciada';
+    if (this.data.expedienteUnicoDe(id)) return 'Expediente único creado';
+    return 'Asignado sin Expediente único';
+  }
+
+  /**
+   * Catálogo de la corrección: **solo asignaciones sin Expediente único**. Es la otra mitad del
+   * corte de la pantalla — lo que no aparece aquí aparece en «Nueva asignación», y al revés—, así
+   * que ninguna de las dos listas puede reutilizar la del otro flujo.
+   */
+  protected readonly asignacionesFiltradas = computed(() => {
+    const q = this.qAsig().toLowerCase().trim();
+    const filtro = this.fAsig();
+    const lista = this.data.asignacionesModificables().filter((a) => {
+      if (filtro === 'Requerimiento de CPU' && a.tipoEquipo !== 'Desktop') return false;
+      if (filtro === 'Requerimiento de Laptop' && a.tipoEquipo !== 'Laptop') return false;
+      if (!q) return true;
+      const eq = this.data.equipoDe(a.equipoInventario);
+      const s = this.data.solicitud(a.expediente);
+      return [a.expediente, a.equipoInventario, a.usuarioFinal, s?.correoDestinatario,
+        a.tipoEquipo === 'Desktop' ? 'CPU' : 'Laptop', eq?.marca, eq?.modelo, a.fecha,
+        a.estado, this.estadoProceso(a.expediente)]
+        .filter(Boolean).join(' ').toLowerCase().includes(q);
+    });
+    return filtro === 'Asignaciones recientes'
+      ? [...lista].sort((a, b) => b.fecha.localeCompare(a.fecha))
+      : lista;
+  });
+
+  protected abrirBusquedaAsig(): void {
+    this.qAsig.set('');
+    this.fAsig.set('Asignaciones recientes');
+    this.detalleAsig.set('');
+    this.buscarAsigAbierto.set(true);
+    const a = this.asigSel();
+    this.data.registrarEvento(a?.expediente ?? 'Asignación de equipo', this.responsableTxt(),
+      'Asignación existente consultada', 'Consulta', 'Catálogo de asignaciones abierto para corrección.', false,
+      { modulo: 'Asignación de equipo', rol: this.auth.usuario()?.rol });
+  }
+
+  protected seleccionarAsignacion(id: string): void {
+    this.asigSelId.set(id);
+    this.equipoNuevoSel.set('');
+    this.motivoMod.set('');
+    this.observacionMod.set('');
+    this.confirmaEncargado.set(false);
+    this.buscarAsigAbierto.set(false);
+    const caso = this.data.casoModificacionAsignacion(id);
+    this.data.registrarEvento(id, this.responsableTxt(), 'Solicitud de modificación de asignación iniciada',
+      caso.caso, caso.aviso || 'La asignación admite corrección del equipo.', false,
+      { modulo: 'Asignación de equipo', inventario: this.data.asignacionDe(id)?.equipoInventario,
+        rol: this.auth.usuario()?.rol, usuarioFinal: this.data.asignacionDe(id)?.usuarioFinal });
+    if (!caso.permiteCambioEquipo) {
+      this.data.registrarModificacionRechazada(id, this.responsableTxt(), this.auth.usuario()?.rol ?? '');
+      this.toast.warn('Modificación no permitida', caso.aviso);
+    }
+  }
+
+  protected abrirBusquedaEquipoMod(): void {
+    this.paraModificacion.set(true);
+    this.q.set('');
+    this.buscarAbierto.set(true);
+  }
+
+  /** Falta lo que falta, en una línea, igual que en la asignación nueva. */
+  protected faltaMod(): string {
+    if (this.puedeGuardarMod()) return '';
+    if (!this.equipoNuevoSel()) return 'Seleccione el equipo nuevo.';
+    if (!this.motivoMod().trim()) return 'Debe justificar el motivo de la modificación de la asignación.';
+    if (!this.observacionMod().trim()) return 'Registre la observación de la modificación.';
+    return 'Confirme como Encargado la modificación de esta asignación.';
+  }
+
+  /** Toda modificación exige motivo, observación y confirmación explícita del Encargado. */
+  protected puedeGuardarMod(): boolean {
+    return this.puedeModificar() && !!this.equipoNuevoSel() && !!this.motivoMod().trim()
+      && !!this.observacionMod().trim() && this.confirmaEncargado();
+  }
+
+  protected guardarModificacion(): void {
+    const id = this.asigSelId();
+    const error = this.data.modificarAsignacion(id, this.equipoNuevoSel(), this.motivoMod(),
+      this.observacionMod(), this.responsableTxt(), this.auth.usuario()?.rol ?? '');
+    if (error) { this.toast.error('No se pudo modificar la asignación', error); return; }
+    this.toast.ok('Asignación modificada',
+      `${id}: el equipo quedó corregido y el anterior volvió a estar disponible para asignación.`);
+    this.equipoNuevoSel.set('');
+    this.motivoMod.set('');
+    this.observacionMod.set('');
+    this.confirmaEncargado.set(false);
+  }
+
+  protected guardarObservacion(): void {
+    const error = this.data.registrarObservacionAsignacion(this.asigSelId(), this.observacionAdmin(),
+      this.responsableTxt(), this.auth.usuario()?.rol ?? '');
+    if (error) { this.toast.error('No se pudo registrar la observación', error); return; }
+    this.observacionAdmin.set('');
+    this.toast.ok('Observación registrada', 'Queda en el historial de la asignación y en la trazabilidad.');
   }
 
   protected readonly sol = computed(() =>
@@ -557,7 +929,8 @@ export class AsignacionComponent {
    */
   protected readonly disponibles = computed(() => {
     const q = this.q().toLowerCase().trim();
-    const tipo = this.sol()?.tipoEquipo;
+    // El tipo sale del requerimiento en juego: el de la asignación nueva o el de la que se corrige.
+    const tipo = this.paraModificacion() ? this.solAsig()?.tipoEquipo : this.sol()?.tipoEquipo;
     return this.data.equiposParaAsignar().filter((e) => {
       if (tipo && e.tipo !== tipo) return false;
       if (this.fCond() && e.condicion !== this.fCond()) return false;
@@ -574,21 +947,24 @@ export class AsignacionComponent {
     this.fSol.set('Todos');
     this.detalleSol.set('');
     this.buscarSolAbierto.set(true);
+    this.data.registrarEvento('Asignación de equipo', this.responsableTxt(),
+      'Requerimiento consultado para nueva asignación', 'Consulta',
+      'Catálogo de requerimientos sin equipo asociado.', false,
+      { modulo: 'Asignación de equipo', rol: this.auth.usuario()?.rol });
   }
 
   /** Cambiar de requerimiento descarta el equipo elegido: era para el requerimiento anterior. */
   protected seleccionarSolicitud(id: string): void {
+    // Respaldo del filtro base: si un requerimiento con equipo llegara igual hasta aquí, no se toma.
+    const bloqueo = this.data.validarSolicitudParaAsignar(id);
+    if (bloqueo) { this.toast.error('Requerimiento ya asignado', bloqueo); return; }
     if (this.solicitudSel() !== id) this.equipoSel.set('');
     this.solicitudSel.set(id);
     this.buscarSolAbierto.set(false);
-  }
-
-  /** Un requerimiento con equipo ya asignado no se reasigna desde aquí: solo se consulta. */
-  protected verAsignacionExistente(id: string): void {
-    const a = this.asignacionDe(id);
-    this.buscarSolAbierto.set(false);
-    this.toast.warn('Requerimiento ya asignado',
-      `${id} ya tiene el equipo ${a?.equipoInventario} asignado a ${a?.usuarioFinal}. Se muestra en «Asignaciones registradas».`);
+    const s = this.data.solicitud(id);
+    this.data.registrarEvento(id, this.responsableTxt(), 'Requerimiento seleccionado para asignación',
+      s?.estado ?? 'Entrante', `${this.data.tipoRequerimientoTexto(s)} · ${s?.destinatario}`, false,
+      { modulo: 'Asignación de equipo', rol: this.auth.usuario()?.rol, usuarioFinal: s?.destinatario });
   }
 
   protected abrirBusqueda(): void {
@@ -596,12 +972,19 @@ export class AsignacionComponent {
       this.toast.warn('Seleccione primero el requerimiento', 'Elija el requerimiento antes de buscar el equipo.');
       return;
     }
+    this.paraModificacion.set(false);
     this.q.set('');
     this.buscarAbierto.set(true);
+    this.data.registrarEvento(this.solicitudSel(), this.responsableTxt(),
+      'Equipo preparado consultado para asignación', 'Consulta',
+      `Catálogo de equipos ${this.sol()?.tipoEquipo === 'Desktop' ? 'CPU' : 'Laptop'} preparados.`, false,
+      { modulo: 'Asignación de equipo', rol: this.auth.usuario()?.rol });
   }
 
+  /** El equipo elegido va al paso 2 de la asignación nueva o a la corrección, según de dónde se abrió. */
   protected seleccionarEquipo(e: Equipo): void {
-    this.equipoSel.set(e.inventario);
+    if (this.paraModificacion()) this.equipoNuevoSel.set(e.inventario);
+    else this.equipoSel.set(e.inventario);
     this.buscarAbierto.set(false);
   }
 

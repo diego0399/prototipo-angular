@@ -173,6 +173,28 @@ export interface ResponsablesFase {
   observaciones: string;
 }
 
+/**
+ * Corrección de una asignación ya registrada. Nunca sustituye a la anterior: se apila, para que
+ * el expediente diga qué equipo tenía antes, cuál tiene ahora y por qué cambió.
+ */
+export interface ModificacionAsignacion {
+  fecha: string;
+  hora: string;
+  equipoAnterior: string;
+  equipoNuevo: string;
+  usuarioFinal: string;
+  /** Motivo de la corrección, o el texto de la observación administrativa. */
+  motivo: string;
+  /** Observación que acompaña a la corrección. */
+  observacion: string;
+  encargado: string;
+  rol: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  /** true cuando el proceso ya no admitía cambiar el equipo y solo se dejó una observación. */
+  soloObservacion?: boolean;
+}
+
 export interface Asignacion {
   expediente: string;
   equipoInventario: string;
@@ -187,6 +209,8 @@ export interface Asignacion {
   responsablesFase: ResponsablesFase;
   /** true mientras el equipo sigue activamente en poder del usuario final; un Descargo la cierra (false) sin borrarla. */
   vigente: boolean;
+  /** Historial de correcciones y observaciones administrativas de esta asignación. */
+  modificaciones?: ModificacionAsignacion[];
 }
 
 /** Motivo por el que un usuario final entrega/deja de tener el equipo. */
@@ -1359,4 +1383,12 @@ export interface EventoTrazabilidad {
   intentoConformidad?: number;
   /** Origen del reproceso F0288: falla en F0302 o inconformidad del usuario final. */
   origenReproceso?: string;
+  /** Rol de quien ejecutó la acción, en los eventos de asignación. */
+  rol?: string;
+  /** Equipo que tenía la asignación antes de la corrección. */
+  equipoAnterior?: string;
+  /** Equipo que quedó asociado tras la corrección. */
+  equipoNuevo?: string;
+  /** Motivo de la corrección o texto de la observación administrativa. */
+  motivo?: string;
 }

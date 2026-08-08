@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 47)**.
+nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 50)**.
 
 ---
 
@@ -2297,6 +2297,87 @@ Expediente único.
     * Verificado con `npm run build` limpio (7.273 s, 0 errores), `ng serve` (HTTP 200 en seis rutas) y
       **101 casos, 0 fallos**, más las trece baterías anteriores (747 casos, 0 fallos).
       **Sin recorrido manual de clics en navegador.**
+48. **Asignación de equipo — dos acciones separadas y corrección con historial**
+    (2026-08-08, segunda sesión del día).
+    * **Nueva asignación** (principal) y **Modificar asignación existente** (solo correcciones) se
+      separan porque **no comparten reglas**: asignar necesita un requerimiento sin equipo; corregir
+      exige motivo escrito y depende de cuánto proceso haya encima. Mezclarlas era lo que obligaba a
+      mostrar requerimientos ya asignados en el mismo catálogo.
+    * El catálogo de nueva asignación —«Seleccionar requerimiento para asignación»— dejó de mostrar los
+      ya asignados (en la r47 aparecían con «Ver asignación existente»; esa salida ya no hace falta).
+      Filtros: Todos · CPU · Laptop · Pendientes de asignación · Sin equipo asociado · Más recientes.
+    * **«Buscar asignación existente»**: ocho columnas, búsqueda por todas ellas y siete filtros
+      rápidos, con «Ver detalle» y «Modificar asignación». Solo **Encargados y Administrador**
+      modifican; el técnico consulta con el botón deshabilitado y el motivo dicho en pantalla.
+    * **Cuatro casos según el avance**: sin Expediente único → se cambia con motivo; con Expediente
+      único → motivo + confirmación del Encargado, y se arrastran el expediente y el F0302 sin
+      iniciar; **F0302 iniciada** o **conformidad enviada** → no se cambia el equipo. La regla no es el
+      permiso sino lo ya hecho sobre el equipo: cambiarlo con el F0302 corrido dejaría formulario,
+      evidencias y firmas sobre un equipo que ya no es el del expediente. En los casos bloqueados
+      quedan ver expediente/historial/trazabilidad, gestionar descargo y **observación administrativa**.
+    * El equipo nuevo pasa por el **mismo** `equiposParaAsignar()` que una asignación nueva, más el
+      tipo del requerimiento: si la corrección fuera más laxa, sería la puerta de atrás de la regla.
+    * **El historial no se sobrescribe**: cada corrección se apila con equipo anterior, equipo nuevo,
+      usuario final, motivo, quién y su rol, y el estado antes/después; las observaciones entran en el
+      mismo historial marcadas como tales. El **equipo anterior queda libre** (se desvincula del
+      proceso; la disponibilidad ya se deriva de no tener asignación vigente) y se actualizan el anexo
+      del Expediente único y el inventario/MAC/SO de la Configuración F0302 aún sin iniciar.
+    * Diez eventos nuevos de trazabilidad con `rol`, `equipoAnterior`, `equipoNuevo` y `motivo`.
+    * Verificado con `npm run build` limpio (5.106 s, 0 errores), `ng serve` (HTTP 200 en cinco rutas) y
+      **87 casos, 0 fallos**, más las catorce baterías anteriores (848 casos, 0 fallos; cuatro
+      expectativas de la r47 se actualizaron por los cambios de esta ronda).
+      **Sin recorrido manual de clics en navegador.**
+49. **Asignación de equipo — cada acción con su propio listado**
+    (2026-08-08, tercera sesión del día).
+    * **Lo que estaba mal**: la r48 separó las acciones pero el listado de corrección no filtraba por
+      el corte real —mostraba todas las asignaciones vigentes y decidía caso por caso—, así que el
+      usuario veía asignaciones que no iba a poder tocar y se enteraba después de elegirlas.
+    * **Un corte, dos listados complementarios**: *Asignar* → solicitudes **sin** equipo;
+      *Modificar* → solicitudes **con** equipo y **sin** Expediente único. `solicitudesParaAsignar()` y
+      `asignacionesModificables()` son funciones distintas: ninguna reutiliza la consulta de la otra.
+      Con los datos actuales, ocho para asignar y **una** modificable (`SOL-2026-0144`), que es el mismo
+      proceso que Expediente único ofrece para crear.
+    * *Asignar* exige además, por dato y no por estado, que no haya **conformidad enviada** ni
+      **garantía habilitada**. Cada listado tiene su mensaje de lista vacía con el texto del pedido.
+    * **El corte se movió**: con Expediente único creado **ya no se modifica** desde esta pantalla
+      («…Debe gestionarse desde el flujo correspondiente del expediente»). Con eso desapareció el
+      código de la r48 que reescribía el anexo del expediente y el inventario del F0302: si la
+      corrección solo ocurre antes de que existan, no hay nada que arrastrar. El bloqueo se comprueba
+      **en el servicio**, no solo en la lista.
+    * **Toda modificación exige tres cosas**: motivo, observación y confirmación del Encargado. La
+      observación se guarda en la asignación y en el historial.
+    * Intactos: el historial que se apila, la liberación del equipo anterior, las reglas del equipo
+      nuevo, los diez eventos y todo el flujo de asignar.
+    * Verificado con `npm run build` limpio (6.362 s, 0 errores), `ng serve` (HTTP 200 en cuatro rutas)
+      y **98 casos, 0 fallos** —incluido el espejo que comprueba que ninguna solicitud cae en los dos
+      listados—, más las catorce baterías anteriores (849 casos, 0 fallos; dos expectativas
+      actualizadas por los cambios de esta ronda).
+      **Sin recorrido manual de clics en navegador.**
+50. **Asignar equipo — el requerimiento ya asignado que se colaba en el catálogo**
+    (2026-08-08, cuarta sesión del día). Corrección de un error reportado.
+    * **El caso**: en «Seleccionar requerimiento para asignación» aparecía `SOL-2026-0150`
+      (J. Ramírez, Requerimiento de CPU, estado **Asignada**).
+    * **Fuga 1**: el filtro descartaba las asignaciones **vigentes**, y esa solicitud tiene la suya con
+      `vigente: false` —cerrada en su momento— pero conserva su `equipoInventario` y su estado
+      `Asignada`. Ahora el filtro base exige que no tenga equipo **por ningún rastro**: sin inventario
+      asociado, sin registro de asignación (vigente o no), sin estado de «ya asignada», y sin
+      Expediente único, conformidad ni garantía.
+    * **Fuga 2, más silenciosa**: el componente **ampliaba la lista al escribir en el buscador** —resto
+      de la r47, cuando las asignadas se mostraban con «Ver asignación existente»; la r48 quitó el botón
+      pero dejó la ampliación—, así que buscar «Ramírez» seguía trayéndola, ahora con «Seleccionar»
+      normal. El catálogo parte **siempre** de `solicitudesParaAsignar()`: ni la búsqueda ni «Todos»
+      pueden ampliarlo.
+    * **Validación de respaldo** en el servicio (`validarSolicitudParaAsignar`): aunque llegara igual,
+      no se puede tomar («Esta solicitud ya tiene un equipo asignado… Use la opción Modificar
+      asignación si necesita corregirla.»).
+    * `SOL-2026-0150` no aparece en **ninguno** de los dos listados, y es correcto: su asignación no
+      está vigente, así que tampoco es una asignación corregible. Es un cierre a medias en los datos
+      semilla. Quedan **siete** requerimientos para asignar (antes se contaban ocho, con este de más) y
+      una asignación modificable. Se agregó la columna **Correo** a la tabla de modificación.
+    * Verificado con `npm run build` limpio (7.632 s, 0 errores), `ng serve` (HTTP 200 en cuatro rutas)
+      y **111 casos, 0 fallos** —los nuevos nombran el caso reportado y comprueban dónde queda—, más
+      las catorce baterías anteriores (848 casos, 0 fallos).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2334,6 +2415,16 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 50)**: `SOL-2026-0150` queda fuera de los dos flujos porque su estado dice
+  `Asignada` pero su asignación está cerrada (`vigente: false`) y conserva el inventario. Evaluar si
+  el descargo debería limpiar `equipoInventario` y devolver la solicitud a un estado asignable, o si
+  el caso semilla debe corregirse.
+* **Nuevo pendiente (ronda 49)**: con los datos semilla solo hay **una** asignación modificable
+  (`SOL-2026-0144`) y se pierde en cuanto se le crea el Expediente único. Evaluar si conviene sembrar
+  otra asignación sin expediente para poder demostrar la corrección más de una vez.
+* **Nuevo pendiente (ronda 48)**: recorrido manual de la corrección de asignaciones —los cuatro
+  casos según el avance, el historial que se apila y la liberación del equipo anterior—, que hoy
+  solo está verificada por código y por el espejo de la batería, sin clics reales.
 * **Nuevo pendiente (ronda 47)**: revisión visual de los iconos en navegador —tamaño y alineación
   junto al texto en badges, checklists, botones y tablas— y del catálogo «Seleccionar requerimiento»
   con sus siete filtros. Verificado por código y con 101 casos, sin clics reales.
