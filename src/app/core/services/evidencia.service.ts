@@ -24,7 +24,7 @@ export class EvidenciaService {
   readonly tipos: TipoEvidencia[] = [
     'Diagnóstico', 'Corrección realizada', 'Instalación validada', 'Configuración validada',
     'Equipo revisado', 'Accesorio asociado', 'Componente sustituido', 'Estado físico',
-    'Validación posterior', 'Cierre de caso', 'Otro'
+    'Validación posterior', 'Cierre de caso', 'Evidencia de falla F0302', 'Otro'
   ];
 
   readonly MSG_FORMATO = 'Solo se permiten imágenes en formato PNG, JPG, JPEG o WEBP.';
@@ -84,8 +84,10 @@ export class EvidenciaService {
       { nombre: 'Instalación de Antivirus', tipo: 'Instalación validada' },
       { nombre: 'Instalación de OCS Inventory', tipo: 'Instalación validada' }
     ],
-    // Y el único del F0302. El nombre del equipo, el dominio, el software adicional o la reserva de
-    // IP son datos del proceso, no cosas que se demuestren con una captura.
+    // Y el único ítem del checklist F0302. El nombre del equipo, el dominio, el software adicional
+    // o la reserva de IP son datos del proceso, no cosas que se demuestren con una captura.
+    // La falla detectada y su corrección de Soporte también exigen imagen, pero no son ítems del
+    // checklist: se adjuntan desde sus formularios y su etiqueta sale del tipo de falla.
     'Configuración F0302': [
       { nombre: 'Agente DLP', tipo: 'Instalación validada' }
     ],

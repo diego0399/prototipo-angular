@@ -21,6 +21,8 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
   styles: `
     .sw-row td .chk { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
     .cap-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+    .falla-thumb { width: 128px; height: 84px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+    .falla-grande { max-width: 100%; max-height: 58vh; display: block; margin: 0 auto; border-radius: 8px; border: 1px solid var(--line); }
     .cap-row .control { max-width: 210px; }
     .i-falta { font-size: 11.5px; font-weight: 600; color: var(--danger, #c0392b); }
     .sw-row.heredado td { background: var(--surface-2); }
@@ -550,11 +552,42 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                     </select>
                     <span class="hint">{{ notaFalla() }}</span>
                   </div>
+                  <!-- La imagen de la falla es obligatoria: de una falla salen un reproceso o la
+                       sustitución del equipo, y ninguno de los dos debería apoyarse solo en un texto. -->
                   <div class="field">
-                    <label>Evidencia @if (fTipo() === 'Otro') { <span class="req">*</span> } @else { (si aplica) }</label>
-                    <input class="control" [ngModel]="fEvid()" (ngModelChange)="fEvid.set($event)" placeholder="Captura / número de evidencia…" />
+                    <label>Evidencia de la falla <span class="req">*</span></label>
+                    <input type="file" hidden #fimg accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                      (change)="subirEvidenciaFalla(fimg)" />
+                    <div class="row">
+                      <button class="btn btn-outline btn-sm" (click)="fimg.click()">
+                        <ui-icon name="image" [size]="15" /> Subir imagen
+                      </button>
+                      @if (fEvid()) {
+                        <button class="btn btn-ghost btn-sm" (click)="quitarEvidenciaFalla()">Eliminar</button>
+                      }
+                    </div>
+                    <span class="hint">Formatos permitidos: PNG, JPG, JPEG o WEBP.</span>
+                    <span class="hint">Evidencia obligatoria para registrar la falla. La imagen respalda la
+                      incidencia detectada durante la Configuración F0302.</span>
                   </div>
                 </div>
+                @if (fEvidImagen(); as img) {
+                  <div class="row" style="align-items: flex-start; gap: 12px;">
+                    <img class="falla-thumb" [src]="img" alt="Vista previa de la evidencia de la falla"
+                      (click)="verEvidenciaFalla.set(true)" />
+                    <dl class="dl">
+                      <dt>Archivo</dt><dd class="mono">{{ fEvid() }}</dd>
+                      <dt>Tipo de evidencia</dt><dd>{{ data.TIPO_EVIDENCIA_FALLA }}</dd>
+                      <dt>Tipo de falla seleccionado</dt><dd>{{ fTipo() }} · {{ data.etiquetaEvidenciaFalla(fTipo()) }}</dd>
+                      <dt>Fecha y hora</dt><dd>{{ fEvidSello() }}</dd>
+                      <dt>Técnico</dt><dd>{{ usuarioActual }}</dd>
+                    </dl>
+                    <div class="row">
+                      <button class="btn btn-ghost btn-sm" (click)="verEvidenciaFalla.set(true)">Ver imagen</button>
+                      <button class="btn btn-ghost btn-sm" (click)="quitarEvidenciaFalla()">Eliminar</button>
+                    </div>
+                  </div>
+                }
 
                 <!-- Checklist dinámico: solo los campos del tipo seleccionado -->
                 @if (pide('componenteAfectado')) {
@@ -713,18 +746,30 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   </div>
                 }
 
+                <!-- La decisión sale del checklist, no de una segunda pregunta: para el sistema
+                     operativo, «¿requiere reinstalación o reparación base?» ya la resuelve. Se
+                     muestra como resultado y solo se abre si el técnico quiere apartarse. -->
                 <div class="field">
                   <label>
-                    ¿Requiere reproceso de Preparación F0288?
+                    Decisión de corrección
                     <ui-help texto="Reproceso, no «nueva preparación»: la corrección se registra dentro del mismo Expediente técnico. Solo un ciclo nuevo —reingreso tras descargo, sustitución del equipo o autorización de jefatura— justifica un Expediente técnico nuevo." />
                   </label>
-                  <div class="radio-line" style="padding-top: 8px;">
-                    <label><input type="radio" name="freproc" [checked]="fReproceso()" (change)="fReproceso.set(true)" /> Sí</label>
-                    <label><input type="radio" name="freproc" [checked]="!fReproceso()" (change)="fReproceso.set(false)" /> No</label>
-                    <span class="chip">Sugerencia del sistema: {{ sugerencia() }}</span>
-                  </div>
-                  @if (sugerencia() === 'Depende') {
-                    <span class="hint">Para este tipo de falla el sistema no decide solo: responda la pregunta del checklist o justifique su elección.</span>
+                  @if (decisionAutomatica()) {
+                    <div class="row" style="padding-top: 4px;">
+                      <b class="small">{{ fReproceso() ? 'Reproceso F0288' : 'Corrección en el mismo F0302' }}</b>
+                      <span class="chip">Determinado por el sistema</span>
+                      <button class="btn btn-ghost btn-sm" (click)="decisionManual.set(true)">Cambiar la decisión</button>
+                    </div>
+                    <span class="hint">Sale de lo que ya respondió en el checklist de la falla; no hace falta contestarlo dos veces.</span>
+                  } @else {
+                    <div class="radio-line" style="padding-top: 8px;">
+                      <label><input type="radio" name="freproc" [checked]="fReproceso()" (change)="fReproceso.set(true)" /> Reproceso F0288</label>
+                      <label><input type="radio" name="freproc" [checked]="!fReproceso()" (change)="fReproceso.set(false)" /> Corregir en el mismo F0302</label>
+                      <span class="chip">Sugerencia del sistema: {{ sugerencia() }}</span>
+                    </div>
+                    @if (sugerencia() === 'Depende') {
+                      <span class="hint">Para este tipo de falla el sistema no decide solo: responda la pregunta del checklist o justifique su elección.</span>
+                    }
                   }
                 </div>
                 @if (cambioSugerencia() || (sugerencia() === 'Depende' && fReproceso())) {
@@ -796,8 +841,11 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   <dt>Técnico que reportó</dt><dd>{{ f.tecnicoReporta }}</dd>
                   <dt>Fecha y hora</dt><dd>{{ f.fecha }} · {{ f.hora }}</dd>
                   <dt>¿Requiere revisión de Hardware?</dt><dd>{{ f.requiereHardware ? 'Sí' : 'No' }}</dd>
-                  <dt>¿Requiere reproceso de Preparación F0288?</dt>
-                  <dd>{{ f.requiereReprocesoF0288 ? 'Sí' : 'No' }} <span class="chip">Sugerencia del sistema: {{ f.sugerencia }}</span></dd>
+                  <dt>Decisión de corrección</dt>
+                  <dd>
+                    {{ f.requiereReprocesoF0288 ? 'Reproceso F0288' : 'Corrección en el mismo F0302' }}
+                    <span class="chip">Sugerencia del sistema: {{ f.sugerencia }}</span>
+                  </dd>
                   @if (f.justificacionReproceso) { <dt>Justificación</dt><dd>{{ f.justificacionReproceso }}</dd> }
                   <dt>Expediente técnico</dt>
                   <dd>{{ expTecnico(c) || '—' }} <span class="chip">Se conserva: no se creó uno nuevo</span></dd>
@@ -817,6 +865,12 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   @if (f.observacionTecnica) { <dt>Observación técnica</dt><dd>{{ f.observacionTecnica }}</dd> }
                   @if (f.evidencia) { <dt>Evidencia</dt><dd>{{ f.evidencia }}</dd> }
                 </dl>
+
+                <!-- Las imágenes de la incidencia: la de la falla y, cuando se corrige aquí, la
+                     de la corrección. Solo se listan: se adjuntan desde sus formularios. -->
+                <ui-evidencias titulo="Imágenes de la incidencia F0302"
+                  [lista]="data.evid.de('Configuración F0302', c.expediente)"
+                  (visualizar)="verEvidencia(c, $event)" />
 
                 <div class="alert warn mt-2">
                   <span class="alert-ico">!</span>
@@ -858,9 +912,28 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                     <label>Corrección realizada por Soporte <span class="req">*</span></label>
                     <textarea class="control" rows="2" [ngModel]="cDesc()" (ngModelChange)="cDesc.set($event)"
                       placeholder="Describa lo que se corrigió en el F0302 (obligatorio)…"></textarea>
-                    <div class="row mt-1" style="justify-content: flex-end;">
-                      <button class="btn btn-primary btn-sm" (click)="registrarCorreccion(c.expediente)">Guardar corrección y continuar configuración</button>
+                  </div>
+                  <!-- Otra imagen que la de la falla: aquella muestra el problema y esta que se resolvió -->
+                  <div class="field">
+                    <label>Evidencia de la corrección <span class="req">*</span></label>
+                    <input type="file" hidden #cimg accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                      (change)="subirEvidenciaCorreccion(cimg)" />
+                    <div class="row">
+                      <button class="btn btn-outline btn-sm" (click)="cimg.click()">
+                        <ui-icon name="image" [size]="15" /> Subir imagen
+                      </button>
+                      @if (cEvidImagen(); as img) {
+                        <img class="falla-thumb" [src]="img" alt="Vista previa de la evidencia de la corrección" />
+                        <span class="small mono">{{ cEvid() }}</span>
+                        <span class="chip">Corrección realizada</span>
+                        <button class="btn btn-ghost btn-sm" (click)="quitarEvidenciaCorreccion()">Eliminar</button>
+                      }
                     </div>
+                    <span class="hint">Formatos permitidos: PNG, JPG, JPEG o WEBP. La imagen respalda la corrección
+                      hecha en este mismo F0302.</span>
+                  </div>
+                  <div class="row mt-1" style="justify-content: flex-end;">
+                    <button class="btn btn-primary btn-sm" (click)="registrarCorreccion(c.expediente)">Guardar corrección y continuar configuración</button>
                   </div>
                 }
                 @if (sustitucionAbierta()) {
@@ -1097,6 +1170,20 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
         }
       }
 
+      @if (verEvidenciaFalla() && fEvidImagen()) {
+        <ui-modal [titulo]="'Evidencia de la falla · ' + data.etiquetaEvidenciaFalla(fTipo())"
+          [sub]="fEvid()" (cerrar)="verEvidenciaFalla.set(false)">
+          <img class="falla-grande" [src]="fEvidImagen()" [alt]="fEvid()" />
+          <dl class="dl mt-2">
+            <dt>Archivo</dt><dd class="mono">{{ fEvid() }}</dd>
+            <dt>Tipo de evidencia</dt><dd>{{ data.TIPO_EVIDENCIA_FALLA }}</dd>
+            <dt>Tipo de falla seleccionado</dt><dd>{{ fTipo() }}</dd>
+            <dt>Fecha y hora</dt><dd>{{ fEvidSello() }}</dd>
+            <dt>Técnico</dt><dd>{{ usuarioActual }}</dd>
+          </dl>
+        </ui-modal>
+      }
+
       @if (buscarAbierto()) {
         <app-buscar-expediente-unico
           [filas]="opciones()"
@@ -1146,15 +1233,23 @@ export class ConfiguracionComponent {
   protected fTipo = signal<TipoFallaF0302>('Falla física del equipo');
   protected fDesc = signal('');
   protected fObs = signal('');
+  /** Imagen de la falla: nombre, contenido reducido y sello de carga. Sin ella no se registra. */
   protected fEvid = signal('');
+  protected fEvidImagen = signal('');
+  protected fEvidSello = signal('');
+  protected verEvidenciaFalla = signal(false);
+  /** El técnico pidió apartarse de la decisión que dedujo el sistema. */
+  protected decisionManual = signal(false);
   /** Campos del checklist dinámico: solo se envían los que el tipo seleccionado pide. */
   protected fDetalle = signal<DetalleFallaF0302>({});
-  /** Respuesta del técnico a «¿Requiere reproceso de Preparación F0288?». */
+  /** Decisión de corrección: reproceso F0288 (true) o corregir en el mismo F0302 (false). */
   protected fReproceso = signal(true);
   protected fJust = signal('');
   /** Corrección de Soporte y reproceso, en la vista del F0302 con falla. */
   protected correccionAbierta = signal(false);
   protected cDesc = signal('');
+  protected cEvid = signal('');
+  protected cEvidImagen = signal('');
   protected sustitucionAbierta = signal(false);
   protected sMotivo = signal('');
 
@@ -1166,6 +1261,8 @@ export class ConfiguracionComponent {
     const s = this.sugerencia();
     return s !== 'Depende' && s !== (this.fReproceso() ? 'Sí' : 'No');
   });
+  /** El sistema ya dedujo la decisión y el técnico no ha pedido cambiarla: se muestra, no se pregunta. */
+  protected readonly decisionAutomatica = computed(() => this.sugerencia() !== 'Depende' && !this.decisionManual());
 
   protected pide(campo: string): boolean {
     return this.data.fallaPideCampo(this.fTipo(), campo);
@@ -1185,8 +1282,40 @@ export class ConfiguracionComponent {
     this.fTipo.set(tipo);
     this.fDetalle.set({});
     this.fJust.set('');
+    this.decisionManual.set(false);
     const s = this.data.matrizFalla(tipo).sugerencia;
     this.fReproceso.set(s === 'Sí');
+  }
+
+  /**
+   * Imagen de la falla. Se lee y se reduce aquí, pero no se guarda todavía: si el técnico cancela
+   * el reporte, no debe quedar una evidencia suelta de una falla que nunca se registró.
+   */
+  protected async subirEvidenciaFalla(input: HTMLInputElement): Promise<void> {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    if (!this.data.evid.formatoValido(archivo.name)) {
+      this.quitarEvidenciaFalla();
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+      return;
+    }
+    try {
+      const leida = await this.data.evid.leerImagen(archivo);
+      this.fEvid.set(leida.archivo);
+      this.fEvidImagen.set(leida.imagen);
+      this.fEvidSello.set(this.data.selloAhora());
+    } catch {
+      this.quitarEvidenciaFalla();
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+    }
+  }
+
+  protected quitarEvidenciaFalla(): void {
+    this.fEvid.set('');
+    this.fEvidImagen.set('');
+    this.fEvidSello.set('');
+    this.verEvidenciaFalla.set(false);
   }
 
   /**
@@ -1598,7 +1727,7 @@ export class ConfiguracionComponent {
     return true;
   }
 
-  private get usuarioActual(): string {
+  protected get usuarioActual(): string {
     const u = this.auth.usuario();
     return `${u?.nombre} — ${u?.rol}`;
   }
@@ -1608,22 +1737,50 @@ export class ConfiguracionComponent {
     const error = this.data.reportarFallaF0302(id, {
       tipo: this.fTipo(), descripcion: this.fDesc(), requiereReprocesoF0288: reproceso,
       justificacionReproceso: this.fJust(), detalle: this.fDetalle(),
-      observacionTecnica: this.fObs(), evidencia: this.fEvid()
+      observacionTecnica: this.fObs(), evidencia: this.fEvid(), evidenciaImagen: this.fEvidImagen()
     }, this.usuarioActual);
     if (error) { this.toast.error('No se puede reportar la falla', error); return; }
     this.fallaAbierto.set(false);
-    this.fDesc.set(''); this.fObs.set(''); this.fEvid.set(''); this.fJust.set('');
+    this.fDesc.set(''); this.fObs.set(''); this.fJust.set('');
+    this.quitarEvidenciaFalla();
     this.fDetalle.set({}); this.cambiarTipoFalla('Falla física del equipo');
     this.toast.ok('F0302 con falla registrado', reproceso
       ? 'Se abrió un reproceso de Preparación F0288 dentro del mismo Expediente técnico: no se creó uno nuevo. El intento F0302 se conserva en el historial.'
       : 'La falla se atiende como corrección de Soporte en el mismo F0302: el equipo no regresa a Preparación F0288. El intento F0302 se conserva en el historial.');
   }
 
+  /** Imagen de la corrección de Soporte; se guarda al registrar la corrección, no antes. */
+  protected async subirEvidenciaCorreccion(input: HTMLInputElement): Promise<void> {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    if (!this.data.evid.formatoValido(archivo.name)) {
+      this.quitarEvidenciaCorreccion();
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+      return;
+    }
+    try {
+      const leida = await this.data.evid.leerImagen(archivo);
+      this.cEvid.set(leida.archivo);
+      this.cEvidImagen.set(leida.imagen);
+    } catch {
+      this.quitarEvidenciaCorreccion();
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+    }
+  }
+
+  protected quitarEvidenciaCorreccion(): void {
+    this.cEvid.set('');
+    this.cEvidImagen.set('');
+  }
+
   protected registrarCorreccion(id: string): void {
-    const error = this.data.registrarCorreccionSoporte(id, this.usuarioActual, this.cDesc());
+    const error = this.data.registrarCorreccionSoporte(id, this.usuarioActual, this.cDesc(),
+      this.cEvid(), this.cEvidImagen());
     if (error) { this.toast.error('No se pudo registrar la corrección', error); return; }
     this.correccionAbierta.set(false);
     this.cDesc.set('');
+    this.quitarEvidenciaCorreccion();
     this.toast.ok('Corrección de Soporte registrada', 'El proceso queda listo para el nuevo intento F0302, sobre el mismo Expediente técnico.');
   }
 

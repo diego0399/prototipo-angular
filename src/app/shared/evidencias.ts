@@ -95,7 +95,7 @@ export interface EvidenciaVista {
          F0288 y el F0302 se adjunta desde el ítem que la exige, y aquí solo se listan. -->
     @if (editable() && puedeAdjuntar()) {
       <div class="card card-pad mt-2">
-        <b class="small">Adjuntar imágenes de evidencia</b>
+        <b class="small">{{ tituloCarga() }}</b>
         <p class="small muted">Adjunte fotografías o capturas relacionadas con la revisión o corrección realizada.</p>
         @if (sugeridas().length) {
           <p class="hint">Se esperan imágenes como: {{ sugeridas().join(' · ') }}.</p>
@@ -178,6 +178,8 @@ export class EvidenciasComponent {
   readonly obligatoria = input(false);
   /** Línea breve que dice qué imágenes exige la etapa, cuando las exige por ítem. */
   readonly nota = input('');
+  /** Encabezado del formulario de carga; cambia donde lo que se sube es evidencia adicional. */
+  readonly tituloCarga = input('Adjuntar imágenes de evidencia');
   readonly mensajeFalta = input('');
   /** Guía de qué imágenes se esperan en esta etapa. */
   readonly sugeridas = input<string[]>([]);

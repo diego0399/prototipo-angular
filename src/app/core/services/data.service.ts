@@ -9,7 +9,7 @@ import {
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
-  TipoComentarioCaso, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, TipoProblemaReproceso, UsuarioSistema, VerificacionAccesorios,
+  TipoComentarioCaso, TipoEvidencia, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, TipoProblemaReproceso, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
 import { AuthService } from './auth.service';
@@ -171,8 +171,10 @@ export class DataService {
       this.intentos.set([]);
       this.correcciones.set([]);
       // Las imágenes de evidencia se cargan durante la demostración: no hay JSON semilla con
-      // fotografías, y fabricarlas sería inventar un respaldo que nadie tomó.
-      this.evid.hidratar([]);
+      // fotografías, y fabricarlas sería inventar un respaldo que nadie tomó. Lo único que se
+      // traslada son las referencias que el set de datos ya trae, como la imagen con la que se
+      // reportó una falla: se muestran con el bloque simulado, sin fotografía inventada.
+      this.evid.hidratar(this.evidenciasDeFallasSembradas([]));
       this.asegurarIntentosDeConformidades();
       this.listo.set(true);
     });
@@ -232,7 +234,7 @@ export class DataService {
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(this.normalizarCorrecciones(d.correcciones ?? []));
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
-      this.evid.hidratar(d.evidencias ?? []);
+      this.evid.hidratar(this.evidenciasDeFallasSembradas(d.evidencias ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(d.catalogoSoftware ?? []));
@@ -1607,6 +1609,11 @@ export class DataService {
       .filter((n) => !isNaN(n));
     return `${prefijo}${String((nums.length ? Math.max(...nums) : 0) + 1).padStart(4, '0')}`;
   }
+  /** Fecha y hora de ahora, para sellar en pantalla algo que todavía no se ha guardado. */
+  selloAhora(): string {
+    return `${this.hoy()} ${this.hora().slice(0, 5)}`;
+  }
+
   private hora(): string {
     return new Date().toTimeString().slice(0, 5);
   }
@@ -4030,17 +4037,19 @@ export class DataService {
     ['Corregir en F0302', 'Revisar por Hardware', 'Reproceso F0288', 'Escalar a Encargado'];
 
   /**
-   * Valida el checklist dinámico antes de registrar la falla: solo exige los campos del tipo
-   * seleccionado, y pide justificación cuando el técnico se aparta de la sugerencia del sistema
-   * (en cualquiera de las dos direcciones) o cuando decide un reproceso que el sistema no dedujo.
+   * Valida el checklist dinámico antes de registrar la falla: exige la imagen que la respalda y los
+   * campos del tipo seleccionado, y pide justificación cuando el técnico se aparta de la sugerencia
+   * del sistema (en cualquiera de las dos direcciones) o decide un reproceso que el sistema no dedujo.
    */
   validarFalla(datos: {
     tipo: TipoFallaF0302; descripcion: string; requiereReprocesoF0288: boolean;
-    justificacionReproceso?: string; detalle?: DetalleFallaF0302;
+    justificacionReproceso?: string; detalle?: DetalleFallaF0302; evidencia?: string;
   }): string | null {
     const d = datos.detalle ?? {};
     const t = datos.tipo;
     if (!datos.descripcion.trim()) return 'La observación / descripción de la falla es obligatoria.';
+    const sinImagen = this.faltaEvidenciaFalla(datos.evidencia ?? '');
+    if (sinImagen) return sinImagen;
     if (t === 'Falla física del equipo' && !(d.componenteAfectado ?? '').trim()) {
       return 'Indique el componente afectado por la falla física.';
     }
@@ -4077,7 +4086,7 @@ export class DataService {
     const elegida: SugerenciaReproceso = datos.requiereReprocesoF0288 ? 'Sí' : 'No';
     const just = (datos.justificacionReproceso ?? '').trim();
     if (sugerida !== 'Depende' && sugerida !== elegida && !just) {
-      return `El sistema sugiere «${sugerida}» en «¿Requiere reproceso de Preparación F0288?» para este tipo de falla: justifique el cambio antes de registrarla.`;
+      return `El sistema determinó «${sugerida === 'Sí' ? 'Reproceso F0288' : 'Corrección en el mismo F0302'}» para este tipo de falla: justifique el cambio antes de registrarla.`;
     }
     // «Otro» y «Configuración incompleta» quedan en manos del técnico: si decide el reproceso, la
     // justificación es lo único que deja constancia de por qué el equipo vuelve a preparación.
@@ -4085,6 +4094,72 @@ export class DataService {
       return 'Registre la justificación del reproceso de Preparación F0288.';
     }
     return null;
+  }
+
+  // ---------- Evidencia de la falla F0302 ----------
+
+  /**
+   * Lleva al almacén común las imágenes de falla que el set de datos ya trae referenciadas en la
+   * configuración, sin duplicar las que la foto guardada tuviera. **No inventa la fotografía**: la
+   * evidencia va sin `imagen` y la galería la dibuja como vista previa simulada, igual que el resto
+   * de las evidencias de demostración. Sin este paso, la imagen con la que se reportó una falla no
+   * llegaría al reproceso que esa falla originó.
+   */
+  private evidenciasDeFallasSembradas(guardadas: EvidenciaTecnica[]): EvidenciaTecnica[] {
+    const lista = [...(guardadas ?? [])];
+    for (const c of this.configuraciones()) {
+      const archivo = (c.falla?.evidencia ?? '').trim();
+      if (!c.falla || !archivo || !this.evid.formatoValido(archivo)) continue;
+      const repetida = lista.some((e) => e.modulo === 'Configuración F0302'
+        && e.proceso === c.expediente && e.archivo === archivo);
+      if (repetida) continue;
+      lista.push({
+        modulo: 'Configuración F0302', proceso: c.expediente, expediente: c.expediente,
+        archivo, tipo: this.TIPO_EVIDENCIA_FALLA, fecha: c.falla.fecha, hora: c.falla.hora,
+        cargadaPor: c.falla.tecnicoReporta, rol: this.rolDeUsuario(c.falla.tecnicoReporta),
+        item: this.etiquetaEvidenciaFalla(c.falla.tipo), formato: this.evid.formatoDe(archivo)
+      });
+    }
+    return lista;
+  }
+
+  /** Tipo con el que se guarda la imagen de una falla; la distingue de la de su corrección. */
+  readonly TIPO_EVIDENCIA_FALLA: TipoEvidencia = 'Evidencia de falla F0302';
+  readonly MSG_EVIDENCIA_FALLA = 'Debe adjuntar una imagen de evidencia de la falla detectada para registrar la incidencia.';
+  readonly MSG_EVIDENCIA_CORRECCION_SOPORTE = 'Debe adjuntar una imagen que respalde la corrección realizada en F0302.';
+
+  /**
+   * Cómo se nombra la imagen que respalda una falla, según el tipo detectado. El técnico no elige
+   * la etiqueta: sale del tipo de falla que acaba de seleccionar.
+   */
+  etiquetaEvidenciaFalla(tipo: TipoFallaF0302): string {
+    switch (tipo) {
+      case 'Problema de sistema operativo': return 'Evidencia de falla de sistema operativo';
+      case 'Falla de disco': return 'Evidencia de falla de disco';
+      case 'Falla de memoria': return 'Evidencia de falla de memoria';
+      case 'Falla física del equipo': return 'Evidencia de falla física';
+      case 'Accesorio faltante': return 'Evidencia de accesorio faltante';
+      case 'Problema de red': return 'Evidencia de falla de red física';
+      default: return 'Evidencia de falla reportada';
+    }
+  }
+
+  /**
+   * Lo que impide registrar la falla por su imagen: que no haya archivo, o que el archivo no sea
+   * una imagen. Una falla sin respaldo visual es una afirmación sin comprobante, y de ella pueden
+   * salir un reproceso o la sustitución del equipo.
+   */
+  faltaEvidenciaFalla(archivo: string): string | null {
+    const a = (archivo ?? '').trim();
+    if (!a) return this.MSG_EVIDENCIA_FALLA;
+    if (!this.evid.formatoValido(a)) return this.evid.MSG_FORMATO;
+    return null;
+  }
+
+  /** Imagen con la que se reportó la falla de un F0302, si la hay. */
+  evidenciaDeFalla(expediente: string): EvidenciaTecnica | undefined {
+    return this.evid.de('Configuración F0302', expediente)
+      .filter((e) => e.tipo === this.TIPO_EVIDENCIA_FALLA).at(-1);
   }
 
   /** Texto legible de los estados técnicos de la incidencia (spec §9), para mostrarlos sin jerga. */
@@ -4242,7 +4317,9 @@ export class DataService {
   reportarFallaF0302(id: string, datos: {
     tipo: TipoFallaF0302; descripcion: string; requiereReprocesoF0288: boolean;
     justificacionReproceso?: string; detalle?: DetalleFallaF0302;
-    observacionTecnica?: string; evidencia?: string;
+    observacionTecnica?: string;
+    /** Nombre e imagen de la evidencia de la falla; sin ella la incidencia no se registra. */
+    evidencia?: string; evidenciaImagen?: string;
     /** Excepción de un Encargado para abrir un reproceso con otro todavía abierto. */
     justificacionReprocesoSimultaneo?: string;
   }, usuario: string): string | null {
@@ -4252,6 +4329,19 @@ export class DataService {
     if (c.estado === 'Completada') return 'La configuración ya fue finalizada; no puede reportarse una falla.';
     if (c.estado === 'Cerrada') return 'Esta configuración quedó cerrada por un descargo del equipo.';
     if (!c.cronometro) return 'Inicie la configuración (cronómetro en curso) antes de reportar una falla.';
+    // El intento sin imagen se anota antes de rechazarlo: que alguien haya intentado registrar una
+    // falla sin respaldo es parte de la historia del expediente.
+    const sinImagen = this.faltaEvidenciaFalla(datos.evidencia ?? '');
+    if (sinImagen) {
+      this.registrarEvento(id, usuario, 'Intento de registrar falla sin evidencia', 'En configuración',
+        sinImagen, false,
+        { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+          expedienteTecnico: this.expTecnicoDeEquipo(c.datos.inventario)?.codigo,
+          expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, rol: this.rolDeUsuario(usuario),
+          tipoFalla: datos.tipo, estadoValidacion: 'Sin evidencia',
+          accionTomada: 'Registro de la falla bloqueado por falta de imagen' });
+      return sinImagen;
+    }
     const invalido = this.validarFalla(datos);
     if (invalido) return invalido;
 
@@ -4292,10 +4382,22 @@ export class DataService {
     const ref = {
       modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod,
       expedienteTecnico: codigoTec, usuarioFinal: c.datos.asignadoA, tipoFalla: datos.tipo,
-      requiereReproceso: reproceso ? 'Sí' : 'No', evidencia: falla.evidencia
+      requiereReproceso: reproceso ? 'Sí' : 'No', evidencia: falla.evidencia,
+      rol: this.rolDeUsuario(usuario), tipoEvidencia: this.TIPO_EVIDENCIA_FALLA
     };
     const accion = reproceso ? 'Reproceso F0288 dentro del mismo Expediente técnico'
       : hardware ? 'Revisión de Hardware sin reproceso F0288' : 'Corrección de Soporte en el mismo F0302';
+
+    // La imagen de la falla se guarda con el resto de las evidencias del expediente. Su etiqueta
+    // sale del tipo de falla, y su tipo la separa de la imagen de la corrección posterior.
+    this.adjuntarEvidencia({
+      modulo: 'Configuración F0302', proceso: id, expediente: id, inventario: c.datos.inventario,
+      archivo: falla.evidencia, tipo: this.TIPO_EVIDENCIA_FALLA, usuario,
+      imagen: datos.evidenciaImagen, item: this.etiquetaEvidenciaFalla(datos.tipo)
+    });
+    this.registrarEvento(id, usuario, 'Imagen de evidencia de falla cargada', 'F0302 con falla',
+      `${falla.evidencia} · ${this.etiquetaEvidenciaFalla(datos.tipo)}`, false,
+      { ...ref, estadoValidacion: 'Válida', accionTomada: accion });
 
     // No habilita aceptación ni garantía: el expediente queda con la incidencia abierta.
     this.setEstadoSolicitud(id, 'F0302 con falla',
@@ -4320,6 +4422,10 @@ export class DataService {
         ? `Sugerencia del sistema para «${datos.tipo}»: ${falla.sugerencia}.`
         : `Sugerencia del sistema: ${falla.sugerencia}. Justificación del cambio: ${falla.justificacionReproceso}`,
       true, { ...ref, accionTomada: accion, justificacion: falla.justificacionReproceso });
+    this.registrarEvento(id, usuario, 'Decisión de corrección definida', 'F0302 con falla',
+      reproceso ? 'Reproceso F0288: el equipo vuelve a preparación.'
+        : 'Corrección en el mismo F0302: el equipo no vuelve a preparación.', true,
+      { ...ref, accionTomada: accion, justificacion: falla.justificacionReproceso });
     this.registrarEvento(id, usuario, `Cronómetro F0302 detenido por falla (tiempo trabajado: ${tiempo || 'menos de 1 min'})`,
       'F0302 con falla', '', false, { ...ref, tiempo });
     this.registrarEvento(id, usuario, 'F0302 guardado como intento con falla', 'F0302 con falla',
@@ -4665,16 +4771,46 @@ export class DataService {
     return [];
   }
 
+  /** Etiqueta de la imagen que no respalda un ítem concreto sino el reproceso en general. */
+  readonly ITEM_EVIDENCIA_ADICIONAL = 'Evidencia adicional del reproceso';
+
   /**
-   * Acciones marcadas cuya imagen todavía falta. Vacío significa que cada acción importante tiene
-   * su respaldo visual.
+   * Tipo de evidencia que corresponde a un ítem del checklist. Nadie lo elige: sale de lo que el
+   * ítem dice que se hizo. Los de la sección Evidencia y los de validación no describen una
+   * intervención concreta, así que caen en el tipo de su sección.
    */
-  evidenciasFaltantesPorAccion(r: ReprocesoF0288): { item: string; tipos: TipoEvidenciaReproceso[] }[] {
-    const cargados = r.evidencias.map((e) => e.tipo);
-    return r.checklist
-      .filter((i) => i.estado === 'Realizado')
-      .map((i) => ({ item: i.nombre, tipos: this.evidenciaExigidaPorItem(i.nombre) }))
-      .filter((x) => x.tipos.length > 0 && !x.tipos.some((t) => cargados.includes(t)));
+  tipoEvidenciaDeItem(item: ItemReproceso): TipoEvidencia {
+    const exigido = this.evidenciaExigidaPorItem(item.nombre)[0];
+    if (exigido) return exigido;
+    return this.seccionDeItem(item) === 'Validación posterior' ? 'Validación posterior' : 'Diagnóstico';
+  }
+
+  /**
+   * Ítems marcados que exigen imagen y todavía no la tienen. La correspondencia es por **ítem**, no
+   * por tipo: la imagen se adjunta desde el ítem que la pide, así que respaldar «Reinstalar
+   * Windows» con la foto de otra acción ya no es posible.
+   *
+   * Un ítem en «No aplica» no exige nada: no se hizo.
+   */
+  itemsSinEvidenciaReproceso(r: ReprocesoF0288): ItemReproceso[] {
+    return r.checklist.filter((i) => i.estado === 'Realizado' && this.itemRequiereEvidencia(i)
+      && !r.evidencias.some((e) => e.item === i.nombre));
+  }
+
+  /** Lo que se responde cuando un ítem marcado se quedó sin su imagen. */
+  mensajeItemSinEvidencia(item: string): string {
+    return `Debe adjuntar evidencia para el ítem: ${item}.`;
+  }
+
+  /** Imágenes del reproceso agrupadas por el ítem que respaldan; es lo que imprime la constancia. */
+  evidenciasPorItemReproceso(r: ReprocesoF0288): { item: string; lista: EvidenciaReproceso[] }[] {
+    const grupos: { item: string; lista: EvidenciaReproceso[] }[] = [];
+    for (const e of r.evidencias) {
+      const item = e.item?.trim() || this.ITEM_EVIDENCIA_ADICIONAL;
+      const grupo = grupos.find((g) => g.item === item);
+      if (grupo) grupo.lista.push(e); else grupos.push({ item, lista: [e] });
+    }
+    return grupos;
   }
 
   /**
@@ -4909,23 +5045,30 @@ export class DataService {
    * Adjunta una imagen de evidencia al reproceso, con el código del reproceso y su expediente. La
    * imagen llega como `data:` URL ya reducida por la pantalla: el prototipo la guarda con el resto
    * del estado y no depende de ningún servidor de archivos.
+   *
+   * El **tipo no se recibe**: sale del ítem del checklist desde el que se adjuntó. Elegirlo a mano
+   * permitía respaldar un ítem con la imagen de otro, que es justo lo que no debe pasar.
    */
-  agregarEvidenciaReproceso(idReproceso: string, archivo: string, tipo: string, usuario: string,
+  agregarEvidenciaReproceso(idReproceso: string, archivo: string, usuario: string,
     imagen = '', item = ''): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
     if (r.estado !== 'En proceso') return 'Inicie el reproceso F0288 para adjuntar evidencias.';
     if (!archivo.trim()) return 'Seleccione la imagen de evidencia que desea adjuntar.';
     if (!this.formatoEvidenciaValido(archivo)) return this.MSG_FORMATO_EVIDENCIA;
-    if (!tipo.trim()) return this.MSG_TIPO_EVIDENCIA;
     if (r.evidencias.some((e) => e.archivo === archivo.trim())) {
       return `La imagen «${archivo.trim()}» ya está adjunta a este reproceso.`;
     }
+    // Sin ítem, la imagen es evidencia adicional del reproceso: no respalda ninguna acción concreta
+    // y por eso tampoco satisface la exigencia de ningún ítem marcado.
+    const nombreItem = item.trim() || this.ITEM_EVIDENCIA_ADICIONAL;
+    const delChecklist = r.checklist.find((i) => i.nombre === nombreItem);
+    if (item.trim() && !delChecklist) return 'No se encontró el ítem del checklist indicado.';
     const evidencia: EvidenciaReproceso = {
-      archivo: archivo.trim(), tipo: tipo.trim(),
+      archivo: archivo.trim(), tipo: delChecklist ? this.tipoEvidenciaDeItem(delChecklist) : 'Otro',
       fecha: this.hoy(), hora: this.hora(), cargadaPor: usuario,
       reproceso: r.id, expedienteTecnico: r.expedienteTecnico,
-      imagen, formato: this.formatoDeArchivo(archivo), item: item.trim() || undefined
+      imagen, formato: this.formatoDeArchivo(archivo), item: nombreItem
     };
     this.actualizarReproceso(idReproceso, (x) => ({ ...x, evidencias: [...x.evidencias, evidencia] }));
     this.registrarEvento(r.expediente, usuario, 'Imagen de evidencia cargada', 'Reproceso F0288 en proceso',
@@ -5008,21 +5151,12 @@ export class DataService {
   }
 
   /**
-   * Ítems que se pueden respaldar con una imagen en un reproceso, cada uno con su tipo. A
-   * diferencia del resto de los módulos no salen de una lista fija: dependen del problema que se
-   * revisa y de las acciones que el técnico ya marcó, que es lo único que hay que respaldar.
+   * Contexto único del bloque general del reproceso: la evidencia **adicional**, la que no
+   * respalda ninguna acción concreta. Las de los ítems se adjuntan desde el ítem, así que aquí no
+   * hay nada que elegir y el formulario no muestra desplegable.
    */
-  contextosEvidenciaReproceso(r: ReprocesoF0288): ContextoEvidencia[] {
-    const tipoProblema = this.tipoProblemaDeReproceso(r);
-    const lista: ContextoEvidencia[] = [
-      { nombre: `Diagnóstico del problema: ${tipoProblema}`, tipo: this.evidenciaSugeridaReproceso(tipoProblema).tipo }
-    ];
-    for (const item of r.checklist.filter((i) => i.estado === 'Realizado')) {
-      const exigidos = this.evidenciaExigidaPorItem(item.nombre);
-      if (exigidos.length) lista.push({ nombre: item.nombre, tipo: exigidos[0] });
-    }
-    lista.push({ nombre: 'Validación posterior al reproceso', tipo: 'Validación posterior' });
-    return lista;
+  contextosEvidenciaReproceso(): ContextoEvidencia[] {
+    return [{ nombre: this.ITEM_EVIDENCIA_ADICIONAL, tipo: 'Otro' }];
   }
 
   /**
@@ -5036,26 +5170,21 @@ export class DataService {
     const cerrado = r.estado === 'Finalizado' || r.estado === 'Firmado' || r.estado === 'No corregido';
     const pendientes = r.checklist.filter((i) => i.estado === 'Pendiente');
     const correccion = (correccionEnCurso.trim() || r.correccionTecnica).trim();
-    const sinTipo = r.evidencias.filter((e) => !e.tipo.trim());
-    const faltantes = this.evidenciasFaltantesPorAccion(r);
+    const faltantes = this.itemsSinEvidenciaReproceso(r);
+    const conItem = r.checklist.filter((i) => this.itemRequiereEvidencia(i) && i.estado === 'Realizado');
     return [
       { etiqueta: 'Al menos una imagen de evidencia adjunta', momento: 'Finalizar',
         cumplida: r.evidencias.length > 0,
         detalle: r.evidencias.length
           ? `${r.evidencias.length} imagen(es) adjuntas`
           : 'La evidencia visual respalda la corrección realizada' },
-      { etiqueta: 'Cada imagen con su tipo de evidencia', momento: 'Finalizar',
-        cumplida: r.evidencias.length > 0 && sinTipo.length === 0,
-        detalle: !r.evidencias.length
-          ? 'Sin imágenes que clasificar'
-          : sinTipo.length
-            ? `${sinTipo.length} imagen(es) sin tipo de evidencia`
-            : [...new Set(r.evidencias.map((e) => e.tipo))].join(' · ') },
-      { etiqueta: 'Imagen para cada acción marcada', momento: 'Finalizar',
+      { etiqueta: 'Imagen en cada ítem marcado que la exige', momento: 'Finalizar',
         cumplida: faltantes.length === 0,
         detalle: faltantes.length
-          ? `Falta la imagen de: ${faltantes.map((f) => f.item).join(' · ')}`
-          : 'Las acciones del checklist tienen su respaldo visual' },
+          ? `Falta la imagen de: ${faltantes.map((f) => f.nombre).join(' · ')}`
+          : conItem.length
+            ? `${conItem.length} ítem(es) con su imagen adjunta`
+            : 'Ningún ítem marcado exige imagen' },
       { etiqueta: 'Corrección técnica realizada registrada', momento: 'Finalizar',
         cumplida: !!correccion,
         detalle: correccion ? 'Registrada' : 'Describa qué se revisó o corrigió en el equipo' },
@@ -5120,22 +5249,28 @@ export class DataService {
       return 'Complete el Checklist de Reproceso F0288 antes de finalizarlo.';
     }
     if (!correccion.trim()) return 'Registre la corrección técnica realizada antes de finalizar el reproceso F0288.';
-    // Sin imagen no se cierra ningún reproceso, sea cual sea el tipo de problema: el checklist y
-    // la observación dicen lo que se hizo, la imagen es lo que lo respalda. El intento queda
-    // anotado, porque es parte de la historia del reproceso.
+    // Cada ítem marcado que exige imagen debe tener la suya, adjuntada desde el ítem. El aviso
+    // nombra el ítem: es lo que el técnico tiene que ir a resolver. El intento queda anotado,
+    // porque es parte de la historia del reproceso.
+    const faltantes = this.itemsSinEvidenciaReproceso(r);
+    if (faltantes.length) {
+      const mensaje = this.mensajeItemSinEvidencia(faltantes[0].nombre);
+      this.registrarEvento(r.expediente, usuario, 'Reproceso intentó finalizar sin evidencia',
+        'Reproceso F0288 en proceso', mensaje, false,
+        { ...this.refReproceso(r), rol: this.rolDeUsuario(usuario),
+          tipoProblema: this.tipoProblemaDeReproceso(r), estadoValidacion: 'Sin evidencia',
+          accionTomada: `Cierre bloqueado: falta la imagen de ${faltantes.map((f) => f.nombre).join(', ')}` });
+      return mensaje;
+    }
+    // Red de seguridad: si ningún ítem marcado exigiera imagen, el reproceso seguiría sin poder
+    // cerrarse sin respaldo visual.
     if (r.evidencias.length === 0) {
       this.registrarEvento(r.expediente, usuario, 'Reproceso intentó finalizar sin evidencia',
         'Reproceso F0288 en proceso', this.MSG_EVIDENCIA_REPROCESO, false,
         { ...this.refReproceso(r), rol: this.rolDeUsuario(usuario),
-          tipoProblema: this.tipoProblemaDeReproceso(r),
+          tipoProblema: this.tipoProblemaDeReproceso(r), estadoValidacion: 'Sin evidencia',
           accionTomada: 'Cierre bloqueado por falta de imagen de evidencia' });
       return this.MSG_EVIDENCIA_REPROCESO;
-    }
-    if (r.evidencias.some((e) => !e.tipo.trim())) return this.MSG_TIPO_EVIDENCIA;
-    const faltantes = this.evidenciasFaltantesPorAccion(r);
-    if (faltantes.length) {
-      const f = faltantes[0];
-      return `Marcó «${f.item}»: adjunte una imagen de tipo ${f.tipos.map((t) => `«${t}»`).join(' o ')} antes de finalizar el reproceso.`;
     }
     const crono = r.cronometro ? this.detenerCronometro(r.cronometro, usuario) : undefined;
     this.actualizarReproceso(idReproceso, (x) => ({
@@ -5318,14 +5453,19 @@ export class DataService {
       '',
       `IMÁGENES DE EVIDENCIA DEL REPROCESO (${r.evidencias.length})`,
       '-'.repeat(60),
+      // Agrupadas por el ítem que respaldan: así se lee qué acción quedó demostrada y cuál no.
       ...(r.evidencias.length
-        ? r.evidencias.flatMap((e, n) => [
-          `  ${n + 1}. ${e.archivo}`,
-          `     Tipo de evidencia: ${e.tipo}`,
-          `     Cargada por: ${e.cargadaPor} · ${e.fecha} ${e.hora}`,
-          // El prototipo no imprime la imagen: deja la referencia y el visor la muestra.
-          `     [ imagen ${e.formato ? e.formato.toUpperCase() : this.formatoDeArchivo(e.archivo).toUpperCase()} adjunta` +
-          `${e.imagen ? ' · vista previa disponible en el visor' : ' · vista previa simulada'} ]`
+        ? this.evidenciasPorItemReproceso(r).flatMap((g) => [
+          `  Ítem: ${g.item}`,
+          ...g.lista.flatMap((e) => [
+            `    Evidencia: ${e.archivo}`,
+            `    Tipo: ${e.tipo}`,
+            `    Cargada por: ${e.cargadaPor} · ${e.fecha} ${e.hora}`,
+            // El prototipo no imprime la imagen: deja la referencia y el visor la muestra.
+            `    [ imagen ${e.formato ? e.formato.toUpperCase() : this.formatoDeArchivo(e.archivo).toUpperCase()} adjunta` +
+            `${e.imagen ? ' · vista previa disponible en el visor' : ' · vista previa simulada'} ]`
+          ]),
+          ''
         ])
         : ['  Sin evidencias adjuntas.']),
       '',
@@ -5553,13 +5693,24 @@ export class DataService {
    * sistema operativo sin reinstalación…). Deja el proceso listo para el nuevo intento F0302 sin
    * que el equipo haya salido del escritorio del técnico.
    */
-  registrarCorreccionSoporte(id: string, usuario: string, descripcion: string): string | null {
+  registrarCorreccionSoporte(id: string, usuario: string, descripcion: string,
+    archivo = '', imagen = ''): string | null {
     const conFalla = this.configuracionesConFallaDe(id)[0];
     if (!conFalla?.falla) return 'Este proceso no tiene una falla F0302 que corregir.';
     const f = conFalla.falla;
     if (f.requiereReprocesoF0288) return 'Esta falla requiere reproceso de Preparación F0288: no puede cerrarse como corrección de Soporte.';
     if (f.estadoIncidencia === 'LISTO_PARA_REINTENTO_F0302') return 'La corrección de Soporte ya fue registrada.';
     if (!descripcion.trim()) return 'Describa la corrección realizada antes de registrarla.';
+    // La imagen de la corrección es otra que la de la falla: una muestra el problema y la otra que
+    // se resolvió. Sin ella el proceso no queda listo para el reintento.
+    if (!archivo.trim()) return this.MSG_EVIDENCIA_CORRECCION_SOPORTE;
+    if (!this.evid.formatoValido(archivo)) return this.evid.MSG_FORMATO;
+    const errorImagen = this.adjuntarEvidencia({
+      modulo: 'Configuración F0302', proceso: id, expediente: id,
+      inventario: conFalla.datos.inventario, archivo, tipo: 'Corrección realizada', usuario,
+      imagen, item: 'Corrección realizada en F0302'
+    });
+    if (errorImagen) return errorImagen;
     this.actualizarConfiguracionConFalla(id, (x) => ({
       ...x, estadoIncidencia: 'LISTO_PARA_REINTENTO_F0302',
       correccionSoporte: { descripcion: descripcion.trim(), tecnico: usuario, fecha: this.hoy(), hora: this.hora() }
@@ -5572,7 +5723,8 @@ export class DataService {
       { modulo: 'Configuración F0302', inventario: conFalla.datos.inventario,
         expedienteTecnico: this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo,
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, tipoFalla: f.tipo, requiereReproceso: 'No',
-        accionTomada: 'Corrección de Soporte en el mismo F0302' });
+        rol: this.rolDeUsuario(usuario), evidencia: archivo.trim(), tipoEvidencia: 'Corrección realizada',
+        estadoValidacion: 'Válida', accionTomada: 'Corrección de Soporte en el mismo F0302' });
     return null;
   }
 

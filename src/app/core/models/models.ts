@@ -1286,6 +1286,8 @@ export type TipoEvidencia =
   | 'Estado físico'
   | 'Validación posterior'
   | 'Cierre de caso'
+  /** Imagen de la falla detectada durante la configuración, distinta de la de su corrección. */
+  | 'Evidencia de falla F0302'
   | 'Otro';
 
 /**

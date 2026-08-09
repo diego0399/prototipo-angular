@@ -1,7 +1,9 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Cronometro, ReprocesoF0288, ResultadoReproceso, TipoProblemaReproceso } from '../../core/models/models';
+import {
+  Cronometro, EvidenciaReproceso, ItemReproceso, ReprocesoF0288, ResultadoReproceso, TipoProblemaReproceso
+} from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -32,6 +34,10 @@ import { EvidenciasComponent } from '../../shared/evidencias';
     .chk-row .chk-est { width: 104px; text-align: right; flex: none; }
     .chk-row .chk-acc { width: 138px; text-align: right; flex: none; }
     .chk-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
+    .chk-ev { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 2px 4px 10px 31px; border-bottom: 1px dashed var(--line); }
+    .chk-thumb { width: 92px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--line); cursor: pointer; }
+    .chk-ev .i-falta { font-size: 11.5px; font-weight: 600; color: var(--danger, #c0392b); }
+    .ev-grande { max-width: 100%; max-height: 58vh; display: block; margin: 0 auto; border-radius: 8px; border: 1px solid var(--line); }
     .val-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 13px; color: var(--tx-3); }
     .val-row:last-child { border-bottom: 0; }
     .val-row.ok { color: var(--ok, #1e7a46); }
@@ -243,6 +249,9 @@ import { EvidenciasComponent } from '../../shared/evidencias';
               <dt>Tipo de falla reportada en F0302</dt><dd>{{ r.tipoFalla }}</dd>
               <dt>Observación de Soporte</dt><dd>{{ r.observacionSoporte || '—' }}</dd>
               <dt>Evidencia reportada por Soporte</dt><dd>{{ r.evidenciaSoporte || 'Sin evidencia adjunta' }}</dd>
+              @if (evidenciaFalla(r); as ev) {
+                <dt>Tipo de evidencia inicial</dt><dd>{{ ev.item || ev.tipo }}</dd>
+              }
               <dt>Técnico de Hardware asignado</dt>
               <dd>
                 {{ r.tecnicoAsignado || 'Sin asignar' }}
@@ -250,6 +259,15 @@ import { EvidenciasComponent } from '../../shared/evidencias';
                 @if (r.fechaAsignacion) { <div class="sub-cell">{{ r.asignadoPor }} · {{ r.fechaAsignacion }} {{ r.horaAsignacion }}</div> }
               </dd>
             </dl>
+
+            <!-- La imagen con la que Soporte reportó la falla viaja al reproceso: el Técnico de
+                 Hardware ve el problema tal como se detectó, antes de tocar el equipo. -->
+            @if (evidenciaFalla(r); as ev) {
+              <ui-evidencias titulo="Falla reportada desde F0302 · evidencia inicial"
+                [lista]="[ev]"
+                nota="Cargada por Soporte al reportar la falla. La evidencia de la corrección la adjunta Hardware más abajo."
+                (visualizar)="verEvidenciaFallaOrigen(r, $event)" />
+            }
 
             <!-- Rollback: asignación a un Técnico de Hardware, potestad del Encargado -->
             @if (r.estado === 'Pendiente de asignación' || r.estado === 'Asignado') {
@@ -327,35 +345,52 @@ import { EvidenciasComponent } from '../../shared/evidencias';
                     }
                   </span>
                 </div>
-              }
-            }
-            @if (r.estado === 'En proceso') {
-              @if (!r.evidencias.length) {
-                <div class="alert warn mt-2">
-                  <span class="alert-ico">!</span>
-                  <span>{{ data.MSG_EVIDENCIA_REPROCESO }} La evidencia visual respalda la corrección realizada.</span>
-                </div>
-              } @else if (data.evidenciasFaltantesPorAccion(r); as faltan) {
-                @if (faltan.length) {
-                  <div class="alert warn mt-2">
-                    <span class="alert-ico">!</span>
-                    <span>
-                      Marcó <b>{{ faltan[0].item }}</b>: falta una imagen de tipo
-                      <b>{{ faltan[0].tipos.join(' o ') }}</b> que lo respalde.
-                    </span>
+                <!-- La imagen se adjunta desde el ítem que la exige: nadie la asocia a mano -->
+                @if (data.itemRequiereEvidencia(i) && i.estado === 'Realizado') {
+                  <div class="chk-ev">
+                    @if (evidenciaDeItem(r, i.nombre); as ev) {
+                      @if (ev.imagen) {
+                        <img class="chk-thumb" [src]="ev.imagen" [alt]="ev.archivo" (click)="abrirImagen(r, ev)" />
+                      }
+                      <span class="small mono">{{ ev.archivo }}</span>
+                      <span class="chip">{{ ev.tipo }}</span>
+                      <button class="btn btn-ghost btn-sm" (click)="abrirImagen(r, ev)">Ver imagen</button>
+                      @if (r.estado === 'En proceso') {
+                        <button class="btn btn-ghost btn-sm" (click)="eliminarEvidencia(r, ev.archivo)">Eliminar</button>
+                      }
+                    } @else if (r.estado === 'En proceso') {
+                      <input type="file" hidden #evi accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                        (change)="subirEvidenciaItem(r, i, evi)" />
+                      <button class="btn btn-outline btn-sm" (click)="evi.click()">
+                        <ui-icon name="image" [size]="14" /> Adjuntar imagen
+                      </button>
+                      <span class="hint">Se guardará como <b>{{ data.tipoEvidenciaDeItem(i) }}</b>, asociada a este ítem.</span>
+                    } @else {
+                      <span class="i-falta">Sin imagen adjunta</span>
+                    }
                   </div>
                 }
               }
-              <p class="hint">«No aplica» solo se ofrece en los ítems condicionales; los demás corresponden al tipo de problema y hay que resolverlos.</p>
+            }
+            @if (r.estado === 'En proceso') {
+              @if (data.itemsSinEvidenciaReproceso(r); as faltan) {
+                @if (faltan.length) {
+                  <div class="alert warn mt-2">
+                    <span class="alert-ico">!</span>
+                    <span>{{ data.mensajeItemSinEvidencia(faltan[0].nombre) }} Adjúntela desde el propio ítem del checklist.</span>
+                  </div>
+                }
+              }
+              <p class="hint">«No aplica» solo se ofrece en los ítems condicionales; los demás corresponden al tipo de problema y hay que resolverlos. Un ítem en «No aplica» no exige imagen.</p>
             }
 
-            <!-- Imágenes de evidencia: el mismo bloque compartido que el resto del sistema -->
+            <!-- Resumen de lo cargado, y carga de lo que no respalda ningún ítem concreto -->
             <ui-evidencias titulo="Evidencias del reproceso"
               [lista]="r.evidencias"
               [editable]="r.estado === 'En proceso'"
-              [obligatoria]="true"
-              [mensajeFalta]="data.MSG_EVIDENCIA_REPROCESO"
-              [contextos]="data.contextosEvidenciaReproceso(r)"
+              [contextos]="data.contextosEvidenciaReproceso()"
+              tituloCarga="Adjuntar evidencia adicional"
+              nota="Las imágenes de los ítems se adjuntan desde el propio ítem del checklist. Aquí solo se agrega evidencia adicional del reproceso."
               [sugeridas]="data.imagenesSugeridasReproceso(data.tipoProblemaDeReproceso(r))"
               (adjuntar)="agregarEvidencia(r, $event)"
               (eliminar)="eliminarEvidencia(r, $event)"
@@ -570,6 +605,24 @@ import { EvidenciasComponent } from '../../shared/evidencias';
         </ui-modal>
       }
 
+      @if (imagenAbierta(); as ev) {
+        <ui-modal [titulo]="'Evidencia del ítem · ' + ev.tipo" [sub]="ev.item ?? ev.archivo"
+          (cerrar)="imagenAbierta.set(null)">
+          @if (ev.imagen) {
+            <img class="ev-grande" [src]="ev.imagen" [alt]="ev.archivo" />
+          } @else {
+            <p class="small muted">Evidencia del set de demostración: se conserva la referencia, no se inventa la imagen.</p>
+          }
+          <dl class="dl mt-2">
+            <dt>Archivo</dt><dd class="mono">{{ ev.archivo }}</dd>
+            <dt>Ítem del checklist</dt><dd>{{ ev.item || 'Evidencia adicional del reproceso' }}</dd>
+            <dt>Tipo de evidencia</dt><dd>{{ ev.tipo }}</dd>
+            <dt>Cargada por</dt><dd>{{ ev.cargadaPor }}</dd>
+            <dt>Fecha y hora</dt><dd>{{ ev.fecha }} {{ ev.hora }}</dd>
+          </dl>
+        </ui-modal>
+      }
+
       <!-- Visor de la constancia: la misma vista en todas las pantallas -->
       <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
     </div>
@@ -583,6 +636,8 @@ export class ReprocesosComponent {
   protected seleccion = signal('');
   /** Reproceso cuya constancia se está viendo; '' cierra el visor. */
   protected verConstancia = signal('');
+  /** Imagen de un ítem del checklist abierta a tamaño grande. */
+  protected imagenAbierta = signal<EvidenciaReproceso | null>(null);
   protected asignarAbierto = signal(false);
   protected firmaAbierta = signal(false);
   protected correccion = signal('');
@@ -772,16 +827,63 @@ export class ReprocesosComponent {
     if (error) this.toast.error('No se pudo actualizar el checklist', error);
   }
 
-  protected agregarEvidencia(r: ReprocesoF0288, ev: { archivo: string; tipo: string; imagen: string; item: string }): void {
-    const error = this.data.agregarEvidenciaReproceso(r.id, ev.archivo, ev.tipo, this.usuarioActual, ev.imagen, ev.item);
+  /** Evidencia adicional: la que no respalda ningún ítem del checklist. */
+  protected agregarEvidencia(r: ReprocesoF0288, ev: { archivo: string; imagen: string }): void {
+    const error = this.data.agregarEvidenciaReproceso(r.id, ev.archivo, this.usuarioActual, ev.imagen);
     if (error) { this.toast.error('No se pudo adjuntar la imagen', error); return; }
-    this.toast.ok('Imagen de evidencia adjuntada',
-      'Queda guardada con su tipo, el código del reproceso y el expediente técnico original.');
+    this.toast.ok('Evidencia adicional adjuntada',
+      'Queda guardada con el código del reproceso y el expediente técnico original. No sustituye la imagen de los ítems marcados.');
+  }
+
+  /** Imagen ya adjunta a un ítem del checklist, si la hay. */
+  protected evidenciaDeItem(r: ReprocesoF0288, item: string): EvidenciaReproceso | undefined {
+    return r.evidencias.find((e) => e.item === item);
+  }
+
+  /**
+   * Adjunta la imagen desde el propio ítem. El tipo lo pone el servicio a partir del ítem: aquí no
+   * hay nada que elegir, que es justamente el punto.
+   */
+  protected async subirEvidenciaItem(r: ReprocesoF0288, item: ItemReproceso, input: HTMLInputElement): Promise<void> {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
+    if (!this.data.evid.formatoValido(archivo.name)) {
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+      return;
+    }
+    try {
+      const leida = await this.data.evid.leerImagen(archivo);
+      const error = this.data.agregarEvidenciaReproceso(r.id, leida.archivo, this.usuarioActual,
+        leida.imagen, item.nombre);
+      if (error) { this.toast.error('No se pudo adjuntar la imagen', error); return; }
+      this.toast.ok('Imagen adjuntada al ítem',
+        `Quedó asociada a «${item.nombre}» como ${this.data.tipoEvidenciaDeItem(item)}.`);
+    } catch {
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
+    }
+  }
+
+  /** Abre la imagen de un ítem a tamaño grande; la consulta queda anotada igual que en la galería. */
+  protected abrirImagen(r: ReprocesoF0288, ev: EvidenciaReproceso): void {
+    this.imagenAbierta.set(ev);
+    this.verEvidencia(r, ev.archivo);
   }
 
   /** Abrir la imagen también es un acceso a la evidencia: queda constancia de quién la consultó. */
   protected verEvidencia(r: ReprocesoF0288, archivo: string): void {
     this.data.registrarConsultaEvidencia(r.id, archivo, this.usuarioActual);
+  }
+
+  /** Imagen con la que Soporte reportó la falla que originó este reproceso, si la hay. */
+  protected evidenciaFalla(r: ReprocesoF0288) {
+    return this.data.evidenciaDeFalla(r.expediente);
+  }
+
+  /** La consulta de la evidencia inicial se anota contra el F0302, que es donde vive. */
+  protected verEvidenciaFallaOrigen(r: ReprocesoF0288, archivo: string): void {
+    this.data.registrarConsultaEvidenciaTecnica('Configuración F0302', r.expediente, r.expediente,
+      archivo, this.usuarioActual);
   }
 
   protected eliminarEvidencia(r: ReprocesoF0288, archivo: string): void {

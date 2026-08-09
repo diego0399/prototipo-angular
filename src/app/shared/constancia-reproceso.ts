@@ -52,9 +52,13 @@ import { EvidenciasComponent } from './evidencias';
           } @else {
             <div class="doc-hoja">{{ texto() }}</div>
 
-            <!-- Las imágenes que respaldaban el reproceso al firmarlo, junto al documento -->
-            <ui-evidencias titulo="Imágenes de evidencia del reproceso" [lista]="evidencias()"
-              (visualizar)="abrir($event)" />
+            <!-- Las imágenes que respaldaban el reproceso al firmarlo, agrupadas por el ítem que
+                 respaldan: así se lee qué acción del checklist quedó demostrada. -->
+            @for (g of data.evidenciasPorItemReproceso(r); track g.item) {
+              <ui-evidencias [titulo]="'Ítem: ' + g.item" [lista]="g.lista" (visualizar)="abrir($event)" />
+            } @empty {
+              <ui-evidencias titulo="Imágenes de evidencia del reproceso" [lista]="[]" />
+            }
             @if (retiradas().length) {
               <span class="hint">
                 El documento certificó además: {{ retiradas().join(' · ') }}. Ya no está entre las imágenes del reproceso.

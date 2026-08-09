@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 57)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 59)**.
 
 ---
 
@@ -2576,6 +2576,61 @@ Expediente único.
     * Verificado con `npm run build` limpio (6.333 s, 0 errores), `ng serve` (HTTP 200 en nueve
       rutas) y **104 casos, 0 fallos**, más las veintiuna baterías anteriores (1539 casos, 0 fallos;
       se actualizaron las de las rondas 55 y 56). **Sin recorrido manual de clics.**
+58. **Registrar una falla durante la Configuración F0302 exige la imagen de la falla**
+    (2026-08-09, tercera sesión del día).
+    * Fuera el campo de texto opcional «Evidencia (si aplica) — captura / número de evidencia»: se
+      podía registrar una falla —de la que salen un reproceso F0288 o la sustitución del equipo—
+      escribiendo un número de referencia, o nada. Ahora hay carga real de imagen, obligatoria:
+      `Debe adjuntar una imagen de evidencia de la falla detectada para registrar la incidencia.`
+    * **La etiqueta la pone el tipo de falla** (`etiquetaEvidenciaFalla`): disco → «Evidencia de
+      falla de disco», sistema operativo → «Evidencia de falla de sistema operativo», y así hasta
+      «Evidencia de falla reportada» para los tipos sin fila propia. El tipo de evidencia es
+      **«Evidencia de falla F0302»**, valor nuevo del catálogo.
+    * La imagen se lee y se reduce al elegirla pero **no se guarda hasta registrar la falla**: si
+      el técnico cancela, no queda evidencia de una falla que nunca existió.
+    * **Dos imágenes, dos momentos**: la de la falla al reportarla y la de la corrección después.
+      La corrección de Soporte en el mismo F0302 pide la suya: `Debe adjuntar una imagen que
+      respalde la corrección realizada en F0302.`
+    * **La evidencia inicial viaja al reproceso**: la pantalla de Hardware muestra la imagen con
+      la que Soporte reportó la falla, junto al tipo, la observación y el archivo. Para que se vea
+      en la demostración, al cargar los datos se trasladan al almacén común las referencias de
+      falla que la semilla ya traía (`captura-bios-sin-disco.png` en `SOL-2026-0141`, origen de
+      `EXP-PT-2026-0086-R1`) **sin inventar la fotografía**: van sin imagen y se dibujan como vista
+      previa simulada.
+    * **La decisión deja de preguntarse dos veces**: «¿Requiere reinstalación o reparación base?»
+      ya decide, así que «¿Requiere reproceso de Preparación F0288?» pasó a ser «Decisión de
+      corrección», mostrada como resultado con un botón «Cambiar la decisión». Apartarse sigue
+      exigiendo justificación.
+    * Tres eventos nuevos: intento de registrar falla sin evidencia (con estado «Sin evidencia»),
+      imagen de evidencia de falla cargada y decisión de corrección definida.
+    * Verificado con `npm run build` limpio (6.185 s, 0 errores), `ng serve` (HTTP 200 en nueve
+      rutas) y **111 casos, 0 fallos**, más las veintidós baterías anteriores (1644 casos, 0
+      fallos; se actualizó la de la ronda 55). **Sin recorrido manual de clics.**
+59. **La evidencia del Reproceso F0288 se adjunta desde el ítem del checklist**
+    (2026-08-09, cuarta sesión del día).
+    * Fuera el desplegable que pedía volver a elegir qué ítem respaldaba la imagen: el checklist ya
+      tenía los ítems con casilla y nada impedía elegir uno distinto del marcado. Ahora **cada ítem
+      que exige imagen lleva su botón «Adjuntar imagen»**, con la marca «Requiere evidencia», y la
+      imagen adjunta se muestra debajo del propio ítem con miniatura, archivo, tipo y las acciones
+      Ver imagen / Eliminar.
+    * **El tipo lo pone el ítem** (`tipoEvidenciaDeItem`): reparar/reinstalar → Corrección
+      realizada, sustituir → Componente sustituido, asociar accesorio → Accesorio asociado, daños
+      visibles → Equipo revisado, sección Validación posterior → Validación posterior, sección
+      Evidencia → Diagnóstico. `agregarEvidenciaReproceso` **ya no recibe el tipo**, y con eso la
+      comprobación de «imagen sin tipo» quedó sin caso posible y salió.
+    * **La exigencia pasa a ser por ítem, no por tipo**: antes una imagen de tipo «Componente
+      sustituido» satisfacía a cualquier ítem que pidiera ese tipo, aunque fuera de otra acción.
+      Mensaje: `Debe adjuntar evidencia para el ítem: X.` Un ítem en **No aplica** no exige nada, y
+      ni la imagen de otro ítem ni la evidencia adicional respaldan a ninguno. Queda una red de
+      seguridad por si ningún ítem marcado exigiera imagen.
+    * **El bloque general queda como resumen** más «Adjuntar evidencia adicional»: su único
+      contexto es la evidencia adicional, así que no muestra desplegable; lo que se sube ahí se
+      guarda como «Otro» y no satisface a ningún ítem. Nueva entrada `tituloCarga` en
+      `ui-evidencias`.
+    * **La constancia agrupa las imágenes por ítem**, en el texto y en la galería del visor.
+    * Verificado con `npm run build` limpio (6.302 s, 0 errores), `ng serve` (HTTP 200 en nueve
+      rutas) y **99 casos, 0 fallos**, más las veintitrés baterías anteriores (1757 casos, 0
+      fallos; se actualizaron las de las rondas 53, 54, 56 y 57). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

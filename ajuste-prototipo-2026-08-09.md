@@ -271,3 +271,288 @@ src/app/features/configuracion/…            (galería sin formulario; «Requie
                                              «Adjuntar imagen» en la fila del Agente DLP)
 src/app/features/preparacion-tecnica/…      (ídem para Antivirus y OCS Inventory)
 ```
+
+---
+
+# Parte 3 — Registrar una falla en F0302 exige la imagen de la falla
+
+**Fecha:** 9 de agosto de 2026, tercera sesión del día (ronda 58 del punto de control)
+**Alcance:** el reporte de falla durante la Configuración F0302, su corrección de Soporte y lo que
+de ahí viaja al Reproceso F0288.
+
+## 1. Lo que había
+
+```text
+EVIDENCIA (SI APLICA)   [ Captura / número de evidencia… ]
+```
+
+Un campo de texto opcional. Se podía registrar una falla —de la que salen un reproceso F0288 o la
+sustitución del equipo— escribiendo un número de referencia, o nada.
+
+## 2. Lo que hay
+
+```text
+Evidencia de la falla *
+[Subir imagen]
+Formatos permitidos: PNG, JPG, JPEG o WEBP.
+Evidencia obligatoria para registrar la falla. La imagen respalda la incidencia detectada
+durante la Configuración F0302.
+```
+
+Sin imagen, la falla no se registra:
+
+```text
+Debe adjuntar una imagen de evidencia de la falla detectada para registrar la incidencia.
+```
+
+La validación corre antes de los dos botones —«Registrar falla y enviar a reproceso F0288» y
+«Registrar falla y corregir en F0302»—, porque los dos pasan por la misma puerta.
+
+La imagen se lee y se reduce al elegirla, pero **no se guarda hasta registrar la falla**: si el
+técnico cancela el reporte, no queda una evidencia suelta de una falla que nunca existió.
+
+## 3. La etiqueta la pone el tipo de falla
+
+```text
+Problema de sistema operativo → Evidencia de falla de sistema operativo
+Falla de disco                → Evidencia de falla de disco
+Falla de memoria              → Evidencia de falla de memoria
+Falla física del equipo       → Evidencia de falla física
+Accesorio faltante            → Evidencia de accesorio faltante
+Problema de red               → Evidencia de falla de red física
+Otro                          → Evidencia de falla reportada
+```
+
+El técnico no elige nada de esto. El tipo de evidencia es **Evidencia de falla F0302**, un valor
+nuevo del catálogo que la separa de la imagen de la corrección.
+
+La vista previa muestra miniatura, archivo, tipo de evidencia, tipo de falla seleccionado, fecha y
+hora, técnico, y las acciones Ver imagen / Eliminar.
+
+## 4. Dos imágenes, dos momentos
+
+```text
+Evidencia de la falla detectada     al registrar la incidencia
+Evidencia de la corrección          después, según a dónde fue la falla
+```
+
+Si la falla se corrige en el mismo F0302, la corrección de Soporte pide la suya:
+
+```text
+Debe adjuntar una imagen que respalde la corrección realizada en F0302.
+```
+
+Una muestra el problema; la otra, que se resolvió. Guardarlas con el mismo tipo habría hecho
+imposible distinguirlas en el historial.
+
+## 5. La evidencia inicial viaja al reproceso
+
+Cuando la falla exige reproceso F0288, la pantalla de Hardware muestra la imagen con la que Soporte
+la reportó, junto al tipo de falla, la observación y el archivo:
+
+```text
+Falla reportada desde F0302 · evidencia inicial
+Cargada por Soporte al reportar la falla.
+La evidencia de la corrección la adjunta Hardware más abajo.
+```
+
+El Técnico de Hardware ve el problema tal como se detectó, antes de tocar el equipo, y sigue
+cargando su propia evidencia de corrección en el bloque del reproceso.
+
+Para que esto se vea en la demostración, al cargar los datos se trasladan al almacén común las
+referencias de falla que el set de datos ya traía —`captura-bios-sin-disco.png` en `SOL-2026-0141`,
+la que originó `EXP-PT-2026-0086-R1`—. **No se inventa la fotografía**: van sin imagen y la galería
+las dibuja como vista previa simulada, igual que el resto de las evidencias de demostración.
+
+## 6. La decisión deja de preguntarse dos veces
+
+Para un problema de sistema operativo, «¿Requiere reinstalación o reparación base?» ya decide si el
+equipo vuelve a preparación. Preguntar después «¿Requiere reproceso de Preparación F0288?» era
+pedir lo mismo otra vez.
+
+```text
+Decisión de corrección
+Reproceso F0288   [Determinado por el sistema]   [Cambiar la decisión]
+Sale de lo que ya respondió en el checklist de la falla; no hace falta contestarlo dos veces.
+```
+
+Solo si el técnico pulsa «Cambiar la decisión» reaparecen las dos opciones, y apartarse de lo que
+el sistema determinó sigue exigiendo justificación —eso ya funcionaba desde antes—. Cambiar el tipo
+de falla devuelve la decisión al modo automático.
+
+## 7. Trazabilidad
+
+```text
+Intento de registrar falla sin evidencia      (con estado de validación «Sin evidencia»)
+Imagen de evidencia de falla cargada
+Decisión de corrección definida
+```
+
+Se suman a los que ya existían —falla reportada, tipo de falla, checklist dinámico, envío a
+corrección de Soporte o a reproceso—. Los eventos de la falla llevan ahora rol y tipo de evidencia
+junto al expediente único, el expediente técnico, el tipo de falla y el archivo.
+
+La vista del F0302 con falla lista las imágenes de la incidencia: la de la falla y, cuando se
+corrige ahí mismo, la de la corrección.
+
+## 8. Casos de prueba
+
+**111 casos, 0 fallos**: el campo de texto retirado y el «si aplica» fuera; el control de carga y
+sus formatos, con espejo funcional de seis archivos aceptados y rechazados; los ocho datos de la
+vista previa; la puerta del registro y que los dos botones pasan por ella; las siete etiquetas por
+tipo de falla, más los dos tipos que caen en la genérica; los dos mensajes distintos de falla y
+corrección; el viaje de la imagen al reproceso y el traslado sin fotografía inventada; la decisión
+automática y su cambio manual; los tres eventos nuevos; y que el cierre del F0288 y del F0302, la
+corrección de inconformidad, el reproceso y los documentos generados siguen en pie.
+
+Regresiones: las veintidós baterías anteriores, **1644 casos, 0 fallos**. Se actualizó una, la de
+la ronda 55, por el tipo nuevo del catálogo y por el derivador de la semilla.
+
+## 9. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [6.185 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en las nueve rutas.
+
+**No hubo clics reales en un navegador.**
+
+## 10. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (tipo «Evidencia de falla F0302»)
+src/app/core/services/evidencia.service.ts  (el tipo nuevo en el catálogo)
+src/app/core/services/data.service.ts       (TIPO_EVIDENCIA_FALLA, MSG_EVIDENCIA_FALLA,
+                                             MSG_EVIDENCIA_CORRECCION_SOPORTE,
+                                             etiquetaEvidenciaFalla, faltaEvidenciaFalla,
+                                             evidenciaDeFalla, evidenciasDeFallasSembradas,
+                                             selloAhora; imagen obligatoria en la falla y en la
+                                             corrección de Soporte; tres eventos nuevos)
+src/app/features/configuracion/…            (carga de imagen de la falla y de la corrección,
+                                             vista previa, visor, decisión sin pregunta duplicada,
+                                             galería de la incidencia)
+src/app/features/reprocesos-f0288/…         (evidencia inicial de la falla, llegada desde F0302)
+```
+
+---
+
+# Parte 4 — La evidencia del Reproceso F0288 se adjunta desde el ítem
+
+**Fecha:** 9 de agosto de 2026, cuarta sesión del día (ronda 59 del punto de control)
+**Alcance:** el checklist de Reproceso F0288, su bloque de evidencias y su constancia.
+
+## 1. El select que sobraba
+
+El checklist ya tenía los ítems con casilla. Debajo, un desplegable pedía volver a elegir cuál de
+ellos respaldaba la imagen — y nada impedía elegir uno distinto del que se había marcado.
+
+Ahora cada ítem que exige imagen lleva la suya:
+
+```text
+[✓] Reparar sistema operativo, si aplica    Requiere evidencia
+    [Adjuntar imagen]   Se guardará como Corrección realizada, asociada a este ítem.
+```
+
+Y una vez adjunta, debajo del propio ítem:
+
+```text
+[✓] Reparar sistema operativo, si aplica    Requiere evidencia
+    [miniatura]  captura-reparacion-windows.png  Corrección realizada  Ver imagen | Eliminar
+```
+
+## 2. El tipo lo pone el ítem
+
+`agregarEvidenciaReproceso` **ya no recibe el tipo**. Lo deduce del ítem desde el que se adjuntó:
+
+```text
+Reparar sistema operativo / Reinstalar Windows   → Corrección realizada
+Revisar o sustituir… / Corregir o reemplazar…    → Componente sustituido
+Sustituir disco duro / memoria                   → Componente sustituido
+Asociar número de inventario del accesorio       → Accesorio asociado
+Daños visibles / inspección física general       → Equipo revisado
+Ítems de la sección Validación posterior         → Validación posterior
+Ítems de la sección Evidencia                    → Diagnóstico
+```
+
+Un ítem que no está en el checklist se rechaza. Con el tipo derivado, la vieja comprobación de
+«imagen sin tipo» dejó de tener caso posible y salió del código.
+
+## 3. La exigencia pasa a ser por ítem
+
+Antes la correspondencia era por **tipo**: una imagen de tipo «Componente sustituido» satisfacía a
+cualquier ítem que pidiera ese tipo, aunque fuera de otra acción. Ahora es por **ítem**:
+
+```text
+Debe adjuntar evidencia para el ítem: Reparar sistema operativo, si aplica.
+```
+
+Un ítem en **No aplica** no exige nada: no se hizo. Y la imagen de un ítem no respalda a otro, ni
+la evidencia adicional respalda a ninguno.
+
+Queda una red de seguridad: si ningún ítem marcado exigiera imagen, el reproceso seguiría sin poder
+cerrarse sin respaldo visual.
+
+## 4. El bloque general, resumen y evidencia adicional
+
+```text
+Evidencias del reproceso (3)
+Las imágenes de los ítems se adjuntan desde el propio ítem del checklist.
+Aquí solo se agrega evidencia adicional del reproceso.
+
+Adjuntar evidencia adicional
+```
+
+Sin desplegable de ítem ni de tipo: su único contexto es «Evidencia adicional del reproceso», y con
+un solo contexto el bloque compartido no pregunta nada. Lo que se sube ahí se guarda como **Otro** y
+**no satisface la exigencia de ningún ítem marcado**, que es justo lo que §10 pedía.
+
+El resumen sigue mostrando miniatura, archivo, ítem asociado, tipo, usuario, fecha y hora, y las
+acciones Ver imagen / Eliminar.
+
+## 5. La constancia agrupa por ítem
+
+```text
+IMÁGENES DE EVIDENCIA DEL REPROCESO (2)
+  Ítem: Reparar sistema operativo, si aplica
+    Evidencia: captura-reparacion-windows.png
+    Tipo: Corrección realizada
+    Cargada por: … · fecha hora
+
+  Ítem: Reinstalar Windows, si corresponde
+    Evidencia: captura-reinstalacion.png
+    Tipo: Corrección realizada
+```
+
+El visor hace lo mismo con la galería: una sección por ítem. Así se lee qué acción del checklist
+quedó demostrada, en vez de una lista suelta de archivos.
+
+## 6. Casos de prueba
+
+**99 casos, 0 fallos**: el select retirado y que sus nombres ya no se arman; el botón, la marca y
+el aceptado de formatos en la fila del ítem; el tipo derivado, con espejo funcional de seis ítems;
+la evidencia bajo su ítem y su visor; el bloque general reducido y su evidencia adicional; la
+exigencia por ítem con espejo de siete escenarios —incluidos «No aplica», la imagen de otro ítem y
+la adicional, que no respaldan—; el agrupador de la constancia con cuatro casos; y que el F0302, la
+corrección de inconformidad, los documentos, el historial y la trazabilidad siguen en pie.
+
+Regresiones: las veintitrés baterías anteriores, **1757 casos, 0 fallos**. Se actualizaron cuatro
+—rondas 53, 54, 56 y 57—, todas por la parte de evidencias del reproceso que esta ronda cambia.
+
+## 7. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [6.302 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en las nueve rutas.
+
+**No hubo clics reales en un navegador.**
+
+## 8. Archivos tocados
+
+```text
+src/app/core/services/data.service.ts       (tipoEvidenciaDeItem, itemsSinEvidenciaReproceso,
+                                             mensajeItemSinEvidencia, evidenciasPorItemReproceso,
+                                             ITEM_EVIDENCIA_ADICIONAL; agregarEvidenciaReproceso
+                                             sin parámetro de tipo; contextosEvidenciaReproceso
+                                             reducido; validación y constancia por ítem)
+src/app/shared/evidencias.ts                (entrada tituloCarga)
+src/app/features/reprocesos-f0288/…         (botón y evidencia por ítem, visor propio, bloque
+                                             general como resumen y evidencia adicional)
+src/app/shared/constancia-reproceso.ts      (galería agrupada por ítem)
+```
