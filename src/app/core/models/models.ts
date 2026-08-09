@@ -810,6 +810,25 @@ export interface CasoGarantia {
   resultado: string;
   fechaCierre: string;
   comentarios?: ComentarioCaso[];
+  /** Estado técnico del caso; nace vacío y solo se llena cuando Soporte clasifica el problema. */
+  estadoRevision?: EstadoRevisionGarantia;
+  /** Tipo de problema con el que Soporte clasificó el caso, del catálogo de garantía. */
+  tipoProblema?: string;
+  /** Revisión técnica de garantía abierta para este caso (`EXP-PT-2026-0095-G1`). */
+  revisionId?: string;
+  /** Lo que Soporte validó después de que Hardware firmó la revisión. */
+  validacionSoporte?: ValidacionGarantia;
+}
+
+/** Lo que Soporte comprueba cuando el equipo vuelve de la revisión técnica de Hardware. */
+export interface ValidacionGarantia {
+  correccionRealizada: RespuestaSiNo;
+  equipoFunciona: RespuestaSiNo;
+  evidenciaRevisada: RespuestaSiNo;
+  observacion: string;
+  validadoPor: string;
+  fecha: string;
+  hora: string;
 }
 
 /**
@@ -838,7 +857,7 @@ export type EstadoDocumento = 'Pendiente de firma' | 'Firmado' | 'Generado' | 'D
 
 export interface DocumentoGenerado {
   tipo: 'F0288' | 'F0302' | 'Entrega y aceptación' | 'Reporte final' | 'Constancia de reproceso F0288'
-    | 'Constancia de corrección F0302 por inconformidad';
+    | 'Constancia de corrección F0302 por inconformidad' | 'Constancia de Revisión Técnica de Garantía';
   expediente: string;
   generadoPor: string;
   fecha: string;
@@ -870,6 +889,8 @@ export interface DocumentoGenerado {
   evidencias?: string[];
   /** Código de la corrección F0302 por inconformidad, en su constancia. */
   correccion?: string;
+  /** Caso de garantía que la constancia de revisión técnica documenta. */
+  casoGarantia?: string;
   /** Técnico de Soporte que firmó la constancia de corrección. */
   tecnicoSoporte?: string;
   /** Usuario final que reportó la inconformidad que la constancia documenta. */
@@ -1221,7 +1242,28 @@ export type ResultadoReproceso =
   | 'Corregido'
   | 'No corregido'
   | 'Requiere sustitución de equipo'
-  | 'Requiere evaluación del Encargado';
+  | 'Requiere evaluación del Encargado'
+  /** Solo en las revisiones de garantía: el equipo necesita que Soporte valide su configuración. */
+  | 'Requiere retorno a Configuración F0302';
+
+/**
+ * Estado técnico del caso de garantía cuando entra Hardware. Convive con `EstadoCasoGarantia`, que
+ * es el estado grueso del caso: el mismo reparto que en el F0302 entre `estado` y `estadoIncidencia`.
+ */
+export type EstadoRevisionGarantia =
+  | 'GARANTIA_ABIERTA'
+  | 'GARANTIA_EN_REVISION_SOPORTE'
+  | 'GARANTIA_REQUIERE_HARDWARE'
+  | 'REVISION_HARDWARE_GARANTIA_PENDIENTE_ASIGNACION'
+  | 'REVISION_HARDWARE_GARANTIA_ASIGNADA'
+  | 'REVISION_HARDWARE_GARANTIA_EN_PROCESO'
+  | 'REVISION_HARDWARE_GARANTIA_FINALIZADA'
+  | 'REVISION_HARDWARE_GARANTIA_FIRMADA'
+  | 'GARANTIA_PENDIENTE_VALIDACION_SOPORTE'
+  | 'GARANTIA_CORREGIDA'
+  | 'GARANTIA_NO_CORREGIDA'
+  | 'GARANTIA_REQUIERE_SUSTITUCION'
+  | 'GARANTIA_CERRADA';
 
 /**
  * Sección del Checklist de Reproceso F0288. Las cinco son las mismas para todos los tipos de
@@ -1408,7 +1450,12 @@ export interface ReprocesoF0288 {
    * checklist, firma—, pero el desenlace cambia: una falla de F0302 devuelve el equipo a
    * configuración, y una inconformidad además obliga a reenviar el formulario de conformidad.
    */
-  origen?: 'Falla F0302' | 'Inconformidad del usuario final';
+  origen?: 'Falla F0302' | 'Inconformidad del usuario final' | 'Garantía';
+  /** Caso de garantía que originó la revisión técnica, cuando el origen es una garantía. */
+  casoGarantia?: string;
+  /** Técnico que el sistema propone, y por qué. La asignación la sigue haciendo un Encargado. */
+  tecnicoSugerido?: string;
+  motivoSugerencia?: string;
   /** Corrección de inconformidad que generó el reproceso, cuando el origen es una inconformidad. */
   correccionRelacionada?: string;
   /** Intento de conformidad No conforme que lo originó. */
@@ -1515,6 +1562,8 @@ export interface EventoTrazabilidad {
   estadoValidacion?: string;
   /** Reproceso F0288 al que pertenece el evento, cuando aplica. */
   reproceso?: string;
+  /** Caso de garantía al que pertenece el evento, cuando aplica. */
+  garantia?: string;
   /** Técnico de Soporte que reportó la falla que originó el reproceso. */
   tecnicoReporta?: string;
   /** Técnico de Hardware asignado al reproceso. */

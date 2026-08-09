@@ -638,10 +638,13 @@ export class DocumentosComponent {
   protected readonly estadosDocumento: EstadoDocumento[] =
     ['Pendiente de firma', 'Firmado', 'Generado', 'Disponible para consulta'];
 
-  /** Constancias de los reprocesos del expediente abierto. */
+  /** Constancias de los reprocesos y de las revisiones de garantía del expediente abierto. */
   protected readonly constanciasDelProceso = computed(() => {
     const x = this.expediente();
-    return x ? this.data.constanciasReproceso().filter((d) => d.expediente === x.expediente) : [];
+    return x
+      ? [...this.data.constanciasReproceso(), ...this.data.constanciasRevisionGarantia()]
+        .filter((d) => d.expediente === x.expediente)
+      : [];
   });
   /** Constancias de corrección F0302 por inconformidad del expediente abierto. */
   protected readonly constanciasCorreccionDelProceso = computed(() => {
@@ -649,9 +652,10 @@ export class DocumentosComponent {
     return x ? this.data.constanciasCorreccion().filter((d) => d.expediente === x.expediente) : [];
   });
 
-  /** Las dos familias de constancias juntas, de la más reciente a la más antigua. */
+  /** Las tres familias de constancias juntas, de la más reciente a la más antigua. */
   protected readonly todasLasConstancias = computed(() =>
-    [...this.data.constanciasReproceso(), ...this.data.constanciasCorreccion()]
+    [...this.data.constanciasReproceso(), ...this.data.constanciasCorreccion(),
+      ...this.data.constanciasRevisionGarantia()]
       .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`))
   );
 

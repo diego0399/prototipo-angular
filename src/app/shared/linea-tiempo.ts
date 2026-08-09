@@ -35,7 +35,10 @@ const PRINCIPALES = [
   /reproceso f0288 (generado|finalizado|firmado)/i, /firma de técnico/i,
   // Un cierre bloqueado por falta de evidencia es parte de la historia: no se esconde en el detalle.
   /intentó finalizar sin evidencia/i, /intento de finalizar sin evidencia/i,
-  /corrección f0302 (iniciada|finalizada|firmada)/i, /marcado como no conforme/i
+  /corrección f0302 (iniciada|finalizada|firmada)/i, /marcado como no conforme/i,
+  // Garantía con revisión técnica: la decisión de mandar el equipo a Hardware y su desenlace.
+  /garantía requiere revisión de hardware/i, /revisión técnica de garantía (generada|finalizada)/i,
+  /garantía (validada por soporte|requiere sustitución)/i, /caso devuelto a soporte/i
 ];
 
 /**
@@ -274,6 +277,7 @@ export class LineaTiempoComponent {
       ['Tipo de problema', e.tipoProblema], ['Resolución', e.resolucion],
       ['Corrección', e.correccion], ['Intento de conformidad', e.intentoConformidad],
       ['Reproceso', e.reproceso], ['Origen del reproceso', e.origenReproceso],
+      ['Caso de garantía', e.garantia],
       ['Reportó (Soporte)', e.tecnicoReporta], ['Técnico de Hardware', e.tecnicoHardware],
       ['Encargado que asignó', e.encargadoAsigno], ['Resultado del reproceso', e.resultadoReproceso],
       ['Firma registrada', e.firmaRegistrada], ['Acción tomada', e.accionTomada],

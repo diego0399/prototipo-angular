@@ -240,6 +240,14 @@ import { EvidenciasComponent } from '../../shared/evidencias';
               <dt>Expediente único</dt><dd class="mono">{{ r.expedienteUnico || '—' }}</dd>
               <dt>Equipo</dt><dd>{{ equipoTxt(r) }} · <span class="mono">{{ r.inventario }}</span></dd>
               <dt>Origen del reproceso</dt><dd>{{ origen(r) }}</dd>
+              @if (esGarantia(r)) {
+                <dt>Caso de garantía</dt><dd class="mono">{{ r.casoGarantia }}</dd>
+                <dt>Usuario final</dt><dd>{{ r.usuarioFinal || '—' }}</dd>
+                @if (r.tecnicoSugerido) {
+                  <dt>Técnico sugerido</dt>
+                  <dd>{{ r.tecnicoSugerido }}<div class="sub-cell">{{ r.motivoSugerencia }}</div></dd>
+                }
+              }
               @if (r.origen === 'Inconformidad del usuario final') {
                 <dt>Usuario final</dt><dd>{{ r.usuarioFinal || '—' }}</dd>
                 <dt>Intento de conformidad</dt><dd>#{{ r.intentoConformidad }}</dd>
@@ -325,7 +333,7 @@ import { EvidenciasComponent } from '../../shared/evidencias';
 
             <!-- Checklist dinámico según el tipo de problema, agrupado por secciones -->
             <div class="row-between mt-3" style="align-items: flex-end; gap: 12px;">
-              <div class="sec-title" style="margin: 0;">Checklist de Reproceso F0288 — {{ data.tipoProblemaDeReproceso(r) }}</div>
+              <div class="sec-title" style="margin: 0;">{{ tituloChecklist(r) }}</div>
               <span class="chip">{{ completados(r) }} de {{ r.checklist.length }} completados</span>
             </div>
             @for (g of data.checklistPorSeccion(r); track g.seccion) {
@@ -557,15 +565,18 @@ import { EvidenciasComponent } from '../../shared/evidencias';
 
       <!-- Firma y resultado del reproceso -->
       @if (firmaAbierta() && activo(); as r) {
-        <ui-modal titulo="Firmar reproceso F0288" (cerrar)="firmaAbierta.set(false)">
+        <ui-modal [titulo]="esGarantia(r) ? 'Firmar revisión técnica de garantía' : 'Firmar reproceso F0288'"
+          (cerrar)="firmaAbierta.set(false)">
           <p class="small muted">
-            La firma es lo que cierra el reproceso <b class="mono">{{ r.id }}</b>: deja constancia de quién intervino el equipo.
+            La firma es lo que cierra {{ esGarantia(r) ? 'la revisión' : 'el reproceso' }}
+            <b class="mono">{{ r.id }}</b>: deja constancia de quién intervino el equipo.
+            @if (esGarantia(r)) { El caso de garantía volverá a Soporte para su validación. }
           </p>
           <div class="field mt-2">
             <label>Resultado del reproceso <span class="req">*</span></label>
             <select class="control" [ngModel]="resultado()" (ngModelChange)="resultado.set($event)">
               <option value="">Seleccione…</option>
-              @for (x of resultados; track x) { <option [value]="x">{{ x }}</option> }
+              @for (x of resultadosDe(r); track x) { <option [value]="x">{{ x }}</option> }
             </select>
           </div>
           @if (resultado() && resultado() !== 'Corregido') {
@@ -713,9 +724,30 @@ export class ReprocesosComponent {
    * final esperando con el equipo ya entregado, y termina reenviando el formulario de conformidad.
    */
   protected origen(r: ReprocesoF0288): string {
+    if (r.origen === 'Garantía') return `Garantía · caso ${r.casoGarantia ?? '—'}`;
     return r.origen === 'Inconformidad del usuario final'
       ? `Inconformidad del usuario final${r.intentoConformidad ? ` · intento #${r.intentoConformidad}` : ''}`
       : 'Falla detectada en F0302';
+  }
+
+  /** ¿Es una revisión técnica de garantía? Cambia el vocabulario de la pantalla, no el mecanismo. */
+  protected esGarantia(r: ReprocesoF0288): boolean {
+    return r.origen === 'Garantía';
+  }
+
+  /** Título del checklist según de dónde venga: no es lo mismo un reproceso que una garantía. */
+  protected tituloChecklist(r: ReprocesoF0288): string {
+    return this.esGarantia(r)
+      ? `Checklist de Revisión Técnica de Garantía — ${this.data.tipoProblemaDeReproceso(r)}`
+      : `Checklist de Reproceso F0288 — ${this.data.tipoProblemaDeReproceso(r)}`;
+  }
+
+  /**
+   * «Requiere retorno a Configuración F0302» solo tiene sentido en una garantía: un reproceso por
+   * falla ya vuelve a configuración cuando queda corregido.
+   */
+  protected resultadosDe(r: ReprocesoF0288): ResultadoReproceso[] {
+    return this.esGarantia(r) ? [...this.resultados, 'Requiere retorno a Configuración F0302'] : this.resultados;
   }
 
   /** «CPU» / «Laptop»: el vocabulario del formulario, no el «Desktop» del inventario. */

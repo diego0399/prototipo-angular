@@ -556,3 +556,167 @@ src/app/features/reprocesos-f0288/…         (botón y evidencia por ítem, vis
                                              general como resumen y evidencia adicional)
 src/app/shared/constancia-reproceso.ts      (galería agrupada por ítem)
 ```
+
+---
+
+# Parte 5 — La garantía puede enviar el equipo a revisión técnica de Hardware
+
+**Fecha:** 9 de agosto de 2026, quinta sesión del día (ronda 60 del punto de control)
+**Alcance:** el módulo Garantía, la bandeja de Hardware, el historial técnico, los documentos
+generados y la trazabilidad.
+
+## 1. El paso que faltaba
+
+Un caso de garantía se abría y se cerraba, todo desde Soporte. Si el problema era físico, no había
+forma de mandar el equipo a Hardware sin inventar un reproceso de F0302 que no correspondía.
+
+Ahora hay un paso intermedio: **Soporte clasifica el problema** y el sistema dice a quién le toca.
+
+```text
+Caso abierto → Soporte clasifica → ¿requiere revisión física?
+  Sí → revisión técnica de garantía → Encargado asigna → Hardware revisa, adjunta y firma
+       → Soporte valida → se cierra el caso
+  No → se resuelve en Soporte
+```
+
+## 2. No todo caso va a Hardware
+
+Once problemas exigen mirar el equipo; siete se resuelven sin moverlo de sitio:
+
+```text
+A Hardware    Falla física · Falla de disco · Falla de memoria · Problema de encendido
+              Problema de periféricos · Accesorio con falla · Accesorio faltante
+              Sistema operativo con reparación base o reinstalación · Problema de red física
+              Revisión técnica de preparación · Otro que requiera revisión física
+
+En Soporte    Configuración · Usuario o credenciales · Software adicional · Dominio
+              Agente DLP · IP reservada · Ajuste menor de configuración F0302
+```
+
+El catálogo lleva la nota que explica por qué, y la pantalla la muestra al clasificar.
+
+## 3. Código diferenciado
+
+```text
+Expediente técnico original:      EXP-PT-2026-0095
+Revisión técnica de garantía:     EXP-PT-2026-0095-G1
+```
+
+La `G` la distingue de un reproceso `-R` por falla de F0302, y su correlativo cuenta solo las
+revisiones de garantía: un `-R2` no mueve el número del `-G1`. **No se crea un Expediente técnico
+nuevo**, igual que en el reproceso.
+
+## 4. El técnico se sugiere, no se asigna
+
+```text
+Técnico sugerido: Balmore Mejía
+Motivo: Técnico que preparó originalmente el equipo.
+```
+
+Sale de la preparación F0288 original — es quien más contexto tiene sobre lo que se le hizo al
+equipo. Pero la revisión nace **sin dueño**: la asignación sigue siendo potestad de un Encargado de
+Hardware, de Soporte o del Administrador. El Técnico de Hardware no se autoasigna y el de Soporte
+reporta pero no reparte trabajo de otra unidad.
+
+## 5. Reusa el mecanismo del reproceso, con otro nombre
+
+Checklist dinámico por tipo de problema, evidencia obligatoria adjuntada **desde el ítem** (ronda
+59), firma del Técnico de Hardware y resultado. Lo que cambia es el vocabulario:
+
+```text
+Checklist de Revisión Técnica de Garantía — Falla de disco
+```
+
+Y un resultado más, que solo existe aquí: **Requiere retorno a Configuración F0302**. Un reproceso
+por falla ya vuelve a configuración cuando queda corregido; una garantía no, porque el equipo ya se
+entregó y se aceptó.
+
+## 6. Trece estados técnicos
+
+`estadoRevision` convive con el estado grueso del caso, el mismo reparto que en el F0302 entre
+`estado` y `estadoIncidencia`:
+
+```text
+GARANTIA_ABIERTA → GARANTIA_EN_REVISION_SOPORTE → GARANTIA_REQUIERE_HARDWARE
+→ REVISION_HARDWARE_GARANTIA_PENDIENTE_ASIGNACION → …_ASIGNADA → …_EN_PROCESO
+→ …_FINALIZADA → …_FIRMADA → GARANTIA_PENDIENTE_VALIDACION_SOPORTE
+→ GARANTIA_CORREGIDA / GARANTIA_NO_CORREGIDA / GARANTIA_REQUIERE_SUSTITUCION → GARANTIA_CERRADA
+```
+
+## 7. Soporte valida antes de cerrar
+
+Cuando Hardware firma, el caso **vuelve a Soporte**. Sin validar no se cierra:
+
+```text
+¿La corrección se realizó?              Sí / No
+¿El equipo funciona correctamente?      Sí / No
+¿Revisó la evidencia de Hardware?       Sí / No
+Observación de la validación            (obligatoria)
+```
+
+Quien responde ante el usuario final es Soporte, no el técnico que tocó el equipo. Y si la revisión
+concluyó **Requiere sustitución de equipo**, el caso no se cierra ahí: la decisión es del Encargado.
+
+Un caso que nunca fue a Hardware se cierra como siempre, sin ninguna validación extra.
+
+## 8. Constancia propia
+
+```text
+Constancia de Revisión Técnica de Garantía   ·   CONST-GAR-2026-0001
+```
+
+Con su propio correlativo, y con el código de garantía, el de la revisión, el expediente único, el
+expediente técnico original, el inventario, el usuario final, el tipo de problema, quién reportó,
+quién la atendió, el checklist, las evidencias, el resultado, las observaciones y la firma.
+
+Se ve desde el caso de garantía, el historial técnico, Documentos generados y la trazabilidad.
+
+## 9. Historial y trazabilidad
+
+El historial técnico del equipo estrena un bloque **Garantías y revisiones técnicas**, y los
+reprocesos ahora distinguen su tercer origen. Ocho eventos nuevos —caso revisado por Soporte,
+garantía requiere Hardware, revisión generada, técnico sugerido, revisión finalizada, caso devuelto
+a Soporte, garantía validada, garantía requiere sustitución— con rol, expediente único, expediente
+técnico, tipo de problema y **caso de garantía**, que es un campo nuevo del evento.
+
+## 10. Casos de prueba
+
+**153 casos, 0 fallos**: el reparto de los dieciocho problemas uno por uno, con espejo funcional; la
+clasificación y sus puertas; el técnico sugerido y la reserva de la asignación al Encargado; el
+correlativo `-G` con espejo; los trece estados y en qué paso se pone cada uno; el checklist con su
+título, la evidencia por ítem y la firma; los cinco resultados y su desenlace, con espejo; la
+validación de Soporte y la puerta del cierre, con espejo de cinco escenarios; la constancia y sus
+catorce datos; el historial; los ocho eventos; y que el reproceso por falla, la inconformidad, el
+F0302 y el Expediente único siguen en pie.
+
+Regresiones: las veinticuatro baterías anteriores, **1857 casos, 0 fallos**. Se actualizaron dos
+—rondas 52 y 53— por el título de la constancia, que ahora distingue reproceso de garantía.
+
+## 11. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [6.296 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en diez rutas.
+
+**No hubo clics reales en un navegador**: el flujo completo de garantía —clasificar, generar,
+asignar, revisar, firmar, validar, cerrar— está verificado por código y por espejos, nunca
+ejecutado a mano.
+
+## 12. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (EstadoRevisionGarantia, ValidacionGarantia; origen
+                                             «Garantía», casoGarantia, tecnicoSugerido y
+                                             motivoSugerencia en el reproceso; resultado nuevo;
+                                             tipo de documento nuevo; garantia en el evento)
+src/app/core/services/data.service.ts       (problemasGarantia, garantiaRequiereHardware,
+                                             tecnicoSugeridoGarantia, revisarCasoGarantia,
+                                             generarRevisionGarantia, avanzarRevisionGarantia,
+                                             devolverGarantiaASoporte, validarGarantiaTrasRevision,
+                                             faltaValidacionGarantia, constanciasRevisionGarantia;
+                                             constancia y cierre diferenciados)
+src/app/features/garantia/…                 (clasificar, enviar a Hardware, seguimiento y validación)
+src/app/features/reprocesos-f0288/…         (vocabulario y resultados de la revisión de garantía)
+src/app/features/trazabilidad/…             (bloque de garantías y revisiones técnicas)
+src/app/features/generador-documentos/…     (la constancia nueva en el catálogo)
+src/app/shared/linea-tiempo.ts              (caso de garantía en el detalle; hitos nuevos)
+```

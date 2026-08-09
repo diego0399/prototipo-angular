@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 59)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 60)**.
 
 ---
 
@@ -2631,6 +2631,35 @@ Expediente único.
     * Verificado con `npm run build` limpio (6.302 s, 0 errores), `ng serve` (HTTP 200 en nueve
       rutas) y **99 casos, 0 fallos**, más las veintitrés baterías anteriores (1757 casos, 0
       fallos; se actualizaron las de las rondas 53, 54, 56 y 57). **Sin recorrido manual de clics.**
+60. **La garantía puede enviar el equipo a revisión técnica de Hardware cuando corresponde**
+    (2026-08-09, quinta sesión del día).
+    * Faltaba el paso intermedio: un caso se abría y se cerraba, todo desde Soporte. Ahora
+      **Soporte clasifica el problema** y el sistema dice a quién le toca: **once problemas exigen
+      revisión física** (falla física, disco, memoria, encendido, periféricos, accesorio con falla,
+      accesorio faltante, SO con reparación base, red física, revisión de preparación, otro físico)
+      y **siete se resuelven en Soporte** (configuración, credenciales, software adicional,
+      dominio, Agente DLP, IP reservada, ajuste menor F0302). **No todo caso va a Hardware.**
+    * **Código diferenciado `EXP-PT-2026-0095-G1`**: la `G` la separa del `-R` de un reproceso por
+      falla de F0302 y su correlativo cuenta solo revisiones de garantía. **No se crea un
+      Expediente técnico nuevo.**
+    * **El técnico se sugiere, no se asigna**: sale de la preparación F0288 original («Técnico que
+      preparó originalmente el equipo»), pero la revisión nace sin dueño y la asignación sigue
+      siendo potestad de un Encargado.
+    * **Reusa el mecanismo del reproceso** —checklist dinámico, evidencia por ítem de la ronda 59,
+      firma y resultado— con el título «Checklist de Revisión Técnica de Garantía» y un resultado
+      más que solo existe aquí: **«Requiere retorno a Configuración F0302»**.
+    * **Trece estados técnicos** en `estadoRevision`, que convive con el estado grueso del caso
+      igual que `estadoIncidencia` con `estado` en el F0302.
+    * **Soporte valida antes de cerrar**: corrección, funcionamiento y evidencia, con observación
+      obligatoria. Si la revisión concluyó «Requiere sustitución de equipo», el caso no se cierra
+      ahí: la decisión es del Encargado. Un caso que nunca fue a Hardware se cierra como siempre.
+    * **Constancia de Revisión Técnica de Garantía** con correlativo propio `CONST-GAR-2026-0001`,
+      visible desde el caso, el historial técnico, Documentos generados y la trazabilidad. Ocho
+      eventos nuevos y un campo `garantia` en el evento; el historial estrena el bloque «Garantías
+      y revisiones técnicas».
+    * Verificado con `npm run build` limpio (6.296 s, 0 errores), `ng serve` (HTTP 200 en diez
+      rutas) y **153 casos, 0 fallos**, más las veinticuatro baterías anteriores (1857 casos, 0
+      fallos; se actualizaron las de las rondas 52 y 53). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

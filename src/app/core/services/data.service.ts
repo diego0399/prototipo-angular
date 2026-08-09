@@ -5,11 +5,11 @@ import {
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, ContextoEvidencia, CorreccionNoConformidad, Cronometro, Descargo,
   DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
-  EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
-  TipoComentarioCaso, TipoEvidencia, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, TipoProblemaReproceso, UsuarioSistema, VerificacionAccesorios,
+  TipoComentarioCaso, TipoEvidencia, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, TipoProblemaReproceso, UsuarioSistema, ValidacionGarantia, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
 import { AuthService } from './auth.service';
@@ -4984,6 +4984,7 @@ export class DataService {
       justificacionUnidad: esHardware ? '' : justificacion.trim()
     }));
     this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_ASIGNADO' }));
+    this.avanzarRevisionGarantia(r, 'REVISION_HARDWARE_GARANTIA_ASIGNADA');
     const actualizado = this.reprocesoDe(idReproceso)!;
     this.registrarEvento(r.expediente, usuario, 'Rollback realizado a Hardware', 'Reproceso F0288 asignado',
       `El equipo ${r.inventario} regresa a la Unidad de ${actualizado.unidadAtiende} por ${r.tipoFalla}.`, true,
@@ -5017,6 +5018,7 @@ export class DataService {
         fechaFin: '', horaFin: '', finalizadoPor: '', duracionMinutos: null }
     }));
     this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_EN_PROCESO' }));
+    this.avanzarRevisionGarantia(r, 'REVISION_HARDWARE_GARANTIA_EN_PROCESO');
     this.registrarEvento(r.expediente, usuario, 'Reproceso F0288 iniciado', 'Reproceso F0288 en proceso',
       `${r.id} sobre el Expediente técnico ${r.expedienteTecnico} (${r.unidadAtiende}). Checklist de Reproceso F0288 según «${r.tipoFalla}».`,
       true, { ...this.refReproceso(r), tecnicoHardware: r.tecnicoAsignado || usuario,
@@ -5279,6 +5281,7 @@ export class DataService {
       atendidoPor: x.atendidoPor || usuario
     }));
     this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_FINALIZADO' }));
+    this.avanzarRevisionGarantia(r, 'REVISION_HARDWARE_GARANTIA_FINALIZADA');
     const tiempo = this.formatoDuracion(crono?.duracionMinutos ?? null);
     this.registrarEvento(r.expediente, usuario, 'Checklist de reproceso completado', 'Reproceso F0288 finalizado',
       r.checklist.map((i) => `${i.nombre}: ${this.etiquetaItemReproceso(i)}`).join(' · '), false,
@@ -5321,7 +5324,11 @@ export class DataService {
       fecha: this.hoy(), hora: this.hora(),
       firma: `Firmado electrónicamente (simulado) por ${firmante}`
     };
-    const estadoReproceso = resultado === 'Corregido' ? 'Firmado' as const : 'No corregido' as const;
+    // «Requiere retorno a Configuración F0302» solo existe en las garantías, y ahí es un desenlace
+    // resuelto: Hardware terminó, lo que falta es que Soporte valide la configuración.
+    const resuelto = resultado === 'Corregido'
+      || (r.origen === 'Garantía' && resultado === 'Requiere retorno a Configuración F0302');
+    const estadoReproceso = resuelto ? 'Firmado' as const : 'No corregido' as const;
     this.actualizarReproceso(idReproceso, (x) => ({
       ...x, firma, resultado, observacionResultado: observacionResultado.trim(), estado: estadoReproceso
     }));
@@ -5338,6 +5345,13 @@ export class DataService {
     // de conformidad: quien responde por lo que se le hizo al equipo es quien lo firmó.
     const inconformidad = this.correccionDeReproceso(idReproceso);
     if (inconformidad) this.cerrarCorreccionPorReproceso(inconformidad, firmado, usuario);
+
+    // Una revisión de garantía no toca la incidencia del F0302: vuelve a Soporte, que valida lo
+    // que Hardware hizo y decide si el caso se cierra.
+    if (r.origen === 'Garantía') {
+      this.devolverGarantiaASoporte(firmado, usuario);
+      return null;
+    }
 
     // El resultado decide el desenlace: solo «Corregido» devuelve el equipo a configuración.
     if (resultado === 'Corregido') {
@@ -5364,17 +5378,57 @@ export class DataService {
   }
 
   /**
+   * Cierra el paso de Hardware en una garantía: el caso vuelve a Soporte con el resultado que la
+   * revisión dejó. Aquí no se cierra ninguna garantía —eso lo hace Soporte tras validar—, solo se
+   * deja el caso en el estado que corresponde a lo que Hardware encontró.
+   */
+  private devolverGarantiaASoporte(r: ReprocesoF0288, usuario: string): void {
+    const par = this.casoDeRevisionGarantia(r);
+    if (!par) return;
+    const { garantia: g, caso } = par;
+    const sustitucion = r.resultado === 'Requiere sustitución de equipo';
+    this.actualizarCasoGarantia(g.expediente, caso.codigo, (c) => ({
+      ...c, estadoRevision: sustitucion ? 'GARANTIA_REQUIERE_SUSTITUCION' : 'GARANTIA_PENDIENTE_VALIDACION_SOPORTE'
+    }));
+    const actualizado = this.garantiaDe(g.expediente)!.casos.find((c) => c.codigo === caso.codigo)!;
+    const ref = { ...this.refGarantia(g, actualizado), rol: this.rolDeUsuario(usuario),
+      reproceso: r.id, resultadoReproceso: r.resultado, firmaRegistrada: 'Sí' };
+    this.registrarEvento(g.expediente, usuario, 'Revisión técnica de garantía finalizada',
+      'Revisión de garantía firmada',
+      `${r.id} · Resultado: ${r.resultado}. ${r.observacionResultado || r.correccionTecnica}`, true,
+      { ...ref, accionTomada: 'Revisión técnica de garantía firmada' });
+    this.registrarEvento(g.expediente, usuario, 'Caso devuelto a Soporte',
+      sustitucion ? 'Garantía requiere sustitución' : 'Garantía pendiente de validación de Soporte',
+      sustitucion
+        ? 'La revisión concluyó que el equipo requiere sustitución: la decisión es del Encargado.'
+        : 'Soporte debe validar la corrección, el funcionamiento y la evidencia antes de cerrar el caso.',
+      true, { ...ref, accionTomada: sustitucion ? 'Decisión del Encargado' : 'Validación de Soporte' });
+    if (sustitucion) {
+      this.registrarEvento(g.expediente, usuario, 'Garantía requiere sustitución',
+        'Garantía requiere sustitución', r.observacionResultado, true,
+        { ...ref, accionTomada: 'Sustitución del equipo por garantía' });
+    }
+  }
+
+  /**
    * Devuelve el equipo a Configuración F0302 tras el reproceso: habilita el nuevo intento. Exige
    * la firma —es la regla de «no cerrar sin firma»— y que el resultado haya sido «Corregido».
    */
   devolverAConfiguracionF0302(idReproceso: string, usuario: string): string | null {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    // Una revisión de garantía solo vuelve a configuración si su resultado lo pidió: el equipo ya
+    // fue entregado y aceptado, y reabrir el F0302 sin motivo desharía ese cierre.
+    if (r.origen === 'Garantía' && r.resultado !== 'Requiere retorno a Configuración F0302') {
+      return 'Esta revisión es de garantía: el caso vuelve a Soporte para su validación, no a Configuración F0302.';
+    }
     if (r.estado === 'Pendiente de asignación' || r.estado === 'Asignado' || r.estado === 'En proceso') {
       return 'Finalice el reproceso F0288 antes de devolver el equipo a Configuración F0302.';
     }
     if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
-    if (r.resultado !== 'Corregido') {
+    const habilita = r.resultado === 'Corregido'
+      || (r.origen === 'Garantía' && r.resultado === 'Requiere retorno a Configuración F0302');
+    if (!habilita) {
       return `El reproceso cerró como «${r.resultado}»: el equipo no puede volver a Configuración F0302 hasta que el Encargado lo resuelva.`;
     }
     // Un reproceso por inconformidad no reabre el ciclo de configuración: el equipo ya se entregó.
@@ -5415,19 +5469,26 @@ export class DataService {
     if (!r.firma) return 'Debe registrar la firma del Técnico de Hardware para finalizar el reproceso.';
     const eq = this.equipoDe(r.inventario);
     const doc = this.constanciaDeReproceso(r.id);
+    const garantia = this.casoDeRevisionGarantia(r);
     return [
       'SISGOST · Centro Nacional de Registros',
-      'Constancia de Reproceso F0288',
+      garantia ? 'Constancia de Revisión Técnica de Garantía' : 'Constancia de Reproceso F0288',
       '='.repeat(60),
       `Documento: ${doc?.codigo ?? 'Pendiente de generar'} · Estado: ${doc?.estado ?? 'Pendiente de firma'}`,
-      `Código del reproceso: ${r.id}`,
+      ...(garantia
+        ? [`Código de garantía: ${garantia.caso.codigo}`,
+          `Código de la revisión técnica de garantía: ${r.id}`,
+          `Usuario final: ${garantia.garantia.usuarioFinal}`]
+        : [`Código del reproceso: ${r.id}`]),
       `Expediente técnico original: ${r.expedienteTecnico}`,
       `Expediente único: ${r.expedienteUnico || '—'}`,
       `Equipo: ${eq ? `${eq.marca} ${eq.modelo}` : '—'}`,
       `Tipo de equipo: ${eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—'}`,
       `Número de inventario: ${r.inventario}`,
-      `Tipo de falla reportada en F0302: ${r.tipoFalla}`,
-      `Tipo de problema del reproceso: ${this.tipoProblemaDeReproceso(r)}`,
+      ...(garantia
+        ? [`Tipo de problema reportado en garantía: ${garantia.caso.tipoProblema ?? r.tipoFalla}`]
+        : [`Tipo de falla reportada en F0302: ${r.tipoFalla}`]),
+      `Tipo de problema del ${garantia ? 'checklist' : 'reproceso'}: ${this.tipoProblemaDeReproceso(r)}`,
       `Descripción de la falla: ${r.motivo}`,
       `Reportada por: ${r.solicitadoPor} · ${r.fechaSolicitud} ${r.horaSolicitud}`,
       `Observación de Soporte: ${r.observacionSoporte || '—'}`,
@@ -5437,7 +5498,7 @@ export class DataService {
       '',
       // Solo el checklist del tipo de problema atendido, agrupado en sus secciones: el reproceso
       // no llevó otros ítems y se lee en el mismo orden en que se trabajó.
-      `CHECKLIST DE REPROCESO F0288 — ${this.tipoProblemaDeReproceso(r)}`,
+      `${garantia ? 'CHECKLIST DE REVISIÓN TÉCNICA DE GARANTÍA' : 'CHECKLIST DE REPROCESO F0288'} — ${this.tipoProblemaDeReproceso(r)}`,
       '-'.repeat(60),
       ...this.checklistPorSeccion(r).flatMap((g) => [
         `  ${g.seccion.toUpperCase()}`,
@@ -5489,7 +5550,8 @@ export class DataService {
 
   /** Constancia ya generada de un reproceso, si existe. */
   constanciaDeReproceso(idReproceso: string): DocumentoGenerado | undefined {
-    return this.documentos().find((d) => d.tipo === 'Constancia de reproceso F0288' && d.reproceso === idReproceso);
+    return this.documentos().find((d) => d.reproceso === idReproceso
+      && (d.tipo === 'Constancia de reproceso F0288' || d.tipo === 'Constancia de Revisión Técnica de Garantía'));
   }
   /** Todas las constancias de reproceso, de la más reciente a la más antigua. */
   constanciasReproceso(): DocumentoGenerado[] {
@@ -5497,9 +5559,16 @@ export class DataService {
       .filter((d) => d.tipo === 'Constancia de reproceso F0288')
       .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`));
   }
-  /** Constancias de los reprocesos de un equipo, para el historial técnico. */
+  /** Constancias de revisión técnica de garantía, de la más reciente a la más antigua. */
+  constanciasRevisionGarantia(): DocumentoGenerado[] {
+    return this.documentos()
+      .filter((d) => d.tipo === 'Constancia de Revisión Técnica de Garantía')
+      .sort((a, b) => `${b.fecha} ${b.hora ?? ''}`.localeCompare(`${a.fecha} ${a.hora ?? ''}`));
+  }
+  /** Constancias de los reprocesos y revisiones de garantía de un equipo, para el historial técnico. */
   constanciasDeEquipo(inventario: string): DocumentoGenerado[] {
-    return this.constanciasReproceso().filter((d) => d.inventario === inventario);
+    return [...this.constanciasReproceso(), ...this.constanciasRevisionGarantia()]
+      .filter((d) => d.inventario === inventario);
   }
 
   /**
@@ -5515,11 +5584,18 @@ export class DataService {
     if (!r?.firma) return undefined;
     const existente = this.constanciaDeReproceso(r.id);
     if (existente) return existente;
+    // La revisión de garantía usa el mismo mecanismo pero es otro documento: su nombre y su
+    // correlativo la distinguen de la constancia de un reproceso por falla de F0302.
+    const deGarantia = r.origen === 'Garantía';
     const doc: DocumentoGenerado = {
-      tipo: 'Constancia de reproceso F0288',
-      codigo: this.siguienteCodigoPorAnio(`CONST-REP-${this.anioActual()}-`,
-        this.constanciasReproceso().map((d) => d.codigo ?? '')),
+      tipo: deGarantia ? 'Constancia de Revisión Técnica de Garantía' : 'Constancia de reproceso F0288',
+      codigo: deGarantia
+        ? this.siguienteCodigoPorAnio(`CONST-GAR-${this.anioActual()}-`,
+          this.constanciasRevisionGarantia().map((d) => d.codigo ?? ''))
+        : this.siguienteCodigoPorAnio(`CONST-REP-${this.anioActual()}-`,
+          this.constanciasReproceso().map((d) => d.codigo ?? '')),
       expediente: r.expediente, reproceso: r.id, expedienteTecnico: r.expedienteTecnico,
+      casoGarantia: r.casoGarantia, usuarioFinal: r.usuarioFinal,
       inventario: r.inventario, tecnicoHardware: r.tecnicoAsignado || r.atendidoPor,
       resultado: r.resultado || '', estado: 'Disponible para consulta',
       // Qué imágenes respaldaban el reproceso al firmarlo: el documento debe decir qué certificó.
@@ -5527,8 +5603,11 @@ export class DataService {
       generadoPor: usuario, fecha: this.hoy(), hora: this.hora(), hash: this.hash()
     };
     this.documentos.update((list) => [...list, doc]);
-    const ref = { ...this.refReproceso(r), documento: doc.codigo, accionTomada: 'Constancia de Reproceso F0288' };
-    this.registrarEvento(r.expediente, usuario, 'Constancia de reproceso generada', 'Reproceso F0288 firmado',
+    const ref = { ...this.refReproceso(r), documento: doc.codigo, garantia: r.casoGarantia,
+      accionTomada: deGarantia ? 'Constancia de Revisión Técnica de Garantía' : 'Constancia de Reproceso F0288' };
+    this.registrarEvento(r.expediente, usuario,
+      deGarantia ? 'Constancia de Revisión Técnica de Garantía generada' : 'Constancia de reproceso generada',
+      'Reproceso F0288 firmado',
       `${doc.codigo} — constancia del reproceso ${r.id} sobre el Expediente técnico ${r.expedienteTecnico}.`,
       false, { ...ref, estadoDocumento: 'Generado' });
     this.registrarEvento(r.expediente, usuario, 'Constancia de reproceso firmada', 'Reproceso F0288 firmado',
@@ -6809,12 +6888,320 @@ export class DataService {
     return null;
   }
 
+  // ---------- Revisión técnica de garantía ----------
+
+  /**
+   * Problemas con los que Soporte clasifica un caso de garantía, y quién los atiende. Los que
+   * exigen mirar el equipo van a Hardware; los de configuración, cuentas o software los resuelve
+   * Soporte sin mover el equipo de sitio. **No todo caso de garantía genera una revisión técnica.**
+   *
+   * El tipo de problema del reproceso es el que arma el checklist: la revisión de garantía reusa
+   * el mismo mecanismo que el Reproceso F0288, con otro nombre y otro código.
+   */
+  readonly problemasGarantia: {
+    nombre: string; hardware: boolean; tipoProblema: TipoProblemaReproceso; nota: string;
+  }[] = [
+    { nombre: 'Falla física del equipo', hardware: true, tipoProblema: 'Falla física del equipo',
+      nota: 'Requiere inspección física: lo revisa Hardware.' },
+    { nombre: 'Falla de disco', hardware: true, tipoProblema: 'Falla de disco',
+      nota: 'Diagnóstico y posible sustitución del disco: lo revisa Hardware.' },
+    { nombre: 'Falla de memoria', hardware: true, tipoProblema: 'Falla de memoria',
+      nota: 'Diagnóstico y posible sustitución de memoria: lo revisa Hardware.' },
+    { nombre: 'Problema de encendido', hardware: true, tipoProblema: 'Problema de encendido',
+      nota: 'El equipo no enciende o enciende mal: lo revisa Hardware.' },
+    { nombre: 'Problema de periféricos', hardware: true, tipoProblema: 'Problema de periféricos',
+      nota: 'Revisión o sustitución del periférico: lo revisa Hardware.' },
+    { nombre: 'Accesorio con falla', hardware: true, tipoProblema: 'Problema de periféricos',
+      nota: 'El accesorio existe pero no funciona: lo revisa Hardware.' },
+    { nombre: 'Accesorio faltante', hardware: true, tipoProblema: 'Accesorio faltante',
+      nota: 'Reposición y asociación del accesorio: lo atiende Hardware.' },
+    { nombre: 'Problema de sistema operativo que requiere reparación base o reinstalación',
+      hardware: true, tipoProblema: 'Problema de sistema operativo',
+      nota: 'Reparación base o reinstalación: lo atiende Hardware.' },
+    { nombre: 'Problema de red física', hardware: true, tipoProblema: 'Problema de red física',
+      nota: 'Adaptador, cableado o punto de red: lo revisa Hardware.' },
+    { nombre: 'Revisión técnica de preparación', hardware: true, tipoProblema: 'Otro',
+      nota: 'Revisión de lo hecho en la preparación original: lo revisa Hardware.' },
+    { nombre: 'Otro problema que requiera revisión física del equipo', hardware: true, tipoProblema: 'Otro',
+      nota: 'Describa lo que Hardware debe revisar en el equipo.' },
+    { nombre: 'Problema de configuración', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Problema de usuario o credenciales', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Problema de software adicional', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Problema de dominio', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Problema de Agente DLP', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Problema de IP reservada', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' },
+    { nombre: 'Ajuste menor de configuración F0302', hardware: false, tipoProblema: 'Otro',
+      nota: 'Se resuelve en Soporte: no requiere revisión física del equipo.' }
+  ];
+
+  /**
+   * Tipo de falla equivalente a un problema de checklist. Es la inversa de `tipoProblemaDeFalla`:
+   * el reproceso guarda un `tipoFalla` aunque no venga de una falla de F0302, y el historial lo lee.
+   */
+  private fallaEquivalenteDeProblema(tipo: TipoProblemaReproceso): TipoFallaF0302 {
+    switch (tipo) {
+      case 'Accesorio faltante': return 'Accesorio faltante';
+      case 'Falla de disco': return 'Falla de disco';
+      case 'Falla de memoria': return 'Falla de memoria';
+      case 'Problema de sistema operativo': return 'Problema de sistema operativo';
+      case 'Problema de red física': return 'Problema de red';
+      // Encendido y periféricos no tienen falla propia en el F0302: son físicos del equipo.
+      case 'Falla física del equipo':
+      case 'Problema de encendido':
+      case 'Problema de periféricos': return 'Falla física del equipo';
+      default: return 'Otro';
+    }
+  }
+
+  /** ¿El problema clasificado exige que Hardware mire el equipo? */
+  garantiaRequiereHardware(problema: string): boolean {
+    return this.problemasGarantia.find((p) => p.nombre === problema)?.hardware ?? false;
+  }
+
+  /** Nota que explica a quién le toca el problema clasificado. */
+  notaProblemaGarantia(problema: string): string {
+    return this.problemasGarantia.find((p) => p.nombre === problema)?.nota ?? '';
+  }
+
+  /**
+   * Técnico de Hardware que preparó originalmente el equipo. Es el que más contexto tiene sobre lo
+   * que se le hizo, así que se propone primero — **propone, no asigna**: la asignación sigue siendo
+   * potestad de un Encargado.
+   */
+  tecnicoSugeridoGarantia(inventario: string): { tecnico: string; motivo: string } | undefined {
+    const tec = this.expTecnicoDeEquipo(inventario);
+    const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
+    const nombre = (prep?.tecnico ?? '').trim();
+    if (!nombre) return undefined;
+    return { tecnico: nombre, motivo: 'Técnico que preparó originalmente el equipo.' };
+  }
+
+  /** Revisiones técnicas de garantía de un Expediente técnico, para numerar la siguiente. */
+  revisionesGarantiaDeExpTecnico(codigoTec: string): ReprocesoF0288[] {
+    return this.reprocesosDeExpTecnico(codigoTec).filter((r) => r.origen === 'Garantía');
+  }
+
+  /** Revisión técnica de garantía de un caso, si se generó. */
+  revisionDeCasoGarantia(codigoCaso: string): ReprocesoF0288 | undefined {
+    return this.reprocesos().find((r) => r.origen === 'Garantía' && r.casoGarantia === codigoCaso);
+  }
+
+  /** Casos de garantía con revisión técnica abierta o cerrada, para el historial del equipo. */
+  casosGarantiaDeEquipo(inventario: string): { garantia: Garantia; caso: CasoGarantia }[] {
+    return this.garantiasDeEquipo(inventario)
+      .flatMap((g) => g.casos.map((caso) => ({ garantia: g, caso })));
+  }
+
+  private actualizarCasoGarantia(id: string, codigoCaso: string,
+    cambio: (c: CasoGarantia) => CasoGarantia): void {
+    this.garantias.update((list) => list.map((g) => (g.expediente === id
+      ? { ...g, casos: g.casos.map((c) => (c.codigo === codigoCaso ? cambio(c) : c)) } : g)));
+  }
+
+  /** Referencia común de los eventos de un caso de garantía. */
+  private refGarantia(g: Garantia, c: CasoGarantia): Partial<EventoTrazabilidad> {
+    return {
+      modulo: 'Servicio de garantía', inventario: g.inventario, usuarioFinal: g.usuarioFinal,
+      expedienteUnico: this.expedienteUnicoDe(g.expediente)?.codigoUnico,
+      expedienteTecnico: this.expTecnicoDeEquipo(g.inventario)?.codigo,
+      tipoProblema: c.tipoProblema, garantia: c.codigo
+    };
+  }
+
+  /**
+   * Soporte clasifica el caso: deja escrito qué problema es y, con eso, si le toca a Hardware o se
+   * resuelve aquí. Es el paso que faltaba entre abrir el caso y cerrarlo.
+   */
+  revisarCasoGarantia(id: string, codigoCaso: string, problema: string, usuario: string): string | null {
+    const g = this.garantiaDe(id);
+    const caso = g?.casos.find((c) => c.codigo === codigoCaso);
+    if (!g || !caso) return 'No se encontró el caso de garantía indicado.';
+    if (this.garantiaVencida(g)) return 'La garantía de este expediente está vencida.';
+    if (caso.estado === 'Cerrado' || caso.estado === 'Resuelto') return 'Este caso de garantía ya está cerrado.';
+    if (!problema.trim()) return 'Seleccione el tipo de problema del caso de garantía.';
+    if (!this.problemasGarantia.some((p) => p.nombre === problema)) {
+      return 'El tipo de problema indicado no está en el catálogo de garantía.';
+    }
+    const hardware = this.garantiaRequiereHardware(problema);
+    this.actualizarCasoGarantia(id, codigoCaso, (c) => ({
+      ...c, tipoProblema: problema, estado: 'En revisión',
+      estadoRevision: hardware ? 'GARANTIA_REQUIERE_HARDWARE' : 'GARANTIA_EN_REVISION_SOPORTE'
+    }));
+    const actualizado = this.garantiaDe(id)!.casos.find((c) => c.codigo === codigoCaso)!;
+    this.registrarEvento(id, usuario, 'Caso de garantía revisado por Soporte',
+      hardware ? 'Garantía requiere revisión de Hardware' : 'Garantía en revisión de Soporte',
+      `${problema}. ${this.notaProblemaGarantia(problema)}`, true,
+      { ...this.refGarantia(g, actualizado), rol: this.rolDeUsuario(usuario),
+        accionTomada: hardware ? 'Clasificado para revisión de Hardware' : 'Se resuelve en Soporte' });
+    if (hardware) {
+      this.registrarEvento(id, usuario, 'Garantía requiere revisión de Hardware',
+        'Garantía requiere revisión de Hardware',
+        'El problema exige revisión física del equipo: genere la revisión técnica de garantía.', true,
+        { ...this.refGarantia(g, actualizado), rol: this.rolDeUsuario(usuario),
+          accionTomada: 'Pendiente de generar la revisión técnica' });
+    }
+    return null;
+  }
+
+  /**
+   * Genera la revisión técnica de garantía sobre el Expediente técnico que el equipo ya tiene. Es
+   * el mismo mecanismo del reproceso —checklist por tipo de problema, asignación del Encargado,
+   * evidencia por ítem y firma— con un código propio `…-G1` que la distingue de un reproceso por
+   * falla de F0302. **No se crea un Expediente técnico nuevo.**
+   */
+  generarRevisionGarantia(id: string, codigoCaso: string, usuario: string,
+    observacion = ''): ReprocesoF0288 | string {
+    const g = this.garantiaDe(id);
+    const caso = g?.casos.find((c) => c.codigo === codigoCaso);
+    if (!g || !caso) return 'No se encontró el caso de garantía indicado.';
+    if (this.garantiaVencida(g)) return 'La garantía de este expediente está vencida.';
+    if (caso.estado === 'Cerrado' || caso.estado === 'Resuelto') return 'Este caso de garantía ya está cerrado.';
+    if (!caso.tipoProblema) return 'Clasifique el problema del caso antes de enviarlo a revisión de Hardware.';
+    if (!this.garantiaRequiereHardware(caso.tipoProblema)) {
+      return `«${caso.tipoProblema}» se resuelve en Soporte: no requiere revisión técnica de Hardware.`;
+    }
+    if (caso.revisionId) return `Este caso ya tiene la revisión técnica ${caso.revisionId}.`;
+    const tecnico = this.expTecnicoDeEquipo(g.inventario)?.codigo ?? g.inventario;
+    const numero = Math.max(0, ...this.revisionesGarantiaDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
+    const problema = this.problemasGarantia.find((p) => p.nombre === caso.tipoProblema)!;
+    const sugerido = this.tecnicoSugeridoGarantia(g.inventario);
+    const revision: ReprocesoF0288 = {
+      id: `${tecnico}-G${numero}`, expedienteTecnico: tecnico, expediente: g.expediente,
+      expedienteUnico: this.expedienteUnicoDe(g.expediente)?.codigoUnico ?? '',
+      inventario: g.inventario, numero,
+      origen: 'Garantía', casoGarantia: caso.codigo,
+      tecnicoSugerido: sugerido?.tecnico, motivoSugerencia: sugerido?.motivo,
+      usuarioFinal: g.usuarioFinal,
+      tipoFalla: this.fallaEquivalenteDeProblema(problema.tipoProblema),
+      motivo: `Garantía ${caso.codigo} — ${caso.tipoProblema}: ${caso.descripcion}`,
+      // El equipo ya está con el usuario final: una garantía no espera turno.
+      prioridad: 'Alta',
+      unidadAtiende: 'Hardware', justificacionUnidad: '',
+      solicitadoPor: usuario, observacionSoporte: observacion.trim() || caso.descripcion,
+      evidenciaSoporte: this.evid.de('Garantía', caso.codigo).map((e) => e.archivo).join(', '),
+      fechaSolicitud: this.hoy(), horaSolicitud: this.hora(),
+      // Nace sin dueño: la asignación es potestad de un Encargado, nunca automática.
+      tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
+      justificacionReprocesoSimultaneo: '',
+      atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
+      tipoProblema: problema.tipoProblema,
+      checklist: this.checklistReproceso(problema.tipoProblema), evidencias: [], correccionTecnica: '',
+      observaciones: '', firma: undefined, resultado: '', observacionResultado: '',
+      estado: 'Pendiente de asignación'
+    };
+    this.reprocesos.update((list) => [revision, ...list]);
+    this.actualizarCasoGarantia(id, codigoCaso, (c) => ({
+      ...c, revisionId: revision.id, estado: 'En revisión',
+      estadoRevision: 'REVISION_HARDWARE_GARANTIA_PENDIENTE_ASIGNACION'
+    }));
+    const actualizado = this.garantiaDe(id)!.casos.find((c) => c.codigo === codigoCaso)!;
+    const ref = { ...this.refGarantia(g, actualizado), rol: this.rolDeUsuario(usuario), reproceso: revision.id };
+    this.registrarEvento(id, usuario, 'Revisión técnica de garantía generada',
+      'Revisión de garantía pendiente de asignación',
+      `${revision.id} — revisión #${numero} del Expediente técnico ${tecnico}. No se crea un Expediente técnico nuevo.`,
+      true, { ...ref, accionTomada: 'Revisión técnica de garantía dentro del mismo Expediente técnico' });
+    if (sugerido) {
+      this.registrarEvento(id, usuario, 'Técnico de Hardware sugerido',
+        'Revisión de garantía pendiente de asignación',
+        `${sugerido.tecnico} — ${sugerido.motivo} La asignación la hace un Encargado.`, false,
+        { ...ref, tecnicoHardware: sugerido.tecnico, accionTomada: 'Sugerencia del sistema' });
+    }
+    this.registrarEvento(id, usuario, 'Revisión de garantía pendiente de asignación por Encargado',
+      'Revisión de garantía pendiente de asignación',
+      'El Técnico de Soporte reporta; la asignación a Hardware la hace un Encargado.', true,
+      { ...ref, encargadoAsigno: 'Pendiente de asignación', tecnicoHardware: 'Sin asignar',
+        accionTomada: 'Pendiente de asignación por Encargado' });
+    return revision;
+  }
+
+  /** Caso de garantía al que pertenece una revisión técnica, si lo hay. */
+  casoDeRevisionGarantia(r: ReprocesoF0288): { garantia: Garantia; caso: CasoGarantia } | undefined {
+    if (r.origen !== 'Garantía' || !r.casoGarantia) return undefined;
+    const g = this.garantiaDe(r.expediente);
+    const caso = g?.casos.find((c) => c.codigo === r.casoGarantia);
+    return g && caso ? { garantia: g, caso } : undefined;
+  }
+
+  /** Mueve el estado técnico del caso cuando su revisión avanza. */
+  private avanzarRevisionGarantia(r: ReprocesoF0288, estado: EstadoRevisionGarantia): void {
+    const par = this.casoDeRevisionGarantia(r);
+    if (!par) return;
+    this.actualizarCasoGarantia(par.garantia.expediente, par.caso.codigo, (c) => ({ ...c, estadoRevision: estado }));
+  }
+
+  /**
+   * Soporte valida lo que Hardware devolvió: la corrección, el funcionamiento del equipo y la
+   * evidencia. Sin esta validación el caso no se cierra — quien responde ante el usuario final es
+   * Soporte, no el técnico que tocó el equipo.
+   */
+  validarGarantiaTrasRevision(id: string, codigoCaso: string, datos: {
+    correccionRealizada: RespuestaSiNo; equipoFunciona: RespuestaSiNo;
+    evidenciaRevisada: RespuestaSiNo; observacion: string;
+  }, usuario: string): string | null {
+    const g = this.garantiaDe(id);
+    const caso = g?.casos.find((c) => c.codigo === codigoCaso);
+    if (!g || !caso) return 'No se encontró el caso de garantía indicado.';
+    const revision = caso.revisionId ? this.reprocesoDe(caso.revisionId) : undefined;
+    if (!revision) return 'Este caso no tiene una revisión técnica de garantía que validar.';
+    if (!revision.firma) return 'Espere la firma del Técnico de Hardware antes de validar la revisión.';
+    if (!datos.correccionRealizada) return 'Indique si la corrección se realizó.';
+    if (!datos.equipoFunciona) return 'Indique si el equipo funciona correctamente.';
+    if (!datos.evidenciaRevisada) return 'Confirme que revisó la evidencia adjuntada por Hardware.';
+    if (!datos.observacion.trim()) return 'Registre la observación de la validación del caso.';
+    const validacion: ValidacionGarantia = {
+      correccionRealizada: datos.correccionRealizada, equipoFunciona: datos.equipoFunciona,
+      evidenciaRevisada: datos.evidenciaRevisada, observacion: datos.observacion.trim(),
+      validadoPor: usuario, fecha: this.hoy(), hora: this.hora()
+    };
+    const conforme = datos.correccionRealizada === 'Sí' && datos.equipoFunciona === 'Sí';
+    this.actualizarCasoGarantia(id, codigoCaso, (c) => ({
+      ...c, validacionSoporte: validacion,
+      estadoRevision: conforme ? 'GARANTIA_CORREGIDA' : 'GARANTIA_NO_CORREGIDA'
+    }));
+    const actualizado = this.garantiaDe(id)!.casos.find((c) => c.codigo === codigoCaso)!;
+    this.registrarEvento(id, usuario, 'Garantía validada por Soporte',
+      conforme ? 'Garantía corregida' : 'Garantía no corregida',
+      `Corrección: ${datos.correccionRealizada} · Equipo funciona: ${datos.equipoFunciona}`
+        + ` · Evidencia revisada: ${datos.evidenciaRevisada}. ${validacion.observacion}`, true,
+      { ...this.refGarantia(g, actualizado), rol: this.rolDeUsuario(usuario), reproceso: revision.id,
+        resultadoReproceso: revision.resultado,
+        accionTomada: conforme ? 'Validación conforme: el caso puede cerrarse' : 'Validación no conforme' });
+    return null;
+  }
+
+  /** Lo que impide cerrar el caso cuando pasó por Hardware; null si ya se puede cerrar. */
+  faltaValidacionGarantia(caso: CasoGarantia): string | null {
+    if (!caso.revisionId) return null;
+    const revision = this.reprocesoDe(caso.revisionId);
+    if (!revision) return null;
+    if (!revision.firma) {
+      return `La revisión técnica ${revision.id} todavía no tiene la firma del Técnico de Hardware.`;
+    }
+    if (revision.resultado === 'Requiere sustitución de equipo') {
+      return `La revisión ${revision.id} concluyó que el equipo requiere sustitución: la decisión es del Encargado, el caso no se cierra aquí.`;
+    }
+    if (!caso.validacionSoporte) {
+      return `Valide el resultado de la revisión técnica ${revision.id} antes de cerrar el caso de garantía.`;
+    }
+    return null;
+  }
+
   /**
    * Cierra un caso de garantía. Ningún caso se cierra sin imagen: el resultado dice qué se
    * concluyó, y la imagen es lo que lo respalda ante el usuario final.
    */
   cerrarCasoGarantia(id: string, codigoCaso: string, resultado: string, evidencia: string, usuario: string): string | null {
     const inventario = this.garantiaDe(id)?.inventario;
+    // Un caso que pasó por Hardware no lo cierra Hardware: vuelve a Soporte, que valida y cierra.
+    const caso = this.garantiaDe(id)?.casos.find((c) => c.codigo === codigoCaso);
+    const sinValidar = caso ? this.faltaValidacionGarantia(caso) : null;
+    if (sinValidar) return sinValidar;
     const sinImagen = this.exigirEvidencia('Garantía', codigoCaso, id, usuario, inventario);
     if (sinImagen) return sinImagen;
     const imagenes = this.evid.de('Garantía', codigoCaso);
@@ -6834,8 +7221,12 @@ export class DataService {
         return { ...g, casos, estado: abiertos ? 'Caso abierto' : (vencida ? 'Vencida' : 'Vigente') };
       })
     );
+    if (caso?.revisionId) {
+      this.actualizarCasoGarantia(id, codigoCaso, (c) => ({ ...c, estadoRevision: 'GARANTIA_CERRADA' }));
+    }
     this.registrarEvento(id, usuario, `Caso de garantía ${codigoCaso} cerrado`, 'Cerrado', resultado, false,
-      { modulo: 'Servicio de garantía', estadoAnterior: 'Caso abierto', inventario });
+      { modulo: 'Servicio de garantía', estadoAnterior: 'Caso abierto', inventario,
+        rol: this.rolDeUsuario(usuario), garantia: codigoCaso });
     this.registrarCierreConEvidencia('Garantía', codigoCaso, id, usuario, inventario);
     return null;
   }

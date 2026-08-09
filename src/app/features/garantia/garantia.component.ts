@@ -1,11 +1,13 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { CasoGarantia, Garantia, TipoComentarioCaso } from '../../core/models/models';
+import {
+  CasoGarantia, Garantia, ReprocesoF0288, RespuestaSiNo, TipoComentarioCaso
+} from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { EvidenciasComponent } from '../../shared/evidencias';
 
@@ -16,7 +18,7 @@ import { EvidenciasComponent } from '../../shared/evidencias';
  */
 @Component({
   selector: 'app-garantia',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent],
   styles: `
     .exp-cod { font-family: var(--font-mono, monospace); font-size: 12.5px; font-weight: 700; color: var(--navy-900); }
     .caso { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-top: 10px; }
@@ -213,7 +215,89 @@ import { EvidenciasComponent } from '../../shared/evidencias';
                   }
                 </div>
 
+                <!-- Revisión técnica de Hardware: no todo caso de garantía la necesita. Soporte
+                     clasifica el problema y el sistema dice a quién le toca. -->
                 @if ((c.estado === 'Abierto' || c.estado === 'En revisión') && !vencida(g) && !esTecHardware()) {
+                  <div class="rev-bloque">
+                    <div class="row-between" style="flex-wrap: wrap; gap: 10px;">
+                      <div>
+                        <b class="small">Revisión del caso</b>
+                        <p class="small muted" style="max-width: 62ch;">
+                          Clasifique el problema para saber si se resuelve en Soporte o si el equipo debe ir a
+                          revisión técnica de Hardware. No todos los casos de garantía generan revisión.
+                        </p>
+                      </div>
+                      @if (!c.tipoProblema) {
+                        <button class="btn btn-outline btn-sm" (click)="abrirRevision(g, c)">Clasificar problema</button>
+                      }
+                    </div>
+                    @if (c.tipoProblema) {
+                      <dl class="dl">
+                        <dt>Problema clasificado</dt>
+                        <dd>
+                          {{ c.tipoProblema }}
+                          <span class="chip">{{ data.garantiaRequiereHardware(c.tipoProblema) ? 'Requiere Hardware' : 'Se resuelve en Soporte' }}</span>
+                          <div class="sub-cell">{{ data.notaProblemaGarantia(c.tipoProblema) }}</div>
+                        </dd>
+                        @if (c.estadoRevision) { <dt>Estado técnico</dt><dd class="mono">{{ c.estadoRevision }}</dd> }
+                      </dl>
+                      @if (data.garantiaRequiereHardware(c.tipoProblema) && !c.revisionId) {
+                        @if (data.tecnicoSugeridoGarantia(g.inventario); as s) {
+                          <p class="hint">Técnico sugerido: <b>{{ s.tecnico }}</b> — {{ s.motivo }} La asignación la hace un Encargado.</p>
+                        }
+                        <div class="row" style="justify-content: flex-end;">
+                          <button class="btn btn-primary btn-sm" (click)="abrirEnvio(g, c)">Enviar a revisión de Hardware</button>
+                        </div>
+                      }
+                    }
+                    @if (revision(c); as r) {
+                      <dl class="dl">
+                        <dt>Revisión técnica de garantía</dt>
+                        <dd class="mono">{{ r.id }} <span class="chip">No se crea un Expediente técnico nuevo</span></dd>
+                        <dt>Estado de la revisión</dt><dd>{{ r.estado }}</dd>
+                        <dt>Técnico de Hardware</dt>
+                        <dd>
+                          {{ r.tecnicoAsignado || 'Sin asignar' }}
+                          @if (!r.tecnicoAsignado && r.tecnicoSugerido) {
+                            <div class="sub-cell">Sugerido: {{ r.tecnicoSugerido }} — {{ r.motivoSugerencia }}</div>
+                          }
+                          @if (r.asignadoPor) { <div class="sub-cell">Asignado por {{ r.asignadoPor }} · {{ r.fechaAsignacion }} {{ r.horaAsignacion }}</div> }
+                        </dd>
+                        @if (r.resultado) { <dt>Resultado</dt><dd>{{ r.resultado }}</dd> }
+                        @if (r.firma; as fi) {
+                          <dt>Firma de Hardware</dt>
+                          <dd>{{ fi.nombre }} — {{ fi.cargo }} · {{ fi.fecha }} {{ fi.hora }}</dd>
+                        }
+                        @if (constanciaDe(r); as doc) {
+                          <dt>Constancia</dt>
+                          <dd class="mono">{{ doc.codigo }} <span class="chip">{{ doc.tipo }}</span></dd>
+                        }
+                      </dl>
+                      <div class="row">
+                        <a class="btn btn-outline btn-sm" routerLink="/reprocesos-f0288">Ver revisión en Hardware</a>
+                        @if (r.firma && !c.validacionSoporte && r.resultado !== 'Requiere sustitución de equipo') {
+                          <button class="btn btn-primary btn-sm" (click)="abrirValidacion(g, c)">Validar resultado</button>
+                        }
+                      </div>
+                      @if (c.validacionSoporte; as v) {
+                        <dl class="dl">
+                          <dt>Validación de Soporte</dt>
+                          <dd>
+                            Corrección: {{ v.correccionRealizada }} · Equipo funciona: {{ v.equipoFunciona }}
+                            · Evidencia revisada: {{ v.evidenciaRevisada }}
+                            <div class="sub-cell">{{ v.observacion }}</div>
+                            <div class="sub-cell">{{ v.validadoPor }} · {{ v.fecha }} {{ v.hora }}</div>
+                          </dd>
+                        </dl>
+                      }
+                      @if (data.faltaValidacionGarantia(c); as pendiente) {
+                        <div class="alert warn">
+                          <span class="alert-ico">!</span>
+                          <span>{{ pendiente }}</span>
+                        </div>
+                      }
+                    }
+                  </div>
                   <div class="row mt-1" style="justify-content: flex-end;">
                     <button class="btn btn-primary btn-sm" (click)="abrirCierre(g, c)">Cerrar caso</button>
                   </div>
@@ -237,6 +321,112 @@ import { EvidenciasComponent } from '../../shared/evidencias';
             }
           </div>
         </div>
+      }
+
+      <!-- Clasificar el problema del caso: es lo que decide si le toca a Hardware -->
+      @if (revisar(); as c) {
+        <ui-modal titulo="Revisar caso de garantía" [sub]="c.caso.codigo + ' · ' + c.caso.motivo" (cerrar)="revisar.set(null)">
+          <div class="field mb-2">
+            <label>Tipo de problema <span class="req">*</span></label>
+            <select class="control" [ngModel]="problema()" (ngModelChange)="problema.set($event)">
+              <option value="" disabled>Seleccione…</option>
+              @for (p of data.problemasGarantia; track p.nombre) {
+                <option [value]="p.nombre">{{ p.nombre }}</option>
+              }
+            </select>
+            @if (problema()) {
+              <span class="hint">{{ data.notaProblemaGarantia(problema()) }}</span>
+            }
+          </div>
+          @if (problema()) {
+            <div class="alert mb-2" [class.warn]="data.garantiaRequiereHardware(problema())">
+              <span class="alert-ico">{{ data.garantiaRequiereHardware(problema()) ? '!' : 'i' }}</span>
+              @if (data.garantiaRequiereHardware(problema())) {
+                <span>Este problema exige <b>revisión física del equipo</b>: después de guardar podrá generar la
+                  <b>revisión técnica de garantía</b> y un Encargado la asignará a un Técnico de Hardware.</span>
+              } @else {
+                <span>Este problema <b>se resuelve en Soporte</b>: no genera revisión técnica de Hardware.</span>
+              }
+            </div>
+          }
+          <div class="row" style="justify-content: flex-end;">
+            <button class="btn btn-primary" [disabled]="!problema()" (click)="guardarRevision(c)">Guardar clasificación</button>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Generar la revisión técnica de garantía -->
+      @if (enviar(); as c) {
+        <ui-modal titulo="Enviar a revisión de Hardware"
+          [sub]="c.caso.codigo + ' · ' + (c.caso.tipoProblema ?? '')" (cerrar)="enviar.set(null)">
+          <dl class="dl mb-2">
+            <dt>Equipo</dt><dd>{{ c.garantia.equipo }} · <span class="mono">{{ c.garantia.inventario }}</span></dd>
+            <dt>Expediente técnico</dt>
+            <dd class="mono">{{ expTecnico(c.garantia) || '—' }} <span class="chip">Se conserva: no se crea uno nuevo</span></dd>
+            @if (data.tecnicoSugeridoGarantia(c.garantia.inventario); as s) {
+              <dt>Técnico sugerido</dt><dd>{{ s.tecnico }}<div class="sub-cell">{{ s.motivo }}</div></dd>
+            }
+          </dl>
+          <div class="field mb-2">
+            <label>Observación para Hardware</label>
+            <textarea class="control" rows="2" [ngModel]="observacion()" (ngModelChange)="observacion.set($event)"
+              placeholder="Lo que Hardware debe revisar en el equipo…"></textarea>
+          </div>
+          <div class="alert warn mb-2">
+            <span class="alert-ico">!</span>
+            <span>La revisión nacerá <b>pendiente de asignación</b>: el Técnico de Hardware no se autoasigna,
+              la asignación la hace un <b>Encargado</b>.</span>
+          </div>
+          <div class="row" style="justify-content: flex-end;">
+            <button class="btn btn-primary" (click)="generarRevision(c)">Generar revisión técnica de garantía</button>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Validación de Soporte tras la firma de Hardware -->
+      @if (validar(); as c) {
+        <ui-modal titulo="Validar la revisión técnica de garantía"
+          [sub]="c.caso.codigo + ' · ' + (c.caso.revisionId ?? '')" (cerrar)="validar.set(null)">
+          @if (revision(c.caso); as r) {
+            <dl class="dl mb-2">
+              <dt>Resultado de Hardware</dt><dd>{{ r.resultado }}</dd>
+              <dt>Corrección técnica</dt><dd>{{ r.correccionTecnica || '—' }}</dd>
+              <dt>Observación</dt><dd>{{ r.observacionResultado || '—' }}</dd>
+            </dl>
+            <ui-evidencias titulo="Evidencia de la revisión técnica" [lista]="r.evidencias" />
+          }
+          <div class="grid grid-2 mt-2">
+            <div class="field">
+              <label>¿La corrección se realizó? <span class="req">*</span></label>
+              <div class="radio-line">
+                <label><input type="radio" name="vcor" [checked]="vCorreccion() === 'Sí'" (change)="vCorreccion.set('Sí')" /> Sí</label>
+                <label><input type="radio" name="vcor" [checked]="vCorreccion() === 'No'" (change)="vCorreccion.set('No')" /> No</label>
+              </div>
+            </div>
+            <div class="field">
+              <label>¿El equipo funciona correctamente? <span class="req">*</span></label>
+              <div class="radio-line">
+                <label><input type="radio" name="vfun" [checked]="vFunciona() === 'Sí'" (change)="vFunciona.set('Sí')" /> Sí</label>
+                <label><input type="radio" name="vfun" [checked]="vFunciona() === 'No'" (change)="vFunciona.set('No')" /> No</label>
+              </div>
+            </div>
+          </div>
+          <div class="field mb-2">
+            <label>¿Revisó la evidencia de Hardware? <span class="req">*</span></label>
+            <div class="radio-line">
+              <label><input type="radio" name="vevi" [checked]="vEvidencia() === 'Sí'" (change)="vEvidencia.set('Sí')" /> Sí</label>
+              <label><input type="radio" name="vevi" [checked]="vEvidencia() === 'No'" (change)="vEvidencia.set('No')" /> No</label>
+            </div>
+          </div>
+          <div class="field mb-2">
+            <label>Observación de la validación <span class="req">*</span></label>
+            <textarea class="control" rows="2" [ngModel]="vObs()" (ngModelChange)="vObs.set($event)"
+              placeholder="Qué comprobó Soporte antes de cerrar el caso…"></textarea>
+          </div>
+          <div class="row" style="justify-content: flex-end;">
+            <button class="btn btn-primary" (click)="guardarValidacion(c)">Guardar validación</button>
+          </div>
+        </ui-modal>
       }
 
       <!-- Registrar caso -->
@@ -344,6 +534,16 @@ export class GarantiaComponent {
   protected evidencia = signal('');
   protected tipoComentario = signal<TipoComentarioCaso>('Seguimiento');
   protected textoComentario = signal('');
+  /** Revisión técnica de garantía: clasificación, envío a Hardware y validación de Soporte. */
+  protected revisar = signal<{ garantia: Garantia; caso: CasoGarantia } | null>(null);
+  protected enviar = signal<{ garantia: Garantia; caso: CasoGarantia } | null>(null);
+  protected validar = signal<{ garantia: Garantia; caso: CasoGarantia } | null>(null);
+  protected problema = signal('');
+  protected observacion = signal('');
+  protected vCorreccion = signal<RespuestaSiNo>('');
+  protected vFunciona = signal<RespuestaSiNo>('');
+  protected vEvidencia = signal<RespuestaSiNo>('');
+  protected vObs = signal('');
 
   /** El Técnico de Hardware solo consulta y comenta los casos donde preparó el equipo: no abre ni cierra casos. */
   protected readonly esTecHardware = computed(() => this.auth.usuario()?.clave === 'tec-hardware');
@@ -453,5 +653,74 @@ export class GarantiaComponent {
     this.toast.ok('Caso cerrado', 'El resultado de la revisión y sus imágenes quedaron en el Expediente único.');
     this.seleccion.set(this.data.garantias().find((x) => x.expediente === g.expediente) ?? null);
     this.cierre.set(null);
+  }
+
+  // ---------- Revisión técnica de garantía ----------
+  protected expTecnico(g: Garantia): string {
+    return this.data.expTecnicoDeEquipo(g.inventario)?.codigo ?? '';
+  }
+
+  /** Revisión técnica generada para el caso, si la hay. */
+  protected revision(c: CasoGarantia): ReprocesoF0288 | undefined {
+    return c.revisionId ? this.data.reprocesoDe(c.revisionId) : undefined;
+  }
+
+  protected constanciaDe(r: ReprocesoF0288) {
+    return this.data.constanciaDeReproceso(r.id);
+  }
+
+  protected abrirRevision(g: Garantia, c: CasoGarantia): void {
+    this.problema.set(c.tipoProblema ?? '');
+    this.revisar.set({ garantia: g, caso: c });
+  }
+
+  protected guardarRevision(par: { garantia: Garantia; caso: CasoGarantia }): void {
+    const error = this.data.revisarCasoGarantia(par.garantia.expediente, par.caso.codigo,
+      this.problema(), this.usuarioActual());
+    if (error) { this.toast.error('No se pudo registrar la revisión', error); return; }
+    const hardware = this.data.garantiaRequiereHardware(this.problema());
+    this.toast.ok('Caso revisado por Soporte', hardware
+      ? 'El problema requiere revisión física: genere la revisión técnica de garantía para que un Encargado la asigne.'
+      : 'El problema se resuelve en Soporte: no requiere revisión técnica de Hardware.');
+    this.refrescar(par.garantia);
+    this.revisar.set(null);
+  }
+
+  protected abrirEnvio(g: Garantia, c: CasoGarantia): void {
+    this.observacion.set('');
+    this.enviar.set({ garantia: g, caso: c });
+  }
+
+  protected generarRevision(par: { garantia: Garantia; caso: CasoGarantia }): void {
+    const r = this.data.generarRevisionGarantia(par.garantia.expediente, par.caso.codigo,
+      this.usuarioActual(), this.observacion());
+    if (typeof r === 'string') { this.toast.error('No se pudo generar la revisión', r); return; }
+    this.toast.ok(`Revisión técnica ${r.id} generada`,
+      'Queda pendiente de asignación: el Encargado la asigna a un Técnico de Hardware. No se creó un Expediente técnico nuevo.');
+    this.refrescar(par.garantia);
+    this.enviar.set(null);
+  }
+
+  protected abrirValidacion(g: Garantia, c: CasoGarantia): void {
+    this.vCorreccion.set('');
+    this.vFunciona.set('');
+    this.vEvidencia.set('');
+    this.vObs.set('');
+    this.validar.set({ garantia: g, caso: c });
+  }
+
+  protected guardarValidacion(par: { garantia: Garantia; caso: CasoGarantia }): void {
+    const error = this.data.validarGarantiaTrasRevision(par.garantia.expediente, par.caso.codigo, {
+      correccionRealizada: this.vCorreccion(), equipoFunciona: this.vFunciona(),
+      evidenciaRevisada: this.vEvidencia(), observacion: this.vObs()
+    }, this.usuarioActual());
+    if (error) { this.toast.error('No se pudo validar la revisión', error); return; }
+    this.toast.ok('Revisión validada por Soporte', 'El caso de garantía ya puede cerrarse.');
+    this.refrescar(par.garantia);
+    this.validar.set(null);
+  }
+
+  private refrescar(g: Garantia): void {
+    this.seleccion.set(this.data.garantias().find((x) => x.expediente === g.expediente) ?? null);
   }
 }

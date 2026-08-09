@@ -5,7 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import {
   AccesorioVerificado, ChecklistItem, Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo,
-  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, ModuloEvidencia,
+  CasoGarantia, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, ModuloEvidencia,
   PreparacionF0288, SoftwareF0302, SoftwareHeredadoF0288
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
@@ -435,7 +435,13 @@ interface FilaTraza {
                           <td class="mono">{{ r.id }}<div class="sub-cell">Reproceso #{{ r.numero }} · prioridad {{ r.prioridad }}</div></td>
                           <td class="mono">{{ r.expedienteTecnico }}<div class="sub-cell">El mismo expediente</div></td>
                           <td>{{ r.tipoFalla }}
-                            <div class="sub-cell">{{ r.origen === 'Inconformidad del usuario final' ? 'Inconformidad del usuario final' : 'Falla detectada en F0302' }}</div>
+                            <div class="sub-cell">
+                              @switch (r.origen) {
+                                @case ('Inconformidad del usuario final') { Inconformidad del usuario final }
+                                @case ('Garantía') { Garantía · caso {{ r.casoGarantia }} }
+                                @default { Falla detectada en F0302 }
+                              }
+                            </div>
                             <div class="sub-cell" style="max-width: 220px;">{{ r.motivo }}</div>
                           </td>
                           <td>{{ (r.tecnicoAsignado || 'Sin asignar').split('—')[0].trim() }}
@@ -469,9 +475,69 @@ interface FilaTraza {
                   </table>
                 </div>
                 <span class="hint">
-                  Un reproceso corrige la preparación por una falla detectada en F0302 —o por una inconformidad del
-                  usuario final— y se registra <b>dentro del mismo Expediente técnico</b>: no crea uno nuevo, no repite
-                  el F0288 original y no cuenta como «vez preparado».
+                  Un reproceso corrige la preparación por una falla detectada en F0302, por una inconformidad del
+                  usuario final o por una garantía, y se registra <b>dentro del mismo Expediente técnico</b>: no crea
+                  uno nuevo, no repite el F0288 original y no cuenta como «vez preparado».
+                </span>
+              }
+
+              <!-- Garantías del equipo y su revisión técnica de Hardware, cuando la hubo -->
+              @if (casosGarantiaEq().length) {
+                <div class="sec-title mt-3">Garantías y revisiones técnicas</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead>
+                      <tr><th>Caso</th><th>Problema reportado</th><th>Revisión técnica</th><th>Técnico de Hardware</th><th>Resultado</th><th>Documento</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (x of casosGarantiaEq(); track x.caso.codigo) {
+                        <tr>
+                          <td class="mono">{{ x.caso.codigo }}
+                            <div class="sub-cell">{{ x.caso.motivo }} · {{ x.caso.fechaApertura }}</div>
+                          </td>
+                          <td>{{ x.caso.tipoProblema || '—' }}
+                            <div class="sub-cell" style="max-width: 220px;">{{ x.caso.descripcion }}</div>
+                          </td>
+                          <td class="mono">
+                            @if (revisionGarantia(x.caso); as r) {
+                              {{ r.id }}<div class="sub-cell">{{ r.estado }}</div>
+                            } @else { <span class="muted small">Sin revisión de Hardware</span> }
+                          </td>
+                          <td>
+                            @if (revisionGarantia(x.caso); as r) {
+                              {{ (r.tecnicoAsignado || 'Sin asignar').split('—')[0].trim() }}
+                              @if (!r.tecnicoAsignado && r.tecnicoSugerido) {
+                                <div class="sub-cell">Sugerido: {{ r.tecnicoSugerido }}</div>
+                              }
+                            } @else { <span class="muted small">—</span> }
+                          </td>
+                          <td>
+                            @if (revisionGarantia(x.caso); as r) { {{ r.resultado || 'Pendiente' }} }
+                            @if (x.caso.validacionSoporte; as v) {
+                              <div class="sub-cell">Validado por Soporte: {{ v.validadoPor.split('—')[0].trim() }} · {{ v.fecha }}</div>
+                            }
+                          </td>
+                          <td>
+                            @if (revisionGarantia(x.caso); as r) {
+                              @if (data.constanciaDeReproceso(r.id); as d) {
+                                <div class="mono">{{ d.codigo }}</div>
+                                <div class="sub-cell">{{ d.tipo }}</div>
+                                <button class="btn btn-ghost btn-sm" (click)="verConstancia.set(r.id)">Ver documento</button>
+                              } @else { <span class="muted small">Pendiente de firma</span> }
+                            } @else { <span class="muted small">—</span> }
+                          </td>
+                          <td>
+                            <ui-badge [estado]="x.caso.estado" />
+                            @if (x.caso.estadoRevision) { <div class="sub-cell mono">{{ x.caso.estadoRevision }}</div> }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <span class="hint">
+                  No todo caso de garantía va a Hardware: Soporte clasifica el problema y solo los que exigen revisión
+                  física generan una revisión técnica, con código <b>…-G1</b> dentro del mismo Expediente técnico.
                 </span>
               }
 
@@ -1143,6 +1209,17 @@ export class TrazabilidadComponent {
     const d = this.detalle();
     return d ? this.data.reprocesosDeEquipo(d.equipo.inventario) : [];
   });
+
+  /** Casos de garantía del equipo, con o sin revisión técnica de Hardware. */
+  protected readonly casosGarantiaEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.casosGarantiaDeEquipo(d.equipo.inventario) : [];
+  });
+
+  /** Revisión técnica de Hardware de un caso de garantía, si se generó. */
+  protected revisionGarantia(caso: CasoGarantia) {
+    return caso.revisionId ? this.data.reprocesoDe(caso.revisionId) : undefined;
+  }
 
   /**
    * Inconformidades del usuario final atendidas sobre este equipo. Van junto a los reprocesos
