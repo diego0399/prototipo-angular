@@ -3,6 +3,7 @@ import { DataService } from '../core/services/data.service';
 import { AuthService } from '../core/services/auth.service';
 import { ToastService } from '../core/services/toast.service';
 import { BadgeComponent, ModalComponent } from './ui';
+import { EvidenciasComponent } from './evidencias';
 
 /**
  * Visor de la **Constancia de Reproceso F0288**. Vive en `shared` porque la constancia debe poder
@@ -14,7 +15,7 @@ import { BadgeComponent, ModalComponent } from './ui';
  */
 @Component({
   selector: 'ui-constancia-reproceso',
-  imports: [BadgeComponent, ModalComponent],
+  imports: [BadgeComponent, ModalComponent, EvidenciasComponent],
   styles: `
     .doc-hoja {
       background: var(--bg-1, #fff); border: 1px solid var(--line); border-radius: 8px;
@@ -50,6 +51,15 @@ import { BadgeComponent, ModalComponent } from './ui';
             }
           } @else {
             <div class="doc-hoja">{{ texto() }}</div>
+
+            <!-- Las imágenes que respaldaban el reproceso al firmarlo, junto al documento -->
+            <ui-evidencias titulo="Imágenes de evidencia del reproceso" [lista]="evidencias()"
+              (visualizar)="abrir($event)" />
+            @if (retiradas().length) {
+              <span class="hint">
+                El documento certificó además: {{ retiradas().join(' · ') }}. Ya no está entre las imágenes del reproceso.
+              </span>
+            }
           }
 
           <div class="row mt-2" style="justify-content: flex-end; flex-wrap: wrap;">
@@ -73,10 +83,11 @@ import { BadgeComponent, ModalComponent } from './ui';
         }
       </ui-modal>
     }
+
   `
 })
 export class ConstanciaReprocesoComponent {
-  private readonly data = inject(DataService);
+  protected readonly data = inject(DataService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
@@ -85,6 +96,24 @@ export class ConstanciaReprocesoComponent {
   readonly cerrado = output<void>();
 
   protected soloFirma = signal(false);
+
+  /** Imágenes de evidencia del reproceso que la constancia documenta. */
+  protected readonly evidencias = computed(() => this.reproceso()?.evidencias ?? []);
+
+  /**
+   * Archivos que el documento certificó y que ya no están en el reproceso. No debería ocurrir
+   * —las imágenes solo pueden eliminarse mientras el reproceso está en proceso—, pero si ocurriera
+   * la constancia lo dice en vez de callarlo.
+   */
+  protected readonly retiradas = computed(() => {
+    const actuales = this.evidencias().map((e) => e.archivo);
+    return (this.documento()?.evidencias ?? []).filter((a) => !actuales.includes(a));
+  });
+
+  /** Abrir una imagen desde la constancia también es un acceso a la evidencia. */
+  protected abrir(archivo: string): void {
+    this.data.registrarConsultaEvidencia(this.idReproceso(), archivo, this.usuarioActual);
+  }
 
   protected readonly abierto = computed(() => !!this.idReproceso());
   protected readonly reproceso = computed(() => this.data.reprocesoDe(this.idReproceso()));

@@ -9,10 +9,11 @@ import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPreparacion } from '../../shared/buscar-expediente';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 @Component({
   selector: 'app-preparacion',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent, IconComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, BuscarExpedienteTecnicoModalComponent, IconComponent, EvidenciasComponent],
   styles: `
     .item-row { display: flex; align-items: center; gap: 12px; padding: 9px 4px; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
     .item-row:last-child { border-bottom: 0; }
@@ -459,13 +460,15 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
                     <ui-help texto="La evidencia no reemplaza el checklist; solo respalda ítems técnicos específicos." />
                   } @else if (item.requiereEvidencia && p.estado !== 'Completada') {
                     @if (item.estado === 'Realizado') {
-                      <input class="control i-cap" [ngModel]="textoCaptura(sec.titulo, item.nombre)"
-                        (ngModelChange)="escribirCaptura(sec.titulo, item.nombre, $event)"
-                        placeholder="Captura de evidencia: archivo o referencia…" />
-                      <button class="btn btn-outline btn-sm" (click)="agregarCaptura(p, sec.titulo, item.nombre)">Agregar captura</button>
-                      <ui-help [texto]="'Sin esta captura no se puede finalizar la preparación ni generar el F0288. Al desmarcar «' + item.nombre + '» la captura se retira.'" />
+                      <span class="chip">Requiere evidencia</span>
+                      <input type="file" hidden #cap accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                        (change)="subirCaptura(p, sec.titulo, item.nombre, cap)" />
+                      <button class="btn btn-outline btn-sm" (click)="cap.click()">
+                        <ui-icon name="image" [size]="14" /> Adjuntar imagen
+                      </button>
+                      <ui-help [texto]="'La captura debe ser una imagen PNG, JPG, JPEG o WEBP. Sin ella no se puede finalizar la preparación ni generar el F0288. Al desmarcar «' + item.nombre + '» la captura se retira.'" />
                     } @else {
-                      <span class="i-falta">Captura obligatoria al marcarlo</span>
+                      <span class="i-falta">Imagen obligatoria al marcarlo</span>
                     }
                   }
                   <ui-badge [estado]="item.estado" />
@@ -487,32 +490,17 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
           </details>
         }
 
-        <!-- Evidencias -->
-        <div class="card mt-2">
-          <div class="card-head">
-            <div>
-              <h3>
-                Evidencias técnicas complementarias
-                <ui-help texto="La evidencia no reemplaza el checklist; respalda los ítems técnicos que la exigen. En el F0288 son obligatorias las capturas de Antivirus y de OCS Inventory." />
-              </h3>
-            </div>
-          </div>
-          <div class="card-body table-wrap">
-            <table class="tbl">
-              <thead><tr><th>Ítem</th><th>Tipo de evidencia</th><th>Cargada por</th><th>Fecha</th><th>Estado</th></tr></thead>
-              <tbody>
-                @for (e of p.evidencias; track e.item) {
-                  <tr>
-                    <td class="main-cell">{{ e.item }}</td>
-                    <td>{{ e.tipo }}</td>
-                    <td>{{ e.cargadaPor || '—' }}</td>
-                    <td class="mono">{{ e.fecha || '—' }}</td>
-                    <td><ui-badge [estado]="e.estado" /></td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
+        <!-- Imágenes de evidencia: aquí solo se listan. Las dos que el F0288 exige se adjuntan
+             desde sus propios ítems del checklist, Antivirus y OCS Inventory. -->
+        <div class="card card-pad mt-2">
+          <ui-evidencias titulo="Evidencias de la Preparación F0288"
+            [lista]="data.evid.de('Preparación F0288', p.expedienteTecnico)"
+            [editable]="p.estado !== 'Completada' && p.estado !== 'Cerrada'"
+            [puedeAdjuntar]="false"
+            nota="Evidencias requeridas: Antivirus institucional y OCS Inventory."
+            (eliminar)="quitarEvidencia(p, $event)"
+            (visualizar)="verEvidencia(p, $event)"
+            (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
         </div>
 
         <!-- Cierre técnico: complejidad y observaciones (obligatorio al finalizar) -->
@@ -637,7 +625,7 @@ import { BuscarExpedienteTecnicoModalComponent, FilaExpedienteTecnico, filaPrepa
 export class PreparacionComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
   private readonly casoActivo = inject(CasoActivoService);
 
   protected seleccion = signal('');
@@ -847,29 +835,41 @@ export class PreparacionComponent {
     this.data.seleccionarVersionItemF0288(p.expedienteTecnico, seccion, item.nombre, version, `${u?.nombre} — ${u?.rol}`);
   }
 
-  // Captura de evidencia de los ítems que la exigen (Antivirus y OCS Inventory). El texto en
-  // edición se guarda por ítem —clave «sección||ítem»— para no mezclar dos capturas a la vez.
-  protected capturas = signal<Record<string, string>>({});
-  private claveCaptura(seccion: string, item: string): string {
-    return `${seccion}||${item}`;
-  }
-  protected textoCaptura(seccion: string, item: string): string {
-    return this.capturas()[this.claveCaptura(seccion, item)] ?? '';
-  }
-  protected escribirCaptura(seccion: string, item: string, valor: string): void {
-    this.capturas.update((m) => ({ ...m, [this.claveCaptura(seccion, item)]: valor }));
-  }
-  protected agregarCaptura(p: PreparacionF0288, seccion: string, item: string): void {
+  /**
+   * Captura de un ítem que la exige (Antivirus y OCS Inventory). Desde la regla global es una
+   * imagen: se lee, se reduce y se guarda con el resto de las evidencias del expediente.
+   */
+  protected async subirCaptura(p: PreparacionF0288, seccion: string, item: string, input: HTMLInputElement): Promise<void> {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
     const u = this.auth.usuario();
-    const error = this.data.registrarEvidenciaItemF0288(
-      p.expedienteTecnico, seccion, item, this.textoCaptura(seccion, item), `${u?.nombre} — ${u?.rol}`);
-    if (error) {
-      this.toast.error('No se pudo registrar la captura', error);
-      return;
+    try {
+      const leida = await this.data.evid.leerImagen(archivo);
+      // El tipo sale del ítem, igual que en el bloque de evidencias: nadie tiene que elegirlo.
+      const error = this.data.registrarEvidenciaItemF0288(
+        p.expedienteTecnico, seccion, item, leida.archivo, `${u?.nombre} — ${u?.rol}`,
+        this.data.evid.tipoDeContexto('Preparación F0288', item), leida.imagen);
+      if (error) { this.toast.error('No se pudo registrar la captura', error); return; }
+      this.toast.ok('Captura de evidencia registrada',
+        `La imagen de ${item} quedó en el F0288 y en la trazabilidad del equipo.`);
+    } catch {
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
     }
-    this.escribirCaptura(seccion, item, '');
-    this.toast.ok('Captura de evidencia registrada',
-      `La evidencia de ${item} quedó en el F0288 y en la trazabilidad del equipo.`);
+  }
+
+  protected quitarEvidencia(p: PreparacionF0288, archivo: string): void {
+    const u = this.auth.usuario();
+    const error = this.data.eliminarEvidencia('Preparación F0288', p.expedienteTecnico,
+      p.expedienteTecnico, archivo, `${u?.nombre} — ${u?.rol}`);
+    if (error) { this.toast.error('No se pudo eliminar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda esta preparación.`);
+  }
+
+  protected verEvidencia(p: PreparacionF0288, archivo: string): void {
+    const u = this.auth.usuario();
+    this.data.registrarConsultaEvidenciaTecnica('Preparación F0288', p.expedienteTecnico,
+      p.expedienteTecnico, archivo, `${u?.nombre} — ${u?.rol}`);
   }
 
   protected guardar(): void {

@@ -7,6 +7,7 @@ import { AccionPosteriorDescargo, Equipo, MotivoDescargo } from '../../core/mode
 import { BadgeComponent, HelpTipComponent, MarcaModeloPipe } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { BuscarEquipoAsignadoModalComponent, FilaEquipoAsignado, filaEquipoAsignado } from '../../shared/buscar-expediente';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 const MOTIVOS: MotivoDescargo[] = [
   'Cambio de usuario', 'Cambio de equipo', 'Devolución', 'Reasignación', 'Falla', 'Garantía', 'Finalización de uso', 'Otro'
@@ -24,7 +25,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
  */
 @Component({
   selector: 'app-descargo',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent, IconComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent, IconComponent, EvidenciasComponent],
   styles: `
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
@@ -131,6 +132,23 @@ const ACCIONES: AccionPosteriorDescargo[] = [
               <textarea class="control" rows="2" placeholder="Motivo detallado, condiciones de la devolución…" [(ngModel)]="observaciones" [disabled]="!puedeRegistrar()"></textarea>
             </div>
           </div>
+
+          <!-- Imagen del estado físico: sin ella el descargo no se registra -->
+          @if (equipoSel(); as inv) {
+            <ui-evidencias titulo="Imágenes del estado físico del equipo"
+              [lista]="data.evid.de('Descargo', inv)"
+              [editable]="puedeRegistrar()"
+              [obligatoria]="true"
+              [mensajeFalta]="data.evid.mensajeFalta('Descargo')"
+              [contextos]="data.evid.contextosDe('Descargo')"
+              [sugeridas]="sugeridasDescargo"
+              (adjuntar)="adjuntarEvidencia(inv, $event)"
+              (eliminar)="quitarEvidencia(inv, $event)"
+              (visualizar)="verEvidencia(inv, $event)"
+              (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
+          } @else {
+            <p class="hint">Seleccione el equipo para adjuntar la imagen de su estado físico.</p>
+          }
         </div>
         <div class="card-foot">
           <span class="small muted" style="margin-right: auto;">El descargo cierra la asignación vigente sin borrar el historial del equipo.</span>
@@ -181,7 +199,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
 export class DescargoComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
 
   protected readonly motivos = MOTIVOS;
   protected readonly acciones = ACCIONES;
@@ -243,6 +261,39 @@ export class DescargoComponent {
   protected seleccionarEquipo(inventario: string): void {
     this.equipoSel.set(inventario);
     this.buscarAbierto.set(false);
+  }
+
+  /** Qué imágenes se esperan al recibir el equipo de vuelta. */
+  protected readonly sugeridasDescargo = [
+    'Fotografía general del equipo recibido', 'Fotografía de los daños o faltantes, si los hay',
+    'Fotografía de los accesorios devueltos'
+  ];
+
+  /** Expediente de la asignación vigente del equipo, al que se asocian sus imágenes. */
+  private expedienteDe(inventario: string): string {
+    return this.data.asignacionDeEquipo(inventario)?.expediente ?? inventario;
+  }
+
+  protected adjuntarEvidencia(inventario: string, ev: { archivo: string; tipo: string; imagen: string; item: string }): void {
+    const error = this.data.adjuntarEvidencia({
+      modulo: 'Descargo', proceso: inventario, expediente: this.expedienteDe(inventario),
+      inventario, archivo: ev.archivo, tipo: ev.tipo, usuario: this.responsableTxt(),
+      imagen: ev.imagen, item: ev.item
+    });
+    if (error) { this.toast.error('No se pudo adjuntar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia adjuntada', `Queda como respaldo del estado físico de ${inventario}.`);
+  }
+
+  protected quitarEvidencia(inventario: string, archivo: string): void {
+    const error = this.data.eliminarEvidencia('Descargo', inventario, this.expedienteDe(inventario),
+      archivo, this.responsableTxt());
+    if (error) { this.toast.error('No se pudo eliminar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda este descargo.`);
+  }
+
+  protected verEvidencia(inventario: string, archivo: string): void {
+    this.data.registrarConsultaEvidenciaTecnica('Descargo', inventario, this.expedienteDe(inventario),
+      archivo, this.responsableTxt());
   }
 
   protected registrar(): void {

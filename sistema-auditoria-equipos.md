@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 53)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 57)**.
 
 ---
 
@@ -2464,6 +2464,118 @@ Expediente único.
       rutas) y **104 casos, 0 fallos**, más las diecisiete baterías anteriores (1095 casos, 0
       fallos; las de las rondas 40 y 52 se actualizaron a las reglas nuevas).
       **Sin recorrido manual de clics en navegador.**
+54. **Reproceso F0288 — la evidencia pasa a ser una imagen obligatoria**
+    (2026-08-08, octava sesión del día).
+    * **Una sola regla, sin excepciones**: ningún reproceso finaliza sin al menos una imagen
+      —«Debe adjuntar al menos una imagen de evidencia del reproceso para poder finalizar.»—.
+      **Deroga la excepción de «Otro»** de las rondas 52 y 53 y, con ella, la regla que pedía
+      describir el problema en la observación técnica a falta de evidencia. `evidenciaObligatoria-
+      Reproceso` y `reprocesoExigeEvidencia` quedaron sin caso y se eliminaron.
+    * **Solo PNG, JPG, JPEG o WEBP**: un PDF o un Word no son evidencia visual. El selector filtra
+      y el servicio vuelve a comprobarlo.
+    * **Tipo de evidencia de lista cerrada** (Diagnóstico · Corrección realizada · Equipo revisado ·
+      Componente sustituido · Accesorio asociado · Validación posterior · Otro). No es formalismo:
+      es lo que permite exigir **la imagen que corresponde** a la acción marcada.
+    * **Imagen por acción marcada**: «Sustituir disco» pide una de «Componente sustituido»;
+      «Reinstalar Windows», una de «Corrección realizada» o «Validación posterior»; «Asociar
+      accesorio», una de «Accesorio asociado». Los ítems de solo revisión no exigen tipo concreto.
+    * **Qué imágenes se piden según el problema**: las nueve listas del pedido, mostradas antes de
+      subir nada; en sistema operativo ya no se sugiere una captura de disco.
+    * **Subir, ver y eliminar**: selector de archivo real, vista previa antes de adjuntar, galería
+      con miniatura, nombre, tipo, fecha y usuario, y visor a tamaño grande. Eliminar solo mientras
+      el reproceso está en proceso. Las imágenes se reducen a 900 px antes de guardarlas: el
+      prototipo guarda su estado en el navegador y una foto de teléfono llenaría el espacio.
+    * Las evidencias del set de demostración **no traen imagen** y se muestran con un bloque visual
+      simulado; tampoco se les cambió el tipo, porque están en una constancia ya firmada.
+    * **Constancia y Documentos generados**: la constancia numera las imágenes con su tipo, quién
+      las cargó y cuándo; el visor —el mismo en las ocho pantallas— muestra la galería y permite
+      abrirlas. El documento guarda qué imágenes certificó al firmarse.
+    * **Cinco eventos de trazabilidad** (cargada · visualizada · eliminada · intento sin evidencia ·
+      finalizado con evidencia) con fecha, hora, usuario, rol, reproceso, tipo de problema, archivo
+      y tipo de evidencia. El intento bloqueado se registra y se ve como hito propio.
+    * Verificado con `npm run build` limpio (5.486 s, 0 errores), `ng serve` (HTTP 200 en siete
+      rutas) y **116 casos, 0 fallos**, más las dieciocho baterías anteriores (1188 casos, 0 fallos;
+      se actualizaron las de las rondas 44, 52 y 53). **Sin recorrido manual de clics en navegador:
+      no se subió una imagen de verdad.**
+55. **Regla global — la evidencia con imagen se aplica en todo SISGOST desde un servicio central**
+    (2026-08-08, novena sesión del día).
+    * **`EvidenciaService` (nuevo)**: único lugar con los formatos admitidos, el catálogo de tipos,
+      los mensajes, la validación, la reducción de la imagen y el almacén. `DataService` lo
+      inyecta y **el servicio de evidencias no lo conoce**: si se inyectaran mutuamente, Angular no
+      podría construir ninguno de los dos.
+    * **`ui-evidencias` (nuevo)**: un solo bloque de pantalla —galería, carga y visor— usado por las
+      seis pantallas, las dos constancias, Documentos generados y el historial técnico. La pantalla
+      de reprocesos dejó el suyo propio: **ninguna conserva lógica de imagen**.
+    * **Solo PNG, JPG, JPEG o WEBP en todas partes**. Antes el F0288 y el F0302 aceptaban el nombre
+      de cualquier archivo escrito a mano; ahora las capturas de Antivirus, OCS Inventory y Agente
+      DLP se suben con selector de archivo y se validan como el resto.
+    * **Once tipos de evidencia** (amplía los siete de la ronda 54), con el más probable
+      preseleccionado por módulo.
+    * **Seis etapas no cierran sin imagen**: Preparación F0288, Configuración F0302, Corrección
+      F0302, Reproceso F0288, Garantía y Descargo, cada una con su mensaje. El reenvío del
+      formulario de conformidad exige el respaldo de la corrección —la del reproceso si la resolvió
+      Hardware—. **Toda corrección F0302 exige ahora imagen**, antes solo si se marcó un ítem que
+      implicara intervención.
+    * En el **descargo** la imagen se adjunta contra el número de inventario: cuando se fotografía
+      el equipo recibido, el código del descargo todavía no existe.
+    * **Seis eventos globales** (cargada · visualizada · eliminada · intento sin evidencia ·
+      finalizado con evidencia · documento generado con evidencias) con rol, módulo, archivo, tipo
+      y **estado de validación**. El F0288 y el F0302 guardan al generarse qué imágenes los
+      respaldaban; el historial técnico tiene pestaña **Evidencias** agrupada por etapa.
+    * Las del **reproceso siguen dentro del propio reproceso** (ronda 54): moverlas habría
+      reescrito el contenido de una constancia firmada. El historial las lee con un adaptador.
+    * Verificado con `npm run build` limpio (5.551 s, 0 errores), `ng serve` (HTTP 200 en nueve
+      rutas) y **145 casos, 0 fallos**, más las diecinueve baterías anteriores (1308 casos, 0
+      fallos; se actualizaron las de las rondas 43, 52, 53 y 54). **Sin recorrido manual de clics:
+      no se subió ninguna imagen real en ninguno de los seis módulos.**
+56. **El tipo de evidencia deja de elegirse a mano: cada módulo declara qué ítems respalda**
+    (2026-08-09).
+    * El reporte llegó por **Configuración F0302**, pero **Preparación F0288 tenía el mismo
+      desplegable de once tipos**: las dos pantallas comparten el bloque desde la ronda 55. Lo que
+      en el F0288 se siente resuelto es el botón «Subir captura» de cada ítem, que nunca pregunta
+      el tipo; eso es lo que faltaba en el bloque general de ambas.
+    * **Contextos por módulo en `EvidenciaService`**: el formulario pregunta *qué* se está
+      respaldando y el tipo sale de ahí. Siete contextos en el F0302 (Agente DLP → Instalación
+      validada, Ingreso a dominio → Configuración validada…), siete en el F0288, tres en la
+      corrección, cinco en la garantía y **uno solo en el descargo**, que por eso no pregunta nada.
+    * Los nombres son los **ítems reales del checklist**, no una paráfrasis: la imagen queda
+      asociada al ítem que el técnico ve en pantalla, y el ítem se muestra en la ficha, el visor y
+      la vista previa.
+    * El **reproceso no usa lista fija**: sus contextos salen del tipo de problema y de las
+      acciones marcadas, y se recalculan si el técnico desmarca la que había elegido.
+    * **Mensaje del cierre del F0302**: `Debe adjuntar la imagen de evidencia requerida para
+      finalizar la Configuración F0302.`, tanto cuando no hay ninguna imagen como al inicio del que
+      señala el ítem sin captura.
+    * **Se quitaron** el desplegable de once tipos y la entrada `tipoInicial`: ningún módulo los
+      usaba. La validación de tipo sigue en `validarCarga`, ahora como red contra un módulo que
+      olvide declarar sus contextos.
+    * Verificado con `npm run build` limpio (10.377 s, 0 errores), `ng serve` (HTTP 200 en nueve
+      rutas) y **98 casos, 0 fallos**, más las veinte baterías anteriores (1455 casos, 0 fallos; se
+      actualizaron cinco). **Sin recorrido manual de clics.**
+57. **La imagen obligatoria vuelve a ser cosa de ítems concretos en F0288 y F0302**
+    (2026-08-09, segunda sesión del día).
+    * La regla global de la ronda 55 resultó demasiado ancha en esas dos etapas: daba a entender
+      que cualquier imagen servía. Ahora la exigen **solo el Agente DLP** en el F0302 y **solo el
+      Antivirus institucional y el OCS Inventory** en el F0288. Windows, controladores, nombre del
+      equipo, dominio, software adicional, revisión física, accesorios y validación final se
+      declaran en el checklist y no bloquean el cierre por falta de fotografía.
+    * **`ModuloConEvidenciaObligatoria`** excluye a esas dos etapas del tipo que aceptan
+      `exigirEvidencia`, `mensajeFalta` y `faltaEvidencia`: volver a poner un bloqueo general sobre
+      ellas ya no compila. Sus mensajes de etapa se borraron por inalcanzables. Los otros cuatro
+      módulos —corrección, reproceso, garantía, descargo— conservan el suyo.
+    * **Los avisos nombran el ítem**: `Debe adjuntar la imagen de evidencia del Agente DLP para
+      finalizar la Configuración F0302.` y, en el F0288, uno para los dos juntos y otro para cada
+      uno por separado. El intento bloqueado se sigue anotando en la trazabilidad.
+    * **La imagen se sube desde la fila del ítem**, marcada como «Requiere evidencia» y con botón
+      «Adjuntar imagen»; el tipo sale del ítem (los tres, «Instalación validada»).
+    * **El bloque general de esas dos pantallas pasa a ser galería**: nueva entrada `puedeAdjuntar`
+      en `ui-evidencias`, que ellas apagan. Los demás módulos la traen encendida porque su imagen
+      no nace de un ítem y sin formulario no podrían cerrarse. En vez del aviso de etapa, una línea
+      breve: «Evidencia requerida: Agente DLP.» / «Evidencias requeridas: Antivirus institucional y
+      OCS Inventory.».
+    * Verificado con `npm run build` limpio (6.333 s, 0 errores), `ng serve` (HTTP 200 en nueve
+      rutas) y **104 casos, 0 fallos**, más las veintiuna baterías anteriores (1539 casos, 0 fallos;
+      se actualizaron las de las rondas 55 y 56). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2501,6 +2613,14 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 55)**: con seis módulos guardando imágenes en `localStorage`, conviene
+  medir cuánto ocupa una demostración completa. Cada imagen se reduce a 900 px y ronda los 60-80 KB,
+  pero la cuota del navegador es de unos 5 MB para todo el estado. Evaluar un aviso al usuario
+  cuando la foto guardada se acerque al límite.
+* **Nuevo pendiente (ronda 54)**: la carga de imágenes no se ejercitó con un archivo real —lectura,
+  reducción a 900 px y vista previa quedan verificadas por código y compilación, no por uso—.
+  Conviene subir dos o tres imágenes en el navegador y comprobar que el estado sigue guardándose
+  en `localStorage` sin exceder la cuota.
 * **Nuevo pendiente (ronda 53)**: los dos ítems de cierre —«Registrar corrección técnica
   realizada» y «Registrar observaciones de Hardware, si corresponde»— repiten en el checklist lo
   que el técnico ya escribe en los campos de cierre. Se dejaron porque el pedido los enumera;

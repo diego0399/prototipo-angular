@@ -12,11 +12,12 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
+import { EvidenciasComponent } from '../../shared/evidencias';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
 
 @Component({
   selector: 'app-configuracion',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent, IconComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent, IconComponent, EvidenciasComponent],
   styles: `
     .sw-row td .chk { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
     .cap-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -328,16 +329,17 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                             <div class="sub-cell">{{ ev.tipo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}</div>
                           }
                         } @else if (s.requiereEvidencia && s.estado === 'Realizado' && c.estado !== 'Completada') {
+                          <span class="chip">Requiere evidencia</span>
                           <div class="cap-row">
-                            <input class="control" [ngModel]="textoCaptura(s.nombre)"
-                              (ngModelChange)="escribirCaptura(s.nombre, $event)"
-                              placeholder="captura-dlp-instalado.png"
-                              (keyup.enter)="agregarCaptura(c, s.nombre)" />
-                            <button class="btn btn-outline btn-sm" (click)="agregarCaptura(c, s.nombre)">Agregar captura</button>
+                            <input type="file" hidden #cap accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                              (change)="subirCaptura(c, s.nombre, cap)" />
+                            <button class="btn btn-outline btn-sm" (click)="cap.click()">
+                              <ui-icon name="image" [size]="14" /> Adjuntar imagen
+                            </button>
                           </div>
-                          <span class="hint">Obligatoria: sin ella no se puede finalizar el F0302 ni generar el documento.</span>
+                          <span class="hint">Imagen obligatoria (PNG, JPG, JPEG o WEBP): sin ella no se puede finalizar el F0302 ni generar el documento.</span>
                         } @else if (s.requiereEvidencia) {
-                          <span class="i-falta">Captura obligatoria al marcarlo</span>
+                          <span class="i-falta">Imagen obligatoria al marcarlo</span>
                         } @else { <span class="muted">—</span> }
                       </td>
                       <td><ui-badge [estado]="s.estado" /></td>
@@ -347,6 +349,19 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
               }
             </table>
           </div>
+        </div>
+
+        <!-- Imágenes de evidencia: aquí solo se listan. La única que el F0302 exige se adjunta
+             desde su propio ítem del checklist, el Agente DLP. -->
+        <div class="card card-pad mb-2">
+          <ui-evidencias titulo="Evidencias de la Configuración F0302"
+            [lista]="data.evid.de('Configuración F0302', c.expediente)"
+            [editable]="c.estado !== 'Completada' && c.estado !== 'Cerrada' && c.estado !== 'Con falla'"
+            [puedeAdjuntar]="false"
+            nota="Evidencia requerida: Agente DLP."
+            (eliminar)="quitarEvidencia(c, $event)"
+            (visualizar)="verEvidencia(c, $event)"
+            (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
         </div>
 
         <!-- Nombre del equipo: dato obligatorio del expediente. La reserva de IP NO se captura
@@ -1096,7 +1111,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
 export class ConfiguracionComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
   private readonly casoActivo = inject(CasoActivoService);
 
   protected seleccion = signal('');
@@ -1393,30 +1408,43 @@ export class ConfiguracionComponent {
   }
 
   // ---------- Captura de evidencia de los ítems que la exigen (Agente DLP) ----------
-  /** Texto escrito en cada campo de captura, por nombre de ítem. */
-  protected readonly capturas = signal<Record<string, string>>({});
-
-  protected textoCaptura(nombre: string): string {
-    return this.capturas()[nombre] ?? '';
-  }
-
-  protected escribirCaptura(nombre: string, valor: string): void {
-    this.capturas.update((m) => ({ ...m, [nombre]: valor }));
-  }
-
   protected evidenciaDe(c: ConfiguracionF0302, nombre: string) {
     return c.evidencias.find((e) => e.item === nombre && e.archivo);
   }
 
-  protected agregarCaptura(c: ConfiguracionF0302, nombre: string): void {
+  /**
+   * Captura del ítem que la exige (Agente DLP). Desde la regla global es una imagen: se lee, se
+   * reduce y queda con el resto de las evidencias del proceso.
+   */
+  protected async subirCaptura(c: ConfiguracionF0302, nombre: string, input: HTMLInputElement): Promise<void> {
+    const archivo = input.files?.[0];
+    input.value = '';
+    if (!archivo) return;
     const u = this.auth.usuario();
-    const error = this.data.registrarEvidenciaSoftwareF0302(c.expediente, nombre, this.textoCaptura(nombre), `${u?.nombre} — ${u?.rol}`);
-    if (error) {
-      this.toast.error('No se puede registrar la captura', error);
-      return;
+    try {
+      const leida = await this.data.evid.leerImagen(archivo);
+      // El tipo sale del ítem, igual que en el bloque de evidencias: nadie tiene que elegirlo.
+      const error = this.data.registrarEvidenciaSoftwareF0302(c.expediente, nombre, leida.archivo,
+        `${u?.nombre} — ${u?.rol}`, this.data.evid.tipoDeContexto('Configuración F0302', nombre), leida.imagen);
+      if (error) { this.toast.error('No se puede registrar la captura', error); return; }
+      this.toast.ok('Captura registrada', `La imagen de ${nombre} quedó anexada al F0302 y a la trazabilidad del equipo.`);
+    } catch {
+      this.toast.error('Archivo no válido', this.data.evid.MSG_FORMATO);
     }
-    this.capturas.update((m) => ({ ...m, [nombre]: '' }));
-    this.toast.ok('Captura registrada', `La evidencia de ${nombre} quedó anexada al F0302 y a la trazabilidad del equipo.`);
+  }
+
+  protected quitarEvidencia(c: ConfiguracionF0302, archivo: string): void {
+    const u = this.auth.usuario();
+    const error = this.data.eliminarEvidencia('Configuración F0302', c.expediente, c.expediente,
+      archivo, `${u?.nombre} — ${u?.rol}`);
+    if (error) { this.toast.error('No se pudo eliminar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda esta configuración.`);
+  }
+
+  protected verEvidencia(c: ConfiguracionF0302, archivo: string): void {
+    const u = this.auth.usuario();
+    this.data.registrarConsultaEvidenciaTecnica('Configuración F0302', c.expediente, c.expediente,
+      archivo, `${u?.nombre} — ${u?.rol}`);
   }
   protected seleccionarVersionSoftware(c: ConfiguracionF0302, nombre: string, ev: Event): void {
     const version = (ev.target as HTMLSelectElement).value;

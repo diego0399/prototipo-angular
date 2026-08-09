@@ -7,6 +7,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { CasoGarantia, Garantia, TipoComentarioCaso } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 /**
  * Servicio de garantía: los Expedientes únicos aceptados por el usuario final aparecen aquí
@@ -15,7 +16,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
  */
 @Component({
   selector: 'app-garantia',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent],
   styles: `
     .exp-cod { font-family: var(--font-mono, monospace); font-size: 12.5px; font-weight: 700; color: var(--navy-900); }
     .caso { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-top: 10px; }
@@ -167,6 +168,19 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                   <div class="resultado"><b>Resultado:</b> {{ c.resultado }}</div>
                 }
 
+                <!-- Imágenes del caso: apertura, diagnóstico, corrección y cierre -->
+                <ui-evidencias titulo="Evidencias del caso de garantía"
+                  [lista]="data.evid.de('Garantía', c.codigo)"
+                  [editable]="data.puedeComentarCaso(g, c)"
+                  [obligatoria]="c.estado !== 'Cerrado' && c.estado !== 'Resuelto'"
+                  [mensajeFalta]="data.evid.mensajeFalta('Garantía')"
+                  [contextos]="data.evid.contextosDe('Garantía')"
+                  [sugeridas]="sugeridasGarantia"
+                  (adjuntar)="adjuntarEvidencia(g, c, $event)"
+                  (eliminar)="quitarEvidencia(g, c, $event)"
+                  (visualizar)="verEvidencia(g, c, $event)"
+                  (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
+
                 <!-- Comentarios internos del caso: no reemplazan la trazabilidad general -->
                 <div class="c-com">
                   <div class="c-com-head">
@@ -295,10 +309,16 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
             <label>Resultado de revisión <span class="req">*</span></label>
             <textarea class="control" rows="3" placeholder="Describa la revisión realizada y el resultado…" [(ngModel)]="resultado"></textarea>
           </div>
-          <div class="field mb-2">
-            <label>Evidencia técnica <span class="hint">(opcional)</span></label>
-            <input class="control" placeholder="Ej.: captura de diagnóstico" [(ngModel)]="evidencia" />
-          </div>
+          @if (data.evid.hay('Garantía', c.caso.codigo)) {
+            <p class="hint">
+              Respaldado por {{ data.evid.de('Garantía', c.caso.codigo).length }} imagen(es) del caso.
+            </p>
+          } @else {
+            <div class="alert warn mb-2">
+              <span class="alert-ico">!</span>
+              <span>{{ data.evid.mensajeFalta('Garantía') }} Adjúntela en el caso antes de cerrarlo.</span>
+            </div>
+          }
           <div class="row" style="justify-content: flex-end;">
             <button class="btn btn-primary" [disabled]="!resultado().trim()" (click)="cerrar(c.garantia, c.caso)">Cerrar caso</button>
           </div>
@@ -310,7 +330,7 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
 export class GarantiaComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
   private readonly router = inject(Router);
   private readonly casoActivo = inject(CasoActivoService);
 
@@ -396,10 +416,41 @@ export class GarantiaComponent {
     this.abrirCaso.set(null);
   }
 
-  protected cerrar(g: Garantia, c: CasoGarantia): void {
+  /** Qué imágenes se esperan en un caso de garantía, de la apertura al cierre. */
+  protected readonly sugeridasGarantia = [
+    'Fotografía del equipo al abrir el caso', 'Captura o fotografía del diagnóstico',
+    'Fotografía de la corrección aplicada', 'Fotografía del equipo al cerrar el caso'
+  ];
+
+  private usuarioActual(): string {
     const u = this.auth.usuario();
-    this.data.cerrarCasoGarantia(g.expediente, c.codigo, this.resultado().trim(), this.evidencia().trim(), `${u?.nombre} — ${u?.rol}`);
-    this.toast.ok('Caso cerrado', 'El resultado de la revisión quedó registrado en el Expediente único.');
+    return `${u?.nombre} — ${u?.rol}`;
+  }
+
+  protected adjuntarEvidencia(g: Garantia, c: CasoGarantia, ev: { archivo: string; tipo: string; imagen: string; item: string }): void {
+    const error = this.data.adjuntarEvidencia({
+      modulo: 'Garantía', proceso: c.codigo, expediente: g.expediente, inventario: g.inventario,
+      archivo: ev.archivo, tipo: ev.tipo, usuario: this.usuarioActual(), imagen: ev.imagen, item: ev.item
+    });
+    if (error) { this.toast.error('No se pudo adjuntar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia adjuntada', `Queda asociada al caso ${c.codigo} y al Expediente único.`);
+  }
+
+  protected quitarEvidencia(g: Garantia, c: CasoGarantia, archivo: string): void {
+    const error = this.data.eliminarEvidencia('Garantía', c.codigo, g.expediente, archivo, this.usuarioActual());
+    if (error) { this.toast.error('No se pudo eliminar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda el caso ${c.codigo}.`);
+  }
+
+  protected verEvidencia(g: Garantia, c: CasoGarantia, archivo: string): void {
+    this.data.registrarConsultaEvidenciaTecnica('Garantía', c.codigo, g.expediente, archivo, this.usuarioActual());
+  }
+
+  protected cerrar(g: Garantia, c: CasoGarantia): void {
+    const error = this.data.cerrarCasoGarantia(g.expediente, c.codigo, this.resultado().trim(),
+      this.evidencia().trim(), this.usuarioActual());
+    if (error) { this.toast.error('No se puede cerrar el caso', error); return; }
+    this.toast.ok('Caso cerrado', 'El resultado de la revisión y sus imágenes quedaron en el Expediente único.');
     this.seleccion.set(this.data.garantias().find((x) => x.expediente === g.expediente) ?? null);
     this.cierre.set(null);
   }

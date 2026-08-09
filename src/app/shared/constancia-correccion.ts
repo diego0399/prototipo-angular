@@ -3,6 +3,7 @@ import { DataService } from '../core/services/data.service';
 import { AuthService } from '../core/services/auth.service';
 import { ToastService } from '../core/services/toast.service';
 import { BadgeComponent, ModalComponent } from './ui';
+import { EvidenciasComponent } from './evidencias';
 
 /**
  * Visor de la **Constancia de Corrección F0302 por Inconformidad**. Es el hermano del visor de la
@@ -15,7 +16,7 @@ import { BadgeComponent, ModalComponent } from './ui';
  */
 @Component({
   selector: 'ui-constancia-correccion',
-  imports: [BadgeComponent, ModalComponent],
+  imports: [BadgeComponent, ModalComponent, EvidenciasComponent],
   styles: `
     .doc-hoja {
       background: var(--bg-1, #fff); border: 1px solid var(--line); border-radius: 8px;
@@ -51,6 +52,10 @@ import { BadgeComponent, ModalComponent } from './ui';
             }
           } @else {
             <div class="doc-hoja">{{ texto() }}</div>
+            <!-- Las imágenes que respaldan la corrección, junto al documento -->
+            <ui-evidencias titulo="Imágenes de evidencia de la corrección"
+              [lista]="data.evid.de('Corrección F0302', c.id)"
+              (visualizar)="verEvidencia(c, $event)" />
           }
 
           <div class="row mt-2" style="justify-content: flex-end; flex-wrap: wrap;">
@@ -77,7 +82,7 @@ import { BadgeComponent, ModalComponent } from './ui';
   `
 })
 export class ConstanciaCorreccionComponent {
-  private readonly data = inject(DataService);
+  protected readonly data = inject(DataService);
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
@@ -86,6 +91,12 @@ export class ConstanciaCorreccionComponent {
   readonly cerrado = output<void>();
 
   protected soloFirma = signal(false);
+
+  /** Abrir una imagen desde la constancia también es un acceso a la evidencia. */
+  protected verEvidencia(c: { id: string; expediente: string }, archivo: string): void {
+    this.data.registrarConsultaEvidenciaTecnica('Corrección F0302', c.id, c.expediente,
+      archivo, this.usuarioActual);
+  }
 
   protected readonly abierto = computed(() => !!this.idCorreccion());
   protected readonly correccion = computed(() => this.data.correccionDe(this.idCorreccion()));

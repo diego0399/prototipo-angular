@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 /**
  * Reprocesos F0288 pendientes: la bandeja de Hardware para los equipos devueltos por una falla
@@ -17,7 +18,8 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
  */
 @Component({
   selector: 'app-reprocesos',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent, ConstanciaReprocesoComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent,
+    ConstanciaReprocesoComponent, EvidenciasComponent],
   styles: `
     .rep-card { border-left: 4px solid var(--warn, #c9930a); }
     .rep-card.alta { border-left-color: var(--danger, #c0392b); }
@@ -328,49 +330,37 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
               }
             }
             @if (r.estado === 'En proceso') {
-              @if (data.reprocesoExigeEvidencia(r) && !r.evidencias.length) {
+              @if (!r.evidencias.length) {
                 <div class="alert warn mt-2">
                   <span class="alert-ico">!</span>
-                  <span>{{ data.MSG_EVIDENCIA_REPROCESO }}</span>
+                  <span>{{ data.MSG_EVIDENCIA_REPROCESO }} La evidencia visual respalda la corrección realizada.</span>
                 </div>
-              } @else if (!data.reprocesoExigeEvidencia(r)) {
-                <p class="hint">En «Otro» la evidencia es opcional, pero entonces la observación técnica es obligatoria.</p>
+              } @else if (data.evidenciasFaltantesPorAccion(r); as faltan) {
+                @if (faltan.length) {
+                  <div class="alert warn mt-2">
+                    <span class="alert-ico">!</span>
+                    <span>
+                      Marcó <b>{{ faltan[0].item }}</b>: falta una imagen de tipo
+                      <b>{{ faltan[0].tipos.join(' o ') }}</b> que lo respalde.
+                    </span>
+                  </div>
+                }
               }
               <p class="hint">«No aplica» solo se ofrece en los ítems condicionales; los demás corresponden al tipo de problema y hay que resolverlos.</p>
             }
 
-            <!-- Evidencias del reproceso: lo adjuntado y, aparte, lo que aún no lo está -->
-            <div class="sec-title mt-3">Evidencias del reproceso ({{ r.evidencias.length }})</div>
-            @if (r.evidencias.length) {
-              @for (e of r.evidencias; track e.archivo) {
-                <div class="sub-cell">{{ e.archivo }} · {{ e.tipo }} · {{ e.cargadaPor }} · {{ e.fecha }} {{ e.hora }} · <span class="mono">{{ e.reproceso }}</span></div>
-              }
-            } @else {
-              <p class="small muted">Sin evidencias adjuntas.</p>
-            }
-            @if (r.estado === 'En proceso') {
-              <div class="card card-pad mt-2">
-                <b class="small">Adjuntar nueva evidencia</b>
-                <div class="grid grid-2 mt-1">
-                  <div class="field">
-                    <label>Archivo de evidencia</label>
-                    <input class="control" [ngModel]="evArchivo()" (ngModelChange)="evArchivo.set($event)"
-                      [placeholder]="data.evidenciaSugeridaReproceso(data.tipoProblemaDeReproceso(r)).archivo" />
-                  </div>
-                  <div class="field">
-                    <label>Tipo de evidencia</label>
-                    <input class="control" [ngModel]="evTipo()" (ngModelChange)="evTipo.set($event)"
-                      [placeholder]="data.evidenciaSugeridaReproceso(data.tipoProblemaDeReproceso(r)).tipo" />
-                  </div>
-                </div>
-                @if (evArchivo().trim()) {
-                  <span class="hint">Sin adjuntar todavía: <b>{{ evArchivo().trim() }}</b> se registra al pulsar «Adjuntar evidencia».</span>
-                }
-                <div class="row" style="justify-content: flex-end;">
-                  <button class="btn btn-outline btn-sm" (click)="agregarEvidencia(r)">Adjuntar evidencia</button>
-                </div>
-              </div>
-            }
+            <!-- Imágenes de evidencia: el mismo bloque compartido que el resto del sistema -->
+            <ui-evidencias titulo="Evidencias del reproceso"
+              [lista]="r.evidencias"
+              [editable]="r.estado === 'En proceso'"
+              [obligatoria]="true"
+              [mensajeFalta]="data.MSG_EVIDENCIA_REPROCESO"
+              [contextos]="data.contextosEvidenciaReproceso(r)"
+              [sugeridas]="data.imagenesSugeridasReproceso(data.tipoProblemaDeReproceso(r))"
+              (adjuntar)="agregarEvidencia(r, $event)"
+              (eliminar)="eliminarEvidencia(r, $event)"
+              (visualizar)="verEvidencia(r, $event)"
+              (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
 
             <!-- Cierre técnico -->
             @if (r.estado === 'En proceso') {
@@ -588,15 +578,13 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
 export class ReprocesosComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
 
   protected seleccion = signal('');
   /** Reproceso cuya constancia se está viendo; '' cierra el visor. */
   protected verConstancia = signal('');
   protected asignarAbierto = signal(false);
   protected firmaAbierta = signal(false);
-  protected evArchivo = signal('');
-  protected evTipo = signal('');
   protected correccion = signal('');
   protected observaciones = signal('');
   protected resultado = signal<ResultadoReproceso | ''>('');
@@ -701,7 +689,6 @@ export class ReprocesosComponent {
     this.firmante.set(r?.tecnicoAsignado || this.usuarioActual);
     this.resultado.set(r?.resultado ?? '');
     this.obsResultado.set(r?.observacionResultado ?? '');
-    this.evArchivo.set(''); this.evTipo.set('');
   }
 
   protected generarReproceso(expediente: string): void {
@@ -785,11 +772,22 @@ export class ReprocesosComponent {
     if (error) this.toast.error('No se pudo actualizar el checklist', error);
   }
 
-  protected agregarEvidencia(r: ReprocesoF0288): void {
-    const error = this.data.agregarEvidenciaReproceso(r.id, this.evArchivo(), this.evTipo(), this.usuarioActual);
-    if (error) { this.toast.error('No se pudo adjuntar la evidencia', error); return; }
-    this.evArchivo.set(''); this.evTipo.set('');
-    this.toast.ok('Evidencia adjuntada', 'Queda guardada con el código del reproceso y el expediente técnico original.');
+  protected agregarEvidencia(r: ReprocesoF0288, ev: { archivo: string; tipo: string; imagen: string; item: string }): void {
+    const error = this.data.agregarEvidenciaReproceso(r.id, ev.archivo, ev.tipo, this.usuarioActual, ev.imagen, ev.item);
+    if (error) { this.toast.error('No se pudo adjuntar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia adjuntada',
+      'Queda guardada con su tipo, el código del reproceso y el expediente técnico original.');
+  }
+
+  /** Abrir la imagen también es un acceso a la evidencia: queda constancia de quién la consultó. */
+  protected verEvidencia(r: ReprocesoF0288, archivo: string): void {
+    this.data.registrarConsultaEvidencia(r.id, archivo, this.usuarioActual);
+  }
+
+  protected eliminarEvidencia(r: ReprocesoF0288, archivo: string): void {
+    const error = this.data.eliminarEvidenciaReproceso(r.id, archivo, this.usuarioActual);
+    if (error) { this.toast.error('No se pudo eliminar la imagen', error); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda este reproceso.`);
   }
 
   protected finalizar(r: ReprocesoF0288): void {

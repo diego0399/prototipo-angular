@@ -5,11 +5,12 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { AccesorioVerificado, DocumentoGenerado, EstadoDocumento, ExpedienteTecnico, FirmaProceso } from '../../core/models/models';
+import { AccesorioVerificado, DocumentoGenerado, EstadoDocumento, ExpedienteTecnico, FirmaProceso, ModuloEvidencia } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
+import { EvidenciasComponent } from '../../shared/evidencias';
 import {
   BuscarExpedienteTecnicoModalComponent, BuscarExpedienteUnicoModalComponent,
   FilaExpedienteTecnico, FilaExpedienteUnico, filaExpedienteTecnico, filaExpedienteUnico
@@ -34,7 +35,7 @@ interface FilaDoc {
   imports: [
     FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent,
     BuscarExpedienteUnicoModalComponent, BuscarExpedienteTecnicoModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent, IconComponent],
+    ConstanciaCorreccionComponent, IconComponent, EvidenciasComponent],
   styles: `
     .cat-busq { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .cat-busq input[type='search'] { flex: 1 1 340px; font-size: 13.5px; padding: 10px 14px; }
@@ -375,6 +376,18 @@ interface FilaDoc {
                 @case ('Reporte final') { Contenido: consolidación del expediente único — solicitud, asignación, expediente técnico, F0288, F0302, conformidad del usuario final, garantía y trazabilidad — con las firmas capturadas durante el proceso. }
               }
             </p>
+            <!-- Las imágenes que respaldaban la etapa cuando se generó el documento -->
+            @if (evidenciasDoc(f); as lista) {
+              <ui-evidencias titulo="Imágenes de evidencia del documento" [lista]="lista"
+                (visualizar)="verEvidenciaDoc(f, $event)" />
+              @if (retiradasDoc(f); as retiradas) {
+                @if (retiradas.length) {
+                  <span class="hint">
+                    El documento certificó además: {{ retiradas.join(' · ') }}. Ya no está entre las imágenes de la etapa.
+                  </span>
+                }
+              }
+            }
             @if (f.tipo === 'F0302' && capturasDoc(); as caps) {
               <div class="mt-2">
                 <b>Controles de seguridad con evidencia</b>
@@ -771,6 +784,46 @@ export class DocumentosComponent {
     if (items.length === 0) return undefined;
     return items.map((s) => ({ item: s, evidencia: c.evidencias.find((e) => e.item === s.nombre && e.archivo) }));
   });
+
+  /**
+   * Módulo y proceso al que pertenecen las imágenes de un documento generado. El F0288 se respalda
+   * con las de la preparación; el F0302, con las de la configuración.
+   */
+  private refDoc(f: FilaDoc): { modulo: ModuloEvidencia; proceso: string } | undefined {
+    if (f.tipo === 'F0288') {
+      const codigo = f.doc?.expedienteTecnico ?? f.doc?.expediente ?? '';
+      return codigo ? { modulo: 'Preparación F0288', proceso: codigo } : undefined;
+    }
+    if (f.tipo === 'F0302') {
+      const codigo = f.doc?.expediente ?? '';
+      return codigo ? { modulo: 'Configuración F0302', proceso: codigo } : undefined;
+    }
+    return undefined;
+  }
+
+  /** Imágenes vigentes de la etapa que respalda el documento. */
+  protected evidenciasDoc(f: FilaDoc) {
+    const ref = this.refDoc(f);
+    if (!ref) return undefined;
+    const lista = this.data.evid.de(ref.modulo, ref.proceso);
+    return lista.length ? lista : undefined;
+  }
+
+  /** Archivos que el documento certificó y que ya no están entre las imágenes de la etapa. */
+  protected retiradasDoc(f: FilaDoc): string[] {
+    const ref = this.refDoc(f);
+    if (!ref) return [];
+    const actuales = this.data.evid.de(ref.modulo, ref.proceso).map((e) => e.archivo);
+    return (f.doc?.evidencias ?? []).filter((a) => !actuales.includes(a));
+  }
+
+  protected verEvidenciaDoc(f: FilaDoc, archivo: string): void {
+    const ref = this.refDoc(f);
+    if (!ref) return;
+    const u = this.auth.usuario();
+    this.data.registrarConsultaEvidenciaTecnica(ref.modulo, ref.proceso,
+      f.doc?.expediente ?? ref.proceso, archivo, `${u?.nombre} — ${u?.rol}`);
+  }
 
   /** Software del catálogo que el Técnico de Soporte agregó en la Configuración F0302, con su motivo. */
   protected readonly adicionalDoc = computed(() => {

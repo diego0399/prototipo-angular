@@ -5,14 +5,15 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import {
   AccesorioVerificado, ChecklistItem, Conformidad, ConfiguracionF0302, DocumentoGenerado, Equipo,
-  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, PreparacionF0288,
-  SoftwareF0302, SoftwareHeredadoF0288
+  EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, Garantia, IngresoHardware, ModuloEvidencia,
+  PreparacionF0288, SoftwareF0302, SoftwareHeredadoF0288
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import { IconComponent } from '../../shared/icon';
 import { LineaTiempoComponent } from '../../shared/linea-tiempo';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 /** Fila de la vista resumen: el eje principal de la trazabilidad es el equipo. */
 interface FilaTraza {
@@ -38,7 +39,7 @@ interface FilaTraza {
 @Component({
   selector: 'app-trazabilidad',
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent, LineaTiempoComponent],
+    ConstanciaCorreccionComponent, LineaTiempoComponent, EvidenciasComponent],
   styles: `
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
@@ -703,6 +704,30 @@ interface FilaTraza {
               <span class="hint">Se muestran todos los documentos históricos del equipo (cada F0288, cada F0302, constancias y reportes). La vista previa, las firmas y la descarga están en el Generador de documentos.</span>
             }
 
+            <!-- ── Evidencias: qué imagen respalda cada etapa del equipo ── -->
+            @case ('evid') {
+              <p class="hint mb-2">
+                Imágenes que respaldan cada etapa del equipo. Se muestran agrupadas por el proceso al
+                que pertenecen; abrir una queda registrado en la trazabilidad.
+              </p>
+              @for (g of evidenciasEq(); track g.etapa + g.proceso) {
+                <div class="card card-pad mt-2">
+                  <div class="row-between" style="flex-wrap: wrap; gap: 8px;">
+                    <b class="small">{{ g.etapa }} · <span class="mono">{{ g.proceso }}</span></b>
+                    <span class="chip">
+                      {{ g.lista.length }} {{ g.lista.length === 1 ? 'imagen adjunta' : 'imágenes adjuntas' }}
+                    </span>
+                  </div>
+                  <ui-evidencias titulo="Ver evidencias" [lista]="g.lista"
+                    (visualizar)="verEvidenciaEtapa(g, $event)" />
+                </div>
+              } @empty {
+                <p class="small muted" style="text-align:center; padding: 22px;">
+                  Este equipo todavía no tiene imágenes de evidencia en ninguna etapa.
+                </p>
+              }
+            }
+
             <!-- ── Trazabilidad ── -->
             @case ('traza') {
               <p class="hint mb-2">
@@ -873,6 +898,7 @@ export class TrazabilidadComponent {
     { id: 'asig', nombre: 'Asignaciones' },
     { id: 'gar', nombre: 'Garantía' },
     { id: 'docs', nombre: 'Documentos' },
+    { id: 'evid', nombre: 'Evidencias' },
     { id: 'traza', nombre: 'Trazabilidad' },
     { id: 'descargos', nombre: 'Descargos' }
   ] as const;
@@ -908,6 +934,27 @@ export class TrazabilidadComponent {
     const d = this.detalle();
     return d ? this.data.documentosDeEquipo(d.equipo.inventario) : [];
   });
+
+  /**
+   * Imágenes de evidencia del equipo, agrupadas por la etapa que las produjo. Se recorren todos
+   * los expedientes por los que pasó el equipo: un equipo puede tener varios ciclos, y el
+   * historial técnico debe mostrarlos todos.
+   */
+  protected readonly evidenciasEq = computed(() => {
+    const d = this.detalle();
+    if (!d) return [];
+    const expedientes = new Set<string>();
+    for (const e of this.data.eventos().filter((x) => x.inventario === d.equipo.inventario)) {
+      if (e.expediente) expedientes.add(e.expediente);
+    }
+    return [...expedientes].flatMap((exp) => this.data.evidenciasDelExpediente(exp));
+  });
+
+  protected verEvidenciaEtapa(g: { etapa: string; proceso: string; lista: { expediente: string }[] }, archivo: string): void {
+    const u = this.auth.usuario();
+    this.data.registrarConsultaEvidenciaTecnica(g.etapa as ModuloEvidencia, g.proceso,
+      g.lista[0]?.expediente ?? '', archivo, `${u?.nombre} — ${u?.rol}`);
+  }
   protected readonly ingresosEq = computed(() => {
     const d = this.detalle();
     return d ? this.data.ingresosDeEquipo(d.equipo.inventario) : [];

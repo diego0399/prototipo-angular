@@ -1,0 +1,35 @@
+> Building...
+√ Building...
+Initial chunk files | Names                        |  Raw size
+chunk-QSBKWUVS.js   | -                            | 361.88 kB | 
+main.js             | main                         |  37.62 kB | 
+chunk-Q6BGUU32.js   | -                            |  25.37 kB | 
+styles.css          | styles                       |  20.31 kB | 
+chunk-3CB3BCCA.js   | -                            |   3.88 kB | 
+chunk-NSYY34XN.js   | -                            |   1.35 kB | 
+
+                    | Initial total                | 450.41 kB
+
+Lazy chunk files    | Names                        |  Raw size
+chunk-QW4ZCJPJ.js   | configuracion-component      | 287.70 kB | 
+chunk-VBRILRA2.js   | trazabilidad-component       | 242.79 kB | 
+chunk-2XFLMYOM.js   | expediente-unico-component   | 194.52 kB | 
+chunk-MAWHVGUZ.js   | reprocesos-component         | 160.47 kB | 
+chunk-3V54Y6F3.js   | inventario-component         | 156.22 kB | 
+chunk-GGLKMD5J.js   | asignacion-component         | 154.75 kB | 
+chunk-5F6LPR2O.js   | documentos-component         | 153.50 kB | 
+chunk-WT5DBPBU.js   | preparacion-component        | 150.67 kB | 
+chunk-H3CIGUVT.js   | entrega-component            | 139.70 kB | 
+chunk-RZI3MXWQ.js   | dashboard-component          | 109.35 kB | 
+chunk-DHIS5USL.js   | expediente-tecnico-component | 103.75 kB | 
+chunk-WFHUAZZR.js   | catalogo-software-component  |  71.39 kB | 
+chunk-Q2QNRF25.js   | garantia-component           |  65.52 kB | 
+chunk-ZBP7T33H.js   | -                            |  49.46 kB | 
+chunk-XTXQOU57.js   | conformidad-component        |  48.74 kB | 
+...and 10 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [6.013 seconds] - 2026-08-09T05:06:56.369Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  ➜  Local:   http://localhost:4304/

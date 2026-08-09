@@ -884,3 +884,317 @@ src/app/features/reprocesos-f0288/reprocesos.component.ts
                                              evidencias separado del formulario y panel de
                                              validación previa al cierre)
 ```
+
+---
+
+# Parte 8 — La evidencia del Reproceso F0288 pasa a ser una imagen obligatoria
+
+**Fecha:** 8 de agosto de 2026, octava sesión del día (ronda 54 del punto de control)
+**Alcance:** las evidencias del reproceso. El checklist por secciones, la firma y el flujo de cierre
+siguen igual; lo que cambia es qué hace falta para poder finalizar.
+
+## 1. Una sola regla, sin excepciones
+
+Ningún reproceso se finaliza sin al menos una imagen:
+
+```text
+Debe adjuntar al menos una imagen de evidencia del reproceso para poder finalizar.
+```
+
+Esto **deroga la excepción de «Otro»** que traían las rondas 52 y 53. Con ella desapareció también
+la regla que, a falta de evidencia, obligaba a describir el problema en la observación técnica: ya
+no hay caso en que se pueda cerrar sin imagen. Al quedar sin excepciones, `evidenciaObligatoriaReproceso`
+y `reprocesoExigeEvidencia` dejaron de tener sentido y se eliminaron.
+
+## 2. Solo imágenes
+
+```text
+.png  .jpg  .jpeg  .webp        →  Solo se permiten imágenes en formato PNG, JPG, JPEG o WEBP.
+```
+
+Un PDF, un Word o un Excel no sirven como evidencia visual. El selector de archivo ya filtra por
+esos formatos, y el servicio vuelve a comprobarlo: la validación no vive solo en la pantalla.
+
+## 3. El tipo de evidencia es una lista cerrada
+
+```text
+Diagnóstico · Corrección realizada · Equipo revisado · Componente sustituido
+Accesorio asociado · Validación posterior · Otro
+```
+
+No es un capricho de formulario: es lo que permite exigir **la imagen que corresponde** a la acción
+marcada. Llega preseleccionado con el tipo más probable para el problema que se revisa.
+
+```text
+Debe seleccionar el tipo de evidencia de la imagen.
+```
+
+## 4. La imagen que exige cada acción marcada
+
+Adjuntar cualquier imagen no basta. Si el técnico marca una acción, hace falta la imagen que la
+respalda:
+
+```text
+Reinstalar Windows / Reparar sistema operativo  →  Corrección realizada o Validación posterior
+Sustituir disco · módulo de memoria · periférico →  Componente sustituido
+Revisar o sustituir cargador / cableado          →  Componente sustituido o Equipo revisado
+Asociar número de inventario del accesorio       →  Accesorio asociado
+Verificar daños visibles · inspección física     →  Equipo revisado
+```
+
+El aviso nombra el ítem y los tipos que sirven:
+
+```text
+Marcó «Sustituir disco, si corresponde»: adjunte una imagen de tipo «Componente sustituido»
+antes de finalizar el reproceso.
+```
+
+Los ítems de solo revisión no exigen un tipo concreto: revisar no produce una imagen determinada.
+
+## 5. Qué imágenes se piden según el problema
+
+La pantalla dice qué se espera ver antes de subir nada. Para sistema operativo, capturas de error
+de arranque, de reparación, de reinstalación y de validación posterior; para falla de disco, el
+diagnóstico y las fotos del disco revisado o sustituido; y así los nueve tipos. En un caso de
+sistema operativo ya no se sugiere una captura de disco.
+
+## 6. Subir, ver y eliminar
+
+El bloque **«Adjuntar imágenes de evidencia»** tiene su botón «Subir imagen» y el texto de ayuda del
+pedido. La imagen elegida se muestra en vista previa antes de adjuntarse, y hasta que se pulsa el
+botón se anuncia como lo que es: *sin adjuntar todavía*.
+
+Cada evidencia adjunta se ve como una tarjeta con miniatura, nombre, tipo, fecha, quien la cargó y
+las acciones **Ver imagen** y **Eliminar**. Eliminar solo se ofrece mientras el reproceso está en
+proceso: una vez finalizado, la imagen ya respalda lo que se declaró y quitarla dejaría el cierre
+sin sustento.
+
+Las imágenes se reducen a 900 px por lado antes de guardarlas. El prototipo guarda su estado
+completo en el navegador y una fotografía de teléfono a tamaño original llenaría el espacio
+disponible, con lo que el resto del expediente dejaría de guardarse.
+
+## 7. Las evidencias del set de demostración
+
+Las dos del reproceso firmado `EXP-PT-2026-0086-R1` no traen imagen: se muestran con un **bloque
+visual simulado** que dice el formato y aclara que la vista previa es simulada. Tampoco se les
+cambió el tipo —«Diagnóstico del disco» y «Evidencia de corrección», que no están en la lista
+cerrada—: reescribirlos alteraría lo que dice una constancia ya firmada.
+
+## 8. La constancia y los documentos generados
+
+La constancia numera las imágenes, con su tipo, quién las cargó y cuándo, y deja la referencia del
+archivo adjunto. El visor —el mismo en las ocho pantallas, incluida **Documentos generados**—
+muestra la galería con miniaturas debajo del documento y permite abrir cada imagen en grande.
+
+El documento guarda además **qué imágenes certificó al firmarse**. Si alguna faltara, la constancia
+lo dice en vez de callarlo.
+
+## 9. Trazabilidad
+
+```text
+Imagen de evidencia cargada
+Imagen de evidencia visualizada
+Imagen de evidencia eliminada
+Reproceso intentó finalizar sin evidencia
+Reproceso finalizado con evidencia
+```
+
+Cada uno guarda fecha, hora, usuario, **rol**, código de reproceso, tipo de problema, nombre del
+archivo y tipo de evidencia. El intento bloqueado se registra aunque el cierre no ocurra —es parte
+de la historia del reproceso— y aparece como hito propio, no escondido en el detalle.
+
+## 10. Casos de prueba
+
+**116 casos, 0 fallos**: la regla principal y la desaparición de las excepciones; los cuatro
+formatos aceptados y cinco rechazados; las nueve listas de imágenes sugeridas; el bloque de carga;
+la galería y sus acciones; los siete tipos de evidencia; las siete validaciones del cierre; la
+exigencia por acción marcada, ítem por ítem; la constancia; los documentos generados; los cinco
+eventos con sus campos; y un espejo funcional que adjunta, rechaza y finaliza.
+
+Regresiones: las dieciocho baterías anteriores, **1188 casos, 0 fallos**. Se actualizaron tres:
+la de la ronda 44 (el título de la sección en la constancia), la de la 52 (su bloque de «evidencia
+obligatoria por tipo», que ya no existe) y la de la 53 (mensaje, formulario y validaciones).
+
+## 11. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [5.486 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en `/`, `/reprocesos-f0288`, `/configuracion`, `/entrega-aceptacion`,
+`/generador-documentos`, `/trazabilidad` y `/expediente-tecnico`.
+
+**No hubo clics reales en un navegador**: en particular, **no se subió una imagen de verdad**. La
+lectura del archivo, su reducción y la vista previa quedan verificadas por lectura del código y por
+la compilación, no por uso.
+
+## 12. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (TipoEvidenciaReproceso; imagen y formato en
+                                             EvidenciaReproceso; evidencias en DocumentoGenerado;
+                                             tipoEvidencia en EventoTrazabilidad)
+src/app/core/services/data.service.ts       (tiposEvidenciaReproceso, formatosEvidencia,
+                                             formatoEvidenciaValido, imagenesSugeridasReproceso,
+                                             evidenciaExigidaPorItem, evidenciasFaltantesPorAccion,
+                                             agregarEvidenciaReproceso con imagen,
+                                             eliminarEvidenciaReproceso, registrarConsultaEvidencia,
+                                             refEvidencia, rolDeUsuario, las siete validaciones,
+                                             el bloqueo del cierre y la constancia con imágenes)
+src/app/features/reprocesos-f0288/reprocesos.component.ts
+                                            (selector de archivo, reducción de la imagen, galería
+                                             con miniaturas, visor y eliminación)
+src/app/shared/constancia-reproceso.ts      (galería de evidencias y visor de imagen en el documento)
+src/app/shared/linea-tiempo.ts              (tipo de evidencia en el detalle; el intento bloqueado
+                                             como hito)
+```
+
+---
+
+# Parte 9 — La regla de evidencias con imagen se aplica en todo SISGOST
+
+**Fecha:** 8 de agosto de 2026, novena sesión del día (ronda 55 del punto de control)
+**Alcance:** las evidencias de todos los módulos. Lo que la ronda 54 hizo en el reproceso pasa a
+ser la regla del sistema, y deja de estar escrita seis veces.
+
+## 1. Un servicio, no seis copias
+
+`EvidenciaService` es ahora el único lugar donde viven los formatos admitidos, el catálogo de
+tipos, los mensajes, la validación, la reducción de la imagen y el almacén.
+
+`DataService` lo inyecta; **el servicio de evidencias no conoce a `DataService`**. La dependencia
+va en un solo sentido a propósito: si se inyectaran mutuamente, Angular no podría construir
+ninguno de los dos. El servicio valida y guarda; `DataService` decide qué etapa se bloquea y qué se
+anota en la trazabilidad, que es lo que cambia de un módulo a otro.
+
+El bloque de pantalla —galería, formulario de carga y visor— es un solo componente,
+`ui-evidencias`, usado por las seis pantallas, por las dos constancias, por Documentos generados y
+por el historial técnico. La pantalla de reprocesos, que en la ronda 54 tenía el suyo propio, pasó
+a usarlo: **ninguna pantalla conserva ya lógica de imagen propia**.
+
+## 2. Solo imágenes, en todas partes
+
+```text
+.png  .jpg  .jpeg  .webp   →   Solo se permiten imágenes en formato PNG, JPG, JPEG o WEBP.
+```
+
+Antes el F0288 y el F0302 aceptaban el nombre de un archivo cualquiera escrito a mano —un PDF, un
+número de referencia, cualquier texto—. Ahora las capturas de Antivirus, OCS Inventory y Agente DLP
+se suben con un selector de archivo y se validan como todas las demás.
+
+## 3. Once tipos, uno solo
+
+```text
+Diagnóstico · Corrección realizada · Instalación validada · Configuración validada
+Equipo revisado · Accesorio asociado · Componente sustituido · Estado físico
+Validación posterior · Cierre de caso · Otro
+```
+
+Amplía los siete que la ronda 54 estrenó en el reproceso; el reproceso ya no tiene lista propia.
+Cada módulo llega con el tipo más probable preseleccionado.
+
+## 4. Qué etapa no cierra sin imagen
+
+```text
+Preparación F0288       Debe adjuntar al menos una imagen de evidencia para finalizar la
+                        Preparación F0288.
+Configuración F0302     Debe adjuntar al menos una imagen de evidencia para finalizar la
+                        Configuración F0302.
+Corrección F0302        Debe adjuntar una imagen que respalde la corrección realizada.
+Reproceso F0288         Debe adjuntar al menos una imagen de evidencia del reproceso para poder
+                        finalizar.
+Garantía                Debe adjuntar evidencia visual para cerrar el caso de garantía.
+Descargo                Debe adjuntar una imagen del estado físico del equipo para finalizar el
+                        descargo.
+```
+
+Y el reenvío del formulario de conformidad exige que la corrección tenga respaldo visual: si la
+resolvió Soporte, la imagen de la corrección; si la resolvió Hardware, la del reproceso.
+
+Un cambio de regla que conviene notar: **toda corrección F0302 exige ahora imagen**. Antes solo la
+exigía si se había marcado un ítem que implicara intervención.
+
+## 5. El descargo, por número de inventario
+
+La imagen del estado físico se adjunta contra el **número de inventario**, no contra el código del
+descargo: cuando el técnico fotografía el equipo recibido, el descargo todavía no existe.
+
+## 6. Trazabilidad
+
+```text
+Imagen de evidencia cargada          Intento de finalizar sin evidencia requerida
+Imagen de evidencia visualizada      Proceso finalizado con evidencia
+Imagen de evidencia eliminada        Documento generado con evidencias
+```
+
+Cada uno guarda fecha, hora, usuario, **rol**, módulo, código del proceso, archivo, tipo de
+evidencia y **estado de validación** (Válida · Sin evidencia · Retirada · Consultada). El intento
+bloqueado se registra aunque el cierre no ocurra y se ve como hito propio.
+
+## 7. Documentos e historial técnico
+
+El F0288 y el F0302 guardan al generarse **qué imágenes los respaldaban**, igual que ya hacía la
+constancia de reproceso. Documentos generados y las dos constancias muestran la galería; si alguna
+imagen certificada ya no está, el documento lo dice en vez de callarlo.
+
+El historial técnico del equipo tiene una pestaña **Evidencias** que agrupa por etapa, con el
+conteo y el acceso a cada imagen:
+
+```text
+Preparación F0288 · EXP-PT-2026-0086      2 imágenes adjuntas
+Configuración F0302 · SOL-2026-0141       1 imagen adjunta
+Descargo · 2201-0954-2023                 1 imagen adjunta
+```
+
+## 8. Dónde no se movió nada
+
+Las evidencias del **reproceso** siguen guardándose dentro del propio reproceso, como desde la
+ronda 54. Moverlas al almacén común habría reescrito el contenido de una constancia ya firmada. Lo
+que sí se unificó es todo lo demás: las reglas, los mensajes, el catálogo, la reducción de la
+imagen y el bloque de pantalla. El historial técnico las lee junto a las demás mediante un
+adaptador, así que se ven en la misma lista.
+
+## 9. Casos de prueba
+
+**145 casos, 0 fallos**: el servicio y su almacén; los cuatro formatos aceptados y seis rechazados;
+los once tipos; los seis mensajes por etapa y que son distintos entre sí; el guardián común en las
+cinco etapas que lo usan; el reenvío de conformidad por sus dos caminos; las capturas por ítem de
+F0288 y F0302 convertidas en imágenes; la galería y sus acciones; los documentos; el historial; los
+seis eventos con su estado de validación; y un espejo funcional que comprueba que las imágenes de
+un módulo no respaldan a otro.
+
+Regresiones: las diecinueve baterías anteriores, **1308 casos, 0 fallos**. Se actualizaron cuatro
+(rondas 43, 52, 53 y 54) porque las constantes se mudaron al servicio nuevo y el bloque de carga al
+componente compartido.
+
+## 10. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [5.551 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en las nueve rutas tocadas.
+
+**No hubo clics reales en un navegador**: no se subió ninguna imagen de verdad en ninguno de los
+seis módulos.
+
+## 11. Archivos tocados
+
+```text
+src/app/core/services/evidencia.service.ts  (NUEVO: formatos, tipos, mensajes, validación,
+                                             reducción de imagen y almacén)
+src/app/shared/evidencias.ts                (NUEVO: ui-evidencias — galería, carga y visor)
+src/app/core/models/models.ts               (ModuloEvidencia, TipoEvidencia, EvidenciaTecnica;
+                                             estadoValidacion en EventoTrazabilidad)
+src/app/core/services/data.service.ts       (adjuntarEvidencia, eliminarEvidencia,
+                                             registrarConsultaEvidenciaTecnica, exigirEvidencia,
+                                             registrarCierreConEvidencia,
+                                             registrarDocumentoConEvidencias,
+                                             evidenciasDelExpediente; bloqueos en las seis etapas;
+                                             las constantes del reproceso pasan a delegar)
+src/app/features/preparacion-tecnica/…      (captura por ítem con imagen + bloque de evidencias)
+src/app/features/configuracion/…            (ídem para el Agente DLP)
+src/app/features/entrega-aceptacion/…       (evidencias de la corrección F0302)
+src/app/features/reprocesos-f0288/…         (pasa a usar el bloque compartido)
+src/app/features/garantia/…                 (evidencias por caso y cierre bloqueado)
+src/app/features/descargo/…                 (imagen del estado físico)
+src/app/features/generador-documentos/…     (galería del documento)
+src/app/features/trazabilidad/…             (pestaña Evidencias del historial técnico)
+src/app/shared/constancia-reproceso.ts      (usa el bloque compartido)
+src/app/shared/constancia-correccion.ts     (galería de la corrección)
+src/app/shared/linea-tiempo.ts              (estado de validación en el detalle)
+```

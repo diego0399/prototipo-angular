@@ -862,6 +862,12 @@ export interface DocumentoGenerado {
   tecnicoHardware?: string;
   /** Resultado del reproceso que la constancia documenta. */
   resultado?: string;
+  /**
+   * Nombres de las imágenes de evidencia que respaldaban el reproceso al firmarlo. Queda en el
+   * documento para que la constancia diga qué certificó, aunque después se consulte desde otra
+   * pantalla.
+   */
+  evidencias?: string[];
   /** Código de la corrección F0302 por inconformidad, en su constancia. */
   correccion?: string;
   /** Técnico de Soporte que firmó la constancia de corrección. */
@@ -985,6 +991,8 @@ export interface EvidenciaCorreccion {
   /** Código de la corrección y expediente del proceso: la evidencia se guarda con ambos. */
   correccion: string;
   expediente: string;
+  /** Ítem que la imagen respalda; de ahí sale su tipo. */
+  item?: string;
 }
 
 /** Firma simulada del Técnico de Soporte que cierra la corrección F0302 por inconformidad. */
@@ -1250,9 +1258,102 @@ export interface ItemReproceso {
   nota: string;
 }
 
-/** Evidencia simulada adjuntada durante el reproceso. */
+/**
+ * Módulos que guardan imágenes de evidencia. La lista es cerrada porque de ella dependen el
+ * mensaje que se muestra cuando falta la imagen y la etapa que queda bloqueada.
+ */
+export type ModuloEvidencia =
+  | 'Preparación F0288'
+  | 'Configuración F0302'
+  | 'Corrección F0302'
+  | 'Reproceso F0288'
+  | 'Garantía'
+  | 'Descargo';
+
+/**
+ * Tipo con que se clasifica cualquier imagen de evidencia del sistema. Amplía el catálogo que la
+ * ronda 54 estrenó en el reproceso: los siete de allí siguen valiendo y se agregan los que hacían
+ * falta en las demás etapas (instalación, configuración, estado físico y cierre de caso).
+ */
+export type TipoEvidencia =
+  | 'Diagnóstico'
+  | 'Corrección realizada'
+  | 'Instalación validada'
+  | 'Configuración validada'
+  | 'Equipo revisado'
+  | 'Accesorio asociado'
+  | 'Componente sustituido'
+  | 'Estado físico'
+  | 'Validación posterior'
+  | 'Cierre de caso'
+  | 'Otro';
+
+/**
+ * Módulos en los que la imagen la exige **la etapa entera**: sin al menos una no se cierra.
+ *
+ * El F0288 y el F0302 quedan fuera a propósito. Ahí la evidencia la exigen ítems concretos —el
+ * Antivirus, el OCS Inventory, el Agente DLP— y el aviso tiene que decir cuál falta; un bloqueo
+ * general daría a entender que sirve cualquier imagen.
+ */
+export type ModuloConEvidenciaObligatoria = Exclude<ModuloEvidencia, 'Preparación F0288' | 'Configuración F0302'>;
+
+/**
+ * Ítem, sección o acción que una imagen respalda, con el tipo de evidencia que le corresponde.
+ *
+ * El tipo no se pregunta: se deduce de dónde se está cargando la imagen. Quien adjunta la captura
+ * del Agente DLP sabe qué hizo, no tiene por qué traducirlo a una de once categorías.
+ */
+export interface ContextoEvidencia {
+  /** Ítem o sección del checklist, tal como aparece en la pantalla. */
+  nombre: string;
+  /** Tipo que se asigna solo al elegir este contexto. */
+  tipo: TipoEvidencia;
+}
+
+/**
+ * Imagen de evidencia, con la misma forma en todos los módulos. Antes cada etapa guardaba la suya
+ * con campos distintos —unas solo el nombre del archivo, otras el ítem que respaldaban— y no había
+ * forma de listarlas juntas ni de validarlas con una sola regla.
+ */
+export interface EvidenciaTecnica {
+  /** Módulo que la exige, y proceso concreto al que pertenece (código de F0288, F0302, caso…). */
+  modulo: ModuloEvidencia;
+  proceso: string;
+  /** Expediente del proceso, para el historial técnico y la trazabilidad. */
+  expediente: string;
+  archivo: string;
+  tipo: TipoEvidencia | string;
+  fecha: string;
+  hora: string;
+  cargadaPor: string;
+  /** Rol de quien la cargó, tal como lo pide la trazabilidad. */
+  rol?: string;
+  /** Ítem del checklist al que respalda, cuando la evidencia nace de uno. */
+  item?: string;
+  /** Imagen en `data:` URL, reducida al cargarla. */
+  imagen?: string;
+  /** Formato del archivo: png, jpg, jpeg o webp. */
+  formato?: string;
+}
+
+/**
+ * Tipo con que se clasifica cada imagen de evidencia del reproceso. Es una lista cerrada: una
+ * imagen sin decir qué muestra no respalda nada, y describirla en texto libre hacía imposible
+ * exigir la que corresponde a la acción marcada en el checklist.
+ */
+export type TipoEvidenciaReproceso =
+  | 'Diagnóstico'
+  | 'Corrección realizada'
+  | 'Equipo revisado'
+  | 'Componente sustituido'
+  | 'Accesorio asociado'
+  | 'Validación posterior'
+  | 'Otro';
+
+/** Imagen de evidencia adjuntada durante el reproceso. */
 export interface EvidenciaReproceso {
   archivo: string;
+  /** Tipo de evidencia: uno de `TipoEvidenciaReproceso` en las cargadas desde la pantalla. */
   tipo: string;
   fecha: string;
   hora: string;
@@ -1260,6 +1361,15 @@ export interface EvidenciaReproceso {
   /** Código del reproceso y expediente técnico original: la evidencia se guarda con ambos. */
   reproceso: string;
   expedienteTecnico: string;
+  /** Acción o diagnóstico que la imagen respalda; de ahí sale su tipo. */
+  item?: string;
+  /**
+   * Imagen en `data:` URL, reducida al cargarla. Las evidencias del set de demostración no la
+   * traen: se muestran con un bloque visual simulado, no con una imagen inventada.
+   */
+  imagen?: string;
+  /** Formato del archivo: png, jpg, jpeg o webp. */
+  formato?: string;
 }
 
 /** Firma simulada del Técnico de Hardware que cierra el reproceso. */
@@ -1397,6 +1507,10 @@ export interface EventoTrazabilidad {
   accionTomada?: string;
   /** Evidencia registrada con la falla o con la corrección. */
   evidencia?: string;
+  /** Tipo con que se clasificó la imagen de evidencia. */
+  tipoEvidencia?: string;
+  /** Cómo quedó la validación de la evidencia: Válida · Sin evidencia · Retirada · Consultada. */
+  estadoValidacion?: string;
   /** Reproceso F0288 al que pertenece el evento, cuando aplica. */
   reproceso?: string;
   /** Técnico de Soporte que reportó la falla que originó el reproceso. */

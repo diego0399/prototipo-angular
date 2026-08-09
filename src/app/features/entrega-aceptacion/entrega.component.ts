@@ -12,11 +12,12 @@ import { IconComponent } from '../../shared/icon';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
+import { EvidenciasComponent } from '../../shared/evidencias';
 
 @Component({
   selector: 'app-entrega',
   imports: [RouterLink, SlicePipe, FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent,
-    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent, IconComponent],
+    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent, IconComponent, EvidenciasComponent],
   styles: `
     .conf-panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 18px; }
     .conf-panel .cp-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 8px; }
@@ -255,20 +256,17 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                             }
                           </div>
 
-                          <div class="field mt-2">
-                            <label>Evidencia @if (exigeEvidencia(cor)) { <span class="req">*</span> } @else { <span class="hint">(opcional)</span> }</label>
-                            <div class="row">
-                              <input class="control" [ngModel]="archivoEvidencia()" (ngModelChange)="archivoEvidencia.set($event)" placeholder="captura-correccion.png" />
-                              <button class="btn btn-outline btn-sm" (click)="adjuntar(cor.id)">Adjuntar</button>
-                            </div>
-                            @if (cor.evidencias.length) {
-                              <ul class="small mt-1">
-                                @for (ev of cor.evidencias; track ev.archivo) { <li>{{ ev.archivo }} · {{ ev.tipo }} · {{ ev.fecha }} {{ ev.hora }}</li> }
-                              </ul>
-                            } @else if (exigeEvidencia(cor)) {
-                              <span class="hint" style="color: var(--danger);">La corrección implicó una intervención: adjunte la evidencia antes de finalizarla.</span>
-                            }
-                          </div>
+                          <ui-evidencias titulo="Evidencias de la corrección F0302"
+                            [lista]="data.evid.de('Corrección F0302', cor.id)"
+                            [editable]="true"
+                            [obligatoria]="true"
+                            [mensajeFalta]="data.evid.mensajeFalta('Corrección F0302')"
+                            [contextos]="data.evid.contextosDe('Corrección F0302')"
+                            [sugeridas]="sugeridasCorreccion"
+                            (adjuntar)="adjuntar(cor.id, $event)"
+                            (eliminar)="quitarEvidencia(cor.id, $event)"
+                            (visualizar)="verEvidencia(cor, $event)"
+                            (error)="toast.error('No se pudo adjuntar la imagen', $event)" />
 
                           <div class="field mt-2">
                             <label>Descripción de la corrección <span class="req">*</span></label>
@@ -448,7 +446,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
 export class EntregaComponent {
   protected readonly data = inject(DataService);
   protected readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly toast = inject(ToastService);
   protected readonly casoActivo = inject(CasoActivoService);
 
   protected seleccion = signal('');
@@ -678,11 +676,28 @@ export class EntregaComponent {
     if (err) this.toast.error('No se pudo marcar el ítem', err);
   }
 
-  protected adjuntar(idCor: string): void {
-    const err = this.data.agregarEvidenciaCorreccion(idCor, this.archivoEvidencia(), 'Evidencia de corrección', this.usuarioActual());
-    if (err) { this.toast.error('No se pudo adjuntar', err); return; }
-    this.archivoEvidencia.set('');
-    this.toast.ok('Evidencia adjuntada', 'Queda asociada a la corrección y al expediente.');
+  /** Qué imágenes se esperan al corregir por Soporte, según el tipo de problema atendido. */
+  protected readonly sugeridasCorreccion = [
+    'Captura de la configuración corregida', 'Captura del software reinstalado o reparado',
+    'Captura del acceso o las credenciales validadas', 'Captura del equipo en el dominio',
+    'Captura de la red o la IP reservada', 'Captura del Agente DLP funcionando'
+  ];
+
+  protected adjuntar(idCor: string, ev: { archivo: string; tipo: string; imagen: string; item: string }): void {
+    const err = this.data.agregarEvidenciaCorreccion(idCor, ev.archivo, ev.tipo, this.usuarioActual(), ev.imagen, ev.item);
+    if (err) { this.toast.error('No se pudo adjuntar la imagen', err); return; }
+    this.toast.ok('Imagen de evidencia adjuntada', 'Queda asociada a la corrección y al expediente.');
+  }
+
+  protected quitarEvidencia(idCor: string, archivo: string): void {
+    const err = this.data.eliminarEvidenciaCorreccion(idCor, archivo, this.usuarioActual());
+    if (err) { this.toast.error('No se pudo eliminar la imagen', err); return; }
+    this.toast.ok('Imagen de evidencia eliminada', `${archivo} ya no respalda esta corrección.`);
+  }
+
+  protected verEvidencia(cor: { id: string; expediente: string }, archivo: string): void {
+    this.data.registrarConsultaEvidenciaTecnica('Corrección F0302', cor.id, cor.expediente,
+      archivo, this.usuarioActual());
   }
 
   protected escalar(idCor: string): void {

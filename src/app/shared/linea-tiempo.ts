@@ -33,6 +33,8 @@ const PRINCIPALES = [
   /formulario de conformidad (enviado|reenviado|aceptado)/i, /aceptó la recepción/i,
   /garantía (habilitada|de un mes iniciada)/i, /descargo registrado/i, /reingreso a hardware/i,
   /reproceso f0288 (generado|finalizado|firmado)/i, /firma de técnico/i,
+  // Un cierre bloqueado por falta de evidencia es parte de la historia: no se esconde en el detalle.
+  /intentó finalizar sin evidencia/i, /intento de finalizar sin evidencia/i,
   /corrección f0302 (iniciada|finalizada|firmada)/i, /marcado como no conforme/i
 ];
 
@@ -276,7 +278,9 @@ export class LineaTiempoComponent {
       ['Encargado que asignó', e.encargadoAsigno], ['Resultado del reproceso', e.resultadoReproceso],
       ['Firma registrada', e.firmaRegistrada], ['Acción tomada', e.accionTomada],
       ['Equipo anterior', e.equipoAnterior], ['Equipo nuevo', e.equipoNuevo], ['Motivo', e.motivo],
-      ['Evidencia', e.evidencia], ['Documento', e.documento], ['Estado del documento', e.estadoDocumento]
+      ['Evidencia', e.evidencia], ['Tipo de evidencia', e.tipoEvidencia],
+      ['Estado de validación', e.estadoValidacion],
+      ['Documento', e.documento], ['Estado del documento', e.estadoDocumento]
     ];
     return base.filter(([, v]) => v !== undefined && v !== null && v !== '')
       .map(([k, v]) => ({ k, v: String(v) }));
