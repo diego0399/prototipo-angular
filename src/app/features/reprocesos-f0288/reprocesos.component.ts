@@ -1,11 +1,12 @@
 import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Cronometro, ReprocesoF0288, ResultadoReproceso } from '../../core/models/models';
+import { Cronometro, ReprocesoF0288, ResultadoReproceso, TipoProblemaReproceso } from '../../core/models/models';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 
 /**
@@ -16,18 +17,30 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
  */
 @Component({
   selector: 'app-reprocesos',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent, ConstanciaReprocesoComponent],
   styles: `
     .rep-card { border-left: 4px solid var(--warn, #c9930a); }
     .rep-card.alta { border-left-color: var(--danger, #c0392b); }
-    .chk-row { display: flex; align-items: center; gap: 12px; padding: 8px 4px; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
+    .chk-sec { margin: 14px 0 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--tx-3); }
+    .chk-row { display: flex; align-items: center; gap: 10px; padding: 8px 4px; border-bottom: 1px dashed var(--line); font-size: 13.5px; }
     .chk-row:last-child { border-bottom: 0; }
     .chk-row .c-nombre { flex: 1; color: var(--navy-900); font-weight: 500; }
     .chk-row .c-nombre.na { color: var(--tx-3); font-weight: 300; text-decoration: line-through solid var(--line-strong); }
+    .chk-row .chip-ev { background: transparent; border: 1px solid var(--line-strong); color: var(--tx-3); font-weight: 500; }
+    .chk-row .chk-est { width: 104px; text-align: right; flex: none; }
+    .chk-row .chk-acc { width: 138px; text-align: right; flex: none; }
     .chk-row input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
+    .val-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px dashed var(--line); font-size: 13px; color: var(--tx-3); }
+    .val-row:last-child { border-bottom: 0; }
+    .val-row.ok { color: var(--ok, #1e7a46); }
+    .val-row .v-txt { flex: 1; color: var(--navy-900); }
+    .val-row .v-txt b { font-weight: 600; display: block; }
     .crono-rep { font-family: var(--font-mono, monospace); font-size: 22px; color: var(--navy-900); }
     .firma-box { border: 1px dashed var(--line-strong); border-radius: 8px; padding: 12px 14px; background: var(--bg-2, #fafafa); }
     .firma-box .f-nombre { font-family: var(--font-brand, cursive); font-size: 19px; color: var(--navy-900); }
+    .datos-cambio { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 6px 18px; }
+    .datos-cambio span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--tx-3); }
+    .datos-cambio b { font-size: 13px; font-weight: 500; color: var(--navy-900); }
   `,
   template: `
     <div class="page">
@@ -275,52 +288,87 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
               </div>
             }
 
-            <!-- Checklist dinámico según el tipo de falla -->
-            <div class="sec-title mt-3">Checklist de Reproceso F0288 — {{ r.tipoFalla }}</div>
-            @for (i of r.checklist; track i.nombre) {
-              <div class="chk-row">
-                <input type="checkbox" [checked]="i.estado === 'Realizado'" [disabled]="r.estado !== 'En proceso'"
-                  (change)="marcar(r, i.nombre, $event)" />
-                <span class="c-nombre" [class.na]="i.estado === 'No aplica'">
-                  {{ i.nombre }}
-                  @if (i.implicaCorreccion) { <span class="chip">Exige evidencia si se marca</span> }
-                </span>
-                @if (r.estado === 'En proceso') {
-                  <button class="btn btn-ghost btn-sm" (click)="noAplica(r, i.nombre, i.estado)">
-                    {{ i.estado === 'No aplica' ? 'Vuelve a aplicar' : 'No aplica' }}
-                  </button>
-                } @else {
-                  <ui-badge [estado]="i.estado" />
-                }
-              </div>
-            }
-            @if (data.reprocesoExigeEvidencia(r)) {
-              <div class="alert warn mt-2">
-                <span class="alert-ico">!</span>
-                <span>Se marcó un ítem que implica <b>cambio, reparación o corrección técnica</b>: la evidencia es obligatoria para finalizar el reproceso.</span>
-              </div>
+            <!-- El tipo de problema manda sobre el checklist: cambiarlo lo regenera entero -->
+            <div class="sec-title mt-3">Tipo de problema del reproceso</div>
+            <div class="field" style="max-width: 380px;">
+              <select class="control" [ngModel]="data.tipoProblemaDeReproceso(r)"
+                (ngModelChange)="pedirCambioTipo(r, $event)" [disabled]="r.estado !== 'En proceso'">
+                @for (t of tiposProblema; track t) { <option [value]="t">{{ t }}</option> }
+              </select>
+              @if (r.estado === 'En proceso') {
+                <span class="hint">El checklist se arma con este tipo; cambiarlo lo regenera y limpia lo marcado.</span>
+              }
+            </div>
+            @if (data.tipoProblemaDeReproceso(r) === 'Accesorio faltante' && data.accesoriosRequeridos(r.inventario).length) {
+              <p class="hint">Accesorios requeridos para este equipo: <b>{{ data.accesoriosRequeridos(r.inventario).join(' · ') }}</b>.</p>
             }
 
-            <!-- Evidencias del reproceso -->
-            <div class="sec-title mt-3">Evidencias del reproceso</div>
-            @for (e of r.evidencias; track e.archivo) {
-              <div class="sub-cell">{{ e.archivo }} · {{ e.tipo }} · {{ e.cargadaPor }} · {{ e.fecha }} {{ e.hora }} · <span class="mono">{{ e.reproceso }}</span></div>
-            } @empty {
+            <!-- Checklist dinámico según el tipo de problema, agrupado por secciones -->
+            <div class="row-between mt-3" style="align-items: flex-end; gap: 12px;">
+              <div class="sec-title" style="margin: 0;">Checklist de Reproceso F0288 — {{ data.tipoProblemaDeReproceso(r) }}</div>
+              <span class="chip">{{ completados(r) }} de {{ r.checklist.length }} completados</span>
+            </div>
+            @for (g of data.checklistPorSeccion(r); track g.seccion) {
+              <div class="chk-sec">{{ g.seccion }}</div>
+              @for (i of g.items; track i.nombre) {
+                <div class="chk-row">
+                  <input type="checkbox" [checked]="i.estado === 'Realizado'" [disabled]="r.estado !== 'En proceso'"
+                    (change)="marcar(r, i.nombre, $event)" />
+                  <span class="c-nombre" [class.na]="i.estado === 'No aplica'">{{ i.nombre }}</span>
+                  @if (data.itemRequiereEvidencia(i)) { <span class="chip chip-ev">Requiere evidencia</span> }
+                  <span class="chk-est"><ui-badge [estado]="data.etiquetaItemReproceso(i)" /></span>
+                  <span class="chk-acc">
+                    @if (r.estado === 'En proceso' && data.itemAdmiteNoAplica(i)) {
+                      <button class="btn btn-ghost btn-sm" (click)="noAplica(r, i.nombre, i.estado)">
+                        {{ i.estado === 'No aplica' ? 'Vuelve a aplicar' : 'Marcar No aplica' }}
+                      </button>
+                    }
+                  </span>
+                </div>
+              }
+            }
+            @if (r.estado === 'En proceso') {
+              @if (data.reprocesoExigeEvidencia(r) && !r.evidencias.length) {
+                <div class="alert warn mt-2">
+                  <span class="alert-ico">!</span>
+                  <span>{{ data.MSG_EVIDENCIA_REPROCESO }}</span>
+                </div>
+              } @else if (!data.reprocesoExigeEvidencia(r)) {
+                <p class="hint">En «Otro» la evidencia es opcional, pero entonces la observación técnica es obligatoria.</p>
+              }
+              <p class="hint">«No aplica» solo se ofrece en los ítems condicionales; los demás corresponden al tipo de problema y hay que resolverlos.</p>
+            }
+
+            <!-- Evidencias del reproceso: lo adjuntado y, aparte, lo que aún no lo está -->
+            <div class="sec-title mt-3">Evidencias del reproceso ({{ r.evidencias.length }})</div>
+            @if (r.evidencias.length) {
+              @for (e of r.evidencias; track e.archivo) {
+                <div class="sub-cell">{{ e.archivo }} · {{ e.tipo }} · {{ e.cargadaPor }} · {{ e.fecha }} {{ e.hora }} · <span class="mono">{{ e.reproceso }}</span></div>
+              }
+            } @else {
               <p class="small muted">Sin evidencias adjuntas.</p>
             }
             @if (r.estado === 'En proceso') {
-              <div class="grid grid-2 mt-1">
-                <div class="field">
-                  <label>Archivo de evidencia</label>
-                  <input class="control" [ngModel]="evArchivo()" (ngModelChange)="evArchivo.set($event)" placeholder="captura-diagnostico-disco.png" />
+              <div class="card card-pad mt-2">
+                <b class="small">Adjuntar nueva evidencia</b>
+                <div class="grid grid-2 mt-1">
+                  <div class="field">
+                    <label>Archivo de evidencia</label>
+                    <input class="control" [ngModel]="evArchivo()" (ngModelChange)="evArchivo.set($event)"
+                      [placeholder]="data.evidenciaSugeridaReproceso(data.tipoProblemaDeReproceso(r)).archivo" />
+                  </div>
+                  <div class="field">
+                    <label>Tipo de evidencia</label>
+                    <input class="control" [ngModel]="evTipo()" (ngModelChange)="evTipo.set($event)"
+                      [placeholder]="data.evidenciaSugeridaReproceso(data.tipoProblemaDeReproceso(r)).tipo" />
+                  </div>
                 </div>
-                <div class="field">
-                  <label>Tipo de evidencia</label>
-                  <input class="control" [ngModel]="evTipo()" (ngModelChange)="evTipo.set($event)" placeholder="Evidencia de corrección" />
+                @if (evArchivo().trim()) {
+                  <span class="hint">Sin adjuntar todavía: <b>{{ evArchivo().trim() }}</b> se registra al pulsar «Adjuntar evidencia».</span>
+                }
+                <div class="row" style="justify-content: flex-end;">
+                  <button class="btn btn-outline btn-sm" (click)="agregarEvidencia(r)">Adjuntar evidencia</button>
                 </div>
-              </div>
-              <div class="row" style="justify-content: flex-end;">
-                <button class="btn btn-outline btn-sm" (click)="agregarEvidencia(r)">Adjuntar evidencia</button>
               </div>
             }
 
@@ -365,6 +413,23 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
               <div class="alert warn mt-2">
                 <span class="alert-ico">!</span>
                 <span>El reproceso está finalizado pero <b>no firmado</b>. Sin la firma del Técnico de Hardware no se cierra ni devuelve el equipo a Configuración F0302.</span>
+              </div>
+            }
+
+            <!-- Lo que falta para cerrar: las tres de finalizar y las dos de la firma, juntas -->
+            @if (r.estado === 'En proceso' || r.estado === 'Finalizado') {
+              <div class="sec-title mt-3">Validación antes de cerrar el reproceso</div>
+              <div class="card card-pad">
+                @for (v of data.validacionesReproceso(r, correccion(), observaciones()); track v.etiqueta) {
+                  <div class="val-row" [class.ok]="v.cumplida">
+                    <ui-icon [name]="v.cumplida ? 'check-circle' : 'circle'" />
+                    <span class="v-txt">
+                      <b>{{ v.etiqueta }}</b>
+                      <span class="sub-cell">{{ v.detalle }}</span>
+                    </span>
+                    <span class="chip">{{ v.momento === 'Finalizar' ? 'Al finalizar' : 'Al firmar' }}</span>
+                  </div>
+                }
               </div>
             }
 
@@ -493,6 +558,24 @@ import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso'
           <div class="row mt-2" style="justify-content: flex-end;">
             <button class="btn btn-outline" (click)="firmaAbierta.set(false)">Cancelar</button>
             <button class="btn btn-primary" (click)="firmar(r)">Firmar y cerrar reproceso</button>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Cambiar el tipo de problema rehace el checklist: se confirma antes -->
+      @if (cambioTipo(); as c) {
+        <ui-modal titulo="Cambiar tipo de problema" [sub]="c.reproceso" (cerrar)="cambioTipo.set(null)">
+          <p class="small">
+            Al cambiar el tipo de problema se actualizará el checklist de reproceso. Los ítems marcados
+            que no correspondan al nuevo tipo serán limpiados.
+          </p>
+          <div class="datos-cambio mt-2">
+            <div><span>Tipo actual</span><b>{{ c.actual }}</b></div>
+            <div><span>Tipo nuevo</span><b>{{ c.nuevo }}</b></div>
+          </div>
+          <div class="row mt-3" style="justify-content: flex-end;">
+            <button class="btn btn-ghost" (click)="cambioTipo.set(null)">Cancelar</button>
+            <button class="btn btn-primary" (click)="confirmarCambioTipo()">Cambiar tipo de problema</button>
           </div>
         </ui-modal>
       }
@@ -655,7 +738,40 @@ export class ReprocesosComponent {
   protected iniciar(r: ReprocesoF0288): void {
     const error = this.data.iniciarReprocesoF0288(r.id, this.usuarioActual);
     if (error) { this.toast.error('No se pudo iniciar el reproceso', error); return; }
-    this.toast.ok('Reproceso F0288 iniciado', 'Se inició el cronómetro del tiempo trabajado y se cargó el checklist según el tipo de falla.');
+    this.toast.ok('Reproceso F0288 iniciado', 'Se inició el cronómetro del tiempo trabajado y se cargó el checklist del tipo de problema, agrupado por secciones.');
+  }
+
+  /** Tipos de problema que puede atender un reproceso; cada uno trae su propio checklist. */
+  protected readonly tiposProblema: TipoProblemaReproceso[] = [
+    'Accesorio faltante', 'Falla física del equipo', 'Falla de disco', 'Falla de memoria',
+    'Problema de sistema operativo', 'Problema de red física', 'Problema de encendido',
+    'Problema de periféricos', 'Otro'
+  ];
+  /** Cambio de tipo pendiente de confirmar; null cierra el modal. */
+  protected cambioTipo = signal<{ reproceso: string; actual: string; nuevo: TipoProblemaReproceso } | null>(null);
+
+  /**
+   * No se cambia el tipo en el acto: cambiarlo rehace el checklist y borra lo marcado, así que se
+   * pregunta antes. Cancelar deja el reproceso como estaba.
+   */
+  protected pedirCambioTipo(r: ReprocesoF0288, nuevo: TipoProblemaReproceso): void {
+    const actual = this.data.tipoProblemaDeReproceso(r);
+    if (actual === nuevo) return;
+    this.cambioTipo.set({ reproceso: r.id, actual, nuevo });
+  }
+
+  protected confirmarCambioTipo(): void {
+    const c = this.cambioTipo();
+    if (!c) return;
+    const error = this.data.cambiarTipoProblemaReproceso(c.reproceso, c.nuevo, this.usuarioActual);
+    this.cambioTipo.set(null);
+    if (error) { this.toast.error('No se pudo cambiar el tipo de problema', error); return; }
+    this.toast.ok('Checklist actualizado', `El reproceso ${c.reproceso} usa ahora el checklist de «${c.nuevo}».`);
+  }
+
+  /** Ítems ya completados, para el contador del encabezado del checklist. */
+  protected completados(r: ReprocesoF0288): number {
+    return r.checklist.filter((i) => i.estado === 'Realizado').length;
   }
 
   protected marcar(r: ReprocesoF0288, item: string, ev: Event): void {

@@ -1190,6 +1190,24 @@ export interface FallaF0302 {
   tiempoMinutos: number | null;
 }
 
+/**
+ * Tipo de problema que atiende un reproceso F0288. No es el mismo catálogo que el de las fallas de
+ * F0302: aquí se nombra lo que Hardware va a revisar sobre el equipo —encendido, periféricos, red
+ * física—, y de él sale el checklist. Un reproceso nace con el tipo derivado de la falla o de la
+ * inconformidad que lo originó, y el Técnico de Hardware puede corregirlo si al abrir el equipo
+ * resulta ser otra cosa.
+ */
+export type TipoProblemaReproceso =
+  | 'Accesorio faltante'
+  | 'Falla física del equipo'
+  | 'Falla de disco'
+  | 'Falla de memoria'
+  | 'Problema de sistema operativo'
+  | 'Problema de red física'
+  | 'Problema de encendido'
+  | 'Problema de periféricos'
+  | 'Otro';
+
 /** Resultado con el que Hardware cierra un reproceso F0288. */
 export type ResultadoReproceso =
   | 'Corregido'
@@ -1198,8 +1216,20 @@ export type ResultadoReproceso =
   | 'Requiere evaluación del Encargado';
 
 /**
+ * Sección del Checklist de Reproceso F0288. Las cinco son las mismas para todos los tipos de
+ * problema —lo que cambia es lo que va dentro—, así el técnico lee siempre el mismo recorrido:
+ * qué se encontró, qué se hizo, cómo se comprobó, qué queda como respaldo y cómo se cierra.
+ */
+export type SeccionReproceso =
+  | 'Diagnóstico'
+  | 'Acción correctiva'
+  | 'Validación posterior'
+  | 'Evidencia'
+  | 'Cierre del reproceso';
+
+/**
  * Ítem del checklist de reproceso. Es un checklist propio, NO el del F0288 original: se llama
- * «Checklist de Reproceso F0288» y su contenido depende del tipo de falla reportado en F0302.
+ * «Checklist de Reproceso F0288» y su contenido depende del tipo de problema que se revisa.
  */
 export interface ItemReproceso {
   nombre: string;
@@ -1209,6 +1239,14 @@ export interface ItemReproceso {
    * hace obligatoria la evidencia: es la diferencia entre revisar y haber intervenido el equipo.
    */
   implicaCorreccion?: boolean;
+  /** Sección a la que pertenece el ítem; los checklists guardados antes la derivan de su nombre. */
+  seccion?: SeccionReproceso;
+  /**
+   * true solo en los ítems que el propio texto declara condicionales («si aplica», «si
+   * corresponde»). Únicamente esos admiten «No aplica»: los demás son parte de la revisión y
+   * marcarlos así sería declarar innecesario algo que el tipo de problema sí exige.
+   */
+  opcional?: boolean;
   nota: string;
 }
 
@@ -1267,6 +1305,8 @@ export interface ReprocesoF0288 {
   usuarioFinal?: string;
   observacionUsuarioFinal?: string;
   tipoFalla: TipoFallaF0302;
+  /** Tipo de problema que se revisa en el reproceso; de él sale el checklist. */
+  tipoProblema?: TipoProblemaReproceso;
   /** Motivo del reproceso, tomado de la falla que lo originó. */
   motivo: string;
   /** Prioridad de atención, derivada del tipo de falla (Alta cuando hay revisión física). */

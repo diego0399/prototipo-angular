@@ -617,3 +617,270 @@ src/app/features/trazabilidad/trazabilidad.component.ts (usa la línea de tiempo
                                                          eliminaron los dos bloques duplicados,
                                                          los chips, el icono y el filtro por módulo)
 ```
+
+---
+
+# Parte 6 — El checklist del reproceso F0288 se arma con el tipo de problema
+
+**Fecha:** 8 de agosto de 2026, sexta sesión del día (ronda 52 del punto de control)
+**Alcance:** el checklist del reproceso; la asignación, la firma y la constancia siguen igual.
+
+## 1. El problema
+
+El checklist salía del **tipo de falla del F0302**, que no siempre describe lo que Hardware va a
+hacer con el equipo. Un accesorio faltante recibía cinco ítems genéricos; un caso de dominio o de
+«configuración incompleta» caía en una lista base de «revisión técnica del caso» que no decía nada.
+
+## 2. El reproceso tiene su propio tipo de problema
+
+`TipoProblemaReproceso` es un catálogo aparte del de fallas de F0302: nombra **lo que se va a
+revisar sobre el equipo**.
+
+```text
+Accesorio faltante · Falla física del equipo · Falla de disco · Falla de memoria
+Problema de sistema operativo · Problema de red física · Problema de encendido
+Problema de periféricos · Otro
+```
+
+Un reproceso nace con el tipo derivado de la falla o de la inconformidad que lo originó
+—«Problema de red» llega como **red física**, porque solo llega a reproceso cuando Soporte marcó
+revisión física; dominio y configuración incompleta caen en «Otro», que no son trabajo de Hardware
+sobre el equipo—. El Técnico de Hardware puede corregirlo si al abrir el equipo resulta ser otra
+cosa: **encendido** y **periféricos** no existían como falla de F0302 y ahora sí como reproceso.
+
+## 3. Nueve checklists, uno por tipo
+
+Los nueve son distintos y cada uno habla de lo suyo. La batería lo comprueba de forma explícita:
+
+```text
+Accesorio faltante           no menciona disco, memoria ni sistema operativo
+Falla física                 no menciona software, dominio, DLP ni credenciales
+Sistema operativo            no invade F0302 con credenciales, dominio o DLP
+Red física                   no incluye la reserva de IP (es de F0302 o de la validación previa)
+```
+
+En «Accesorio faltante» la pantalla muestra además **qué accesorios exige ese equipo**: CPU usado
+lleva monitor, teclado y ratón; laptop usada, ratón y maletín. Es el mismo criterio del F0288, no
+una lista nueva.
+
+## 4. Evidencia obligatoria por tipo
+
+Los ocho tipos específicos exigen evidencia para poder finalizar: revisar un disco, una memoria o
+un accesorio deja algo que mostrar. **«Otro» es la excepción** —puede no producir captura—, y ahí
+lo obligatorio pasa a ser la observación técnica:
+
+```text
+Describa el problema identificado en la observación técnica antes de finalizar el reproceso.
+```
+
+El aviso de la pantalla nombra el tipo: «Un reproceso por *Falla de disco* exige evidencia…».
+
+## 5. Cambiar el tipo rehace el checklist
+
+```text
+Al cambiar el tipo de problema se actualizará el checklist de reproceso.
+Los ítems marcados que no correspondan al nuevo tipo serán limpiados.
+                                                    [Cancelar]  [Cambiar tipo de problema]
+```
+
+Nada cambia hasta confirmar. Y lo marcado antes **no se conserva**: arrastrar un «disco
+verificado» a un caso de accesorio faltante sería dar por hecho algo que nadie hizo. Un reproceso
+ya firmado no admite el cambio.
+
+## 6. La constancia
+
+Muestra el **tipo de problema** y titula el checklist con él, imprimiendo los ítems del propio
+reproceso —no una lista fija—, así que solo aparece lo que se revisó.
+
+## 7. Los reprocesos ya firmados conservan su checklist
+
+El reproceso semilla `EXP-PT-2026-0086-R1` está firmado con el checklist de la ronda 40.
+Reescribirlo sería cambiar lo que el técnico marcó y lo que dice su constancia: los checklists
+nuevos rigen para los reprocesos que se creen desde ahora. `normalizarReprocesos` ya lo respetaba
+—conserva el checklist guardado y solo genera uno cuando falta—.
+
+## 8. Casos de prueba
+
+**68 casos, 0 fallos**: los nueve tipos en el modelo y en la pantalla; los nueve checklists ítem
+por ítem, leídos del propio servicio; que son distintos entre sí y que ninguno es el genérico
+anterior; las cuatro comprobaciones de congruencia; los accesorios por tipo de equipo; la evidencia
+obligatoria y la excepción de «Otro»; el cambio de tipo con su confirmación y su regeneración; la
+constancia; los seis eventos de trazabilidad; y que la firma, la asignación por Encargados y los
+cuatro resultados siguen intactos.
+
+Regresiones: las dieciséis baterías anteriores, **1031 casos, 0 fallos**. La de la ronda 40 se
+actualizó a las reglas nuevas —su espejo del checklist y la regla de evidencia— y su caso de
+«finaliza sin adjuntar nada» pasó a «Otro», que es el único tipo donde eso sigue siendo posible.
+
+## 9. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [7.353 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en `/`, `/reprocesos-f0288`, `/configuracion`, `/entrega-aceptacion` y
+`/generador-documentos`.
+
+**No hubo clics reales en un navegador** en esta sesión.
+
+## 10. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (TipoProblemaReproceso; tipoProblema en ReprocesoF0288)
+src/app/core/services/data.service.ts       (tipoProblemaDeFalla, los nueve checklists,
+                                             accesoriosRequeridos, evidenciaObligatoriaReproceso,
+                                             tipoProblemaDeReproceso, cambiarTipoProblemaReproceso,
+                                             la regla de evidencia al finalizar y la constancia)
+src/app/features/reprocesos-f0288/reprocesos.component.ts
+                                            (selector de tipo con confirmación, accesorios
+                                             requeridos y el aviso de evidencia por tipo)
+```
+
+---
+
+# Parte 7 — El checklist del reproceso F0288 se lee por secciones
+
+**Fecha:** 8 de agosto de 2026, séptima sesión del día (ronda 53 del punto de control)
+**Alcance:** cómo se muestra y se cierra el checklist del reproceso. El tipo de problema, la firma
+y la constancia siguen funcionando igual.
+
+## 1. Qué se veía mal
+
+En «Problema de sistema operativo» el checklist traía los ítems correctos, pero **todas las filas
+decían «No aplica»**. No era un estado: era el rótulo del botón que sirve para marcarlo. Leído de
+corrido parecía que el checklist entero no correspondía al problema elegido.
+
+## 2. Cuatro estados, y cada uno donde toca
+
+```text
+Pendiente · Completado · No aplica · Requiere evidencia
+```
+
+Cada fila muestra ahora su estado real en una etiqueta. `Realizado` se sigue guardando así —es el
+valor que usa todo el prototipo— pero se lee **Completado**, que es lo que significa en un
+checklist. «Requiere evidencia» no es un estado guardado sino una marca del ítem: avisa antes de
+marcarlo, no después.
+
+El botón dice **«Marcar No aplica»** y solo aparece donde corresponde.
+
+## 3. «No aplica» solo en los ítems condicionales
+
+El propio texto del ítem declara si es condicional: «si aplica», «si corresponde». Esos —y solo
+esos— admiten «No aplica». Los demás son parte de la revisión que el tipo de problema exige, y
+marcarlos así sería declarar innecesario algo que sí hace falta. El servicio lo rechaza:
+
+```text
+«Revisar errores de arranque» es obligatorio para un reproceso por «Problema de sistema
+operativo»: no puede marcarse como «No aplica».
+```
+
+De 12 ítems del checklist de sistema operativo, 4 admiten «No aplica». Antes lo admitían los 12.
+
+## 4. Cinco secciones, iguales en los nueve tipos
+
+```text
+Diagnóstico → Acción correctiva → Validación posterior → Evidencia → Cierre del reproceso
+```
+
+Lo que cambia entre tipos es el contenido, no el recorrido. El de sistema operativo quedó
+exactamente como se pidió: 3 ítems de diagnóstico, 2 de acción correctiva, 4 de validación
+posterior, 1 de evidencia y los 2 de cierre.
+
+Los dos de cierre —«Registrar corrección técnica realizada» y «Registrar observaciones de
+Hardware, si corresponde»— son los mismos en los nueve. Al agrupar se quitaron duplicados que
+sobraban: «Falla de disco» tenía «Registrar resultado técnico» además de la corrección técnica.
+
+## 5. La evidencia se exige por lo que se marcó
+
+Marcar «Reparar sistema operativo», «Reinstalar Windows» o el propio «Adjuntar evidencia de
+diagnóstico o corrección» hace obligatoria la evidencia. Ese último caso es nuevo: dar por marcado
+un adjunto que no existe era la misma contradicción, al revés.
+
+El aviso es uno solo, el del pedido:
+
+```text
+Debe adjuntar evidencia del diagnóstico o corrección realizada para finalizar el reproceso.
+```
+
+Sustituye a las dos redacciones de la ronda 52. En «Otro» sin evidencia sigue siendo obligatoria la
+observación técnica.
+
+## 6. «Sin evidencias adjuntas» ya no contradice lo que se ve
+
+El encabezado dice cuántas hay. El formulario de carga quedó en un bloque aparte, **«Adjuntar nueva
+evidencia»**, y lo que se escribe ahí se anuncia como lo que es:
+
+```text
+Sin adjuntar todavía: captura-reparacion-sistema-operativo.png se registra al pulsar
+«Adjuntar evidencia».
+```
+
+El nombre escrito en el campo ya no se confunde con un archivo cargado.
+
+## 7. El nombre sugerido es congruente con el problema
+
+Cada tipo sugiere su propia evidencia: sistema operativo propone
+`captura-reparacion-sistema-operativo.png`, no `captura-diagnostico-disco.png`, que era el
+marcador de posición fijo de la pantalla.
+
+## 8. Lo que falta para cerrar, a la vista
+
+Las cinco validaciones del pedido se muestran juntas, con lo que ya está y lo que no:
+
+```text
+Checklist obligatorio completado            12 ítems resueltos          Al finalizar
+Corrección técnica realizada registrada     Registrada                  Al finalizar
+Evidencia adjunta, si aplica                1 archivo(s) adjuntos       Al finalizar
+Resultado del reproceso seleccionado        Se elige al firmar          Al firmar
+Firma del Técnico de Hardware registrada    Sin la firma no se cierra   Al firmar
+```
+
+Cuenta lo escrito en el formulario aunque todavía no esté guardado, así el técnico no descubre el
+requisito cuando ya creía haber terminado.
+
+## 9. La constancia
+
+Imprime el checklist **agrupado en sus secciones**, con la etiqueta de estado de cada ítem, y añade
+un resumen de los marcados como «No aplica» **solo si hubo alguno**. Lo demás —evidencias,
+corrección técnica, observaciones, resultado y firma— sigue igual.
+
+## 10. Los reprocesos ya guardados
+
+No se rehacen. A cada ítem guardado se le completan la sección y la condición, que son lecturas de
+su propio texto, y nada más: el reproceso firmado `EXP-PT-2026-0086-R1` conserva sus seis ítems con
+los nombres que el técnico marcó, ubicados ahora en Diagnóstico, Acción correctiva, Validación
+posterior y Evidencia.
+
+## 11. Casos de prueba
+
+**104 casos, 0 fallos**: los cuatro estados y su etiqueta; que «No aplica» solo se ofrece en ítems
+condicionales, con el conteo por tipo; las cinco secciones en los nueve checklists y su orden; el
+de sistema operativo sección por sección; la evidencia exigida por acción marcada y su mensaje
+único; la contradicción de «Sin evidencias adjuntas»; las sugerencias congruentes; las cinco
+validaciones; la constancia; y un espejo funcional que marca, intenta finalizar y comprueba los
+bloqueos.
+
+Regresiones: las diecisiete baterías anteriores, **1095 casos, 0 fallos**. La de la ronda 52 se
+actualizó a los checklists por secciones y al mensaje único; la de la ronda 40, a la misma lista y
+a la regla de «No aplica».
+
+## 12. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [8.470 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en `/`, `/reprocesos-f0288`, `/configuracion`, `/entrega-aceptacion`,
+`/generador-documentos` y `/trazabilidad`.
+
+**No hubo clics reales en un navegador** en esta sesión.
+
+## 13. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (SeccionReproceso; seccion y opcional en ItemReproceso)
+src/app/core/services/data.service.ts       (los nueve checklists por secciones, seccionesReproceso,
+                                             itemOpcional, seccionDeItem, checklistPorSeccion,
+                                             etiquetaItemReproceso, itemRequiereEvidencia,
+                                             itemAdmiteNoAplica, MSG_EVIDENCIA_REPROCESO,
+                                             evidenciaSugeridaReproceso, validacionesReproceso,
+                                             el guardián de «No aplica» y la constancia agrupada)
+src/app/features/reprocesos-f0288/reprocesos.component.ts
+                                            (checklist por secciones con estado por fila, bloque de
+                                             evidencias separado del formulario y panel de
+                                             validación previa al cierre)
+```

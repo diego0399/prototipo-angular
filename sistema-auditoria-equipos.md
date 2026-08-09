@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 51)**.
+nueva sesión sin perder información. Última actualización: **8 de agosto de 2026 (ronda 53)**.
 
 ---
 
@@ -2406,6 +2406,64 @@ Expediente único.
       **72 casos, 0 fallos**, más las quince baterías anteriores (959 casos, 0 fallos; una expectativa
       de la r47 actualizada porque el icono por módulo se mudó al componente compartido).
       **Sin recorrido manual de clics en navegador.**
+52. **Reproceso F0288 — el checklist se arma con el tipo de problema, no con el tipo de falla**
+    (2026-08-08, sexta sesión del día).
+    * **El problema**: el checklist salía del tipo de falla del F0302, que no siempre describe lo que
+      Hardware va a hacer con el equipo. Un accesorio faltante recibía cinco ítems genéricos, y dominio
+      o «configuración incompleta» caían en una lista base de «revisión técnica del caso».
+    * **`TipoProblemaReproceso`** es un catálogo aparte con **nueve** tipos —incluye **encendido** y
+      **periféricos**, que no existían como falla de F0302, y nombra la red como **red física**, porque
+      solo llega a reproceso cuando Soporte marcó revisión física—. El reproceso nace con el tipo
+      derivado de su falla o inconformidad, y el Técnico de Hardware puede corregirlo si al abrir el
+      equipo resulta ser otra cosa.
+    * **Nueve checklists distintos**, cada uno con lo suyo: accesorio no menciona disco ni memoria;
+      falla física no menciona software, dominio ni DLP; sistema operativo no invade F0302 con
+      credenciales; red física no incluye la reserva de IP. En «Accesorio faltante» la pantalla muestra
+      los accesorios que exige el equipo (CPU usado: monitor, teclado, ratón; laptop: ratón y maletín).
+    * **Evidencia obligatoria por tipo**: los ocho específicos la exigen para finalizar; **«Otro» es la
+      excepción** y ahí lo obligatorio pasa a ser la observación técnica. El aviso nombra el tipo.
+    * **Cambiar el tipo rehace el checklist**, con confirmación previa y sin conservar lo marcado:
+      arrastrar un «disco verificado» a un caso de accesorio faltante sería dar por hecho algo que
+      nadie hizo. Un reproceso firmado no admite el cambio.
+    * La **constancia** nombra el tipo de problema y titula el checklist con él, imprimiendo los ítems
+      del propio reproceso. Los reprocesos **ya firmados conservan su checklist**: reescribirlo sería
+      cambiar lo que el técnico marcó y lo que dice su constancia.
+    * Verificado con `npm run build` limpio (7.353 s, 0 errores), `ng serve` (HTTP 200 en cinco rutas) y
+      **68 casos, 0 fallos** —los nueve checklists leídos del propio servicio—, más las dieciséis
+      baterías anteriores (1031 casos, 0 fallos; la de la r40 se actualizó a las reglas nuevas).
+      **Sin recorrido manual de clics en navegador.**
+53. **Reproceso F0288 — el checklist se lee por secciones y cada ítem muestra su estado real**
+    (2026-08-08, séptima sesión del día).
+    * **El problema**: en «Problema de sistema operativo» todas las filas decían «No aplica». No
+      era un estado: era el rótulo del botón que sirve para marcarlo, repetido en cada fila.
+    * **Cuatro estados por ítem**: Pendiente, Completado, No aplica y la marca «Requiere
+      evidencia». `Realizado` se sigue guardando así —lo usa todo el prototipo— pero se lee
+      **Completado**. El botón dice ahora «Marcar No aplica».
+    * **«No aplica» solo en los ítems condicionales**: lo declara el propio texto del ítem («si
+      aplica», «si corresponde»). Los demás son parte de la revisión que el tipo de problema exige
+      y el servicio rechaza marcarlos así. En sistema operativo lo admiten 4 de 12; antes, los 12.
+    * **Cinco secciones iguales en los nueve tipos**: Diagnóstico → Acción correctiva → Validación
+      posterior → Evidencia → Cierre del reproceso. El de sistema operativo quedó exactamente como
+      se pidió (3 · 2 · 4 · 1 · 2). Los dos ítems de cierre son comunes, y al agrupar se quitaron
+      duplicados como «Registrar resultado técnico» en «Falla de disco».
+    * **Evidencia por lo que se marcó**: las acciones de intervención y el propio ítem de adjuntar
+      la exigen —marcar un adjunto que no existe era la misma contradicción al revés—, con un solo
+      mensaje: «Debe adjuntar evidencia del diagnóstico o corrección realizada para finalizar el
+      reproceso.». En «Otro» sin evidencia sigue obligando la observación técnica.
+    * **«Sin evidencias adjuntas» ya no contradice lo que se ve**: el encabezado cuenta las
+      adjuntas, el formulario quedó en un bloque aparte y lo escrito y no adjuntado se anuncia como
+      pendiente. El nombre sugerido es congruente con el problema (sistema operativo ya no propone
+      una captura de disco).
+    * **Las cinco validaciones del cierre a la vista**, distinguiendo lo que se exige al finalizar
+      de lo que se exige al firmar, y contando lo escrito aunque todavía no esté guardado.
+    * La **constancia** imprime el checklist agrupado en secciones, con la etiqueta de cada ítem y
+      un resumen de los «No aplica» solo si hubo alguno.
+    * Los reprocesos guardados **no se rehacen**: a cada ítem se le completan sección y condición,
+      que son lecturas de su propio texto. `EXP-PT-2026-0086-R1` conserva sus seis ítems.
+    * Verificado con `npm run build` limpio (8.470 s, 0 errores), `ng serve` (HTTP 200 en seis
+      rutas) y **104 casos, 0 fallos**, más las diecisiete baterías anteriores (1095 casos, 0
+      fallos; las de las rondas 40 y 52 se actualizaron a las reglas nuevas).
+      **Sin recorrido manual de clics en navegador.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
@@ -2443,6 +2501,13 @@ UI real.
 
 # 15. Cambios pendientes
 
+* **Nuevo pendiente (ronda 53)**: los dos ítems de cierre —«Registrar corrección técnica
+  realizada» y «Registrar observaciones de Hardware, si corresponde»— repiten en el checklist lo
+  que el técnico ya escribe en los campos de cierre. Se dejaron porque el pedido los enumera;
+  evaluar con el usuario si conviene marcarlos solos al guardar esos campos.
+* **Nuevo pendiente (ronda 52)**: los tipos **Problema de encendido** y **Problema de periféricos**
+  solo pueden alcanzarse cambiando el tipo del reproceso a mano, porque ninguna falla de F0302 ni
+  inconformidad los produce. Evaluar si conviene agregarlos también a esos catálogos de origen.
 * **Nuevo pendiente (ronda 51)**: revisión visual de la línea de tiempo en navegador —el cambio de
   vista, el detalle desplegable y los filtros por etapa—, y repasar la clasificación hito/apoyo con
   eventos de otros equipos, que hoy solo está probada contra el recorrido de `2201-0954-2023`.

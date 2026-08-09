@@ -7,9 +7,9 @@ import {
   DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaCorreccion, EvidenciaReproceso, FilaValidacionLote,
   EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
-  ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, Solicitud, SoftwareCatalogo,
+  ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
-  TipoComentarioCaso, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, UsuarioSistema, VerificacionAccesorios,
+  TipoComentarioCaso, TipoExpedienteTecnico, TipoFallaF0302, TipoProblemaInconformidad, TipoProblemaReproceso, UsuarioSistema, VerificacionAccesorios,
   VerificacionFalla
 } from '../models/models';
 import { AuthService } from './auth.service';
@@ -3892,7 +3892,12 @@ export class DataService {
       asignadoPor: r.asignadoPor ?? '',
       fechaAsignacion: r.fechaAsignacion ?? '',
       horaAsignacion: r.horaAsignacion ?? '',
-      checklist: r.checklist?.length ? r.checklist : this.checklistReproceso(r.tipoFalla),
+      tipoProblema: r.tipoProblema ?? this.tipoProblemaDeFalla(r.tipoFalla),
+      // Un checklist ya guardado no se rehace: se le completan la sección y la condición, que son
+      // lecturas de su propio texto, no cambios en lo que el técnico marcó.
+      checklist: r.checklist?.length
+        ? r.checklist.map((i) => ({ ...i, seccion: this.seccionDeItem(i), opcional: this.itemAdmiteNoAplica(i) }))
+        : this.checklistReproceso(this.tipoProblemaDeFalla(r.tipoFalla)),
       evidencias: r.evidencias ?? [],
       resultado: r.resultado ?? '',
       observacionResultado: r.observacionResultado ?? '',
@@ -4152,47 +4157,209 @@ export class DataService {
   }
 
   /**
-   * Checklist de Reproceso F0288 según el tipo de falla reportado en F0302. Es un checklist
-   * PROPIO, no una copia del F0288: la preparación inicial ya se hizo y no se repite. Los ítems
-   * marcados `implicaCorreccion` son los que dejan de ser revisión y pasan a ser intervención
-   * sobre el equipo; en cuanto uno de ellos se marca, la evidencia deja de ser opcional.
+   * Tipo de problema del reproceso a partir de la falla que lo originó. «Problema de red» solo
+   * llega a reproceso cuando Soporte marcó revisión **física**, así que se nombra como tal; el
+   * dominio y la configuración incompleta no son trabajo de Hardware sobre el equipo y caen en
+   * «Otro», donde el técnico describe lo que encontró.
    */
-  checklistReproceso(tipo: TipoFallaF0302): ItemReproceso[] {
-    const item = (nombre: string, implicaCorreccion = false): ItemReproceso =>
-      ({ nombre, estado: 'Pendiente', implicaCorreccion, nota: '' });
+  tipoProblemaDeFalla(tipo: TipoFallaF0302): TipoProblemaReproceso {
     switch (tipo) {
-      case 'Falla física del equipo':
-        return [item('Revisión física general del equipo'), item('Verificación de carcasa, puertos y conectores'),
-          item('Verificación de encendido'), item('Verificación de componentes internos'),
-          item('Corrección aplicada', true), item('Evidencia de revisión física')];
-      case 'Falla de disco':
-        return [item('Verificación del disco instalado'), item('Revisión de conexión del disco'),
-          item('Diagnóstico básico del disco'), item('Cambio de disco, si aplica', true),
-          item('Verificación de arranque'), item('Evidencia del diagnóstico o cambio')];
-      case 'Falla de memoria':
-        return [item('Verificación de memoria RAM instalada'), item('Limpieza o reinstalación de módulo RAM', true),
-          item('Prueba básica de memoria'), item('Cambio de memoria, si aplica', true),
-          item('Verificación de estabilidad'), item('Evidencia del diagnóstico o cambio')];
-      case 'Problema de sistema operativo':
-        return [item('Revisión del sistema operativo instalado'), item('Reparación del sistema operativo, si aplica', true),
-          item('Reinstalación de Windows, si aplica', true), item('Actualizaciones aplicadas'),
-          item('.NET Framework 3.5 verificado'), item('Evidencia de corrección')];
-      case 'Problema de red':
-        // Un problema de red solo llega a reproceso cuando Soporte marcó revisión física: por eso
-        // el checklist es el de la revisión física y no el de conectividad, que ya se descartó.
-        return [item('Revisión de puerto de red'), item('Verificación de adaptador de red'),
-          item('Verificación de cable o conexión física'), item('Validación de MAC del equipo'),
-          item('Evidencia de revisión de red')];
-      case 'Accesorio faltante':
-        return [item('Verificación de accesorios requeridos'), item('Asociación de accesorio faltante', true),
-          item('Validación de inventario del accesorio'), item('Estado físico del accesorio'),
-          item('Evidencia de accesorio asociado')];
-      default:
-        // Base para «Otro», «No permite ingreso a dominio» y «Configuración incompleta».
-        return [item('Revisión técnica del caso'), item('Diagnóstico realizado'),
-          item('Corrección aplicada', true), item('Prueba posterior a la corrección'),
-          item('Evidencia de corrección')];
+      case 'Accesorio faltante': return 'Accesorio faltante';
+      case 'Falla física del equipo': return 'Falla física del equipo';
+      case 'Falla de disco': return 'Falla de disco';
+      case 'Falla de memoria': return 'Falla de memoria';
+      case 'Problema de sistema operativo': return 'Problema de sistema operativo';
+      case 'Problema de red': return 'Problema de red física';
+      default: return 'Otro';
     }
+  }
+
+  /**
+   * Checklist de Reproceso F0288 según el **tipo de problema** que se va a revisar. Es un checklist
+   * PROPIO, no una copia del F0288: la preparación inicial ya se hizo y no se repite. Cada tipo
+   * trae solo lo suyo —un accesorio faltante no pide revisar el disco, y una falla física no pide
+   * dominio ni credenciales, que son de F0302—.
+   *
+   * Los ítems marcados `implicaCorreccion` son los que dejan de ser revisión y pasan a ser
+   * intervención sobre el equipo.
+   */
+  checklistReproceso(tipo: TipoProblemaReproceso): ItemReproceso[] {
+    // El nombre del ítem declara si es condicional: «si aplica» y «si corresponde» son las únicas
+    // formas de que un ítem admita «No aplica». Deducirlo del texto evita que la lista y la regla
+    // se separen con el tiempo.
+    const item = (seccion: SeccionReproceso, nombre: string, implicaCorreccion = false): ItemReproceso =>
+      ({ nombre, estado: 'Pendiente', implicaCorreccion, seccion, opcional: this.itemOpcional(nombre), nota: '' });
+    const diag = (nombre: string, corr = false) => item('Diagnóstico', nombre, corr);
+    const accion = (nombre: string, corr = true) => item('Acción correctiva', nombre, corr);
+    const valida = (nombre: string) => item('Validación posterior', nombre);
+    const evidencia = (nombre: string, corr = true) => item('Evidencia', nombre, corr);
+    // Las dos últimas son iguales en todos los tipos: el reproceso siempre cierra registrando qué
+    // se hizo y qué observó Hardware.
+    const cierre = (): ItemReproceso[] => [
+      item('Cierre del reproceso', 'Registrar corrección técnica realizada'),
+      item('Cierre del reproceso', 'Registrar observaciones de Hardware, si corresponde')
+    ];
+    switch (tipo) {
+      case 'Accesorio faltante':
+        return [diag('Revisar observación reportada por Soporte o Usuario Final'),
+          diag('Identificar accesorio faltante'), diag('Verificar tipo de equipo: CPU o Laptop'),
+          diag('Validar accesorios requeridos según tipo de equipo'),
+          accion('Buscar accesorio en base institucional simulada', false),
+          accion('Asociar número de inventario del accesorio'),
+          valida('Verificar estado físico del accesorio'),
+          valida('Confirmar que el equipo queda completo para continuar'),
+          evidencia('Registrar evidencia del accesorio asociado'),
+          ...cierre()];
+      case 'Falla física del equipo':
+        return [diag('Revisar observación reportada'), diag('Realizar inspección física general'),
+          diag('Revisar carcasa, tornillos, tapas y estructura externa'),
+          diag('Revisar puertos físicos del equipo'), diag('Revisar conectores de energía'),
+          diag('Revisar estado de ventilación'), diag('Verificar si existen daños visibles'),
+          accion('Corregir o reemplazar la pieza dañada, si corresponde'),
+          valida('Indicar si el equipo queda apto para continuar'),
+          evidencia('Adjuntar evidencia fotográfica del diagnóstico o la corrección'),
+          ...cierre()];
+      case 'Falla de disco':
+        return [diag('Revisar observación reportada'), diag('Verificar detección del disco'),
+          diag('Revisar conexión física del disco'), diag('Ejecutar verificación básica del disco'),
+          diag('Registrar capacidad del disco'), diag('Registrar número de serie del disco, si aplica'),
+          accion('Sustituir disco, si corresponde'),
+          valida('Validar arranque del sistema después de la revisión'),
+          evidencia('Adjuntar evidencia del diagnóstico o la sustitución'),
+          ...cierre()];
+      case 'Falla de memoria':
+        return [diag('Revisar observación reportada'), diag('Verificar capacidad de memoria instalada'),
+          diag('Revisar módulos de RAM instalados'), diag('Ejecutar prueba básica de memoria'),
+          accion('Retirar y reinstalar módulo, si aplica'),
+          accion('Sustituir módulo de memoria, si corresponde'),
+          valida('Registrar capacidad final de memoria'), valida('Confirmar estabilidad del equipo'),
+          evidencia('Adjuntar evidencia del diagnóstico o la sustitución'),
+          ...cierre()];
+      case 'Problema de sistema operativo':
+        // Sin credenciales, dominio ni DLP: esos pasos pertenecen a la Configuración F0302.
+        return [diag('Revisar observación reportada'), diag('Validar inicio del sistema operativo'),
+          diag('Revisar errores de arranque'),
+          accion('Reparar sistema operativo, si aplica'),
+          accion('Reinstalar Windows, si corresponde'),
+          valida('Verificar activación o configuración base'),
+          valida('Verificar instalación de .NET Framework 3.5, si aplica'),
+          valida('Verificar actualizaciones básicas'),
+          valida('Confirmar que el equipo queda listo para regresar a Configuración F0302'),
+          evidencia('Adjuntar evidencia de diagnóstico o corrección'),
+          ...cierre()];
+      case 'Problema de red física':
+        // La reserva de IP no entra aquí: se resuelve en F0302 o en la validación previa a conformidad.
+        return [diag('Revisar observación reportada'), diag('Verificar puerto físico de red'),
+          diag('Verificar adaptador de red'), diag('Validar dirección MAC del equipo'),
+          accion('Revisar o sustituir conexión física o cableado, si aplica'),
+          valida('Verificar reconocimiento del adaptador en el sistema'),
+          valida('Confirmar si el equipo queda apto para continuar'),
+          evidencia('Adjuntar evidencia del diagnóstico o la corrección'),
+          ...cierre()];
+      case 'Problema de encendido':
+        return [diag('Revisar observación reportada'), diag('Verificar conexión eléctrica'),
+          diag('Verificar botón de encendido'), diag('Revisar indicadores de energía'),
+          accion('Revisar o sustituir cargador o fuente de poder, si aplica'),
+          valida('Validar encendido del equipo'),
+          valida('Indicar si el equipo queda apto para continuar'),
+          evidencia('Adjuntar evidencia del diagnóstico o la corrección'),
+          ...cierre()];
+      case 'Problema de periféricos':
+        return [diag('Revisar observación reportada'), diag('Identificar periférico con problema'),
+          diag('Validar conexión del periférico'), diag('Verificar funcionamiento del periférico'),
+          accion('Sustituir periférico, si corresponde'),
+          accion('Registrar inventario del periférico, si aplica', false),
+          valida('Confirmar que el problema fue corregido'),
+          evidencia('Adjuntar evidencia del periférico revisado o sustituido'),
+          ...cierre()];
+      default:
+        // «Otro»: checklist general controlado. La descripción del problema es obligatoria.
+        return [diag('Revisar observación reportada'), diag('Registrar diagnóstico técnico'),
+          diag('Describir problema identificado'),
+          accion('Registrar acción correctiva aplicada, si corresponde'),
+          valida('Indicar resultado del reproceso'),
+          evidencia('Adjuntar evidencia, si aplica', false),
+          ...cierre()];
+    }
+  }
+
+  /** Orden en que se leen las secciones del checklist de reproceso. */
+  readonly seccionesReproceso: SeccionReproceso[] =
+    ['Diagnóstico', 'Acción correctiva', 'Validación posterior', 'Evidencia', 'Cierre del reproceso'];
+
+  /**
+   * ¿El ítem es condicional? Lo dice su propio texto. Solo estos admiten «No aplica»: los demás
+   * son parte de la revisión que el tipo de problema exige.
+   */
+  itemOpcional(nombre: string): boolean {
+    return /,\s*si (aplica|corresponde|existen?)/i.test(nombre);
+  }
+
+  /**
+   * Sección de un ítem guardado antes de que el checklist tuviera secciones. No se reescribe el
+   * nombre —eso cambiaría lo que el técnico marcó—: solo se ubica en la sección que le toca para
+   * poder leerlo agrupado.
+   */
+  seccionDeItem(item: ItemReproceso): SeccionReproceso {
+    if (item.seccion) return item.seccion;
+    const n = item.nombre;
+    if (/evidencia/i.test(n)) return 'Evidencia';
+    if (/^Registrar (corrección técnica|observaci)/i.test(n)) return 'Cierre del reproceso';
+    if (/^(Sustituir|Reparar|Reinstalar|Retirar|Asociar|Corregir|Cambiar|Cambio|Buscar|Reemplazar)/i.test(n)) return 'Acción correctiva';
+    if (/(arranque|estabilidad|apto para continuar|queda (completo|listo)|fue corregido|resultado del reproceso)/i.test(n)) return 'Validación posterior';
+    return 'Diagnóstico';
+  }
+
+  /**
+   * Checklist del reproceso agrupado por sección, en el orden de lectura y sin secciones vacías.
+   * Es la forma en que se muestra en pantalla y se imprime en la constancia.
+   */
+  checklistPorSeccion(r: ReprocesoF0288): { seccion: SeccionReproceso; items: ItemReproceso[] }[] {
+    return this.seccionesReproceso
+      .map((seccion) => ({ seccion, items: r.checklist.filter((i) => this.seccionDeItem(i) === seccion) }))
+      .filter((g) => g.items.length > 0);
+  }
+
+  /**
+   * Estado del ítem tal como se lee en pantalla y en la constancia. `Realizado` se guarda así en
+   * todo el prototipo; aquí se nombra **Completado**, que es lo que significa en un checklist.
+   */
+  etiquetaItemReproceso(item: ItemReproceso): 'Pendiente' | 'Completado' | 'No aplica' {
+    return item.estado === 'Realizado' ? 'Completado' : item.estado === 'No aplica' ? 'No aplica' : 'Pendiente';
+  }
+
+  /**
+   * ¿Marcar este ítem obliga a adjuntar evidencia? Los de intervención sobre el equipo y los de la
+   * sección Evidencia: dar por adjuntado un archivo que no existe es la contradicción que se
+   * quiere evitar.
+   */
+  itemRequiereEvidencia(item: ItemReproceso): boolean {
+    return !!item.implicaCorreccion || this.seccionDeItem(item) === 'Evidencia';
+  }
+
+  /** ¿Este ítem admite «No aplica»? Solo los condicionales; el resto hay que resolverlos. */
+  itemAdmiteNoAplica(item: ItemReproceso): boolean {
+    return item.opcional ?? this.itemOpcional(item.nombre);
+  }
+
+  /**
+   * Accesorios que exige el tipo de equipo, para el checklist de «Accesorio faltante». Es el mismo
+   * criterio del F0288: un CPU usado llega con monitor, teclado y ratón; una laptop usada, con
+   * ratón y maletín.
+   */
+  accesoriosRequeridos(inventario: string): string[] {
+    const eq = this.equipoDe(inventario);
+    if (!eq || eq.condicion !== 'Usado') return [];
+    return eq.tipo === 'Desktop' ? ['Monitor', 'Teclado', 'Mouse'] : ['Mouse', 'Maletín'];
+  }
+
+  /**
+   * ¿El tipo de problema obliga a adjuntar evidencia? Todos salvo «Otro»: revisar un disco, una
+   * memoria o un accesorio deja algo que mostrar, mientras que un caso sin clasificar puede no
+   * producir captura —ahí lo obligatorio es la observación técnica—.
+   */
+  evidenciaObligatoriaReproceso(tipo: TipoProblemaReproceso): boolean {
+    return tipo !== 'Otro';
   }
 
   /**
@@ -4270,7 +4437,8 @@ export class DataService {
       tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
       justificacionReprocesoSimultaneo: justificacionSimultaneo,
       atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
-      checklist: this.checklistReproceso(falla.tipo),
+      tipoProblema: this.tipoProblemaDeFalla(falla.tipo),
+      checklist: this.checklistReproceso(this.tipoProblemaDeFalla(falla.tipo)),
       evidencias: [], correccionTecnica: '',
       observaciones: falla.detalle?.observacionHardware ?? '',
       firma: undefined, resultado: '', observacionResultado: '', estado: 'Pendiente de asignación'
@@ -4410,6 +4578,12 @@ export class DataService {
     const r = this.reprocesoDe(idReproceso);
     if (!r) return 'No se encontró el reproceso F0288 indicado.';
     if (r.estado !== 'En proceso') return 'Inicie el reproceso F0288 para completar su checklist.';
+    // «No aplica» no es un atajo para cerrar el checklist: solo lo admiten los ítems que el propio
+    // tipo de problema declara condicionales.
+    const item = r.checklist.find((i) => i.nombre === nombreItem);
+    if (item && estado === 'No aplica' && !this.itemAdmiteNoAplica(item)) {
+      return `«${nombreItem}» es obligatorio para un reproceso por «${this.tipoProblemaDeReproceso(r)}»: no puede marcarse como «No aplica».`;
+    }
     this.actualizarReproceso(idReproceso, (x) => ({
       ...x, checklist: x.checklist.map((i) => (i.nombre === nombreItem ? { ...i, estado, nota: nota || i.nota } : i))
     }));
@@ -4435,11 +4609,114 @@ export class DataService {
   }
 
   /**
-   * ¿Este reproceso exige evidencia? Solo cuando se marcó algún ítem que implica cambio,
-   * reparación o corrección técnica: revisar y no tocar nada no produce nada que adjuntar.
+   * ¿Este reproceso exige evidencia? Por su tipo de problema —todos menos «Otro», donde lo
+   * obligatorio es la observación técnica— o porque se marcó un ítem que la supone: una
+   * intervención sobre el equipo, o el propio ítem de adjuntar evidencia.
    */
   reprocesoExigeEvidencia(r: ReprocesoF0288): boolean {
-    return r.checklist.some((i) => i.implicaCorreccion && i.estado === 'Realizado');
+    if (this.evidenciaObligatoriaReproceso(this.tipoProblemaDeReproceso(r))) return true;
+    return r.checklist.some((i) => i.estado === 'Realizado' && this.itemRequiereEvidencia(i));
+  }
+
+  /**
+   * Falta la evidencia obligatoria. Un solo mensaje: al técnico le da igual si lo obliga el tipo
+   * de problema o el ítem que marcó —lo que necesita saber es qué adjuntar—.
+   */
+  readonly MSG_EVIDENCIA_REPROCESO =
+    'Debe adjuntar evidencia del diagnóstico o corrección realizada para finalizar el reproceso.';
+
+  /**
+   * Nombre y tipo de archivo sugeridos para la evidencia, según el problema que se revisa: una
+   * captura de disco en un caso de sistema operativo no respalda nada.
+   */
+  evidenciaSugeridaReproceso(tipo: TipoProblemaReproceso): { archivo: string; tipo: string } {
+    switch (tipo) {
+      case 'Accesorio faltante': return { archivo: 'foto-accesorio-asociado.png', tipo: 'Evidencia del accesorio' };
+      case 'Falla física del equipo': return { archivo: 'foto-inspeccion-fisica.png', tipo: 'Evidencia de inspección física' };
+      case 'Falla de disco': return { archivo: 'captura-diagnostico-disco.png', tipo: 'Diagnóstico del disco' };
+      case 'Falla de memoria': return { archivo: 'captura-diagnostico-memoria.png', tipo: 'Diagnóstico de memoria' };
+      case 'Problema de sistema operativo': return { archivo: 'captura-reparacion-sistema-operativo.png', tipo: 'Evidencia de reparación del sistema operativo' };
+      case 'Problema de red física': return { archivo: 'captura-adaptador-red.png', tipo: 'Evidencia de red física' };
+      case 'Problema de encendido': return { archivo: 'foto-encendido-equipo.png', tipo: 'Evidencia de encendido' };
+      case 'Problema de periféricos': return { archivo: 'foto-periferico-sustituido.png', tipo: 'Evidencia del periférico' };
+      default: return { archivo: 'captura-diagnostico.png', tipo: 'Evidencia de diagnóstico' };
+    }
+  }
+
+  /**
+   * Lo que falta para cerrar el reproceso, en el orden en que ocurre. Las tres primeras se exigen
+   * al finalizar y las dos últimas al firmar: mostrarlas juntas evita que el técnico descubra el
+   * requisito cuando ya creía haber terminado. `correccionEnCurso` es lo escrito en el formulario
+   * y todavía no guardado.
+   */
+  validacionesReproceso(r: ReprocesoF0288, correccionEnCurso = '', observacionEnCurso = ''):
+    { etiqueta: string; cumplida: boolean; detalle: string; momento: 'Finalizar' | 'Firmar' }[] {
+    const cerrado = r.estado === 'Finalizado' || r.estado === 'Firmado' || r.estado === 'No corregido';
+    const pendientes = r.checklist.filter((i) => i.estado === 'Pendiente');
+    const correccion = (correccionEnCurso.trim() || r.correccionTecnica).trim();
+    const observacion = (observacionEnCurso.trim() || r.observaciones).trim();
+    const tipo = this.tipoProblemaDeReproceso(r);
+    const exigeEvidencia = this.reprocesoExigeEvidencia(r);
+    const evidenciaLista = !exigeEvidencia || r.evidencias.length > 0;
+    return [
+      { etiqueta: 'Checklist obligatorio completado', momento: 'Finalizar',
+        cumplida: pendientes.length === 0,
+        detalle: pendientes.length === 0
+          ? `${r.checklist.length} ítems resueltos`
+          : `${pendientes.length} ítem(s) pendientes de resolver` },
+      { etiqueta: 'Corrección técnica realizada registrada', momento: 'Finalizar',
+        cumplida: !!correccion,
+        detalle: correccion ? 'Registrada' : 'Describa qué se revisó o corrigió en el equipo' },
+      { etiqueta: 'Evidencia adjunta, si aplica', momento: 'Finalizar',
+        cumplida: evidenciaLista && (tipo !== 'Otro' || !!observacion || r.evidencias.length > 0),
+        detalle: !evidenciaLista
+          ? this.MSG_EVIDENCIA_REPROCESO
+          : r.evidencias.length
+            ? `${r.evidencias.length} archivo(s) adjuntos`
+            : tipo === 'Otro'
+              ? (observacion ? 'Sin evidencia: el problema quedó descrito en la observación técnica'
+                : 'En «Otro» sin evidencia, describa el problema en la observación técnica')
+              : 'No requerida' },
+      { etiqueta: 'Resultado del reproceso seleccionado', momento: 'Firmar',
+        cumplida: !!r.resultado,
+        detalle: r.resultado || (cerrado ? 'Se elige al firmar' : 'Se elige al firmar, después de finalizar') },
+      { etiqueta: 'Firma del Técnico de Hardware registrada', momento: 'Firmar',
+        cumplida: !!r.firma,
+        detalle: r.firma ? `${r.firma.nombre} · ${r.firma.fecha} ${r.firma.hora}` : 'Sin la firma el reproceso no se cierra' }
+    ];
+  }
+
+  /** Tipo de problema del reproceso; los guardados antes de existir el campo lo derivan de su falla. */
+  tipoProblemaDeReproceso(r: ReprocesoF0288): TipoProblemaReproceso {
+    return r.tipoProblema ?? this.tipoProblemaDeFalla(r.tipoFalla);
+  }
+
+  /**
+   * Cambia el tipo de problema del reproceso y **regenera su checklist**. Lo marcado antes no se
+   * conserva: pertenecía a otra revisión, y arrastrar un «disco verificado» a un caso de accesorio
+   * faltante sería dar por hecho algo que nadie hizo.
+   */
+  cambiarTipoProblemaReproceso(idReproceso: string, tipo: TipoProblemaReproceso, usuario: string): string | null {
+    const r = this.reprocesoDe(idReproceso);
+    if (!r) return 'No se encontró el reproceso F0288 indicado.';
+    if (r.estado === 'Firmado' || r.estado === 'No corregido') return 'Este reproceso ya fue cerrado con firma.';
+    if (r.estado === 'Finalizado') return 'Finalice o reabra el reproceso: ya no admite cambiar el tipo de problema.';
+    const anterior = this.tipoProblemaDeReproceso(r);
+    if (anterior === tipo) return null;
+    this.actualizarReproceso(idReproceso, (x) => ({
+      ...x, tipoProblema: tipo, checklist: this.checklistReproceso(tipo)
+    }));
+    const actualizado = this.reprocesoDe(idReproceso)!;
+    this.registrarEvento(r.expediente, usuario, 'Tipo de problema seleccionado', 'Reproceso F0288 en proceso',
+      `${anterior} → ${tipo}. Los ítems marcados del checklist anterior se limpiaron.`, false,
+      { ...this.refReproceso(actualizado), tipoProblema: tipo,
+        accionTomada: 'Cambio de tipo de problema del reproceso' });
+    this.registrarEvento(r.expediente, usuario, 'Checklist de reproceso generado según tipo de problema',
+      'Reproceso F0288 en proceso',
+      `${actualizado.checklist.length} ítems para «${tipo}».`, false,
+      { ...this.refReproceso(actualizado), tipoProblema: tipo,
+        accionTomada: 'Checklist de Reproceso F0288 regenerado' });
+    return null;
   }
 
   /**
@@ -4456,8 +4733,13 @@ export class DataService {
       return 'Complete el Checklist de Reproceso F0288 antes de finalizarlo.';
     }
     if (!correccion.trim()) return 'Registre la corrección técnica realizada antes de finalizar el reproceso F0288.';
+    const tipoProblema = this.tipoProblemaDeReproceso(r);
     if (this.reprocesoExigeEvidencia(r) && r.evidencias.length === 0) {
-      return 'El reproceso implicó una corrección técnica: adjunte la evidencia antes de finalizarlo.';
+      return this.MSG_EVIDENCIA_REPROCESO;
+    }
+    // En «Otro» la evidencia puede faltar, pero entonces la observación técnica no.
+    if (tipoProblema === 'Otro' && !observaciones.trim() && r.evidencias.length === 0) {
+      return 'Describa el problema identificado en la observación técnica antes de finalizar el reproceso.';
     }
     const crono = r.cronometro ? this.detenerCronometro(r.cronometro, usuario) : undefined;
     this.actualizarReproceso(idReproceso, (x) => ({
@@ -4468,7 +4750,7 @@ export class DataService {
     this.actualizarConfiguracionConFalla(r.expediente, (f) => ({ ...f, estadoIncidencia: 'REPROCESO_F0288_FINALIZADO' }));
     const tiempo = this.formatoDuracion(crono?.duracionMinutos ?? null);
     this.registrarEvento(r.expediente, usuario, 'Checklist de reproceso completado', 'Reproceso F0288 finalizado',
-      r.checklist.map((i) => `${i.nombre}: ${i.estado}`).join(' · '), false,
+      r.checklist.map((i) => `${i.nombre}: ${this.etiquetaItemReproceso(i)}`).join(' · '), false,
       { ...this.refReproceso(r), accionTomada: 'Checklist de Reproceso F0288 completado' });
     this.registrarEvento(r.expediente, usuario, 'Reproceso F0288 finalizado', 'Reproceso F0288 finalizado',
       `Corrección técnica: ${correccion.trim()}`, true,
@@ -4607,6 +4889,7 @@ export class DataService {
       `Tipo de equipo: ${eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—'}`,
       `Número de inventario: ${r.inventario}`,
       `Tipo de falla reportada en F0302: ${r.tipoFalla}`,
+      `Tipo de problema del reproceso: ${this.tipoProblemaDeReproceso(r)}`,
       `Descripción de la falla: ${r.motivo}`,
       `Reportada por: ${r.solicitadoPor} · ${r.fechaSolicitud} ${r.horaSolicitud}`,
       `Observación de Soporte: ${r.observacionSoporte || '—'}`,
@@ -4614,15 +4897,27 @@ export class DataService {
       `Encargado que asignó el reproceso: ${r.asignadoPor || '—'}${r.fechaAsignacion ? ` · ${r.fechaAsignacion} ${r.horaAsignacion}` : ''}`,
       `Técnico de Hardware asignado: ${r.tecnicoAsignado || '—'}`,
       '',
-      'CHECKLIST DE REPROCESO F0288',
+      // Solo el checklist del tipo de problema atendido, agrupado en sus secciones: el reproceso
+      // no llevó otros ítems y se lee en el mismo orden en que se trabajó.
+      `CHECKLIST DE REPROCESO F0288 — ${this.tipoProblemaDeReproceso(r)}`,
       '-'.repeat(60),
-      ...r.checklist.map((i) => `  [${i.estado === 'Realizado' ? 'X' : i.estado === 'No aplica' ? '—' : ' '}] ${i.nombre}${i.nota ? ` · ${i.nota}` : ''}`),
+      ...this.checklistPorSeccion(r).flatMap((g) => [
+        `  ${g.seccion.toUpperCase()}`,
+        ...g.items.map((i) =>
+          `    [${i.estado === 'Realizado' ? 'X' : i.estado === 'No aplica' ? '—' : ' '}] ${i.nombre}` +
+          ` · ${this.etiquetaItemReproceso(i)}${i.nota ? ` · ${i.nota}` : ''}`)
+      ]),
+      // El resumen de «No aplica» solo aparece si hubo alguno: si no, no hay nada que aclarar.
+      ...(r.checklist.some((i) => i.estado === 'No aplica')
+        ? ['', '  Ítems marcados como No aplica:',
+          ...r.checklist.filter((i) => i.estado === 'No aplica').map((i) => `    — ${i.nombre}`)]
+        : []),
       '',
       'EVIDENCIAS DEL REPROCESO',
       '-'.repeat(60),
       ...(r.evidencias.length
         ? r.evidencias.map((e) => `  ${e.archivo} · ${e.tipo} · ${e.cargadaPor} · ${e.fecha} ${e.hora}`)
-        : ['  Sin evidencias adjuntas (el reproceso no implicó corrección técnica).']),
+        : ['  Sin evidencias adjuntas.']),
       '',
       `Tiempo trabajado: ${this.formatoDuracion(r.cronometro?.duracionMinutos ?? null) || 'menos de 1 min'}`,
       `Fecha de inicio: ${r.cronometro?.fechaInicio ?? r.fechaInicio} ${r.cronometro?.horaInicio ?? ''}`.trim(),
@@ -5613,7 +5908,8 @@ export class DataService {
       tecnicoAsignado: '', asignadoPor: '', fechaAsignacion: '', horaAsignacion: '',
       justificacionReprocesoSimultaneo: '',
       atendidoPor: '', fechaInicio: '', fechaFin: '', cronometro: undefined,
-      checklist: this.checklistReproceso(tipoFalla), evidencias: [], correccionTecnica: '',
+      tipoProblema: this.tipoProblemaDeFalla(tipoFalla),
+      checklist: this.checklistReproceso(this.tipoProblemaDeFalla(tipoFalla)), evidencias: [], correccionTecnica: '',
       observaciones: '', firma: undefined, resultado: '', observacionResultado: '',
       estado: 'Pendiente de asignación'
     };
