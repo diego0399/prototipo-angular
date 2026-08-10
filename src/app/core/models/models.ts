@@ -64,10 +64,26 @@ export interface Equipo {
   mac?: string;
   observaciones: string;
   expediente: string;
-  /** Registro automático del ingreso al Inventario de Hardware. */
+  /** Registro automático del ingreso al Inventario de Hardware (fecha de ingreso institucional). */
   fechaIngreso?: string;
   horaIngreso?: string;
   ingresadoPor?: string;
+  /**
+   * Fecha en que el equipo fue adquirido o comprado. **No es la fecha de ingreso al inventario**:
+   * un equipo puede comprarse meses antes de que SISGOST lo registre. De aquí —y solo de aquí—
+   * arranca la garantía del proveedor. Puede venir del registro institucional o registrarla el
+   * Encargado de Soporte; mientras falte, la garantía del proveedor no se calcula.
+   */
+  fechaAdquisicion?: string;
+  /** Fecha en que la institución recibió físicamente el equipo, cuando difiere de la compra. */
+  fechaRecepcionInstitucional?: string;
+  /** Proveedor que vendió o entregó el equipo, cuando consta. */
+  proveedor?: string;
+  /** Observaciones sobre la garantía del equipo (cobertura, número de póliza, condiciones). */
+  observacionGarantia?: string;
+  /** Quién registró o confirmó la fecha de adquisición, y cuándo. */
+  adquisicionRegistradaPor?: string;
+  fechaRegistroAdquisicion?: string;
   /** De dónde salieron los datos del equipo: la base institucional simulada o la carga manual. */
   origenDato?: string;
   /** Fecha del dato en el origen (la del registro institucional, o la del ingreso si fue manual). */
@@ -95,6 +111,24 @@ export interface EquipoCatalogoInstitucional {
   estadoFisicoInicial: 'Nuevo' | 'Usado';
   observacionRegistro: string;
   ultimaActualizacion: string;
+  /**
+   * Fecha de adquisición según el registro institucional. Es el origen de la fecha con la que
+   * arranca la garantía del proveedor: el ingreso la autocompleta y nadie la teclea. **Todo equipo
+   * nuevo la trae**; que falte en un equipo nuevo es un error de los datos institucionales, no un
+   * estado normal del flujo.
+   */
+  fechaAdquisicion?: string;
+  /** Fecha de recepción institucional, cuando difiere de la de compra. */
+  fechaRecepcion?: string;
+  /** Proveedor que vendió o entregó el equipo. */
+  proveedor?: string;
+  /** Tipo de garantía que el registro institucional sugiere para el equipo. */
+  tipoGarantiaSugerida?: TipoGarantia;
+  /** Vigencia de la garantía del proveedor según el registro institucional. */
+  inicioGarantiaProveedor?: string;
+  vencimientoGarantiaProveedor?: string;
+  /** Duración de la garantía del proveedor tal como consta («3 años»). */
+  duracionGarantiaProveedor?: string;
 }
 
 /** Desenlace de una consulta a la base institucional simulada. */
@@ -868,7 +902,66 @@ export interface Conformidad {
   ipValidadaEl?: string;
 }
 
-export type EstadoGarantia = 'Vigente' | 'Vencida' | 'Caso abierto' | 'Cerrado' | 'No iniciada';
+/**
+ * Estado grueso de la garantía, el que ya usaban badges, filtros y validaciones. Convive con
+ * `EstadoDetalleGarantia`, que dice de qué garantía se trata — el mismo reparto que `estado` y
+ * `estadoIncidencia` en el F0302, o `estado` y `estadoRevision` en un caso de garantía.
+ */
+export type EstadoGarantia =
+  | 'Vigente' | 'Vencida' | 'Caso abierto' | 'Cerrado' | 'No iniciada'
+  /** Equipo nuevo cuya fecha de adquisición todavía no consta: la garantía no se puede calcular. */
+  | 'Pendiente de fecha de adquisición';
+
+/**
+ * De qué responde el equipo y hasta cuándo. La garantía del proveedor y la responsabilidad interna
+ * de Soporte son dos cosas distintas y no se mezclan: la primera la da quien vendió el equipo y
+ * corre desde que se compró; la segunda la asume Soporte y corre desde que el equipo quedó activo.
+ */
+export type TipoGarantia =
+  | 'Garantía de proveedor'
+  | 'Responsabilidad interna de Soporte'
+  | 'Sin garantía de proveedor';
+
+/** Estado detallado que distingue de qué garantía se habla y en qué punto está. */
+export type EstadoDetalleGarantia =
+  | 'Garantía de proveedor vigente'
+  | 'Garantía de proveedor por vencer'
+  | 'Garantía de proveedor vencida'
+  | 'Responsabilidad interna activa'
+  | 'Responsabilidad interna vencida'
+  | 'Sin garantía de proveedor'
+  /**
+   * Un equipo nuevo llegó sin fecha de adquisición. No es un paso del flujo: es un error de los
+   * datos institucionales, y se nombra como tal para que se corrija en el origen y no se resuelva
+   * tecleando una fecha cualquiera en la garantía.
+   */
+  | 'Pendiente de corrección de datos institucionales'
+  | 'Pendiente de fecha de adquisición'
+  | 'Cerrada';
+
+/**
+ * Una modificación de la vigencia de la garantía. Nunca se sobrescribe la garantía sin dejar
+ * esto: cada cambio guarda lo que había antes, lo que quedó, quién lo hizo y por qué. Sin motivo
+ * no se registra — es la única forma de que un vencimiento distinto al calculado sea auditable.
+ */
+export interface ModificacionGarantia {
+  fecha: string;
+  hora: string;
+  usuario: string;
+  rol: string;
+  motivo: string;
+  observaciones: string;
+  tipoAnterior: TipoGarantia;
+  tipoNuevo: TipoGarantia;
+  fechaAdquisicionAnterior: string;
+  fechaAdquisicionNueva: string;
+  inicioAnterior: string;
+  inicioNuevo: string;
+  vencimientoAnterior: string;
+  vencimientoNuevo: string;
+  proveedorAnterior: string;
+  proveedorNuevo: string;
+}
 export type EstadoCasoGarantia = 'Abierto' | 'En revisión' | 'Resuelto' | 'Cerrado';
 
 export type TipoComentarioCaso = 'Seguimiento' | 'Revisión técnica' | 'Observación' | 'Resolución' | 'Otro';
@@ -929,12 +1022,38 @@ export interface Garantia {
   equipo: string;
   inventario: string;
   usuarioFinal: string;
+  /** Cuándo el usuario final aceptó. Confirma la recepción conforme; **no** inicia la garantía del proveedor. */
   fechaAceptacion: string;
+  /**
+   * Vigencia efectiva: la del proveedor cuando el equipo es nuevo y tiene fecha de adquisición, la
+   * de la responsabilidad interna cuando no. Es un espejo de los pares de abajo, no una tercera
+   * verdad: se recalcula en cada cambio para que todo lo que ya leía estas dos fechas siga
+   * funcionando sin tener que preguntar de qué tipo de garantía se trata.
+   */
   fechaInicio: string;
   fechaVencimiento: string;
   estado: EstadoGarantia;
   casos: CasoGarantia[];
   nota: string;
+  /** Qué cubre al equipo. Nace del tipo de equipo y solo el Encargado de Soporte lo cambia. */
+  tipoGarantia?: TipoGarantia;
+  /** Fecha de adquisición del equipo, copiada al habilitar la garantía; vacía si no consta. */
+  fechaAdquisicion?: string;
+  /** Vigencia de la garantía del proveedor: arranca en la adquisición, nunca en la aceptación. */
+  inicioProveedor?: string;
+  vencimientoProveedor?: string;
+  /** Vigencia de la responsabilidad interna de Soporte: puede arrancar en la aceptación. */
+  inicioInterna?: string;
+  vencimientoInterna?: string;
+  proveedor?: string;
+  observacionesGarantia?: string;
+  /** Historial de cambios de vigencia; nunca se sobrescribe una garantía sin dejar rastro aquí. */
+  modificaciones?: ModificacionGarantia[];
+  /**
+   * El Encargado de Soporte autorizó atender por responsabilidad interna pese a que la garantía
+   * del proveedor ya venció. Sin esta autorización el caso no se abre.
+   */
+  autorizacionInterna?: { autorizadoPor: string; fecha: string; hora: string; motivo: string };
 }
 
 /**
@@ -1699,4 +1818,16 @@ export interface EventoTrazabilidad {
   accionPosterior?: string;
   /** Código del descargo al que pertenece el evento. */
   descargo?: string;
+  /** Tipo de garantía al momento del evento: proveedor, responsabilidad interna o sin garantía. */
+  tipoGarantia?: string;
+  /** Fecha de adquisición del equipo, en los eventos de garantía. */
+  fechaAdquisicion?: string;
+  /** Fecha de aceptación del usuario final, para dejar ver que no es la que inicia la garantía. */
+  fechaAceptacion?: string;
+  /** Vigencia antes del cambio, en las modificaciones de garantía. */
+  inicioAnterior?: string;
+  vencimientoAnterior?: string;
+  /** Vigencia después del cambio. */
+  inicioNuevo?: string;
+  vencimientoNuevo?: string;
 }

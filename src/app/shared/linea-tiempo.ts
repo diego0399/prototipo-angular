@@ -31,6 +31,8 @@ const PRINCIPALES = [
   /documento f0288/i, /equipo preparado/i, /asignad[oa] al usuario final/i, /asignación modificada/i,
   /expediente único .*cread/i, /configuración f0302 (iniciada|finalizada)/i, /documento f0302/i,
   /formulario de conformidad (enviado|reenviado|aceptado)/i, /aceptó la recepción/i,
+  // «de un mes iniciada» se conserva: son eventos ya registrados en la trazabilidad, y dejarlos
+  // fuera de los hitos escondería parte de la historia del equipo por haber cambiado la regla.
   /garantía (habilitada|de un mes iniciada)/i, /descargo registrado/i, /reingreso a hardware/i,
   /reproceso f0288 (generado|finalizado|firmado)/i, /firma de técnico/i,
   // Un cierre bloqueado por falta de evidencia es parte de la historia: no se esconde en el detalle.
@@ -40,7 +42,11 @@ const PRINCIPALES = [
   /garantía requiere revisión de hardware/i, /revisión técnica de garantía (generada|finalizada)/i,
   /garantía (validada por soporte|requiere sustitución)/i, /caso devuelto a soporte/i,
   // Pertenencia a Dirección/Unidad: cuándo el equipo pasó a ser de una y cuándo dejó de serlo.
-  /asociado a /i, /retirado del inventario activo/i
+  /asociado a /i, /retirado del inventario activo/i,
+  // Vigencia de la garantía: de qué responde el equipo, desde cuándo, y cada vez que se movió.
+  /garantía de proveedor (asignada|pendiente|vencida|calculada)/i, /responsabilidad interna de soporte asignada/i,
+  /fecha de garantía modificada/i, /tipo de garantía modificado/i,
+  /fecha de adquisición obtenida/i
 ];
 
 /**
@@ -285,6 +291,10 @@ export class LineaTiempoComponent {
       ['Técnico de configuración', e.tecnicoConfiguracion],
       ['Estado en Controles', e.estadoControles],
       ['Descargo', e.descargo], ['Acción posterior', e.accionPosterior],
+      ['Tipo de garantía', e.tipoGarantia], ['Fecha de adquisición', e.fechaAdquisicion],
+      ['Fecha de aceptación', e.fechaAceptacion],
+      ['Inicio anterior', e.inicioAnterior], ['Vencimiento anterior', e.vencimientoAnterior],
+      ['Inicio nuevo', e.inicioNuevo], ['Vencimiento nuevo', e.vencimientoNuevo],
       ['Reportó (Soporte)', e.tecnicoReporta], ['Técnico de Hardware', e.tecnicoHardware],
       ['Encargado que asignó', e.encargadoAsigno], ['Resultado del reproceso', e.resultadoReproceso],
       ['Firma registrada', e.firmaRegistrada], ['Acción tomada', e.accionTomada],

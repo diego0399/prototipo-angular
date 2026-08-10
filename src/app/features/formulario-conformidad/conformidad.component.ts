@@ -171,7 +171,7 @@ import { IconComponent } from '../../shared/icon';
                     aceptación. La garantía no inicia hasta que acepte formalmente.
                   } @else {
                     Gracias, {{ c.usuarioFinal }}. Su aceptación quedó registrada con fecha y hora, se anexó al
-                    expediente único del equipo y dio inicio al servicio de garantía de un mes.
+                    expediente único del equipo y habilitó el servicio de garantía correspondiente.
                   }
                 </p>
                 <p class="small muted mt-2">Respuesta: «{{ conf()?.respuesta }}» · {{ conf()?.fechaRespuesta | slice: 0:10 }}</p>

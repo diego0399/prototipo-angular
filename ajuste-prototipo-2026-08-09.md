@@ -935,3 +935,343 @@ src/app/core/config/permisos.ts · app.routes.ts        (dos módulos nuevos)
 src/app/shared/linea-tiempo.ts                         (siete campos y dos hitos nuevos)
 public/assets/data/distribucion-soportes.json          (semilla: ocho asignaciones)
 ```
+
+---
+
+# Parte 7 — La garantía del proveedor corre desde la fecha de adquisición
+
+**Fecha:** 9 de agosto de 2026, séptima sesión del día (ronda 62 del punto de control)
+**Alcance:** el módulo Garantía, el Inventario de Hardware (fecha de adquisición), el Expediente
+único, el historial técnico y la trazabilidad.
+
+## 1. El error que se corrige
+
+La garantía se calculaba como «un mes desde la aceptación del usuario final». Dos cosas mal en una:
+la duración era fija y el punto de partida era el equivocado.
+
+```text
+Antes    Aceptación 09/08/2026  →  vence 09/09/2026     (un mes, siempre)
+
+Ahora    Equipo nuevo
+         Adquisición 15/03/2026 →  vence 15/03/2029     (3 años desde la compra)
+         Aceptación  09/08/2026 →  no mueve nada
+
+         Equipo usado
+         Sin garantía de proveedor
+         Responsabilidad interna de Soporte desde la aceptación
+```
+
+La aceptación del usuario final confirma que el equipo se recibió conforme y que puede quedar
+activo en su Dirección/Unidad. No inicia la garantía del proveedor, que ya venía corriendo desde
+que la institución compró el equipo.
+
+## 2. Dos cosas distintas, que no se mezclan
+
+```text
+Garantía de proveedor              la da quien vendió el equipo
+                                   corre desde la fecha de adquisición
+                                   solo equipos nuevos · 3 años sugeridos
+
+Responsabilidad interna de Soporte la asume la Unidad de Soporte
+                                   puede correr desde la aceptación
+                                   equipos usados · vigencia que define el Encargado
+```
+
+Cada una tiene su propio par de fechas en el modelo (`inicioProveedor`/`vencimientoProveedor` e
+`inicioInterna`/`vencimientoInterna`). `fechaInicio` y `fechaVencimiento` siguen existiendo como
+**espejo de la que rige hoy**, no como una tercera verdad: se recalculan en cada cambio, así todo
+lo escrito antes de esta regla sigue leyendo lo correcto sin preguntar de qué garantía se trata.
+
+## 3. La fecha de adquisición no se deriva de nada
+
+Es un dato nuevo del equipo, que viene del registro institucional cuando consta:
+
+```text
+Fecha de adquisición            de dónde arranca la garantía del proveedor
+Fecha de recepción institucional cuando la compra y la entrega no coinciden
+Fecha de ingreso institucional   la que ya existía: el ingreso al Inventario de Hardware
+Proveedor · Observaciones de garantía
+```
+
+**No se sustituye por la fecha de ingreso al inventario.** Son fechas distintas —un equipo puede
+comprarse meses antes de que SISGOST lo registre— y derivarla habría sido repetir el mismo error
+con otra fecha cómoda a mano. En el set de datos, toda fecha de adquisición sembrada es anterior a
+su ingreso, y ninguna coincide con él.
+
+## 4. Cuando la fecha no consta
+
+```text
+No se encontró fecha de adquisición del equipo. El Encargado de Soporte debe registrar o
+confirmar la fecha para calcular la garantía del proveedor.
+```
+
+El equipo queda en estado **Pendiente de fecha de adquisición**, sin fechas inventadas y sin poder
+abrir casos: no se sabe si su garantía sigue corriendo, y suponerlo sería volver a usar una fecha
+que no es. El aviso sale en la garantía y también al ingresar el equipo, y ofrece registrar la
+fecha en un clic.
+
+El set de datos tiene equipos nuevos **con** fecha y **sin** ella, a propósito: los dos caminos son
+recorribles en la demostración.
+
+## 5. Modificar la vigencia
+
+Botón **Modificar garantía**, visible solo para el Encargado de Soporte y el Administrador. Abre
+**Modificar vigencia de garantía**, con tipo, fecha de adquisición, inicio, vencimiento, proveedor,
+motivo y observaciones.
+
+```text
+El vencimiento no puede ser menor que el inicio.
+El motivo es obligatorio si cambia una fecha o el tipo.
+Un tipo que exige vigencia no se guarda sin ella.
+La garantía del proveedor no acepta otro inicio que la fecha de adquisición.
+Una garantía cerrada solo la modifica el Administrador.
+```
+
+Al elegir «Garantía de proveedor», el campo de inicio queda bloqueado en la fecha de adquisición y
+el vencimiento se propone a tres años. No es una comodidad: es la regla puesta donde no se puede
+saltar por descuido.
+
+Los Técnicos consultan la garantía y registran casos, pero **no** mueven la vigencia. El Técnico de
+Hardware la ve cuando participa en una revisión técnica, en modo consulta.
+
+## 6. Nada se sobrescribe
+
+Cada cambio guarda el tipo, la fecha de adquisición y la vigencia **anteriores y nuevas**, con
+usuario, rol, fecha, hora, motivo y observaciones. El historial se muestra en la garantía y en el
+historial técnico del equipo. Una garantía que vence en otra fecha sin explicación es
+indistinguible de un error de captura.
+
+## 7. Estados
+
+```text
+Garantía de proveedor vigente · por vencer · vencida
+Responsabilidad interna activa · vencida
+Sin garantía de proveedor
+Pendiente de fecha de adquisición
+Cerrada
+```
+
+Viven en `estadoDetalleGarantia`, derivado, junto al estado grueso que ya usaban badges y filtros
+—el mismo reparto que `estado` y `estadoIncidencia` en el F0302—. «Por vencer» (60 días) se pinta
+como aviso y no en verde: es justo lo que hay que mirar.
+
+## 8. Casos de garantía
+
+Con la garantía del proveedor vencida el caso no se bloquea sin más:
+
+```text
+La garantía de proveedor se encuentra vencida. El Encargado de Soporte puede autorizar
+atención por responsabilidad interna.
+```
+
+La autorización es una decisión explícita del Encargado, con justificación obligatoria — el
+proveedor ya no responde y alguien tiene que asumirlo. Un equipo nuevo sin fecha de adquisición no
+abre caso hasta que la fecha se registre.
+
+## 9. Trazabilidad e historial
+
+Ocho eventos nuevos —garantía de proveedor asignada desde la fecha de adquisición, responsabilidad
+interna asignada, pendiente de fecha de adquisición, fecha de adquisición modificada, fecha de
+garantía modificada, tipo de garantía modificado, y los dos intentos rechazados (sin permisos, sin
+motivo)— con siete campos nuevos en el evento.
+
+Los eventos **ya registrados** con la regla vieja («garantía de un mes iniciada») no se
+reescribieron y siguen contando como hitos: dicen lo que el sistema hizo cuando lo hizo, y
+falsearlos habría inventado un pasado distinto. Lo que se corrigió es el texto que el sistema
+vuelve a emitir de ahora en adelante.
+
+El historial técnico del equipo estrena el bloque **Garantía del equipo**, y el Expediente único
+muestra en su reporte el tipo, la adquisición, la aceptación, la vigencia, el responsable y el
+motivo de la última modificación.
+
+## 10. Casos de prueba
+
+**244 casos, 0 fallos**, con espejos funcionales de lo que se calcula mal en silencio: la suma de
+años en cinco bordes del calendario (incluido el 29 de febrero, que cae en el 1 de marzo); la
+propuesta por tipo de equipo; las diez validaciones del modal en escenarios completos; la tabla de
+permisos en cinco roles; las seis puertas de apertura de caso; y qué le pasa a cada garantía
+semilla al migrar —que ninguna sigue venciendo un mes después de la aceptación—.
+
+Regresiones: las veintisiete baterías anteriores, **2294 casos, 0 fallos**. Se ajustó una
+aserción de la ronda 61 que partía `responderConformidad` contando llaves: la función creció y esa
+forma de encontrar la rama se rompía sola.
+
+## 11. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [7.774 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en once rutas.
+
+**No hubo clics reales en un navegador.** El recorrido nuevo —ver una garantía de proveedor con su
+fecha de adquisición, registrar la que falta, modificar una vigencia con motivo y autorizar la
+atención interna de una vencida— está verificado por código y por espejos, nunca ejecutado a mano.
+
+## 12. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (TipoGarantia, EstadoDetalleGarantia,
+                                             ModificacionGarantia; fecha de adquisición,
+                                             recepción y proveedor en el equipo y en el catálogo
+                                             institucional; nueve campos en la garantía; siete en
+                                             el evento)
+src/app/core/services/data.service.ts       (garantiaPropuesta, sumarAnios, vigenciaEfectiva,
+                                             diasRestantesGarantia, estadoDetalleGarantia,
+                                             sincronizarVigencia, normalizarGarantias,
+                                             modificarGarantia, autorizarResponsabilidadInterna,
+                                             bloqueoCasoGarantia; fuera la regla del mes)
+src/app/features/garantia/…                 (detalle de vigencia, modal de modificación,
+                                             historial de cambios, autorización interna)
+src/app/features/trazabilidad/…             (bloque «Garantía del equipo»)
+src/app/features/expediente-unico/…         (garantía completa en el reporte final)
+src/app/shared/ui.ts                        (badges de los estados nuevos)
+src/app/shared/linea-tiempo.ts              (siete campos y cuatro hitos nuevos)
+public/assets/data/equipos.json             (fechas de adquisición: unas sí, otras no)
+public/assets/data/catalogo-institucional.json · expedientes.json
+```
+
+---
+
+# Parte 8 — La fecha de adquisición viene de la base institucional
+
+**Fecha:** 9 de agosto de 2026, octava sesión del día (ronda 63 del punto de control)
+**Alcance:** el Inventario de Hardware, el módulo Garantía, el historial técnico y la trazabilidad.
+
+## 1. Qué se corrige
+
+La ronda anterior dejó equipos nuevos sin fecha de adquisición **a propósito**, para que el camino
+del «falta la fecha» fuera recorrible en la demostración. Era la decisión equivocada: la fecha viene
+de la base institucional al ingresar el equipo, y que falte en un equipo nuevo no es un paso del
+flujo — es un error de datos.
+
+```text
+Antes    Equipo nuevo · Garantía de proveedor · Sin registrar
+         Estado: Pendiente de fecha de adquisición          ← se aceptaba como normal
+
+Ahora    Todo equipo nuevo trae su fecha desde la base institucional
+         Si falta: Pendiente de corrección de datos institucionales   ← se nombra como error
+```
+
+## 2. La base institucional trae la garantía completa
+
+La ficha institucional ganó cinco campos, y el ingreso los copia al equipo sin que nadie teclee
+nada:
+
+```text
+2201-00-101-0010 · CPU · Nuevo · Dell OptiPlex 3090 · SER-CPU-3090-010
+Fecha de adquisición:  2026-07-22
+Proveedor:             Proveedor institucional
+Garantía de proveedor: 2026-07-22 → 2029-07-22   (3 años)
+```
+
+Los dos ejemplos del pedido están en el catálogo con esos valores exactos. Los **veinte** equipos
+del catálogo y los **dieciocho** del inventario traen fecha de adquisición; ninguna coincide con su
+fecha de ingreso y todas son anteriores a ella.
+
+La pantalla de ingreso muestra el bloque de adquisición y garantía junto a los datos técnicos, y la
+ficha del equipo ya ingresado también.
+
+## 3. Lo que decide no es si el equipo es nuevo
+
+Es **si el proveedor todavía responde**, y eso lo dice la fecha de adquisición:
+
+```text
+Comprado hace 4 meses   →  Garantía de proveedor          (nuevo o usado, da igual)
+Comprado hace 1 año     →  Garantía de proveedor
+Comprado hace 5 años    →  Sin garantía de proveedor      (los 3 años se agotaron)
+```
+
+Un equipo usado comprado el año pasado sigue teniendo garantía de proveedor: es la misma máquina y
+el mismo proveedor. La condición «Usado» describe su estado físico, no quién responde por él.
+
+## 4. Cuando los tres años se agotaron
+
+```text
+Equipo usado · Fecha de adquisición 2021-04-10
+Garantía de proveedor: 2021-04-10 → 2024-04-10 · ya vencida
+Estado: Garantía de proveedor vencida
+```
+
+Las fechas del proveedor **se conservan** aunque ya no cubran: que el equipo tuvo garantía del día X
+al día Y es un hecho, y borrarlo dejaría el expediente sin poder explicar por qué hoy responde
+Soporte. Por eso el estado dice «Garantía de proveedor vencida» y no un «sin garantía» que esconde
+el pasado.
+
+Y **no se le inventa una responsabilidad interna**: la fija el Encargado de Soporte, que es quien la
+asume. Mientras no lo haga, el equipo no tiene cobertura y no se pueden abrir casos:
+
+```text
+La garantía del proveedor de este equipo ya venció. El Encargado de Soporte debe establecer
+la responsabilidad interna de Soporte para poder atender casos.
+```
+
+Un botón —**Establecer responsabilidad interna**— abre el modal con el tipo y el inicio ya puestos.
+El vencimiento y el motivo los pone el Encargado.
+
+## 5. Tampoco se puede reponer una garantía que el calendario agotó
+
+Si al modificar se intenta dejar «Garantía de proveedor» con una fecha de adquisición de hace cinco
+años, el sistema se niega y dice hasta cuándo cubrió. Declarar cubierto un equipo que nadie cubre es
+peor que dejarlo sin cobertura declarada.
+
+## 6. El estado nuevo
+
+```text
+Pendiente de corrección de datos institucionales
+```
+
+Es el que aparece si un equipo nuevo llega sin fecha. Se pinta en rojo, no en ámbar: no es una
+espera del proceso, es algo roto en el dato de origen. El aviso apunta al inventario institucional,
+no le pide al Encargado que invente una fecha en la garantía.
+
+## 7. Trazabilidad e historial
+
+Tres eventos nuevos en el ingreso —equipo consultado en base institucional, fecha de adquisición
+obtenida, garantía de proveedor calculada— más el de la garantía vencida al aceptar. El historial
+técnico narra el recorrido completo:
+
+```text
+Equipo ingresado desde la base institucional con fecha de adquisición 2026-07-22.
+La garantía del proveedor se calculó desde ahí (2026-07-22 → 2029-07-22),
+no desde la aceptación del usuario final (2026-08-09).
+```
+
+## 8. Casos de prueba
+
+**153 casos, 0 fallos**: los catorce campos de la ficha institucional; que **ningún** equipo nuevo
+—ni del catálogo ni del inventario— quede sin fecha; que ninguna adquisición coincida con su
+ingreso; los dos ejemplos del pedido campo por campo; el reparto por fecha de adquisición en ocho
+escenarios, incluidos los dos lados del límite exacto de los tres años; y las seis puertas de
+apertura de caso.
+
+Regresiones: las veintiocho baterías anteriores, **2538 casos, 0 fallos**. Se actualizó la de la
+ronda 62 en siete aserciones, que comprobaban justo lo contrario de lo que ahora corresponde —eran
+la decisión que este pedido revierte—.
+
+## 9. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [7.567 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en diez rutas y en el JSON del catálogo institucional.
+
+**No hubo clics reales en un navegador.** Consultar un equipo en la base institucional y ver llegar
+su fecha de adquisición y su garantía al ingreso está verificado por código y por datos, nunca
+ejecutado a mano.
+
+## 10. Archivos tocados
+
+```text
+src/app/core/models/models.ts                  (cinco campos de garantía en la ficha institucional;
+                                                estado «Pendiente de corrección de datos
+                                                institucionales»)
+src/app/core/services/data.service.ts          (garantiaProveedorAgotada; garantiaPropuesta
+                                                reordenada por fecha de adquisición;
+                                                sinCoberturaVigente; vigencia del proveedor
+                                                conservada al cambiar de tipo; eventos del ingreso)
+src/app/features/inventario-hardware/…         (bloque de adquisición y garantía en la consulta y
+                                                en la ficha del equipo)
+src/app/features/garantia/…                    (proveedor y vigencia del proveedor en el detalle;
+                                                aviso y atajo de responsabilidad interna)
+src/app/features/trazabilidad/…                (proveedor, vigencia del proveedor y la narración
+                                                del recorrido)
+src/app/shared/ui.ts · linea-tiempo.ts         (badge del error de datos; dos hitos nuevos)
+public/assets/data/catalogo-institucional.json (20 fichas con adquisición, proveedor y garantía)
+public/assets/data/equipos.json                (18 equipos con fecha de adquisición)
+```

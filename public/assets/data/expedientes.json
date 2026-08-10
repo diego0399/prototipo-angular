@@ -16,7 +16,7 @@
       { "nombre": "Firmas registradas", "detalle": "Preparó · configuró/instaló · conformidad del usuario final (formulario externo)", "estado": "3 de 3", "fecha": "2026-06-30" },
       { "nombre": "Formulario de conformidad", "detalle": "Respondido desde el correo institucional", "estado": "Aceptado", "fecha": "2026-06-30" },
       { "nombre": "Entrega y aceptación", "detalle": "Conformidad registrada mediante formulario externo", "estado": "Completada", "fecha": "2026-06-30" },
-      { "nombre": "Servicio de garantía de un mes", "detalle": "Inicia con la aceptación del usuario final", "estado": "Vigente", "fecha": "2026-06-30" },
+      { "nombre": "Servicio de garantía", "detalle": "Inicia con la aceptación del usuario final", "estado": "Vigente", "fecha": "2026-06-30" },
       { "nombre": "Reporte final de auditoría", "detalle": "Consolida el expediente completo", "estado": "Por generar", "fecha": "" }
     ]
   },
@@ -37,7 +37,7 @@
       { "nombre": "Firmas registradas", "detalle": "Se registran al cierre de cada fase", "estado": "0 de 3", "fecha": "" },
       { "nombre": "Formulario de conformidad", "detalle": "Se envía al correo institucional al finalizar la configuración", "estado": "No enviado", "fecha": "" },
       { "nombre": "Entrega y aceptación", "detalle": "Pendiente", "estado": "Pendiente", "fecha": "" },
-      { "nombre": "Servicio de garantía de un mes", "detalle": "Inicia con la aceptación del usuario final", "estado": "No iniciada", "fecha": "" },
+      { "nombre": "Servicio de garantía", "detalle": "Inicia con la aceptación del usuario final", "estado": "No iniciada", "fecha": "" },
       { "nombre": "Reporte final de auditoría", "detalle": "Consolida el expediente completo", "estado": "Pendiente", "fecha": "" }
     ]
   },
@@ -58,7 +58,7 @@
       { "nombre": "Firmas registradas", "detalle": "Preparó y configuró/instaló firmados; conformidad pendiente", "estado": "2 de 3", "fecha": "2026-07-06" },
       { "nombre": "Formulario de conformidad", "detalle": "Enviado al correo institucional jportillo@cnr.gob.sv", "estado": "Pendiente de respuesta", "fecha": "2026-07-06" },
       { "nombre": "Entrega y aceptación", "detalle": "Entrega realizada; aceptación pendiente del formulario externo", "estado": "Pendiente", "fecha": "2026-07-06" },
-      { "nombre": "Servicio de garantía de un mes", "detalle": "Inicia con la aceptación del usuario final", "estado": "No iniciada", "fecha": "" },
+      { "nombre": "Servicio de garantía", "detalle": "Inicia con la aceptación del usuario final", "estado": "No iniciada", "fecha": "" },
       { "nombre": "Reporte final de auditoría", "detalle": "Consolida el expediente completo", "estado": "Pendiente", "fecha": "" }
     ]
   },
@@ -79,7 +79,7 @@
       { "nombre": "Firmas registradas", "detalle": "Preparó · configuró/instaló · conformidad del usuario final (formulario externo)", "estado": "3 de 3", "fecha": "2025-12-02" },
       { "nombre": "Formulario de conformidad", "detalle": "Respondido desde el correo institucional", "estado": "Aceptado", "fecha": "2025-12-02" },
       { "nombre": "Entrega y aceptación", "detalle": "Conformidad registrada mediante formulario externo", "estado": "Completada", "fecha": "2025-12-02" },
-      { "nombre": "Servicio de garantía de un mes", "detalle": "Vigente del 2025-12-02 al 2026-01-02; ya vencida", "estado": "Vencida", "fecha": "2026-01-02" },
+      { "nombre": "Servicio de garantía", "detalle": "Vigente del 2025-12-02 al 2026-01-02; ya vencida", "estado": "Vencida", "fecha": "2026-01-02" },
       { "nombre": "Reporte final de auditoría", "detalle": "Consolida el expediente completo", "estado": "Generado", "fecha": "2025-12-04" }
     ]
   }

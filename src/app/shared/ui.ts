@@ -9,13 +9,21 @@ export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 
   if (/(carga media)/.test(e)) return 'warn';
   if (/(carga baja)/.test(e)) return 'ok';
   // «No corregido» va antes que la rama «ok»: contiene «corregido» y se pintaba en verde.
+  // «Pendiente de corrección de datos institucionales» es un error del dato de origen, no un paso
+  // del proceso: va antes de la rama «pendiente», que lo pintaría como una espera normal.
+  if (/corrección de datos institucionales/.test(e)) return 'danger';
   if (/(no conforme|vencid|falla|no encontrado|formato inválido|no corresponde|asociado a otro|no corregido)/.test(e)) return 'danger';
   // «Inactivo» va antes que la rama «ok»: contiene la subcadena «activo» y se pintaba en verde.
   // «Asignado sin Expediente único» va antes que la rama «asignad»: describe algo pendiente de
   // continuar, no un estado ya resuelto.
   if (/sin expediente único/.test(e)) return 'warn';
-  if (/(no asignado|bloquead|no aplica|inactivo)/.test(e)) return 'neutral';
-  if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|preparado|disponible|resuelto|finalizad|capturad|encontrado|instalado|corregido)/.test(e)) return 'ok';
+  // «Por vencer» avisa sin ser una falla: va antes de la rama «ok», donde «vigente» lo pintaría
+  // de verde y escondería justamente lo que hay que mirar.
+  if (/por vencer/.test(e)) return 'warn';
+  // «Desactivada» contiene «activa» y «sin garantía de proveedor» no es un estado bueno ni malo:
+  // ambos van antes de la rama «ok» para que no se pinten en verde.
+  if (/(no asignado|bloquead|no aplica|inactivo|desactivad|sin garantía)/.test(e)) return 'neutral';
+  if (/(completad|realizado|firmado|aceptado|vigente|entregado|anexado|generado|verificad|activo|activa|preparado|disponible|resuelto|finalizad|capturad|encontrado|instalado|corregido)/.test(e)) return 'ok';
   if (/(pendiente|por generar|no enviado|no iniciada|caso abierto|revisión|abierto)/.test(e)) return 'warn';
   if (/entrante/.test(e)) return 'gold';
   if (/(en configuración|en preparación|en solicitud|asignad|enviado|en curso|en proceso)/.test(e)) return 'info';

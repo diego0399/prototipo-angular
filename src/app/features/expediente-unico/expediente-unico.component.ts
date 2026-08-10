@@ -580,7 +580,24 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
                   <dl class="dl">
                     <dt>Garantía</dt>
                     <dd>
-                      @if (garantiaDe(x); as g) { <ui-badge [estado]="g.estado" /> <span class="small muted">· {{ g.fechaInicio }} → {{ g.fechaVencimiento }}</span> }
+                      @if (garantiaDe(x); as g) {
+                        <ui-badge [estado]="data.estadoDetalleGarantia(g)" />
+                        <span class="small muted">· {{ g.tipoGarantia }}</span>
+                        <div class="small muted">
+                          Adquisición: <b>{{ g.fechaAdquisicion || 'sin registrar' }}</b> ·
+                          Aceptación: <b>{{ g.fechaAceptacion }}</b> ·
+                          Vigencia: <b>{{ g.fechaInicio || '—' }} → {{ g.fechaVencimiento || '—' }}</b>
+                        </div>
+                        <div class="small muted">Responsable: <b>{{ data.responsableGarantia(g) }}</b></div>
+                        @if (data.ultimaModificacionGarantia(g); as m) {
+                          <div class="small muted">
+                            Modificada el {{ m.fecha }} por {{ m.usuario.split('—')[0].trim() }} ({{ m.rol }}): {{ m.motivo }}
+                          </div>
+                        }
+                        @if (g.tipoGarantia === 'Garantía de proveedor' && g.fechaAdquisicion) {
+                          <div class="small muted">La garantía del proveedor inicia en la adquisición, no en la aceptación.</div>
+                        }
+                      }
                       @else { <span class="muted">No iniciada</span> }
                     </dd>
                   </dl>

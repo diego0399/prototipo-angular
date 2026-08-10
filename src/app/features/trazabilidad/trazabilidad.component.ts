@@ -541,6 +541,73 @@ interface FilaTraza {
                 </span>
               }
 
+              <!-- Garantía del equipo: de qué responde, desde cuándo y quién movió las fechas -->
+              @if (garantiaEq(); as g) {
+                <div class="sec-title mt-3">Garantía del equipo</div>
+                <div class="datos">
+                  <div><span>Tipo de equipo</span><b>{{ detalle()?.equipo?.condicion || '—' }}</b></div>
+                  <div><span>Tipo de garantía</span><b>{{ g.tipoGarantia || '—' }}</b></div>
+                  <div><span>Fecha de adquisición</span><b class="mono">{{ g.fechaAdquisicion || 'Sin registrar' }}</b></div>
+                  <div><span>Proveedor</span><b>{{ g.proveedor || 'No consta' }}</b></div>
+                  <div><span>Fecha de aceptación</span><b class="mono">{{ g.fechaAceptacion }}</b></div>
+                  @if (g.inicioProveedor) {
+                    <div>
+                      <span>Garantía del proveedor</span>
+                      <b class="mono">{{ g.inicioProveedor }} → {{ g.vencimientoProveedor }}</b>
+                    </div>
+                  }
+                  <div><span>Inicio de garantía</span><b class="mono">{{ g.fechaInicio || '—' }}</b></div>
+                  <div><span>Vencimiento</span><b class="mono">{{ g.fechaVencimiento || '—' }}</b></div>
+                  <div><span>Estado</span><b>{{ data.estadoDetalleGarantia(g) }}</b></div>
+                  <div><span>Responsable</span><b>{{ data.responsableGarantia(g) }}</b></div>
+                  <div><span>Modificaciones</span><b>{{ (g.modificaciones || []).length }}</b></div>
+                  <div><span>Casos de garantía</span><b>{{ g.casos.length }}</b></div>
+                </div>
+                @if (g.tipoGarantia === 'Garantía de proveedor' && g.fechaAdquisicion) {
+                  <span class="hint">
+                    Equipo ingresado desde la base institucional con fecha de adquisición
+                    <b>{{ g.fechaAdquisicion }}</b>. La garantía del proveedor se calculó desde ahí
+                    ({{ g.inicioProveedor }} → {{ g.vencimientoProveedor }}), no desde la aceptación del usuario
+                    final ({{ g.fechaAceptacion }}).
+                  </span>
+                } @else if (g.tipoGarantia === 'Sin garantía de proveedor') {
+                  <span class="hint">
+                    La garantía del proveedor cubrió del <b>{{ g.inicioProveedor }}</b> al
+                    <b>{{ g.vencimientoProveedor }}</b> y ya venció. El Encargado de Soporte debe establecer la
+                    responsabilidad interna de Soporte.
+                  </span>
+                } @else if (g.tipoGarantia === 'Responsabilidad interna de Soporte') {
+                  <span class="hint">
+                    Lo que corre es la <b>responsabilidad interna de Soporte</b>, que sí puede iniciar con la
+                    aceptación del usuario final.
+                    @if (g.inicioProveedor) {
+                      La garantía del proveedor de este equipo cubrió del {{ g.inicioProveedor }} al {{ g.vencimientoProveedor }}.
+                    }
+                  </span>
+                }
+                @if (g.modificaciones?.length) {
+                  <div class="table-wrap mt-2">
+                    <table class="tbl">
+                      <thead>
+                        <tr><th>Fecha</th><th>Usuario</th><th>Rol</th><th>Vigencia anterior</th><th>Vigencia nueva</th><th>Motivo</th></tr>
+                      </thead>
+                      <tbody>
+                        @for (m of g.modificaciones; track m.fecha + m.hora) {
+                          <tr>
+                            <td class="mono">{{ m.fecha }} {{ m.hora }}</td>
+                            <td>{{ m.usuario.split('—')[0].trim() }}</td>
+                            <td>{{ m.rol }}</td>
+                            <td class="mono">{{ m.inicioAnterior || '—' }} → {{ m.vencimientoAnterior || '—' }}</td>
+                            <td class="mono">{{ m.inicioNuevo }} → {{ m.vencimientoNuevo }}</td>
+                            <td>{{ m.motivo }}</td>
+                          </tr>
+                        }
+                      </tbody>
+                    </table>
+                  </div>
+                }
+              }
+
               <!-- Pertenencia del equipo: a qué Dirección/Unidad pasó al aceptarlo y cuándo salió -->
               @if (controlesEq().length) {
                 <div class="sec-title mt-3">Pertenencia a Dirección/Unidad e inventario de Controles</div>
@@ -1256,6 +1323,13 @@ export class TrazabilidadComponent {
   protected readonly casosGarantiaEq = computed(() => {
     const d = this.detalle();
     return d ? this.data.casosGarantiaDeEquipo(d.equipo.inventario) : [];
+  });
+
+  /** Garantía vigente del equipo del detalle, con su tipo, sus fechas y sus modificaciones. */
+  protected readonly garantiaEq = computed(() => {
+    const d = this.detalle();
+    if (!d) return undefined;
+    return this.data.garantias().find((g) => g.inventario === d.equipo.inventario);
   });
 
   /**

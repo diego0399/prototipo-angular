@@ -11,7 +11,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Equipo operativo, sin daños visibles en carcasa ni puertos.",
-    "ultimaActualizacion": "2026-05-14"
+    "ultimaActualizacion": "2026-05-14",
+    "fechaAdquisicion": "2020-02-11",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2020-02-11",
+    "vencimientoGarantiaProveedor": "2023-02-11",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0002",
@@ -25,7 +31,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Disco mecánico con lectura lenta reportada en la última revisión.",
-    "ultimaActualizacion": "2026-04-28"
+    "ultimaActualizacion": "2026-04-28",
+    "fechaAdquisicion": "2021-03-12",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2021-03-12",
+    "vencimientoGarantiaProveedor": "2024-03-12",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0003",
@@ -39,7 +51,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Sin observaciones en el registro institucional.",
-    "ultimaActualizacion": "2026-06-02"
+    "ultimaActualizacion": "2026-06-02",
+    "fechaAdquisicion": "2022-04-13",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2022-04-13",
+    "vencimientoGarantiaProveedor": "2025-04-13",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0004",
@@ -53,7 +71,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo de compra reciente, aún en empaque original.",
-    "ultimaActualizacion": "2026-07-10"
+    "ultimaActualizacion": "2026-07-10",
+    "fechaAdquisicion": "2026-04-08",
+    "fechaRecepcion": "2026-04-13",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2026-04-08",
+    "vencimientoGarantiaProveedor": "2029-04-08",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0005",
@@ -67,7 +92,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo destinado a puestos con carga de trabajo alta.",
-    "ultimaActualizacion": "2026-07-10"
+    "ultimaActualizacion": "2026-07-10",
+    "fechaAdquisicion": "2026-07-15",
+    "fechaRecepcion": "2026-07-20",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2026-07-15",
+    "vencimientoGarantiaProveedor": "2029-07-15",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0006",
@@ -81,7 +113,13 @@
     "sistemaOperativo": "",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Sin sistema operativo: se instala durante la preparación técnica.",
-    "ultimaActualizacion": "2026-03-19"
+    "ultimaActualizacion": "2026-03-19",
+    "fechaAdquisicion": "2023-05-14",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2023-05-14",
+    "vencimientoGarantiaProveedor": "2026-05-14",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0007",
@@ -95,7 +133,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Equipo de reposición; carcasa con marcas de uso.",
-    "ultimaActualizacion": "2026-02-27"
+    "ultimaActualizacion": "2026-02-27",
+    "fechaAdquisicion": "2024-06-15",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2024-06-15",
+    "vencimientoGarantiaProveedor": "2027-06-15",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0008",
@@ -109,7 +153,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Sin observaciones en el registro institucional.",
-    "ultimaActualizacion": "2026-07-15"
+    "ultimaActualizacion": "2026-07-15",
+    "fechaAdquisicion": "2026-10-22",
+    "fechaRecepcion": "2026-10-27",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2026-10-22",
+    "vencimientoGarantiaProveedor": "2029-10-22",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0009",
@@ -123,7 +174,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Requiere limpieza interna antes de la preparación.",
-    "ultimaActualizacion": "2026-05-30"
+    "ultimaActualizacion": "2026-05-30",
+    "fechaAdquisicion": "2019-07-16",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2019-07-16",
+    "vencimientoGarantiaProveedor": "2022-07-16",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-101-0010",
@@ -137,7 +194,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo nuevo con garantía de fábrica vigente.",
-    "ultimaActualizacion": "2026-07-22"
+    "ultimaActualizacion": "2026-07-22",
+    "fechaAdquisicion": "2026-07-22",
+    "fechaRecepcion": "2026-07-22",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2026-07-22",
+    "vencimientoGarantiaProveedor": "2029-07-22",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0001",
@@ -151,7 +215,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Batería con autonomía reducida reportada por el usuario anterior.",
-    "ultimaActualizacion": "2026-04-11"
+    "ultimaActualizacion": "2026-04-11",
+    "fechaAdquisicion": "2020-08-17",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2020-08-17",
+    "vencimientoGarantiaProveedor": "2023-08-17",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0002",
@@ -165,7 +235,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Sin observaciones en el registro institucional.",
-    "ultimaActualizacion": "2026-05-08"
+    "ultimaActualizacion": "2026-05-08",
+    "fechaAdquisicion": "2021-09-18",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2021-09-18",
+    "vencimientoGarantiaProveedor": "2024-09-18",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0003",
@@ -179,7 +255,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Incluye cargador original y maletín institucional.",
-    "ultimaActualizacion": "2026-03-06"
+    "ultimaActualizacion": "2026-03-06",
+    "fechaAdquisicion": "2022-01-10",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2022-01-10",
+    "vencimientoGarantiaProveedor": "2025-01-10",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0004",
@@ -193,7 +275,13 @@
     "sistemaOperativo": "",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Sin sistema operativo: se instala durante la preparación técnica.",
-    "ultimaActualizacion": "2026-06-18"
+    "ultimaActualizacion": "2026-06-18",
+    "fechaAdquisicion": "2023-02-11",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2023-02-11",
+    "vencimientoGarantiaProveedor": "2026-02-11",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0005",
@@ -207,7 +295,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo destinado a personal con trabajo de campo.",
-    "ultimaActualizacion": "2026-07-03"
+    "ultimaActualizacion": "2026-07-03",
+    "fechaAdquisicion": "2026-04-10",
+    "fechaRecepcion": "2026-04-15",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2026-04-10",
+    "vencimientoGarantiaProveedor": "2029-04-10",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0006",
@@ -221,7 +316,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Sin observaciones en el registro institucional.",
-    "ultimaActualizacion": "2026-07-03"
+    "ultimaActualizacion": "2026-07-03",
+    "fechaAdquisicion": "2026-07-17",
+    "fechaRecepcion": "2026-07-22",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2026-07-17",
+    "vencimientoGarantiaProveedor": "2029-07-17",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0007",
@@ -235,7 +337,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Pantalla con un punto muerto reportado; no impide el uso.",
-    "ultimaActualizacion": "2026-02-14"
+    "ultimaActualizacion": "2026-02-14",
+    "fechaAdquisicion": "2024-03-12",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+    "inicioGarantiaProveedor": "2024-03-12",
+    "vencimientoGarantiaProveedor": "2027-03-12",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0008",
@@ -249,7 +357,14 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo nuevo con garantía de fábrica vigente.",
-    "ultimaActualizacion": "2026-07-20"
+    "ultimaActualizacion": "2026-07-20",
+    "fechaAdquisicion": "2026-10-24",
+    "fechaRecepcion": "2026-10-28",
+    "proveedor": "COMTEC El Salvador",
+    "inicioGarantiaProveedor": "2026-10-24",
+    "vencimientoGarantiaProveedor": "2029-10-24",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0009",
@@ -263,7 +378,13 @@
     "sistemaOperativo": "Windows 10 Pro",
     "estadoFisicoInicial": "Usado",
     "observacionRegistro": "Sin observaciones en el registro institucional.",
-    "ultimaActualizacion": "2026-06-25"
+    "ultimaActualizacion": "2026-06-25",
+    "fechaAdquisicion": "2019-04-13",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2019-04-13",
+    "vencimientoGarantiaProveedor": "2022-04-13",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Sin garantía de proveedor"
   },
   {
     "inventario": "2201-00-920-0010",
@@ -277,6 +398,13 @@
     "sistemaOperativo": "Windows 11 Pro",
     "estadoFisicoInicial": "Nuevo",
     "observacionRegistro": "Equipo nuevo con garantía de fábrica vigente.",
-    "ultimaActualizacion": "2026-07-24"
+    "ultimaActualizacion": "2026-07-24",
+    "fechaAdquisicion": "2026-07-22",
+    "fechaRecepcion": "2026-07-22",
+    "proveedor": "Proveedor institucional",
+    "inicioGarantiaProveedor": "2026-07-22",
+    "vencimientoGarantiaProveedor": "2029-07-22",
+    "duracionGarantiaProveedor": "3 años",
+    "tipoGarantiaSugerida": "Garantía de proveedor"
   }
 ]

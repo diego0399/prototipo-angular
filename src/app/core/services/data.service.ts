@@ -5,7 +5,8 @@ import {
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, ContextoEvidencia, CorreccionNoConformidad, Cronometro, Descargo,
   DetalleFallaF0302, DistribucionSoporte, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EquipoControles, EstadoControles, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
-  EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  EstadoAsignacionEquipo, EstadoDetalleGarantia, EstadoGarantia, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
+  ModificacionGarantia, TipoGarantia,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
@@ -176,7 +177,7 @@ export class DataService {
       this.configuraciones.set(this.normalizarConfiguraciones(r.configuraciones));
       this.entregas.set(r.entregas);
       this.conformidades.set(r.conformidades);
-      this.garantias.set(r.garantias);
+      this.garantias.set(this.normalizarGarantias(r.garantias));
       this.documentos.set(r.documentos);
       this.eventos.set(r.eventos);
       this.ingresosHardware.set(r.ingresos);
@@ -249,7 +250,7 @@ export class DataService {
       this.configuraciones.set(this.normalizarConfiguraciones(d.configuraciones ?? []));
       this.entregas.set(d.entregas ?? []);
       this.conformidades.set(d.conformidades ?? []);
-      this.garantias.set(d.garantias ?? []);
+      this.garantias.set(this.normalizarGarantias(d.garantias ?? []));
       this.documentos.set(d.documentos ?? []);
       this.eventos.set(d.eventos ?? []);
       this.ingresosHardware.set(d.ingresosHardware ?? []);
@@ -1207,9 +1208,12 @@ export class DataService {
       };
     }
 
-    this.registrarEvento(inv, usuario, `Equipo encontrado en base institucional simulada (${inv})`, 'Encontrado',
-      `Resultado de la consulta: encontrado · ${etiqueta} ${ficha.marca} ${ficha.modelo}, serie ${ficha.serie}.`, false,
-      { modulo: 'Inventario de Hardware', estadoAnterior: 'Fuera de inventario', inventario: inv });
+    this.registrarEvento(inv, usuario, `Equipo consultado en base institucional simulada (${inv})`, 'Encontrado',
+      `Resultado de la consulta: encontrado · ${etiqueta} ${ficha.marca} ${ficha.modelo}, serie ${ficha.serie}.` +
+        (ficha.fechaAdquisicion ? ` Adquirido el ${ficha.fechaAdquisicion}${ficha.proveedor ? ` a ${ficha.proveedor}` : ''}.` : ''),
+      false,
+      { modulo: 'Inventario de Hardware', estadoAnterior: 'Fuera de inventario', inventario: inv,
+        fechaAdquisicion: ficha.fechaAdquisicion, tipoGarantia: ficha.tipoGarantiaSugerida });
 
     if (this.equipoDe(inv)) {
       return {
@@ -1240,7 +1244,13 @@ export class DataService {
       sistemaOperativo: ficha.sistemaOperativo,
       observaciones: observaciones.trim() || ficha.observacionRegistro,
       origenDato: 'Base institucional simulada',
-      ultimaActualizacion: ficha.ultimaActualizacion
+      ultimaActualizacion: ficha.ultimaActualizacion,
+      // La fecha de adquisición viaja con el equipo desde el registro institucional: es de donde
+      // arrancará su garantía de proveedor. Si la ficha no la trae, no se sustituye por la del
+      // ingreso —son fechas distintas— y queda pendiente de que el Encargado la registre.
+      fechaAdquisicion: ficha.fechaAdquisicion,
+      fechaRecepcionInstitucional: ficha.fechaRecepcion,
+      proveedor: ficha.proveedor
     }, usuario);
     if (error) return error;
     this.registrarEvento(ficha.inventario, usuario,
@@ -1249,6 +1259,34 @@ export class DataService {
       `${ficha.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop'} ${ficha.marca} ${ficha.modelo} · serie ${ficha.serie} · ${ficha.procesador} · ${ficha.ram} · ${ficha.almacenamiento}. Dato institucional actualizado al ${ficha.ultimaActualizacion}; no se tecleó ningún campo a mano.`,
       false,
       { modulo: 'Inventario de Hardware', estadoAnterior: 'Fuera de inventario', inventario: ficha.inventario });
+    if (ficha.fechaAdquisicion) {
+      this.registrarEvento(ficha.inventario, usuario,
+        `Fecha de adquisición obtenida desde base institucional (${ficha.fechaAdquisicion})`,
+        'Pendiente de preparación',
+        `Proveedor: ${ficha.proveedor || 'no consta'}. Es la fecha desde la que corre la garantía del proveedor; no la sustituye la fecha de ingreso al inventario.`,
+        false, { modulo: 'Inventario de Hardware', inventario: ficha.inventario,
+          fechaAdquisicion: ficha.fechaAdquisicion, tipoGarantia: ficha.tipoGarantiaSugerida });
+      const inicio = ficha.inicioGarantiaProveedor || ficha.fechaAdquisicion;
+      const fin = ficha.vencimientoGarantiaProveedor
+        || this.sumarAnios(ficha.fechaAdquisicion, this.ANIOS_GARANTIA_PROVEEDOR);
+      const agotada = this.garantiaProveedorAgotada(ficha.fechaAdquisicion);
+      this.registrarEvento(ficha.inventario, usuario,
+        `Garantía de proveedor calculada desde fecha de adquisición (${inicio} → ${fin})`,
+        agotada ? 'Garantía de proveedor vencida' : 'Garantía de proveedor vigente',
+        `${ficha.duracionGarantiaProveedor || `${this.ANIOS_GARANTIA_PROVEEDOR} años`} desde la adquisición.` +
+          (agotada ? ' Ya vencida: el equipo requiere responsabilidad interna de Soporte.' : ''),
+        false, { modulo: 'Inventario de Hardware', inventario: ficha.inventario,
+          fechaAdquisicion: ficha.fechaAdquisicion, tipoGarantia: ficha.tipoGarantiaSugerida,
+          inicioNuevo: inicio, vencimientoNuevo: fin });
+    } else if (ficha.estadoFisicoInicial === 'Nuevo') {
+      // No debería ocurrir: la base institucional trae la fecha de todo equipo nuevo. Si pasa, es
+      // un error del dato de origen y así se nombra.
+      this.registrarEvento(ficha.inventario, usuario,
+        'Base institucional sin fecha de adquisición para un equipo nuevo',
+        'Pendiente de corrección de datos institucionales',
+        this.MSG_DATOS_INSTITUCIONALES, false,
+        { modulo: 'Inventario de Hardware', inventario: ficha.inventario });
+    }
     return null;
   }
 
@@ -2908,7 +2946,7 @@ export class DataService {
         { nombre: 'Firmas registradas', detalle: 'Se registran al cierre de cada fase', estado: '0 de 3', fecha: '' },
         { nombre: 'Formulario de conformidad', detalle: 'Se envía al correo institucional al finalizar la configuración', estado: 'No enviado', fecha: '' },
         { nombre: 'Entrega y aceptación', detalle: 'Pendiente', estado: 'Pendiente', fecha: '' },
-        { nombre: 'Servicio de garantía de un mes', detalle: 'Inicia con la aceptación del usuario final', estado: 'No iniciada', fecha: '' },
+        { nombre: 'Servicio de garantía', detalle: 'Se habilita con la aceptación del usuario final; su vigencia depende del tipo de garantía', estado: 'No iniciada', fecha: '' },
         { nombre: 'Reporte final de auditoría', detalle: 'Consolida el expediente completo', estado: 'Pendiente', fecha: '' }
       ]
     };
@@ -6746,29 +6784,70 @@ export class DataService {
         'Firma simulada asociada al Expediente único, al documento de Entrega y aceptación y al F0302.', false,
         { modulo: 'Entrega y aceptación', inventario: conf.inventario,
           expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: conf.usuarioFinal });
-      const inicio = new Date();
-      const fin = new Date();
-      fin.setMonth(fin.getMonth() + 1);
-      // El Expediente único aparece automáticamente en el módulo Servicio de garantía.
-      this.garantias.update((list) => [
-        ...list,
-        {
-          expediente: id,
-          equipo: conf.marcaModelo,
-          inventario: conf.inventario,
-          usuarioFinal: `${conf.usuarioFinal} — ${conf.unidad}`,
-          fechaAceptacion: inicio.toISOString().slice(0, 10),
-          fechaInicio: inicio.toISOString().slice(0, 10),
-          fechaVencimiento: fin.toISOString().slice(0, 10),
-          estado: 'Vigente',
-          casos: [],
-          nota: 'La aceptación del usuario final mediante el formulario externo inició la garantía; queda anexada al expediente único.'
-        }
-      ]);
-      this.actualizarAnexo(id, 'Servicio de garantía de un mes', 'Vigente', 'Inició con la aceptación del usuario final');
-      this.registrarEvento(id, 'Sistema', `Garantía de un mes iniciada (vence ${fin.toISOString().slice(0, 10)})`, 'Garantía vigente',
-        'Anexada al expediente único del equipo.', false,
-        { modulo: 'Servicio de garantía', estadoAnterior: 'Entregado', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
+      // La garantía ya no dura «un mes desde la aceptación»: se calcula por fechas y depende de
+      // qué responde por el equipo. Si es nuevo, responde el proveedor desde que se compró; si es
+      // usado, responde Soporte desde que el equipo quedó activo.
+      const fechaAceptacion = this.hoy();
+      const p = this.garantiaPropuesta(conf.inventario, fechaAceptacion);
+      const eq = this.equipoDe(conf.inventario);
+      const nuevaGarantia = this.sincronizarVigencia({
+        expediente: id,
+        equipo: conf.marcaModelo,
+        inventario: conf.inventario,
+        usuarioFinal: `${conf.usuarioFinal} — ${conf.unidad}`,
+        fechaAceptacion,
+        fechaInicio: '', fechaVencimiento: '',
+        estado: 'Vigente',
+        casos: [],
+        nota: `${p.nota} La aceptación confirma que el equipo fue recibido conforme; queda anexada al expediente único.`,
+        tipoGarantia: p.tipo, fechaAdquisicion: p.fechaAdquisicion,
+        inicioProveedor: p.inicioProveedor, vencimientoProveedor: p.vencimientoProveedor,
+        inicioInterna: p.inicioInterna, vencimientoInterna: p.vencimientoInterna,
+        proveedor: eq?.proveedor ?? '', observacionesGarantia: eq?.observacionGarantia ?? '',
+        modificaciones: []
+      });
+      this.garantias.update((list) => [...list, nuevaGarantia]);
+
+      const refGar = {
+        modulo: 'Servicio de garantía', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal,
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico,
+        tipoGarantia: p.tipo, fechaAdquisicion: p.fechaAdquisicion, fechaAceptacion,
+        inicioNuevo: nuevaGarantia.fechaInicio, vencimientoNuevo: nuevaGarantia.fechaVencimiento
+      };
+      if (p.tipo === 'Garantía de proveedor' && p.inicioProveedor) {
+        this.actualizarAnexo(id, 'Servicio de garantía', 'Vigente',
+          `Garantía de proveedor ${p.inicioProveedor} → ${p.vencimientoProveedor}`);
+        this.registrarEvento(id, 'Sistema',
+          `Garantía de proveedor asignada desde fecha de adquisición (${p.inicioProveedor}, vence ${p.vencimientoProveedor})`,
+          'Garantía de proveedor vigente',
+          `Equipo nuevo: ${this.ANIOS_GARANTIA_PROVEEDOR} años desde la adquisición. La fecha de aceptación (${fechaAceptacion}) no inicia la garantía del proveedor.`,
+          true, { ...refGar, estadoAnterior: 'Entregado' });
+      } else if (p.tipo === 'Garantía de proveedor') {
+        // Equipo nuevo sin fecha de adquisición. La base institucional siempre la trae, así que
+        // esto es un fallo del dato de origen: se nombra así y no se inventa una fecha.
+        this.actualizarAnexo(id, 'Servicio de garantía', 'Pendiente de corrección de datos institucionales',
+          'La base institucional no devolvió la fecha de adquisición del equipo');
+        this.registrarEvento(id, 'Sistema', 'Garantía de proveedor pendiente de corrección de datos institucionales',
+          'Pendiente de corrección de datos institucionales', this.MSG_DATOS_INSTITUCIONALES, true,
+          { ...refGar, estadoAnterior: 'Entregado' });
+      } else if (p.tipo === 'Sin garantía de proveedor') {
+        // El equipo ya agotó sus tres años. No se le inventa una responsabilidad interna: la fija
+        // el Encargado de Soporte, que es quien la asume.
+        this.actualizarAnexo(id, 'Servicio de garantía', 'Garantía de proveedor vencida',
+          `Garantía de proveedor ${p.inicioProveedor} → ${p.vencimientoProveedor}, ya vencida`);
+        this.registrarEvento(id, 'Sistema',
+          `Garantía de proveedor vencida (cubrió del ${p.inicioProveedor} al ${p.vencimientoProveedor})`,
+          'Garantía de proveedor vencida', this.MSG_PROVEEDOR_VENCIDA_USADO, true,
+          { ...refGar, estadoAnterior: 'Entregado' });
+      } else {
+        this.actualizarAnexo(id, 'Servicio de garantía', 'Vigente',
+          `Responsabilidad interna de Soporte ${p.inicioInterna} → ${p.vencimientoInterna}`);
+        this.registrarEvento(id, 'Sistema',
+          `Responsabilidad interna de Soporte asignada (${p.inicioInterna} → ${p.vencimientoInterna})`,
+          'Responsabilidad interna activa',
+          'Equipo usado: sin garantía de proveedor. El vencimiento lo ajusta el Encargado de Soporte cuando corresponda.',
+          true, { ...refGar, estadoAnterior: 'Entregado' });
+      }
       // El expediente NO se cierra: queda disponible para registrar casos de garantía.
       this.expedientesUnicos.update((list) =>
         list.map((x) => (x.expediente === id
@@ -7423,9 +7502,434 @@ export class DataService {
     return confActualizada;
   }
 
-  /** La garantía está vencida cuando su estado lo indica o su fecha de vencimiento ya pasó: queda en modo consulta. */
+  // ---------- Vigencia de la garantía: proveedor vs. responsabilidad interna ----------
+  /** Duración sugerida de la garantía del proveedor de un equipo nuevo, en años. */
+  readonly ANIOS_GARANTIA_PROVEEDOR = 3;
+  /** Umbral en días a partir del cual la garantía del proveedor se muestra «por vencer». */
+  private readonly DIAS_POR_VENCER = 60;
+
+  readonly MSG_SIN_FECHA_ADQUISICION =
+    'No se encontró fecha de adquisición del equipo. El Encargado de Soporte debe registrar o confirmar la fecha para calcular la garantía del proveedor.';
+  /**
+   * Mensaje excepcional: un equipo nuevo llegó sin fecha de adquisición. No se le pide al Encargado
+   * que la invente en la garantía; se le dice dónde está el problema, que es el registro de origen.
+   */
+  readonly MSG_DATOS_INSTITUCIONALES =
+    'La base institucional no devolvió fecha de adquisición para este equipo. Revise los datos del inventario institucional.';
+  readonly MSG_PROVEEDOR_VENCIDA_USADO =
+    'La garantía del proveedor de este equipo ya venció. El Encargado de Soporte debe establecer la responsabilidad interna de Soporte para poder atender casos.';
+  readonly MSG_VENCIMIENTO_MENOR =
+    'La fecha de vencimiento no puede ser menor que la fecha de inicio.';
+  readonly MSG_MOTIVO_GARANTIA =
+    'Debe ingresar un motivo para modificar la garantía.';
+  readonly MSG_GARANTIA_DESDE_ADQUISICION =
+    'La garantía del proveedor debe calcularse desde la fecha de adquisición del equipo.';
+  readonly MSG_PROVEEDOR_VENCIDA =
+    'La garantía de proveedor se encuentra vencida. El Encargado de Soporte puede autorizar atención por responsabilidad interna.';
+
+  /** Suma años a una fecha `YYYY-MM-DD` sin arrastrar la zona horaria del navegador. */
+  private sumarAnios(fecha: string, anios: number): string {
+    if (!fecha) return '';
+    const [a, m, d] = fecha.slice(0, 10).split('-').map(Number);
+    if (!a || !m || !d) return '';
+    return new Date(Date.UTC(a + anios, m - 1, d)).toISOString().slice(0, 10);
+  }
+
+  /**
+   * Fecha desde la que corre la garantía del proveedor: la de adquisición, o la de recepción
+   * institucional si el equipo se compró sin registrarse la compra. **Nunca la de aceptación** —
+   * ese es exactamente el error que esta regla corrige. '' cuando ninguna consta.
+   */
+  fechaAdquisicionDe(inventario: string): string {
+    const eq = this.equipoDe(inventario);
+    if (!eq) return '';
+    return eq.fechaAdquisicion || eq.fechaRecepcionInstitucional || '';
+  }
+
+  /** ¿El equipo es nuevo? Solo los nuevos llevan garantía de proveedor. */
+  private equipoEsNuevo(inventario: string): boolean {
+    return this.equipoDe(inventario)?.condicion === 'Nuevo';
+  }
+
+  /** ¿La garantía del proveedor de ese equipo ya se agotó a día de hoy? */
+  garantiaProveedorAgotada(adquisicion: string): boolean {
+    if (!adquisicion) return false;
+    const fin = this.sumarAnios(adquisicion, this.ANIOS_GARANTIA_PROVEEDOR);
+    return new Date(`${fin}T23:59:59Z`).getTime() < Date.now();
+  }
+
+  /**
+   * Qué garantía corresponde a un equipo y con qué fechas. La condición del equipo no decide sola:
+   * lo que decide es **si el proveedor todavía responde**, y eso se sabe por la fecha de
+   * adquisición. Un equipo usado comprado hace un año sigue teniendo garantía de proveedor; uno
+   * comprado hace cinco, no.
+   *
+   *  - con fecha de adquisición y dentro de los tres años → garantía de proveedor;
+   *  - con fecha de adquisición y fuera de los tres años → sin garantía de proveedor, con la
+   *    vigencia agotada a la vista y pendiente de que el Encargado fije la responsabilidad interna;
+   *  - usado sin fecha de adquisición → responsabilidad interna desde la aceptación;
+   *  - nuevo sin fecha de adquisición → error de datos institucionales, sin fechas inventadas.
+   */
+  garantiaPropuesta(inventario: string, fechaAceptacion: string): {
+    tipo: TipoGarantia; fechaAdquisicion: string;
+    inicioProveedor: string; vencimientoProveedor: string;
+    inicioInterna: string; vencimientoInterna: string; nota: string;
+  } {
+    const adquisicion = this.fechaAdquisicionDe(inventario);
+    const nuevo = this.equipoEsNuevo(inventario);
+
+    if (!adquisicion) {
+      if (nuevo) {
+        // Un equipo nuevo sin fecha de adquisición no es un paso del flujo: la base institucional
+        // siempre la trae. Se nombra como el error de datos que es, en vez de pedirle al Encargado
+        // que teclee una fecha que no le consta.
+        return {
+          tipo: 'Garantía de proveedor', fechaAdquisicion: '',
+          inicioProveedor: '', vencimientoProveedor: '', inicioInterna: '', vencimientoInterna: '',
+          nota: this.MSG_DATOS_INSTITUCIONALES
+        };
+      }
+      return {
+        tipo: 'Responsabilidad interna de Soporte', fechaAdquisicion: '',
+        inicioProveedor: '', vencimientoProveedor: '',
+        inicioInterna: fechaAceptacion, vencimientoInterna: this.finDeAnioDe(fechaAceptacion),
+        nota: 'Equipo usado sin fecha de adquisición en el registro institucional: no hay garantía de proveedor que reclamar. La responsabilidad interna de Soporte inicia con la aceptación y su vencimiento lo define el Encargado de Soporte.'
+      };
+    }
+
+    const vencimiento = this.sumarAnios(adquisicion, this.ANIOS_GARANTIA_PROVEEDOR);
+    if (!this.garantiaProveedorAgotada(adquisicion)) {
+      return {
+        tipo: 'Garantía de proveedor', fechaAdquisicion: adquisicion,
+        inicioProveedor: adquisicion, vencimientoProveedor: vencimiento,
+        inicioInterna: '', vencimientoInterna: '',
+        nota: `Garantía de proveedor de ${this.ANIOS_GARANTIA_PROVEEDOR} años desde la fecha de adquisición (${adquisicion}). La aceptación del usuario final no modifica este inicio.`
+      };
+    }
+    // Los tres años ya pasaron. Las fechas del proveedor se conservan —son un hecho del equipo,
+    // no una vigencia— y no se sustituyen por una responsabilidad interna inventada: esa la fija
+    // el Encargado de Soporte, que es quien la asume.
+    return {
+      tipo: 'Sin garantía de proveedor', fechaAdquisicion: adquisicion,
+      inicioProveedor: adquisicion, vencimientoProveedor: vencimiento,
+      inicioInterna: '', vencimientoInterna: '',
+      nota: `La garantía del proveedor cubrió del ${adquisicion} al ${vencimiento} y ya venció. El Encargado de Soporte debe establecer la responsabilidad interna de Soporte.`
+    };
+  }
+
+  /**
+   * Vencimiento propuesto de la responsabilidad interna: el cierre del año en curso. No hay una
+   * duración institucional fija para un equipo usado —el pedido la deja «personalizada»— y dejarla
+   * vacía habría dado una garantía sin fin. El Encargado de Soporte la edita cuando corresponda.
+   */
+  private finDeAnioDe(fecha: string): string {
+    const anio = (fecha || this.hoy()).slice(0, 4);
+    return `${anio}-12-31`;
+  }
+
+  /** Las dos fechas que rigen hoy: las del proveedor si aplica, las de la interna si no. */
+  vigenciaEfectiva(g: Garantia): { inicio: string; vencimiento: string } {
+    if (g.tipoGarantia === 'Garantía de proveedor' && g.inicioProveedor && g.vencimientoProveedor) {
+      return { inicio: g.inicioProveedor, vencimiento: g.vencimientoProveedor };
+    }
+    if (g.inicioInterna || g.vencimientoInterna) {
+      return { inicio: g.inicioInterna ?? '', vencimiento: g.vencimientoInterna ?? '' };
+    }
+    // «Sin garantía de proveedor» conserva las fechas del proveedor como dato histórico, pero no
+    // cubren nada: devolver la vigencia anterior aquí haría pasar por vigente un equipo que no
+    // tiene a nadie detrás.
+    if (g.tipoGarantia === 'Sin garantía de proveedor') return { inicio: '', vencimiento: '' };
+    return { inicio: g.fechaInicio, vencimiento: g.fechaVencimiento };
+  }
+
+  /** Días que faltan para el vencimiento vigente; null cuando no hay fecha que contar. */
+  diasRestantesGarantia(g: Garantia): number | null {
+    const { vencimiento } = this.vigenciaEfectiva(g);
+    if (!vencimiento) return null;
+    const fin = new Date(`${vencimiento}T23:59:59Z`).getTime();
+    if (Number.isNaN(fin)) return null;
+    return Math.ceil((fin - Date.now()) / 86400000);
+  }
+
+  /**
+   * ¿Falta la fecha de adquisición de un equipo que debería traerla? Solo puede pasar por un error
+   * de los datos institucionales: la base siempre la devuelve para un equipo nuevo.
+   */
+  faltaFechaAdquisicion(g: Garantia): boolean {
+    return g.tipoGarantia === 'Garantía de proveedor' && !g.fechaAdquisicion;
+  }
+
+  /**
+   * El proveedor ya no responde y todavía nadie asumió el equipo: los tres años se agotaron y el
+   * Encargado de Soporte aún no fijó la responsabilidad interna.
+   */
+  sinCoberturaVigente(g: Garantia): boolean {
+    return g.tipoGarantia === 'Sin garantía de proveedor' && !g.inicioInterna && !g.vencimientoInterna;
+  }
+
+  /**
+   * Estado detallado (§11): dice de qué garantía se habla y en qué punto está, sin sustituir al
+   * estado grueso que ya usaban badges y filtros.
+   */
+  estadoDetalleGarantia(g: Garantia): EstadoDetalleGarantia {
+    if (g.estado === 'Cerrado') return 'Cerrada';
+    // Un equipo nuevo sin fecha de adquisición es un fallo del dato de origen, no un paso del
+    // proceso: se nombra por lo que hay que arreglar.
+    if (this.faltaFechaAdquisicion(g)) return 'Pendiente de corrección de datos institucionales';
+    const dias = this.diasRestantesGarantia(g);
+    if (g.tipoGarantia === 'Garantía de proveedor') {
+      if (dias === null) return 'Pendiente de fecha de adquisición';
+      if (dias < 0) return 'Garantía de proveedor vencida';
+      return dias <= this.DIAS_POR_VENCER ? 'Garantía de proveedor por vencer' : 'Garantía de proveedor vigente';
+    }
+    if (g.tipoGarantia === 'Sin garantía de proveedor') {
+      // La vigencia del proveedor se conserva aunque ya no cubra: decir «garantía de proveedor
+      // vencida» es más informativo que un «sin garantía» que esconde que alguna vez la tuvo.
+      return g.vencimientoProveedor ? 'Garantía de proveedor vencida' : 'Sin garantía de proveedor';
+    }
+    if (dias === null) return 'Sin garantía de proveedor';
+    return dias < 0 ? 'Responsabilidad interna vencida' : 'Responsabilidad interna activa';
+  }
+
+  /** Responsable de la garantía: el proveedor cuando la da él, la Unidad de Soporte cuando no. */
+  responsableGarantia(g: Garantia): string {
+    if (g.tipoGarantia === 'Garantía de proveedor') return g.proveedor || 'Proveedor (pendiente de registrar)';
+    return 'Unidad de Soporte';
+  }
+
+  /** Última modificación de la vigencia, para mostrarla junto a la garantía. */
+  ultimaModificacionGarantia(g: Garantia): ModificacionGarantia | undefined {
+    const lista = g.modificaciones ?? [];
+    return lista.length ? lista[0] : undefined;
+  }
+
+  /**
+   * Rearma las dos fechas efectivas y el estado grueso a partir del tipo y de los pares de
+   * vigencia. Se llama en cada cambio: así `fechaInicio`/`fechaVencimiento` nunca se desincronizan
+   * de la garantía real, y todo lo escrito antes de esta regla sigue leyendo lo correcto.
+   */
+  private sincronizarVigencia(g: Garantia): Garantia {
+    const { inicio, vencimiento } = this.vigenciaEfectiva(g);
+    const abiertos = g.casos.some((c) => c.estado === 'Abierto' || c.estado === 'En revisión');
+    let estado: EstadoGarantia;
+    if (g.estado === 'Cerrado') estado = 'Cerrado';
+    else if (this.faltaFechaAdquisicion(g)) estado = 'Pendiente de fecha de adquisición';
+    else if (abiertos) estado = 'Caso abierto';
+    // Los tres años del proveedor se agotaron y nadie fijó todavía la responsabilidad interna:
+    // el equipo no está cubierto, y decir «Vigente» porque no hay fecha que comparar sería mentir.
+    else if (this.sinCoberturaVigente(g)) estado = 'Vencida';
+    else if (vencimiento && new Date(`${vencimiento}T23:59:59Z`).getTime() < Date.now()) estado = 'Vencida';
+    else estado = 'Vigente';
+    return { ...g, fechaInicio: inicio, fechaVencimiento: vencimiento, estado };
+  }
+
+  /**
+   * Normaliza las garantías leídas del JSON semilla o de una foto anterior a esta regla: las que
+   * se guardaron con la vigencia fija de un mes desde la aceptación se recalculan por tipo de
+   * equipo. La fecha de aceptación se conserva —ocurrió— pero deja de ser el inicio de la
+   * garantía del proveedor.
+   */
+  private normalizarGarantias(lista: Garantia[]): Garantia[] {
+    return lista.map((g) => {
+      if (g.tipoGarantia) return this.sincronizarVigencia({ ...g, modificaciones: g.modificaciones ?? [] });
+      const p = this.garantiaPropuesta(g.inventario, g.fechaAceptacion);
+      return this.sincronizarVigencia({
+        ...g,
+        tipoGarantia: p.tipo, fechaAdquisicion: p.fechaAdquisicion,
+        inicioProveedor: p.inicioProveedor, vencimientoProveedor: p.vencimientoProveedor,
+        inicioInterna: p.inicioInterna, vencimientoInterna: p.vencimientoInterna,
+        proveedor: this.equipoDe(g.inventario)?.proveedor ?? '',
+        observacionesGarantia: this.equipoDe(g.inventario)?.observacionGarantia ?? '',
+        modificaciones: g.modificaciones ?? []
+      });
+    });
+  }
+
+  /** Solo el Encargado de Soporte y el Administrador modifican la vigencia de la garantía (§8). */
+  puedeModificarGarantia(): boolean {
+    const clave = this.claveConectada();
+    return clave === 'enc-soporte' || clave === 'admin';
+  }
+
+  /**
+   * Modifica la vigencia de la garantía. Exige motivo siempre que cambie una fecha o el tipo, y
+   * deja el cambio en el historial con lo que había antes: una garantía que vence en otra fecha
+   * sin explicación es indistinguible de un error de captura.
+   */
+  modificarGarantia(id: string, datos: {
+    tipoGarantia: TipoGarantia; fechaAdquisicion: string; inicio: string; vencimiento: string;
+    proveedor: string; motivo: string; observaciones: string;
+  }, usuario: string): string | null {
+    const g = this.garantiaDe(id);
+    if (!g) return 'No se encontró la garantía del expediente.';
+    if (!this.puedeModificarGarantia()) {
+      this.registrarEvento(id, usuario, 'Intento de modificación de garantía sin permisos', g.estado,
+        'La vigencia de la garantía solo la modifican el Encargado de Soporte y el Administrador.', false,
+        { modulo: 'Servicio de garantía', inventario: g.inventario, rol: this.rolConectado(),
+          tipoGarantia: g.tipoGarantia });
+      return 'Solo el Encargado de Soporte y el Administrador pueden modificar la vigencia de la garantía. Los Técnicos pueden consultarla y registrar casos.';
+    }
+    // Una garantía cerrada ya no se toca, salvo que sea el Administrador quien corrige.
+    if (g.estado === 'Cerrado' && this.claveConectada() !== 'admin') {
+      return 'La garantía de este expediente está cerrada. Solo el Administrador puede modificar una garantía cerrada.';
+    }
+
+    const anterior = this.vigenciaEfectiva(g);
+    const proveedor = datos.tipoGarantia === 'Garantía de proveedor';
+    const cambiaFecha = datos.inicio !== anterior.inicio || datos.vencimiento !== anterior.vencimiento
+      || datos.fechaAdquisicion !== (g.fechaAdquisicion ?? '');
+    const cambiaTipo = datos.tipoGarantia !== g.tipoGarantia;
+
+    if (!cambiaFecha && !cambiaTipo && datos.proveedor === (g.proveedor ?? '')
+      && datos.observaciones === (g.observacionesGarantia ?? '')) {
+      return 'No hay ningún cambio que registrar en la garantía.';
+    }
+    if ((cambiaFecha || cambiaTipo) && !datos.motivo.trim()) {
+      this.registrarEvento(id, usuario, 'Intento de modificación de garantía sin motivo', g.estado,
+        this.MSG_MOTIVO_GARANTIA, false,
+        { modulo: 'Servicio de garantía', inventario: g.inventario, rol: this.rolConectado(),
+          tipoGarantia: datos.tipoGarantia });
+      return this.MSG_MOTIVO_GARANTIA;
+    }
+    // Un tipo que exige vigencia no se guarda sin ella: quedaría una garantía sin fin.
+    if (datos.tipoGarantia !== 'Sin garantía de proveedor' && (!datos.inicio || !datos.vencimiento)) {
+      return 'Debe indicar la fecha de inicio y la de vencimiento para este tipo de garantía.';
+    }
+    if (datos.inicio && datos.vencimiento && datos.vencimiento < datos.inicio) {
+      return this.MSG_VENCIMIENTO_MENOR;
+    }
+    // La garantía del proveedor arranca en la adquisición: si consta y se pretende otro inicio,
+    // el sistema lo dice en vez de aceptar una fecha que contradice la regla.
+    if (proveedor) {
+      if (!datos.fechaAdquisicion) return this.MSG_SIN_FECHA_ADQUISICION;
+      if (datos.inicio !== datos.fechaAdquisicion) return this.MSG_GARANTIA_DESDE_ADQUISICION;
+      // Reponer una garantía de proveedor que el calendario ya agotó sería declarar cubierto un
+      // equipo que nadie cubre.
+      if (this.garantiaProveedorAgotada(datos.fechaAdquisicion)) {
+        return `La garantía del proveedor de este equipo venció el ${this.sumarAnios(datos.fechaAdquisicion, this.ANIOS_GARANTIA_PROVEEDOR)}. Establezca la responsabilidad interna de Soporte en su lugar.`;
+      }
+    }
+
+    const modificacion: ModificacionGarantia = {
+      fecha: this.hoy(), hora: this.hora(), usuario, rol: this.rolConectado(),
+      motivo: datos.motivo.trim(), observaciones: datos.observaciones.trim(),
+      tipoAnterior: g.tipoGarantia ?? 'Garantía de proveedor', tipoNuevo: datos.tipoGarantia,
+      fechaAdquisicionAnterior: g.fechaAdquisicion ?? '', fechaAdquisicionNueva: datos.fechaAdquisicion,
+      inicioAnterior: anterior.inicio, inicioNuevo: datos.inicio,
+      vencimientoAnterior: anterior.vencimiento, vencimientoNuevo: datos.vencimiento,
+      proveedorAnterior: g.proveedor ?? '', proveedorNuevo: datos.proveedor.trim()
+    };
+
+    // La vigencia del proveedor se conserva aunque el tipo pase a ser otro: que el equipo tuvo
+    // garantía de proveedor del día X al día Y es un hecho, y borrarlo dejaría el expediente sin
+    // poder explicar por qué hoy responde Soporte.
+    const interna = datos.tipoGarantia === 'Responsabilidad interna de Soporte';
+    const vigenciaProveedor = proveedor
+      ? { inicio: datos.inicio, vencimiento: datos.vencimiento }
+      : datos.fechaAdquisicion
+        ? { inicio: datos.fechaAdquisicion, vencimiento: this.sumarAnios(datos.fechaAdquisicion, this.ANIOS_GARANTIA_PROVEEDOR) }
+        : { inicio: '', vencimiento: '' };
+    this.garantias.update((list) => list.map((x) => {
+      if (x.expediente !== id) return x;
+      const base: Garantia = {
+        ...x, tipoGarantia: datos.tipoGarantia, fechaAdquisicion: datos.fechaAdquisicion,
+        proveedor: datos.proveedor.trim(), observacionesGarantia: datos.observaciones.trim(),
+        inicioProveedor: vigenciaProveedor.inicio,
+        vencimientoProveedor: vigenciaProveedor.vencimiento,
+        inicioInterna: interna ? datos.inicio : '',
+        vencimientoInterna: interna ? datos.vencimiento : '',
+        modificaciones: [modificacion, ...(x.modificaciones ?? [])]
+      };
+      return this.sincronizarVigencia(base);
+    }));
+
+    // La fecha de adquisición vive en el equipo: si el Encargado la registra aquí, se registra allí.
+    if (datos.fechaAdquisicion && datos.fechaAdquisicion !== this.fechaAdquisicionDe(g.inventario)) {
+      this.equipos.update((list) => list.map((e) => (e.inventario === g.inventario
+        ? { ...e, fechaAdquisicion: datos.fechaAdquisicion, adquisicionRegistradaPor: usuario,
+            fechaRegistroAdquisicion: this.hoy(), proveedor: datos.proveedor.trim() || e.proveedor }
+        : e)));
+      this.registrarEvento(id, usuario, 'Fecha de adquisición modificada', 'Registrada',
+        `${modificacion.fechaAdquisicionAnterior || 'sin registrar'} → ${datos.fechaAdquisicion}. ${datos.motivo.trim()}`,
+        false, { modulo: 'Servicio de garantía', inventario: g.inventario, rol: this.rolConectado(),
+          fechaAdquisicion: datos.fechaAdquisicion, tipoGarantia: datos.tipoGarantia,
+          expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: g.usuarioFinal });
+    }
+
+    const actualizada = this.garantiaDe(id)!;
+    const ref = {
+      modulo: 'Servicio de garantía', inventario: g.inventario, rol: this.rolConectado(),
+      tipoGarantia: datos.tipoGarantia, fechaAdquisicion: datos.fechaAdquisicion,
+      fechaAceptacion: g.fechaAceptacion,
+      inicioAnterior: anterior.inicio, vencimientoAnterior: anterior.vencimiento,
+      inicioNuevo: datos.inicio, vencimientoNuevo: datos.vencimiento,
+      expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: g.usuarioFinal,
+      motivo: datos.motivo.trim()
+    };
+    if (cambiaTipo) {
+      this.registrarEvento(id, usuario,
+        `Tipo de garantía modificado: ${modificacion.tipoAnterior} → ${datos.tipoGarantia}`,
+        this.estadoDetalleGarantia(actualizada), datos.motivo.trim(), false,
+        { ...ref, estadoAnterior: this.estadoDetalleGarantia(g) });
+    }
+    this.registrarEvento(id, usuario, 'Fecha de garantía modificada',
+      this.estadoDetalleGarantia(actualizada),
+      `${anterior.inicio || 'sin fecha'} → ${anterior.vencimiento || 'sin fecha'} reemplazada por ${datos.inicio} → ${datos.vencimiento}. ${datos.motivo.trim()}`,
+      true, { ...ref, estadoAnterior: this.estadoDetalleGarantia(g) });
+    return null;
+  }
+
+  /**
+   * Autoriza atender un equipo por responsabilidad interna cuando la garantía del proveedor ya
+   * venció (§18). Es una decisión del Encargado, no un automatismo: el proveedor ya no responde y
+   * alguien tiene que asumirlo explícitamente.
+   */
+  autorizarResponsabilidadInterna(id: string, usuario: string, motivo: string): string | null {
+    const g = this.garantiaDe(id);
+    if (!g) return 'No se encontró la garantía del expediente.';
+    if (!this.puedeModificarGarantia()) {
+      return 'Solo el Encargado de Soporte y el Administrador pueden autorizar la atención por responsabilidad interna.';
+    }
+    if (!motivo.trim()) return 'Debe justificar la autorización por responsabilidad interna.';
+    this.garantias.update((list) => list.map((x) => (x.expediente === id
+      ? { ...x, autorizacionInterna: { autorizadoPor: usuario, fecha: this.hoy(), hora: this.hora(), motivo: motivo.trim() } }
+      : x)));
+    this.registrarEvento(id, usuario, 'Responsabilidad interna de Soporte asignada',
+      'Responsabilidad interna activa', motivo.trim(), true,
+      { modulo: 'Servicio de garantía', inventario: g.inventario, rol: this.rolConectado(),
+        tipoGarantia: g.tipoGarantia, fechaAdquisicion: g.fechaAdquisicion,
+        fechaAceptacion: g.fechaAceptacion, estadoAnterior: this.estadoDetalleGarantia(g),
+        expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: g.usuarioFinal });
+    return null;
+  }
+
+  /**
+   * La garantía está vencida cuando su estado lo indica o su fecha de vencimiento ya pasó: queda
+   * en modo consulta. Una garantía de proveedor vencida con autorización del Encargado se atiende
+   * igual, por responsabilidad interna; y una sin fecha de vencimiento no está vencida: está
+   * pendiente de que se registre la fecha de adquisición.
+   */
   garantiaVencida(g: Garantia): boolean {
-    return g.estado === 'Vencida' || new Date(g.fechaVencimiento).getTime() < Date.now();
+    if (g.autorizacionInterna) return false;
+    if (g.estado === 'Vencida') return true;
+    const { vencimiento } = this.vigenciaEfectiva(g);
+    if (!vencimiento) return false;
+    return new Date(`${vencimiento}T23:59:59Z`).getTime() < Date.now();
+  }
+
+  /** Motivo por el que no se puede abrir un caso hoy, o '' si se puede. */
+  bloqueoCasoGarantia(g: Garantia): string {
+    // El dato que falta es institucional: se dice dónde corregirlo, no se le pide al Encargado
+    // que lo invente aquí.
+    if (this.faltaFechaAdquisicion(g)) return this.MSG_DATOS_INSTITUCIONALES;
+    // El proveedor ya no responde y nadie asumió el equipo todavía.
+    if (this.sinCoberturaVigente(g)) return this.MSG_PROVEEDOR_VENCIDA_USADO;
+    if (this.garantiaVencida(g)) {
+      return g.tipoGarantia === 'Garantía de proveedor'
+        ? this.MSG_PROVEEDOR_VENCIDA
+        : 'La responsabilidad interna de Soporte de este equipo está vencida. El Encargado de Soporte puede ampliarla desde «Modificar garantía».';
+    }
+    return '';
   }
 
   /** Solo se puede comentar con garantía vigente y caso Abierto o En revisión; caso cerrado = solo lectura. */
@@ -7436,7 +7940,7 @@ export class DataService {
   /** Abre un caso de garantía asociado al Expediente único; un expediente puede tener varios casos. */
   registrarCasoGarantia(id: string, motivo: string, descripcion: string, responsable: string): CasoGarantia | null {
     const g = this.garantiaDe(id);
-    if (!g || this.garantiaVencida(g)) return null;
+    if (!g || this.garantiaVencida(g) || this.faltaFechaAdquisicion(g)) return null;
     const caso: CasoGarantia = {
       codigo: this.siguienteCodigoPorAnio(
         `CASO-${this.anioActual()}-`,
@@ -7815,9 +8319,9 @@ export class DataService {
                 evidenciaTecnica: evidencia.trim() || imagenes.map((e) => e.archivo).join(', ')
               }
             : c);
-        const abiertos = casos.some((c) => c.estado === 'Abierto' || c.estado === 'En revisión');
-        const vencida = new Date(g.fechaVencimiento).getTime() < Date.now();
-        return { ...g, casos, estado: abiertos ? 'Caso abierto' : (vencida ? 'Vencida' : 'Vigente') };
+        // El estado vuelve a derivarse de la vigencia real (proveedor o interna), no de una
+        // fecha fija: cerrar el último caso no puede reabrir una garantía que ya venció.
+        return this.sincronizarVigencia({ ...g, casos });
       })
     );
     if (caso?.revisionId) {

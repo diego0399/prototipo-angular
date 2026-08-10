@@ -15,7 +15,10 @@
     "fechaIngreso": "2026-07-22",
     "horaIngreso": "08:45",
     "ingresadoPor": "Carlos González — Encargado de Soporte",
-    "mac": "00:1A:2B:04:C4:05"
+    "mac": "00:1A:2B:04:C4:05",
+    "fechaAdquisicion": "2026-04-22",
+    "fechaRecepcionInstitucional": "2026-05-04",
+    "proveedor": "Soluciones Informáticas del Pacífico"
   },
   {
     "inventario": "2201-1215-2026",
@@ -33,7 +36,10 @@
     "fechaIngreso": "2026-07-21",
     "horaIngreso": "09:10",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:04:BF:16"
+    "mac": "00:1A:2B:04:BF:16",
+    "fechaAdquisicion": "2026-03-21",
+    "fechaRecepcionInstitucional": "2026-04-02",
+    "proveedor": "COMTEC El Salvador"
   },
   {
     "inventario": "2201-1212-2026",
@@ -51,7 +57,9 @@
     "fechaIngreso": "2026-07-21",
     "horaIngreso": "11:30",
     "ingresadoPor": "Carlos González — Encargado de Soporte",
-    "mac": "00:1A:2B:04:BC:27"
+    "mac": "00:1A:2B:04:BC:27",
+    "fechaAdquisicion": "2026-02-11",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-1211-2026",
@@ -69,7 +77,9 @@
     "fechaIngreso": "2026-07-20",
     "horaIngreso": "10:20",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:04:BB:38"
+    "mac": "00:1A:2B:04:BB:38",
+    "fechaAdquisicion": "2026-03-12",
+    "proveedor": "COMTEC El Salvador"
   },
   {
     "inventario": "2201-1210-2026",
@@ -87,7 +97,10 @@
     "fechaIngreso": "2026-07-20",
     "horaIngreso": "14:05",
     "ingresadoPor": "Carlos González — Encargado de Soporte",
-    "mac": "00:1A:2B:04:BA:49"
+    "mac": "00:1A:2B:04:BA:49",
+    "fechaAdquisicion": "2026-02-20",
+    "fechaRecepcionInstitucional": "2026-03-04",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-1300-2026",
@@ -105,7 +118,9 @@
     "fechaIngreso": "2026-05-04",
     "horaIngreso": "09:00",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:05:14:5A"
+    "mac": "00:1A:2B:05:14:5A",
+    "fechaAdquisicion": "2026-04-13",
+    "proveedor": "Proveedor institucional"
   },
   {
     "inventario": "2201-0918-2022",
@@ -123,7 +138,9 @@
     "fechaIngreso": "2026-07-08",
     "horaIngreso": "09:40",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:96:6B"
+    "mac": "00:1A:2B:03:96:6B",
+    "fechaAdquisicion": "2022-05-14",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-0922-2023",
@@ -141,7 +158,9 @@
     "fechaIngreso": "2026-07-10",
     "horaIngreso": "11:15",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:9A:7C"
+    "mac": "00:1A:2B:03:9A:7C",
+    "fechaAdquisicion": "2023-06-15",
+    "proveedor": "COMTEC El Salvador"
   },
   {
     "inventario": "2201-1150-2025",
@@ -159,7 +178,10 @@
     "fechaIngreso": "2026-07-01",
     "horaIngreso": "08:50",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:04:7E:8D"
+    "mac": "00:1A:2B:04:7E:8D",
+    "fechaAdquisicion": "2026-05-01",
+    "fechaRecepcionInstitucional": "2026-06-01",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-0899-2023",
@@ -177,7 +199,9 @@
     "fechaIngreso": "2026-06-12",
     "horaIngreso": "10:05",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:83:9E"
+    "mac": "00:1A:2B:03:83:9E",
+    "fechaAdquisicion": "2023-07-16",
+    "proveedor": "Proveedor institucional"
   },
   {
     "inventario": "2201-1201-2026",
@@ -195,7 +219,10 @@
     "fechaIngreso": "2026-07-06",
     "horaIngreso": "14:20",
     "ingresadoPor": "Carlos González — Encargado de Soporte",
-    "mac": "00:1A:2B:04:B1:AF"
+    "mac": "00:1A:2B:04:B1:AF",
+    "fechaAdquisicion": "2026-04-06",
+    "fechaRecepcionInstitucional": "2026-05-06",
+    "proveedor": "COMTEC El Salvador"
   },
   {
     "inventario": "2201-1187-2026",
@@ -212,7 +239,10 @@
     "expediente": "SOL-2026-0145",
     "fechaIngreso": "2026-06-27",
     "horaIngreso": "09:30",
-    "ingresadoPor": "Carlos González — Encargado de Soporte"
+    "ingresadoPor": "Carlos González — Encargado de Soporte",
+    "fechaAdquisicion": "2026-02-27",
+    "fechaRecepcionInstitucional": "2026-03-27",
+    "proveedor": "Proveedor institucional"
   },
   {
     "inventario": "2201-1098-2026",
@@ -230,7 +260,10 @@
     "fechaIngreso": "2026-06-18",
     "horaIngreso": "10:45",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:04:4A:D1"
+    "mac": "00:1A:2B:04:4A:D1",
+    "fechaAdquisicion": "2026-01-18",
+    "fechaRecepcionInstitucional": "2026-02-18",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-0954-2023",
@@ -248,7 +281,9 @@
     "fechaIngreso": "2026-06-20",
     "horaIngreso": "08:35",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:BA:E2"
+    "mac": "00:1A:2B:03:BA:E2",
+    "fechaAdquisicion": "2023-08-17",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-0871-2024",
@@ -266,7 +301,9 @@
     "fechaIngreso": "2026-06-10",
     "horaIngreso": "15:10",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:67:F3"
+    "mac": "00:1A:2B:03:67:F3",
+    "fechaAdquisicion": "2024-09-18",
+    "proveedor": "COMTEC El Salvador"
   },
   {
     "inventario": "2201-1041-2026",
@@ -284,7 +321,10 @@
     "fechaIngreso": "2026-06-02",
     "horaIngreso": "09:00",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:04:11:04"
+    "mac": "00:1A:2B:04:11:04",
+    "fechaAdquisicion": "2026-03-15",
+    "fechaRecepcionInstitucional": "2026-03-20",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   },
   {
     "inventario": "2201-0703-2021",
@@ -302,7 +342,9 @@
     "fechaIngreso": "2025-12-05",
     "horaIngreso": "10:30",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:02:BF:15"
+    "mac": "00:1A:2B:02:BF:15",
+    "fechaAdquisicion": "2021-01-10",
+    "proveedor": "Proveedor institucional"
   },
   {
     "inventario": "2201-0788-2022",
@@ -320,6 +362,8 @@
     "fechaIngreso": "2025-11-18",
     "horaIngreso": "09:20",
     "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
-    "mac": "00:1A:2B:03:14:26"
+    "mac": "00:1A:2B:03:14:26",
+    "fechaAdquisicion": "2022-02-11",
+    "proveedor": "Distribuidora Tecnológica S.A. de C.V."
   }
 ]

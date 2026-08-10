@@ -213,6 +213,11 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
               <dt>Ingresado por</dt><dd>{{ e.ingresadoPor || '—' }}</dd>
               <dt>Origen del dato</dt><dd>{{ e.origenDato || '—' }}</dd>
               <dt>Última actualización</dt><dd class="mono">{{ e.ultimaActualizacion || '—' }}</dd>
+              <dt>Fecha de adquisición
+                <ui-help texto="Viene de la base institucional al ingresar el equipo. Es la fecha desde la que corre la garantía del proveedor; no es la fecha de ingreso al inventario." />
+              </dt>
+              <dd class="mono">{{ e.fechaAdquisicion || 'No consta' }}</dd>
+              <dt>Proveedor</dt><dd>{{ e.proveedor || '—' }}</dd>
               <dt>Técnico que preparó</dt><dd>{{ tecnicoPreparo(e) || '—' }}</dd>
               <dt>Fecha de preparación</dt><dd>{{ fechaPreparacion(e) || '—' }}</dd>
               <dt>Nombre del equipo</dt><dd class="mono">{{ data.nombreEquipoActual(e.inventario) || '—' }}</dd>
@@ -430,6 +435,35 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
                     <dt>Última actualización</dt><dd class="mono">{{ f.ultimaActualizacion }}</dd>
                   </dl>
                 </div>
+                <!-- Adquisición y garantía: es de aquí de donde sale el inicio de la garantía
+                     del proveedor, no de la aceptación del usuario final ni del ingreso. -->
+                <div class="grid grid-2 mt-2">
+                  <dl class="dl">
+                    <dt>Fecha de adquisición
+                      <ui-help texto="Fecha en que la institución compró el equipo. Es la fecha desde la que corre la garantía del proveedor; no es la fecha de ingreso al Inventario de Hardware." />
+                    </dt>
+                    <dd class="mono">{{ f.fechaAdquisicion || 'No consta en el registro institucional' }}</dd>
+                    <dt>Fecha de recepción</dt><dd class="mono">{{ f.fechaRecepcion || '—' }}</dd>
+                    <dt>Proveedor</dt><dd>{{ f.proveedor || '—' }}</dd>
+                  </dl>
+                  <dl class="dl">
+                    <dt>Tipo de garantía sugerida</dt>
+                    <dd>@if (f.tipoGarantiaSugerida) { <ui-badge [estado]="f.tipoGarantiaSugerida" /> } @else { — }</dd>
+                    <dt>Garantía del proveedor</dt>
+                    <dd class="mono">
+                      @if (f.inicioGarantiaProveedor) {
+                        {{ f.inicioGarantiaProveedor }} → {{ f.vencimientoGarantiaProveedor }}
+                      } @else { — }
+                    </dd>
+                    <dt>Duración</dt><dd>{{ f.duracionGarantiaProveedor || '—' }}</dd>
+                  </dl>
+                </div>
+                @if (f.estadoFisicoInicial === 'Nuevo' && !f.fechaAdquisicion) {
+                  <div class="alert warn mt-2">
+                    <span class="alert-ico">!</span>
+                    <span>{{ data.MSG_DATOS_INSTITUCIONALES }}</span>
+                  </div>
+                }
                 <p class="small mt-1">
                   <b>Observación del registro institucional:</b> {{ f.observacionRegistro }}
                 </p>

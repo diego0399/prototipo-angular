@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 61)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 63)**.
 
 ---
 
@@ -2692,6 +2692,67 @@ Expediente único.
       rutas más el JSON de la distribución) y **282 casos, 0 fallos**, más las veintiséis baterías
       anteriores (2010 casos, 0 fallos; se actualizó la del Expediente único). **Sin recorrido
       manual de clics.**
+62. **La garantía del proveedor corre desde la fecha de adquisición del equipo, no desde la
+    aceptación del usuario final** (2026-08-09, séptima sesión del día).
+    * **Se elimina la regla del mes**: la garantía se calculaba como «un mes desde la aceptación»
+      —duración fija y punto de partida equivocado—. Ahora se calcula por fechas.
+    * **Dos cosas distintas que ya no se mezclan**: la **garantía de proveedor** (equipos nuevos,
+      corre desde la adquisición, 3 años sugeridos) y la **responsabilidad interna de Soporte**
+      (equipos usados, sí puede correr desde la aceptación, vigencia que define el Encargado).
+      Cada una con su par de fechas; `fechaInicio`/`fechaVencimiento` quedan como espejo de la que
+      rige, recalculado en cada cambio, para no romper nada de lo escrito antes.
+    * **La fecha de adquisición no se deriva de la de ingreso al inventario**: son distintas, y
+      derivarla habría repetido el mismo error con otra fecha cómoda. Viene del registro
+      institucional cuando consta. En el set de datos, toda fecha sembrada es anterior a su
+      ingreso y ninguna coincide con él.
+    * **Si no consta**, el equipo queda «Pendiente de fecha de adquisición»: sin fechas inventadas
+      y sin poder abrir casos, con el aviso del §4 y el registro en un clic. Hay equipos nuevos
+      con fecha y sin ella a propósito, para que los dos caminos sean recorribles.
+    * **Modificar garantía** (botón y modal): solo Encargado de Soporte y Administrador, con
+      **motivo obligatorio** cuando cambia una fecha o el tipo, cinco validaciones y el inicio
+      bloqueado en la adquisición cuando la garantía es del proveedor. Los Técnicos consultan y
+      registran casos, pero no mueven la vigencia.
+    * **Nada se sobrescribe**: cada cambio guarda tipo, adquisición y vigencia anteriores y
+      nuevas, con usuario, rol, fecha, hora y motivo.
+    * **Ocho estados detallados** derivados (`estadoDetalleGarantia`), junto al estado grueso de
+      siempre; «por vencer» (60 días) se pinta como aviso, no en verde.
+    * **Casos**: con el proveedor vencido se avisa y el Encargado puede **autorizar atención por
+      responsabilidad interna** con justificación; sin fecha de adquisición no se abre caso.
+    * **Los eventos ya registrados con la regla vieja no se reescribieron** y siguen contando como
+      hitos: dicen lo que el sistema hizo cuando lo hizo. Solo se corrigió el texto que vuelve a
+      emitirse. Ocho eventos nuevos y siete campos nuevos en el evento; bloque «Garantía del
+      equipo» en el historial técnico y garantía completa en el reporte del Expediente único.
+    * Verificado con `npm run build` limpio (7.774 s, 0 errores), `ng serve` (HTTP 200 en once
+      rutas) y **244 casos, 0 fallos**, más las veintisiete baterías anteriores (2294 casos, 0
+      fallos; se ajustó una aserción frágil de la ronda 61). **Sin recorrido manual de clics.**
+63. **La fecha de adquisición viene desde la base institucional al ingresar el equipo; ningún
+    equipo nuevo queda sin ella** (2026-08-09, octava sesión del día).
+    * **Corrige una decisión de la ronda 62**: allí se dejaron equipos nuevos sin fecha de
+      adquisición a propósito, para que el camino del «falta la fecha» fuera recorrible. Era la
+      decisión equivocada: la fecha viene del registro institucional, y que falte en un equipo
+      nuevo es un **error de datos**, no un paso del flujo.
+    * **La ficha institucional gana cinco campos** —fecha de adquisición, proveedor, inicio y
+      vencimiento de la garantía del proveedor y su duración— y el ingreso los copia al equipo.
+      Los **20** equipos del catálogo y los **18** del inventario los traen; ninguna fecha de
+      adquisición coincide con su fecha de ingreso y todas son anteriores a ella. Los dos ejemplos
+      del pedido (`2201-00-101-0010` y `2201-00-920-0010`) están con sus valores exactos.
+    * **Lo que decide no es si el equipo es nuevo, sino si el proveedor todavía responde**: un
+      equipo usado comprado hace un año conserva su garantía de proveedor; uno comprado hace cinco
+      años, no. La condición «Usado» describe el estado físico, no quién responde.
+    * **Cuando los tres años se agotaron**: las fechas del proveedor **se conservan** —que el
+      equipo tuvo garantía del día X al Y es un hecho— y el estado dice «Garantía de proveedor
+      vencida», no un «sin garantía» que esconde el pasado. **No se inventa una responsabilidad
+      interna**: la fija el Encargado de Soporte, y mientras no lo haga el equipo no tiene
+      cobertura ni se pueden abrir casos, con un botón que abre el modal ya preparado.
+    * **No se puede reponer una garantía de proveedor que el calendario agotó**: declarar cubierto
+      un equipo que nadie cubre es peor que dejarlo sin cobertura declarada.
+    * Estado nuevo **«Pendiente de corrección de datos institucionales»**, en rojo y apuntando al
+      inventario institucional, no al Encargado. Tres eventos nuevos en el ingreso y el historial
+      técnico narrando el recorrido completo de la fecha.
+    * Verificado con `npm run build` limpio (7.567 s, 0 errores), `ng serve` (HTTP 200 en diez
+      rutas más el JSON del catálogo) y **153 casos, 0 fallos**, más las veintiocho baterías
+      anteriores (2538 casos, 0 fallos; se actualizaron siete aserciones de la ronda 62, que
+      comprobaban lo contrario de lo que ahora corresponde). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de
