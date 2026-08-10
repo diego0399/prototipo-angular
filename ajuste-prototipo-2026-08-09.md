@@ -1275,3 +1275,135 @@ src/app/shared/ui.ts · linea-tiempo.ts         (badge del error de datos; dos h
 public/assets/data/catalogo-institucional.json (20 fichas con adquisición, proveedor y garantía)
 public/assets/data/equipos.json                (18 equipos con fecha de adquisición)
 ```
+
+---
+
+# Parte 9 — «No aplica» con justificación en el Agente DLP y el Ingreso a dominio
+
+**Fecha:** 9 de agosto de 2026, novena sesión del día (ronda 64 del punto de control)
+**Alcance:** el checklist de la Configuración F0302, el documento F0302 generado, el historial
+técnico y la trazabilidad.
+
+## 1. El problema
+
+El checklist F0302 solo admitía dos estados: pendiente o hecho. Para el **Agente DLP** y el
+**Ingreso a dominio** eso obliga a mentir cuando el equipo no los necesita —uno aislado de la red,
+uno en revisión temporal—: o se queda pendiente para siempre y bloquea el cierre, o se marca como
+hecho algo que no se hizo.
+
+Ahora esos dos ítems tienen tres estados:
+
+```text
+Pendiente     Realizado     No aplica
+```
+
+Y «No aplica» **exige motivo escrito**. Un control de seguridad que se salta sin explicación es
+indistinguible de uno que se olvidó.
+
+## 2. Solo esos dos ítems
+
+El resto del checklist sigue con su casilla: o se hizo o está pendiente. La distinción vive en el
+servicio (`admiteNoAplicaF0302`), no en la pantalla, y reconoce el ítem por su nombre con
+tolerancia a mayúsculas — el seed lo llama «Ingreso a dominio» y el pedido «Ingreso a Dominio».
+
+## 3. Qué exige cada estado
+
+```text
+Agente DLP        Completado → imagen obligatoria (la regla de siempre)
+                  No aplica  → justificación obligatoria, sin imagen
+
+Ingreso a dominio Completado → validación normal, sin imagen
+                  No aplica  → justificación obligatoria
+```
+
+La justificación se valida **antes** que la captura, porque «No aplica» ya excluye al ítem de
+exigirla. Y el ítem marcado «No aplica» deja de mostrar el botón de adjuntar: en su lugar dice «No
+requiere evidencia».
+
+## 4. Los mensajes
+
+```text
+Debe justificar por qué no aplica la instalación o validación del Agente DLP.
+Debe justificar por qué no aplica el ingreso del equipo al dominio.
+```
+
+Cada ítem tiene el suyo: un mensaje genérico obligaría a leer la pantalla para saber cuál de los dos
+falta.
+
+## 5. Motivos sugeridos, no elegidos
+
+Los cinco motivos de cada ítem se muestran como botones que **copian el texto al campo**. Ninguno se
+selecciona solo: la justificación tiene que ser una afirmación de quien configura, no un valor por
+omisión del sistema. El campo es texto libre y se puede editar después de copiar un ejemplo.
+
+## 6. Dos protecciones que no pedía el ajuste
+
+**«Seleccionar todo» no pisa un «No aplica».** Marcar la categoría Seguridad en bloque habría
+volteado el Agente DLP a «Realizado» y borrado su justificación de paso. Un ítem excluido a
+conciencia, con su motivo escrito, no lo deshace una acción masiva.
+
+**Salir de «No aplica» retira la justificación.** Si el técnico cambia de idea y lo marca como
+hecho, el motivo dejaría de explicar nada y quedaría en el expediente como un texto huérfano.
+
+## 7. El documento lo dice
+
+```text
+Agente DLP: No aplica
+Justificación: Equipo no será conectado a red institucional.
+Registrado por Wendy Carranza · 2026-08-09 14:20
+```
+
+Un ítem «No aplica» sale del bloque de controles con evidencia —no tiene ninguna que mostrar— y
+aparece en su propio bloque con el motivo. El documento tiene que decir qué **no** se hizo y por qué,
+no solo lo que sí.
+
+## 8. Historial y trazabilidad
+
+El historial técnico del equipo estrena el bloque **Ítems de la Configuración F0302 marcados como No
+aplica**, que recorre **todas** las configuraciones del equipo, no solo la vigente: si un ciclo
+anterior dejó el Agente DLP fuera, eso pertenece a su historia igual que lo que sí se configuró.
+
+Cuatro eventos nuevos —marcado como No aplica, justificación registrada, intento de finalizar sin
+justificación, y finalización con ítems No aplica justificados— con dos campos nuevos en el evento
+(`itemChecklist`, `estadoItem`) y una referencia común para no repetirlos ítem por ítem. Los tres
+primeros son hitos, no detalle.
+
+## 9. Casos de prueba
+
+**119 casos, 0 fallos**, con espejos funcionales de lo que se rompe en silencio: qué ítems admiten
+«No aplica» en nueve variantes de nombre; los dos mensajes y que sean distintos; y las **ocho
+puertas del cierre**, incluida la que importa —un DLP «No aplica» justificado **no** exige imagen— y
+la que no debe abrirse —un DLP «Realizado» sin imagen sigue bloqueando—.
+
+Regresiones: las veintinueve baterías anteriores, **2691 casos, 0 fallos**. Ninguna necesitó
+ajuste: la regla es aditiva.
+
+## 10. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [7.489 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en diez rutas.
+
+**No hubo clics reales en un navegador.** Marcar «No aplica», ver aparecer el campo, copiar un
+motivo sugerido y comprobar que el botón de imagen desaparece está verificado por código, nunca
+ejecutado a mano.
+
+## 11. Archivos tocados
+
+```text
+src/app/core/models/models.ts               (justificacionNoAplica, noAplicaPor y fechaNoAplica en
+                                             el ítem del F0302; itemChecklist y estadoItem en el
+                                             evento de trazabilidad)
+src/app/core/services/data.service.ts       (admiteNoAplicaF0302, esIngresoDominio,
+                                             mensajeJustificacionNoAplica,
+                                             justificacionesSugeridasF0302,
+                                             itemsNoAplicaSinJustificar, itemsNoAplicaF0302,
+                                             justificarNoAplicaF0302, refItemF0302;
+                                             marcarSoftwareF0302 con el tercer estado;
+                                             «Seleccionar todo» respeta el No aplica;
+                                             validación del cierre)
+src/app/features/configuracion/…            (tres estados, campo de justificación, motivos
+                                             sugeridos, evidencia oculta en No aplica)
+src/app/features/generador-documentos/…     (bloque «Ítems marcados como No aplica»)
+src/app/features/trazabilidad/…             (bloque del historial técnico)
+src/app/shared/linea-tiempo.ts              (dos campos y tres hitos nuevos)
+```

@@ -1081,6 +1081,107 @@ export class DataService {
     return /^(agente|soluci[óo]n) dlp/i.test((nombre ?? '').trim());
   }
 
+  /** El ítem de ingreso al dominio institucional del checklist F0302. */
+  private esIngresoDominio(nombre: string): boolean {
+    return /^ingreso a dominio/i.test((nombre ?? '').trim());
+  }
+
+  /**
+   * Ítems del F0302 que admiten «No aplica»: el Agente DLP y el Ingreso a dominio. Son los dos
+   * que pueden no corresponder a un equipo concreto —uno aislado de la red, uno en revisión— y
+   * obligarlos a marcarse como hechos sería pedirle al técnico que registre algo falso. El resto
+   * del checklist no admite ese estado: o se hizo o está pendiente.
+   */
+  admiteNoAplicaF0302(nombre: string): boolean {
+    return this.esAgenteDLP(nombre) || this.esIngresoDominio(nombre);
+  }
+
+  /** Mensaje de la justificación que falta, con el nombre del ítem que la exige. */
+  mensajeJustificacionNoAplica(nombre: string): string {
+    if (this.esAgenteDLP(nombre)) {
+      return 'Debe justificar por qué no aplica la instalación o validación del Agente DLP.';
+    }
+    if (this.esIngresoDominio(nombre)) {
+      return 'Debe justificar por qué no aplica el ingreso del equipo al dominio.';
+    }
+    return `Debe justificar por qué no aplica ${nombre}.`;
+  }
+
+  /**
+   * Ejemplos de motivo, para que el técnico no tenga que inventar la redacción. Son sugerencias
+   * visibles, no opciones: ninguna se selecciona sola, porque la justificación tiene que ser una
+   * afirmación de quien configura, no un valor por omisión del sistema.
+   */
+  justificacionesSugeridasF0302(nombre: string): string[] {
+    if (this.esAgenteDLP(nombre)) {
+      return [
+        'Equipo no requiere agente DLP por condición especial autorizada.',
+        'Equipo en revisión temporal.',
+        'Equipo no será conectado a red institucional.',
+        'Excepción indicada por Encargado de Soporte.',
+        'Otro motivo justificado.'
+      ];
+    }
+    if (this.esIngresoDominio(nombre)) {
+      return [
+        'Equipo no será unido al dominio por uso temporal.',
+        'Equipo destinado a ambiente aislado.',
+        'Equipo en revisión o prueba.',
+        'Excepción autorizada por Encargado de Soporte.',
+        'Otro motivo justificado.'
+      ];
+    }
+    return [];
+  }
+
+  /** Ítems marcados «No aplica» que todavía no tienen motivo escrito. */
+  itemsNoAplicaSinJustificar(c: ConfiguracionF0302): SoftwareF0302[] {
+    return this.softwareChecklistF0302(c)
+      .filter((s) => s.estado === 'No aplica' && !(s.justificacionNoAplica ?? '').trim());
+  }
+
+  /** Ítems del F0302 que quedaron fuera con su motivo, para el documento y el historial. */
+  itemsNoAplicaF0302(c: ConfiguracionF0302): SoftwareF0302[] {
+    return this.softwareChecklistF0302(c).filter((s) => s.estado === 'No aplica');
+  }
+
+  /**
+   * Guarda el motivo del «No aplica» de un ítem del F0302. El texto lo escribe el técnico: el
+   * sistema ofrece ejemplos, pero no rellena ninguno.
+   */
+  justificarNoAplicaF0302(id: string, nombre: string, justificacion: string, usuario: string): string | null {
+    const c = this.configuracionDe(id);
+    if (!c) return 'No se encontró la configuración indicada.';
+    if (c.estado === 'Completada') return 'La configuración ya está finalizada: el checklist no admite cambios.';
+    const item = this.softwareChecklistF0302(c).find((s) => s.nombre === nombre);
+    if (!item) return 'No se encontró el ítem indicado en el checklist.';
+    if (item.estado !== 'No aplica') return 'El ítem no está marcado como «No aplica».';
+    const texto = justificacion.trim();
+    if (!texto) return this.mensajeJustificacionNoAplica(nombre);
+
+    this.actualizarConfiguracionActiva(id, (x) => ({
+      ...x, software: x.software.map((s) => (s.nombre === nombre
+        ? { ...s, justificacionNoAplica: texto, noAplicaPor: usuario, fechaNoAplica: this.selloAhora() }
+        : s))
+    }));
+    this.registrarEvento(id, usuario, `Justificación de «No aplica» registrada para ${nombre}`, 'No aplica',
+      texto, false, this.refItemF0302(id, nombre, 'No aplica', texto));
+    return null;
+  }
+
+  /** Referencia común de los eventos de un ítem del checklist F0302. */
+  private refItemF0302(id: string, nombre: string, estado: string, justificacion = ''): Partial<EventoTrazabilidad> {
+    const c = this.configuracionDe(id);
+    return {
+      modulo: 'Configuración F0302', inventario: c?.datos.inventario,
+      expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico,
+      nombreEquipo: c?.datos.nombrePC, rol: this.rolConectado(),
+      itemChecklist: nombre, estadoItem: estado,
+      justificacion: justificacion || undefined,
+      evidencia: c?.software.find((s) => s.nombre === nombre)?.evidencia ?? undefined
+    };
+  }
+
   /** Deja constancia de que se abrió/consultó la pantalla «Catálogo de software» (una vez por visita, no por render). */
   registrarConsultaCatalogoSoftware(usuario: string): void {
     this.registrarEvento('CATALOGO-SOFTWARE', usuario, 'Catálogo de software consultado', 'Consultado',
@@ -3736,27 +3837,35 @@ export class DataService {
    * y al desmarcarlo se limpia la versión. Solo genera «Software seleccionado» cuando el software
    * es de catálogo y pasa de no-Realizado a Realizado.
    */
-  marcarSoftwareF0302(id: string, nombre: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
+  marcarSoftwareF0302(id: string, nombre: string, estado: 'Realizado' | 'Pendiente' | 'No aplica', usuario: string): void {
     let codigoSoftware: string | undefined;
     let eraRealizado = false;
     let exigeCaptura = false;
+    let eraNoAplica = false;
     this.actualizarConfiguracionActiva(id, (c) => ({
       ...c, software: c.software.map((s) => {
         if (s.nombre !== nombre) return s;
         codigoSoftware = s.codigoSoftware;
         eraRealizado = s.estado === 'Realizado';
+        eraNoAplica = s.estado === 'No aplica';
         exigeCaptura = !!s.requiereEvidencia;
         // Al desmarcar un ítem con captura obligatoria, la captura deja de tener sentido: se limpia.
+        // «No aplica» también la limpia: un ítem que no corresponde no lleva evidencia.
         const evidencia = s.requiereEvidencia && estado !== 'Realizado' ? null : s.evidencia;
-        if (!s.codigoSoftware) return { ...s, estado, evidencia };
+        // Salir de «No aplica» retira su justificación: quedaría explicando un estado que ya no es.
+        const noAplica = estado === 'No aplica'
+          ? { justificacionNoAplica: s.justificacionNoAplica, noAplicaPor: usuario, fechaNoAplica: this.selloAhora() }
+          : { justificacionNoAplica: '', noAplicaPor: undefined, fechaNoAplica: undefined };
+        if (!s.codigoSoftware) return { ...s, estado, evidencia, ...noAplica };
         const vigente = this.softwareCatalogoDe(s.codigoSoftware)?.versionVigente ?? '';
         return estado === 'Realizado'
-          ? { ...s, estado, evidencia, version: s.version || vigente }
-          : { ...s, estado, evidencia, version: '' };
+          ? { ...s, estado, evidencia, ...noAplica, version: s.version || vigente }
+          : { ...s, estado, evidencia, ...noAplica, version: '' };
       }),
       evidencias: exigeCaptura && estado !== 'Realizado'
         ? c.evidencias.map((e) => (e.item === nombre
-            ? { nombre: e.nombre, estado: 'Pendiente', item: e.item, tipo: e.tipo, formulario: e.formulario }
+            ? { nombre: e.nombre, estado: estado === 'No aplica' ? 'No aplica' : 'Pendiente',
+                item: e.item, tipo: e.tipo, formulario: e.formulario }
             : e))
         : c.evidencias
     }));
@@ -3766,6 +3875,12 @@ export class DataService {
         `Formulario: F0302 · Requiere captura de evidencia obligatoria para finalizar la configuración.`, false,
         { modulo: 'Configuración F0302', inventario: c?.datos.inventario,
           expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c?.datos.nombrePC });
+    }
+    if (estado === 'No aplica' && !eraNoAplica) {
+      this.registrarEvento(id, usuario, `${nombre} marcado como No aplica`, 'No aplica',
+        'Requiere justificación obligatoria para finalizar la Configuración F0302.' +
+          (exigeCaptura ? ' No se exige imagen de evidencia para un ítem que no aplica.' : ''),
+        false, this.refItemF0302(id, nombre, 'No aplica'));
     }
     if (codigoSoftware && estado === 'Realizado' && !eraRealizado) {
       const sw = this.softwareCatalogoDe(codigoSoftware);
@@ -3787,7 +3902,10 @@ export class DataService {
    * software adicional del catálogo se marca uno a uno, porque cada ítem lleva su propio motivo.
    */
   marcarCategoriaSoftwareF0302(id: string, categoria: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
-    const alcanza = (s: SoftwareF0302) => s.origen === 'Configuración' && s.categoria === categoria;
+    // Un ítem marcado «No aplica» queda fuera del «Seleccionar todo»: es una decisión razonada del
+    // técnico, con su justificación escrita, y una acción en bloque no puede deshacerla de paso.
+    const alcanza = (s: SoftwareF0302) =>
+      s.origen === 'Configuración' && s.categoria === categoria && s.estado !== 'No aplica';
     // «Seleccionar todo» NO exime de la captura: marca el ítem igual que a mano, así que el Agente
     // DLP queda «Realizado» y sin evidencia, y el cierre lo sigue bloqueando.
     const conCaptura = this.configuracionDe(id)?.software.filter((s) => alcanza(s) && s.requiereEvidencia) ?? [];
@@ -4472,9 +4590,20 @@ export class DataService {
     if (!(c.datos.nombrePC ?? '').trim()) {
       return 'Debe ingresar el nombre del equipo para finalizar la configuración.';
     }
+    // Un ítem marcado «No aplica» no exige imagen, pero sí motivo: un control de seguridad que se
+    // salta sin explicación es indistinguible de uno que se olvidó. Va antes que la captura porque
+    // «No aplica» ya excluye al ítem de exigirla.
+    const sinJustificar = this.itemsNoAplicaSinJustificar(c);
+    if (sinJustificar.length) {
+      const mensaje = this.mensajeJustificacionNoAplica(sinJustificar[0].nombre);
+      this.registrarEvento(id, usuario, 'Intento de finalizar F0302 sin justificación de No aplica',
+        'En configuración', mensaje, false,
+        this.refItemF0302(id, sinJustificar[0].nombre, 'No aplica'));
+      return mensaje;
+    }
     // Ítems que no se dan por configurados sin captura (Agente DLP). Vale igual si se marcaron con
     // el checkbox «Seleccionar todo» de la categoría: la validación es sobre el ítem, no sobre cómo
-    // se marcó.
+    // se marcó. Un ítem «No aplica» ya quedó fuera: `itemsSinCapturaF0302` solo mira los Realizados.
     const sinCaptura = this.faltaImagenF0302(c, usuario);
     if (sinCaptura) return sinCaptura;
     // La reserva de IP NO se valida aquí, ni siquiera cuando ya viene respondida: no es dato del
@@ -4555,6 +4684,19 @@ export class DataService {
       { modulo: 'Configuración F0302', estadoAnterior: 'En configuración', inventario: c.datos.inventario,
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: c.datos.asignadoA, tiempo,
         complejidad: cierre.nivel, nombreEquipo: c.datos.nombrePC, ipReservada: ipTexto });
+    // Los ítems que quedaron fuera se nombran uno a uno con su motivo: en el documento y en la
+    // trazabilidad tiene que verse qué no se hizo y por qué, no solo lo que sí se hizo.
+    const noAplica = this.itemsNoAplicaF0302(c);
+    if (noAplica.length) {
+      this.registrarEvento(id, usuario,
+        `Configuración F0302 finalizada con ${noAplica.length} ítem(s) No aplica justificados`,
+        'Listo para entrega',
+        noAplica.map((s) => `${s.nombre}: ${s.justificacionNoAplica}`).join(' · '), false,
+        { modulo: 'Configuración F0302', inventario: c.datos.inventario,
+          expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c.datos.nombrePC,
+          rol: this.rolDeUsuario(usuario), estadoItem: 'No aplica',
+          itemChecklist: noAplica.map((s) => s.nombre).join(', ') });
+    }
     this.registrarCierreConEvidencia('Configuración F0302', id, id, usuario, c.datos.inventario);
     this.registrarDocumentoConEvidencias(id, usuario, 'F0302', 'Configuración F0302', id, c.datos.inventario);
     return null;

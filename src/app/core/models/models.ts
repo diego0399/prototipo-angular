@@ -702,6 +702,15 @@ export interface SoftwareF0302 {
    * captura, incluso si el ítem se marcó con el checkbox «Seleccionar todo» de su categoría.
    */
   requiereEvidencia?: boolean;
+  /**
+   * Motivo por el que el ítem quedó como «No aplica». Obligatorio en los ítems que admiten ese
+   * estado (Agente DLP e Ingreso a dominio): sin él la configuración no se finaliza. Un control de
+   * seguridad que se salta sin explicación es indistinguible de uno que se olvidó.
+   */
+  justificacionNoAplica?: string;
+  /** Quién marcó el «No aplica» y cuándo («Nombre — Rol», `YYYY-MM-DD HH:mm`). */
+  noAplicaPor?: string;
+  fechaNoAplica?: string;
 }
 
 /**
@@ -1830,4 +1839,8 @@ export interface EventoTrazabilidad {
   /** Vigencia después del cambio. */
   inicioNuevo?: string;
   vencimientoNuevo?: string;
+  /** Ítem del checklist al que se refiere el evento (p. ej. «Agente DLP»). */
+  itemChecklist?: string;
+  /** Estado con que quedó ese ítem: Pendiente · Realizado · No aplica. */
+  estadoItem?: string;
 }

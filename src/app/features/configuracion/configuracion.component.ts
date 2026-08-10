@@ -25,6 +25,14 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
     .falla-grande { max-width: 100%; max-height: 58vh; display: block; margin: 0 auto; border-radius: 8px; border: 1px solid var(--line); }
     .cap-row .control { max-width: 210px; }
     .i-falta { font-size: 11.5px; font-weight: 600; color: var(--danger, #c0392b); }
+    /* Ítems con tres estados: Agente DLP e Ingreso a dominio */
+    .estados { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 5px; }
+    .estados .radio-line { font-size: 12.5px; font-weight: 400; color: var(--tx-2); }
+    .just-box { margin-top: 8px; max-width: 520px; }
+    .just-box label { display: block; font-size: 11.5px; font-weight: 700; color: var(--navy-900); margin-bottom: 4px; }
+    .sug-just { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
+    .chip-btn { cursor: pointer; border: 1px dashed var(--line-strong); background: transparent; font: inherit; }
+    .chip-btn:hover { border-color: var(--blue-500); color: var(--blue-600); }
     .sw-row.heredado td { background: var(--surface-2); }
     .sw-row.heredado .candado { opacity: .75; }
     tr.sel td { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--gold-500); }
@@ -313,19 +321,59 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   @for (s of itemsCategoria(c, cat); track s.nombre) {
                     <tr class="sw-row">
                       <td>
-                        <input class="chk" type="checkbox" [checked]="s.estado === 'Realizado'"
-                          [disabled]="c.estado === 'Completada'"
-                          (change)="marcar(c.expediente, s.nombre, $event)" />
+                        @if (!data.admiteNoAplicaF0302(s.nombre)) {
+                          <input class="chk" type="checkbox" [checked]="s.estado === 'Realizado'"
+                            [disabled]="c.estado === 'Completada'"
+                            (change)="marcar(c.expediente, s.nombre, $event)" />
+                        }
                       </td>
                       <td class="main-cell">
                         {{ s.nombre }}
                         @if (s.requiereEvidencia) {
                           <ui-help texto="Control de seguridad institucional: no se da por configurado sin captura. Marcarlo desde «Seleccionar todo» tampoco exime de adjuntarla." />
                         }
+                        <!-- Agente DLP e Ingreso a dominio pueden no corresponder a un equipo:
+                             se eligen entre tres estados, y «No aplica» exige motivo escrito. -->
+                        @if (data.admiteNoAplicaF0302(s.nombre)) {
+                          <div class="estados">
+                            @for (op of estadosItem; track op) {
+                              <label class="radio-line">
+                                <input type="radio" [name]="'st-' + s.nombre" [value]="op"
+                                  [checked]="s.estado === op" [disabled]="c.estado === 'Completada'"
+                                  (change)="cambiarEstado(c.expediente, s.nombre, op)" />
+                                {{ op }}
+                              </label>
+                            }
+                          </div>
+                          @if (s.estado === 'No aplica') {
+                            <div class="just-box">
+                              <label>Justificación de No aplica <span class="req">*</span></label>
+                              <textarea class="control" rows="2"
+                                [placeholder]="placeholderJustificacion(s.nombre)"
+                                [ngModel]="justificacionDe(c, s.nombre)"
+                                (ngModelChange)="setJustificacion(c.expediente, s.nombre, $event)"
+                                [disabled]="c.estado === 'Completada'"></textarea>
+                              @if (c.estado !== 'Completada') {
+                                <div class="sug-just">
+                                  <span class="hint">Motivos frecuentes (escriba o confirme el suyo):</span>
+                                  @for (j of data.justificacionesSugeridasF0302(s.nombre); track j) {
+                                    <button type="button" class="chip chip-btn"
+                                      (click)="usarSugerencia(c.expediente, s.nombre, j)">{{ j }}</button>
+                                  }
+                                </div>
+                              }
+                              @if (!justificacionDe(c, s.nombre).trim()) {
+                                <span class="i-falta">{{ data.mensajeJustificacionNoAplica(s.nombre) }}</span>
+                              }
+                            </div>
+                          }
+                        }
                       </td>
                       <td><span class="mono">{{ s.version }}</span></td>
                       <td>
-                        @if (s.evidencia) {
+                        @if (s.estado === 'No aplica') {
+                          <span class="muted">No requiere evidencia</span>
+                        } @else if (s.evidencia) {
                           <span class="chip">{{ s.evidencia }}</span>
                           @if (evidenciaDe(c, s.nombre); as ev) {
                             <div class="sub-cell">{{ ev.tipo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}</div>
@@ -1500,8 +1548,47 @@ export class ConfiguracionComponent {
 
   protected marcar(id: string, nombre: string, ev: Event): void {
     const checked = (ev.target as HTMLInputElement).checked;
+    this.data.marcarSoftwareF0302(id, nombre, checked ? 'Realizado' : 'Pendiente', this.quien());
+  }
+
+  // ---------- Ítems con «No aplica»: Agente DLP e Ingreso a dominio ----------
+  /** Los tres estados que admiten esos dos ítems. El resto del checklist sigue con checkbox. */
+  protected readonly estadosItem: ('Pendiente' | 'Realizado' | 'No aplica')[] =
+    ['Pendiente', 'Realizado', 'No aplica'];
+
+  protected cambiarEstado(id: string, nombre: string, estado: 'Pendiente' | 'Realizado' | 'No aplica'): void {
+    this.data.marcarSoftwareF0302(id, nombre, estado, this.quien());
+  }
+
+  protected justificacionDe(c: ConfiguracionF0302, nombre: string): string {
+    return this.data.softwareChecklistF0302(c).find((s) => s.nombre === nombre)?.justificacionNoAplica ?? '';
+  }
+
+  /**
+   * Guarda el motivo mientras se escribe. Se llama al servicio en cada cambio —y no al salir del
+   * campo— porque el estado vive en el servicio: mantener una copia local del texto abriría la
+   * puerta a finalizar con una justificación que la pantalla muestra pero el expediente no tiene.
+   */
+  protected setJustificacion(id: string, nombre: string, texto: string): void {
+    const error = this.data.justificarNoAplicaF0302(id, nombre, texto, this.quien());
+    // Un texto vacío no es un error que reportar: es el estado inicial del campo.
+    if (error && texto.trim()) this.toast.error('No se pudo guardar la justificación', error);
+  }
+
+  /** Un motivo sugerido se copia al campo; no se guarda solo, el técnico lo confirma o lo edita. */
+  protected usarSugerencia(id: string, nombre: string, texto: string): void {
+    this.setJustificacion(id, nombre, texto);
+  }
+
+  protected placeholderJustificacion(nombre: string): string {
+    return this.data.admiteNoAplicaF0302(nombre) && /dominio/i.test(nombre)
+      ? 'Escriba el motivo por el cual no aplica el ingreso a dominio…'
+      : 'Escriba el motivo por el cual no aplica…';
+  }
+
+  private quien(): string {
     const u = this.auth.usuario();
-    this.data.marcarSoftwareF0302(id, nombre, checked ? 'Realizado' : 'Pendiente', `${u?.nombre} — ${u?.rol}`);
+    return `${u?.nombre} — ${u?.rol}`;
   }
 
   // ---------- Configuración general: agrupada por categoría, con «Seleccionar todo» ----------
@@ -1521,7 +1608,10 @@ export class ConfiguracionComponent {
     return this.data.itemsConfiguracionF0302(c).filter((s) => (s.categoria || 'Otros') === categoria);
   }
   protected estadoSelAllCat(c: ConfiguracionF0302, categoria: string): 'todos' | 'ninguno' | 'parcial' {
-    const items = this.itemsCategoria(c, categoria);
+    // Los ítems «No aplica» no cuentan: el «Seleccionar todo» no los toca, así que incluirlos
+    // dejaría la casilla en indeterminado para siempre aunque todo lo demás esté hecho.
+    const items = this.itemsCategoria(c, categoria).filter((s) => s.estado !== 'No aplica');
+    if (!items.length) return 'ninguno';
     const marcados = items.filter((s) => s.estado === 'Realizado').length;
     if (marcados === 0) return 'ninguno';
     if (marcados === items.length) return 'todos';

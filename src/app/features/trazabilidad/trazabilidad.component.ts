@@ -541,6 +541,36 @@ interface FilaTraza {
                 </span>
               }
 
+              <!-- Ítems del F0302 que quedaron fuera: qué no se configuró en este equipo y por qué -->
+              @if (noAplicaEq().length) {
+                <div class="sec-title mt-3">Ítems de la Configuración F0302 marcados como No aplica</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead>
+                      <tr><th>Expediente único</th><th>Ítem</th><th>Estado</th><th>Justificación</th><th>Técnico de configuración</th><th>Fecha y hora</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (x of noAplicaEq(); track x.expediente + x.item.nombre) {
+                        <tr>
+                          <td class="mono">{{ x.expedienteUnico || x.expediente }}
+                            <div class="sub-cell">Configuración F0302</div>
+                          </td>
+                          <td class="main-cell">{{ x.item.nombre }}</td>
+                          <td><ui-badge estado="No aplica" /></td>
+                          <td>{{ x.item.justificacionNoAplica || 'Sin justificar' }}</td>
+                          <td>{{ (x.item.noAplicaPor || x.tecnico).split('—')[0].trim() }}</td>
+                          <td class="mono">{{ x.item.fechaNoAplica || '—' }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <span class="hint">
+                  Un ítem marcado <b>No aplica</b> no exige imagen de evidencia, pero sí motivo escrito: sin él, la
+                  Configuración F0302 no se finaliza.
+                </span>
+              }
+
               <!-- Garantía del equipo: de qué responde, desde cuándo y quién movió las fechas -->
               @if (garantiaEq(); as g) {
                 <div class="sec-title mt-3">Garantía del equipo</div>
@@ -1323,6 +1353,22 @@ export class TrazabilidadComponent {
   protected readonly casosGarantiaEq = computed(() => {
     const d = this.detalle();
     return d ? this.data.casosGarantiaDeEquipo(d.equipo.inventario) : [];
+  });
+
+  /**
+   * Ítems del F0302 de este equipo que quedaron como «No aplica», con su motivo. Se recorren todas
+   * las configuraciones del equipo —no solo la vigente—: si un ciclo anterior dejó el Agente DLP
+   * fuera, eso pertenece al historial del equipo tanto como lo que sí se hizo.
+   */
+  protected readonly noAplicaEq = computed(() => {
+    const d = this.detalle();
+    if (!d) return [];
+    return this.data.configuraciones()
+      .filter((c) => c.datos.inventario === d.equipo.inventario)
+      .flatMap((c) => this.data.itemsNoAplicaF0302(c).map((item) => ({
+        item, expediente: c.expediente, tecnico: c.tecnico,
+        expedienteUnico: this.data.expedienteUnicoDe(c.expediente)?.codigoUnico ?? ''
+      })));
   });
 
   /** Garantía vigente del equipo del detalle, con su tipo, sus fechas y sus modificaciones. */

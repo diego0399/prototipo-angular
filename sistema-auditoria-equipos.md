@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 63)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 64)**.
 
 ---
 
@@ -2753,6 +2753,34 @@ Expediente único.
       rutas más el JSON del catálogo) y **153 casos, 0 fallos**, más las veintiocho baterías
       anteriores (2538 casos, 0 fallos; se actualizaron siete aserciones de la ronda 62, que
       comprobaban lo contrario de lo que ahora corresponde). **Sin recorrido manual de clics.**
+64. **«No aplica» con justificación obligatoria en el Agente DLP y el Ingreso a dominio del
+    checklist F0302** (2026-08-09, novena sesión del día).
+    * El checklist solo admitía pendiente o hecho. Para esos dos ítems eso obliga a mentir cuando
+      el equipo no los necesita —uno aislado de la red, uno en revisión—: o queda pendiente para
+      siempre y bloquea el cierre, o se marca como hecho algo que no se hizo. Ahora tienen **tres
+      estados** y «No aplica» **exige motivo escrito**.
+    * **Solo esos dos ítems** lo admiten (`admiteNoAplicaF0302`); el resto sigue con casilla. La
+      distinción vive en el servicio, no en la pantalla, y tolera mayúsculas.
+    * **Qué exige cada estado**: Agente DLP completado → imagen obligatoria (la regla de siempre);
+      No aplica → justificación, **sin imagen**. Ingreso a dominio completado → validación normal;
+      No aplica → justificación. La justificación se valida **antes** que la captura, porque «No
+      aplica» ya excluye al ítem de exigirla, y el botón de adjuntar desaparece.
+    * **Un mensaje por ítem**, no uno genérico: uno obligaría a mirar la pantalla para saber cuál
+      de los dos falta.
+    * **Motivos sugeridos, no elegidos**: los cinco de cada ítem se copian al campo con un clic,
+      pero ninguno se selecciona solo — la justificación tiene que ser una afirmación de quien
+      configura, no un valor por omisión.
+    * **Dos protecciones que el ajuste no pedía**: «Seleccionar todo» **no pisa** un «No aplica»
+      (habría volteado el DLP a Realizado y borrado su justificación de paso), y salir de «No
+      aplica» **retira** la justificación, que dejaría de explicar nada.
+    * **El documento F0302** saca los ítems «No aplica» del bloque de controles con evidencia y
+      les da el suyo, con el motivo y quién lo registró. El **historial técnico** estrena su
+      bloque, recorriendo **todas** las configuraciones del equipo, no solo la vigente.
+    * Cuatro eventos nuevos y dos campos nuevos en el evento (`itemChecklist`, `estadoItem`).
+    * Verificado con `npm run build` limpio (7.489 s, 0 errores), `ng serve` (HTTP 200 en diez
+      rutas) y **119 casos, 0 fallos** —con espejo de las ocho puertas del cierre—, más las
+      veintinueve baterías anteriores (2691 casos, 0 fallos; **ninguna necesitó ajuste**: la regla
+      es aditiva). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

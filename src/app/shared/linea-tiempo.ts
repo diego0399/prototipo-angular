@@ -46,7 +46,11 @@ const PRINCIPALES = [
   // Vigencia de la garantía: de qué responde el equipo, desde cuándo, y cada vez que se movió.
   /garantía de proveedor (asignada|pendiente|vencida|calculada)/i, /responsabilidad interna de soporte asignada/i,
   /fecha de garantía modificada/i, /tipo de garantía modificado/i,
-  /fecha de adquisición obtenida/i
+  /fecha de adquisición obtenida/i,
+  // Un control de seguridad que se salta pertenece a la historia del equipo tanto como uno que se
+  // aplica: el «No aplica» y su justificación no se esconden en el detalle.
+  /marcado como no aplica/i, /ítem\(s\) no aplica justificados/i,
+  /intento de finalizar f0302 sin justificación/i
 ];
 
 /**
@@ -291,6 +295,7 @@ export class LineaTiempoComponent {
       ['Técnico de configuración', e.tecnicoConfiguracion],
       ['Estado en Controles', e.estadoControles],
       ['Descargo', e.descargo], ['Acción posterior', e.accionPosterior],
+      ['Ítem del checklist', e.itemChecklist], ['Estado del ítem', e.estadoItem],
       ['Tipo de garantía', e.tipoGarantia], ['Fecha de adquisición', e.fechaAdquisicion],
       ['Fecha de aceptación', e.fechaAceptacion],
       ['Inicio anterior', e.inicioAnterior], ['Vencimiento anterior', e.vencimientoAnterior],

@@ -395,10 +395,29 @@ interface FilaDoc {
                   @for (x of caps; track x.item.nombre) {
                     <dt>{{ x.item.nombre }}</dt>
                     <dd>
-                      {{ x.item.estado === 'Realizado' ? 'Configurado' : x.item.estado }}
+                      {{ x.item.estado === 'Realizado' ? 'Completado' : x.item.estado }}
                       @if (x.evidencia; as ev) {
-                        · evidencia: {{ ev.archivo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}
-                      } @else if (x.item.evidencia) { · evidencia: {{ x.item.evidencia }} }
+                        · evidencia asociada: {{ ev.archivo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}
+                      } @else if (x.item.evidencia) { · evidencia asociada: {{ x.item.evidencia }} }
+                    </dd>
+                  }
+                </dl>
+              </div>
+            }
+            <!-- Lo que quedó fuera del checklist, con su motivo: el documento tiene que decir qué
+                 no se hizo y por qué, no solo lo que sí se hizo. -->
+            @if (f.tipo === 'F0302' && noAplicaDoc(); as fuera) {
+              <div class="mt-2">
+                <b>Ítems marcados como No aplica</b>
+                <dl class="dl mt-1">
+                  @for (s of fuera; track s.nombre) {
+                    <dt>{{ s.nombre }}</dt>
+                    <dd>
+                      No aplica
+                      <div class="small muted">Justificación: {{ s.justificacionNoAplica }}</div>
+                      @if (s.noAplicaPor) {
+                        <div class="small muted">Registrado por {{ s.noAplicaPor.split('—')[0].trim() }} · {{ s.fechaNoAplica }}</div>
+                      }
                     </dd>
                   }
                 </dl>
@@ -784,9 +803,20 @@ export class DocumentosComponent {
   protected readonly capturasDoc = computed(() => {
     const c = this.conf();
     if (!c) return undefined;
-    const items = this.data.softwareChecklistF0302(c).filter((s) => s.requiereEvidencia);
+    // Un ítem «No aplica» no va aquí: no tiene evidencia que mostrar y su lugar es el bloque de
+    // abajo, con su justificación.
+    const items = this.data.softwareChecklistF0302(c)
+      .filter((s) => s.requiereEvidencia && s.estado !== 'No aplica');
     if (items.length === 0) return undefined;
     return items.map((s) => ({ item: s, evidencia: c.evidencias.find((e) => e.item === s.nombre && e.archivo) }));
+  });
+
+  /** Ítems del F0302 que quedaron como «No aplica», con su motivo, para el documento generado. */
+  protected readonly noAplicaDoc = computed(() => {
+    const c = this.conf();
+    if (!c) return undefined;
+    const fuera = this.data.itemsNoAplicaF0302(c);
+    return fuera.length ? fuera : undefined;
   });
 
   /**
