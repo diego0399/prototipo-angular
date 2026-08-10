@@ -13,7 +13,8 @@ const MOTIVOS: MotivoDescargo[] = [
   'Cambio de usuario', 'Cambio de equipo', 'Devolución', 'Reasignación', 'Falla', 'Garantía', 'Finalización de uso', 'Otro'
 ];
 const ACCIONES: AccionPosteriorDescargo[] = [
-  'Reingresar a Hardware', 'Enviar a nueva preparación', 'Dejar pendiente de revisión', 'Marcar como no disponible', 'Preparar para reasignación'
+  'Reingresar a Hardware', 'Enviar a nueva preparación', 'Dejar pendiente de revisión',
+  'Marcar como no disponible', 'Preparar para reasignación', 'Enviar a garantía', 'Otro'
 ];
 
 /**
@@ -30,6 +31,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
     .resumen-eq .eq-datos { font-size: 12.5px; color: var(--tx-2); margin-top: 3px; }
+    .valida-desc { display: grid; gap: 4px; margin: 14px 0 0; }
   `,
   template: `
     <div class="page">
@@ -49,11 +51,26 @@ const ACCIONES: AccionPosteriorDescargo[] = [
           <span class="alert-ico">!</span>
           <span>
             <b>No tiene permisos para registrar descargos.</b> Esta acción corresponde al
-            <b>Técnico de Soporte</b> asignado al equipo.
-            @if (esEncargadoSoporte()) { El Encargado de Soporte puede supervisar y consultar los descargos registrados. }
+            <b>Técnico de Soporte responsable de la Dirección/Unidad</b> donde el equipo está activo,
+            al Encargado de Soporte o al Administrador.
             La pantalla se muestra en modo consulta.
           </span>
         </div>
+      }
+
+      <!-- El equipo pertenece a una Dirección/Unidad: el descargo lo saca de su inventario activo -->
+      @if (equipoSel(); as inv) {
+        @if (bloqueo(); as b) {
+          <div class="alert warn mb-2">
+            <span class="alert-ico">!</span>
+            <span>
+              <b>{{ b }}</b>
+              @if (soporteResponsable()) {
+                <div>Soporte responsable de este equipo: <b>{{ soporteResponsable().split('—')[0].trim() }}</b>.</div>
+              }
+            </span>
+          </div>
+        }
       }
 
       <div class="card mb-3">
@@ -79,6 +96,15 @@ const ACCIONES: AccionPosteriorDescargo[] = [
                         {{ e.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · inventario {{ e.inventario }} · {{ e.condicion.toLowerCase() }}
                       </div>
                       <div class="eq-datos">Usuario final: <b>{{ usuarioFinal() }}</b></div>
+                      @if (control(); as c) {
+                        <div class="eq-datos">
+                          Activo en <b>{{ c.direccion }} / {{ c.unidad }}</b> desde el {{ c.fechaAceptacion }}
+                        </div>
+                        <div class="eq-datos">
+                          Soporte responsable:
+                          <b>{{ c.soporteResponsable ? c.soporteResponsable.split('—')[0].trim() : 'sin asignar' }}</b>
+                        </div>
+                      }
                     </div>
                     <button class="btn btn-outline btn-sm" (click)="abrirBusqueda()" [disabled]="!puedeRegistrar()">Cambiar equipo</button>
                   </div>
@@ -114,7 +140,11 @@ const ACCIONES: AccionPosteriorDescargo[] = [
               <select class="control" [(ngModel)]="accionPosterior" [disabled]="!puedeRegistrar()">
                 @for (a of acciones; track a) { <option [value]="a">{{ a }}</option> }
               </select>
-              <span class="hint">«Reingresar a Hardware» y «Enviar a nueva preparación» registran automáticamente un nuevo ingreso a Hardware.</span>
+              <span class="hint">
+                «Reingresar a Hardware» y «Enviar a nueva preparación» registran automáticamente un nuevo ingreso a Hardware.
+                El equipo quedará como <b>{{ estadoTras().gestion }}</b> en Gestión de Equipos y
+                <b>{{ estadoTras().controles }}</b> en Controles.
+              </span>
             </div>
 
             <div class="field">
@@ -127,11 +157,33 @@ const ACCIONES: AccionPosteriorDescargo[] = [
               <input class="control" readonly [value]="responsableTxt()" />
             </div>
 
+            <!-- El descargo administrativo no lo hace quien tenía el equipo a cargo: exige motivo -->
+            @if (esAdministrativo()) {
+              <div class="field full">
+                <label>Motivo administrativo del descargo <span class="req">*</span></label>
+                <textarea class="control" rows="2" [(ngModel)]="motivoAdministrativo"
+                  placeholder="Por qué lo registra el Encargado de Soporte o el Administrador y no el soporte responsable…"
+                  [disabled]="!puedeRegistrar()"></textarea>
+                <span class="hint">Queda en la trazabilidad como acción realizada por {{ rolTxt() }}.</span>
+              </div>
+            }
+
             <div class="field full">
               <label>Observaciones</label>
               <textarea class="control" rows="2" placeholder="Motivo detallado, condiciones de la devolución…" [(ngModel)]="observaciones" [disabled]="!puedeRegistrar()"></textarea>
             </div>
           </div>
+
+          <!-- Las cinco comprobaciones del inicio del descargo, con su estado -->
+          @if (equipoSel()) {
+            <div class="valida-desc">
+              @for (v of validaciones(); track v.texto) {
+                <p class="chk" [class.ok]="v.ok" [class.pend]="!v.ok">
+                  <ui-icon [name]="v.ok ? 'check' : 'clock'" [size]="14" /> {{ v.texto }}
+                </p>
+              }
+            </div>
+          }
 
           <!-- Imagen del estado físico: sin ella el descargo no se registra -->
           @if (equipoSel(); as inv) {
@@ -152,7 +204,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
         </div>
         <div class="card-foot">
           <span class="small muted" style="margin-right: auto;">El descargo cierra la asignación vigente sin borrar el historial del equipo.</span>
-          <button class="btn btn-primary btn-lg" (click)="registrar()" [disabled]="!puedeRegistrar() || !equipoSel()">Registrar descargo</button>
+          <button class="btn btn-primary btn-lg" (click)="registrar()" [disabled]="!puedeRegistrar() || !equipoSel() || !!bloqueo()">Registrar descargo</button>
         </div>
       </div>
 
@@ -209,17 +261,38 @@ export class DescargoComponent {
   protected accionPosterior = signal<AccionPosteriorDescargo>('Reingresar a Hardware');
   protected estadoFisico = signal('');
   protected observaciones = signal('');
+  protected motivoAdministrativo = signal('');
 
   protected buscarAbierto = signal(false);
 
   protected readonly rol = computed(() => this.auth.usuario()?.clave ?? '');
-  /** Solo el Técnico de Soporte (o el Administrador) registra descargos. */
-  protected readonly puedeRegistrar = computed(() => this.rol() === 'tec-soporte' || this.auth.esAdmin());
-  protected readonly esEncargadoSoporte = computed(() => this.rol() === 'enc-soporte');
+  /**
+   * Registran descargos el Técnico de Soporte responsable de la Dirección/Unidad, el Encargado de
+   * Soporte y el Administrador (§19). El Encargado de Soporte ya no solo supervisa: puede
+   * descargar, pero con motivo administrativo obligatorio.
+   */
+  protected readonly puedeRegistrar = computed(() =>
+    this.rol() === 'tec-soporte' || this.rol() === 'enc-soporte' || this.auth.esAdmin());
+  /** El descargo lo registra alguien distinto del soporte responsable: exige motivo. */
+  protected readonly esAdministrativo = computed(() => this.rol() === 'enc-soporte' || this.auth.esAdmin());
+  protected readonly rolTxt = computed(() => this.auth.usuario()?.rol ?? '');
   protected readonly responsableTxt = computed(() => {
     const u = this.auth.usuario();
     return u ? `${u.nombre} — ${u.rol}` : '—';
   });
+
+  /** Ficha del equipo en Controles: dice a qué Dirección/Unidad pertenece y quién le da soporte. */
+  protected readonly control = computed(() =>
+    this.equipoSel() ? this.data.controlActivoDe(this.equipoSel()) : undefined);
+  protected readonly soporteResponsable = computed(() =>
+    this.equipoSel() ? this.data.soporteResponsableDeEquipo(this.equipoSel()) : '');
+  /** Motivo por el que este usuario no puede descargar este equipo; '' si puede. */
+  protected readonly bloqueo = computed(() =>
+    this.equipoSel() ? this.data.bloqueoDescargo(this.equipoSel()) : '');
+  protected readonly validaciones = computed(() =>
+    this.equipoSel() ? this.data.validacionesDescargo(this.equipoSel()) : []);
+  /** Cómo quedará el equipo según la acción posterior elegida. */
+  protected readonly estadoTras = computed(() => this.data.estadoTrasDescargo(this.accionPosterior()));
 
   protected readonly equipo = computed<Equipo | undefined>(() =>
     this.equipoSel() ? this.data.equipoDe(this.equipoSel()) : undefined
@@ -233,9 +306,10 @@ export class DescargoComponent {
   });
 
   /**
-   * Equipos con asignación vigente: candidatos a descargo. El Técnico de Soporte solo ve los
-   * equipos relacionados con su asignación operativa (donde participa como técnico de
-   * configuración, responsable de entrega, etc.); Encargado de Soporte y Administrador ven todos.
+   * Equipos con asignación vigente: candidatos a descargo. El Técnico de Soporte solo ve los de
+   * las Direcciones/Unidades que atiende —que es exactamente lo que puede descargar—; Encargado de
+   * Soporte y Administrador ven todos. Se conserva la participación en el proceso como alternativa
+   * para los equipos que aún no tienen ficha en Controles ni Dirección/Unidad reconocible.
    */
   protected readonly opciones = computed<FilaEquipoAsignado[]>(() => {
     const lista = this.data.equipos()
@@ -245,7 +319,10 @@ export class DescargoComponent {
     const nombre = this.auth.usuario()?.nombre ?? '';
     return lista.filter((f) => {
       const asig = this.data.asignacionDeEquipo(f.inventario);
-      return !!asig && this.data.participaEnProceso(asig.expediente, nombre);
+      if (!asig) return false;
+      const { direccion, unidad } = this.data.dirUnidadDeSolicitud(asig.expediente);
+      if (direccion && unidad) return this.data.atiendeDireccionUnidad(this.responsableTxt(), direccion, unidad);
+      return this.data.participaEnProceso(asig.expediente, nombre);
     });
   });
 
@@ -298,30 +375,37 @@ export class DescargoComponent {
 
   protected registrar(): void {
     if (!this.puedeRegistrar()) {
-      this.toast.error('Acción no permitida', 'No tiene permisos para registrar descargos. Esta acción corresponde al Técnico de Soporte asignado al equipo.');
+      this.toast.error('Acción no permitida',
+        'No tiene permisos para registrar descargos. Corresponde al Técnico de Soporte responsable de la Dirección/Unidad, al Encargado de Soporte o al Administrador.');
       return;
     }
     if (!this.equipoSel()) {
       this.toast.warn('Seleccione el equipo', 'Busque y seleccione un equipo con asignación vigente.');
       return;
     }
+    const dirUnidad = this.control();
     const resultado = this.data.registrarDescargo({
       inventario: this.equipoSel(),
       motivoDescargo: this.motivo(),
       responsableRegistro: this.responsableTxt(),
       estadoFisico: this.estadoFisico().trim(),
       observaciones: this.observaciones().trim(),
-      accionPosterior: this.accionPosterior()
+      accionPosterior: this.accionPosterior(),
+      motivoAdministrativo: this.motivoAdministrativo().trim()
     });
     if (typeof resultado === 'string') {
       this.toast.error('No se puede registrar el descargo', resultado);
       return;
     }
-    this.toast.ok('Descargo registrado', `El equipo ${resultado.inventario} quedó descargado (${resultado.accionPosterior}).`);
+    this.toast.ok('Descargo registrado',
+      dirUnidad
+        ? `El equipo ${resultado.inventario} salió del inventario activo de ${dirUnidad.direccion} / ${dirUnidad.unidad} (${resultado.accionPosterior}).`
+        : `El equipo ${resultado.inventario} quedó descargado (${resultado.accionPosterior}).`);
     this.equipoSel.set('');
     this.motivo.set('Cambio de usuario');
     this.accionPosterior.set('Reingresar a Hardware');
     this.estadoFisico.set('');
     this.observaciones.set('');
+    this.motivoAdministrativo.set('');
   }
 }

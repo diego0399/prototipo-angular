@@ -1,0 +1,36 @@
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-YTLYYMUZ.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m258.93 kB[39m[2m | [22m               [36m47.68 kB[39m
+[32mchunk-TWO4TJ5X.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m172.42 kB[39m[2m | [22m               [36m49.94 kB[39m
+[32mchunk-TMTLEKIX.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m88.79 kB[39m[2m | [22m               [36m22.43 kB[39m
+[32mstyles-Z675L23S.css[39m[2m | [22m[2mstyles[22m                      [2m | [22m [36m16.40 kB[39m[2m | [22m                [36m3.71 kB[39m
+[32mmain-WODUVSN5.js[39m   [2m | [22m[2mmain[22m                        [2m | [22m [36m14.88 kB[39m[2m | [22m                [36m4.37 kB[39m
+[32mchunk-MLQ65INV.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m4.27 kB[39m[2m | [22m                [36m1.36 kB[39m
+[32mchunk-A6K3YOU2.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m2.28 kB[39m[2m | [22m              [36m665 bytes[39m
+[32mchunk-KL52AAL4.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m511 bytes[39m[2m | [22m              [36m511 bytes[39m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m               [2m | [22m[1m[93m558.49 kB[39m[22m[2m | [22m              [1m130.67 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-3662FSUD.js[39m  [2m | [22m[2mconfiguracion-component[22m     [2m | [22m [36m88.09 kB[39m[2m | [22m               [36m19.45 kB[39m
+[32mchunk-RPF56HIT.js[39m  [2m | [22m[2mtrazabilidad-component[22m      [2m | [22m [36m75.13 kB[39m[2m | [22m               [36m16.62 kB[39m
+[32mchunk-LXA3ZDU2.js[39m  [2m | [22m[2mexpediente-unico-component[22m  [2m | [22m [36m58.41 kB[39m[2m | [22m               [36m13.66 kB[39m
+[32mchunk-FSIKNQGX.js[39m  [2m | [22m[2mdocumentos-component[22m        [2m | [22m [36m47.72 kB[39m[2m | [22m               [36m11.22 kB[39m
+[32mchunk-VJBAEZUZ.js[39m  [2m | [22m[2masignacion-component[22m        [2m | [22m [36m46.60 kB[39m[2m | [22m               [36m10.50 kB[39m
+[32mchunk-HGVZWKN3.js[39m  [2m | [22m[2mpreparacion-component[22m       [2m | [22m [36m45.53 kB[39m[2m | [22m               [36m10.97 kB[39m
+[32mchunk-TH3KL4AW.js[39m  [2m | [22m[2mreprocesos-component[22m        [2m | [22m [36m45.13 kB[39m[2m | [22m               [36m11.21 kB[39m
+[32mchunk-OYGQRBLP.js[39m  [2m | [22m[2minventario-component[22m        [2m | [22m [36m44.97 kB[39m[2m | [22m               [36m10.61 kB[39m
+[32mchunk-5URAVQ5J.js[39m  [2m | [22m[2mentrega-component[22m           [2m | [22m [36m38.58 kB[39m[2m | [22m                [36m9.66 kB[39m
+[32mchunk-LR45S4VS.js[39m  [2m | [22m[2mgarantia-component[22m          [2m | [22m [36m35.75 kB[39m[2m | [22m                [36m8.65 kB[39m
+[32mchunk-SFS5XWRU.js[39m  [2m | [22m[2mdashboard-component[22m         [2m | [22m [36m32.38 kB[39m[2m | [22m                [36m7.54 kB[39m
+[32mchunk-CKTLNK2J.js[39m  [2m | [22m[2mexpediente-tecnico-component[22m[2m | [22m [36m31.01 kB[39m[2m | [22m                [36m8.33 kB[39m
+[32mchunk-C4CFNIEX.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m26.15 kB[39m[2m | [22m                [36m5.90 kB[39m
+[32mchunk-RAB6EKBV.js[39m  [2m | [22m[2mcatalogo-software-component[22m [2m | [22m [36m21.64 kB[39m[2m | [22m                [36m5.80 kB[39m
+[32mchunk-NZO7VWLK.js[39m  [2m | [22m[2mdescargo-component[22m          [2m | [22m [36m16.23 kB[39m[2m | [22m                [36m4.86 kB[39m
+[2m...and 14 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [5.390 seconds] - 2026-08-10T02:09:38.964Z
+
+Output location: C:\projects\claude\analisis\prototipo-angular\dist\prototipo-angular
+

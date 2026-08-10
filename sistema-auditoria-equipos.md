@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 60)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 61)**.
 
 ---
 
@@ -2660,6 +2660,38 @@ Expediente único.
     * Verificado con `npm run build` limpio (6.296 s, 0 errores), `ng serve` (HTTP 200 en diez
       rutas) y **153 casos, 0 fallos**, más las veinticuatro baterías anteriores (1857 casos, 0
       fallos; se actualizaron las de las rondas 52 y 53). **Sin recorrido manual de clics.**
+61. **El equipo pertenece a una Dirección/Unidad desde que el usuario final firma; inventario
+    operativo de Controles y distribución de soportes** (2026-08-09, sexta sesión del día).
+    * **El momento exacto**: la pertenencia se registra en la aceptación de la conformidad y en
+      ningún paso anterior. `registrarPertenencia` es privado y tiene **una sola llamada** en todo
+      el sistema. Antes de la firma el equipo está en proceso de entrega, no es de nadie.
+    * **No se tocó el Inventario de Hardware**: sin campo «Unidad responsable», sigue siendo
+      técnico y previo a la entrega. Solo dos métodos escriben en el inventario de Controles.
+    * **Distribución de Soportes por Dirección/Unidad** (pantalla nueva, la gestionan Encargado de
+      Soporte y Administrador): relación N–N, ocho asignaciones semilla que cubren **las siete
+      Direcciones/Unidades con requerimientos** —si alguna quedara sin responsable, sus
+      requerimientos no podrían crear Expediente único—. Una asignación **nunca se borra**: se
+      desactiva, y no puede desactivarse la última de una Dirección/Unidad con equipos activos.
+    * **Técnico de Configuración filtrado**: el modal «Seleccionar Técnico de Configuración» solo
+      muestra a los responsables de la Dirección/Unidad del requerimiento; los demás **no
+      aparecen**. Pero el filtro no es la regla: `crearExpedienteUnico` consulta
+      `bloqueoExpedienteUnico` y se niega igual, muestre lo que muestre la pantalla.
+    * **Siete validaciones** antes de crear el Expediente único, con el mensaje exacto cuando el
+      técnico no pertenece a la Dirección/Unidad y cuando no hay ninguno.
+    * **Inventario operativo de Controles** (pantalla nueva, de consulta): entran solo los equipos
+      aceptados y salen con el descargo. Las fichas de los ya aceptados **se derivan de sus
+      garantías**, que solo existen tras la firma: no se inventó ninguna pertenencia.
+    * **Descargo**: lo registran el soporte responsable de esa Dirección/Unidad, el Encargado de
+      Soporte y el Administrador; Hardware no, y un soporte de otra Dirección/Unidad tampoco. El
+      descargo administrativo exige motivo. El equipo sale **automáticamente** del inventario
+      activo y de Controles, sin acción manual adicional, y la ficha se cierra conservando usuario
+      final, Dirección y Unidad anteriores. Siete acciones posteriores mapeadas a sus estados.
+    * **Historial y trazabilidad**: bloque «Pertenencia a Dirección/Unidad e inventario de
+      Controles», once eventos nuevos y siete campos nuevos en el evento.
+    * Verificado con `npm run build` limpio (9.756 s, 0 errores), `ng serve` (HTTP 200 en once
+      rutas más el JSON de la distribución) y **282 casos, 0 fallos**, más las veintiséis baterías
+      anteriores (2010 casos, 0 fallos; se actualizó la del Expediente único). **Sin recorrido
+      manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

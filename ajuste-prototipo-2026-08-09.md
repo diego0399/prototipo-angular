@@ -720,3 +720,218 @@ src/app/features/trazabilidad/…             (bloque de garantías y revisiones
 src/app/features/generador-documentos/…     (la constancia nueva en el catálogo)
 src/app/shared/linea-tiempo.ts              (caso de garantía en el detalle; hitos nuevos)
 ```
+
+---
+
+# Parte 6 — El equipo pertenece a una Dirección/Unidad desde que el usuario final firma
+
+**Fecha:** 9 de agosto de 2026, sexta sesión del día (ronda 61 del punto de control)
+**Alcance:** la distribución de soportes, el Expediente único, la aceptación del usuario final, el
+descargo, el nuevo inventario operativo de Controles, el historial técnico y la trazabilidad.
+
+## 1. El momento exacto
+
+Un equipo no pertenece a una Dirección/Unidad porque se ingresó al inventario, ni porque se asignó,
+ni porque se le creó un Expediente único. Pertenece desde que **el usuario final firma la
+conformidad**:
+
+```text
+Ingreso a Hardware · Expediente técnico · F0288 · Asignación · Expediente único · F0302 · Entrega
+        ── el equipo está en proceso de entrega ──
+
+Formulario de conformidad aceptado
+        ── desde aquí el equipo es de la Dirección/Unidad ──
+```
+
+En ese instante y en ninguno antes, `registrarPertenencia` deja registrado a qué Dirección y a qué
+Unidad pertenece, quién es su soporte responsable y lo incorpora al inventario operativo de
+Controles. Es un método privado con **una sola llamada** en todo el sistema: la rama de aceptación
+de `responderConformidad`.
+
+## 2. El Inventario de Hardware no cambió
+
+No se agregó ningún campo `Unidad responsable` al ingreso. El Inventario de Hardware sigue siendo
+técnico y previo a la entrega, que es lo que corresponde: en ese momento el equipo todavía no es de
+nadie. Lo comprueban seis casos de la batería, incluido que solo dos métodos escriben en Controles.
+
+## 3. Distribución de Soportes por Dirección/Unidad
+
+Catálogo nuevo, con pantalla propia. La gestionan **el Encargado de Soporte y el Administrador**;
+el Técnico de Soporte la consulta para ver qué atiende.
+
+```text
+Wendy Carranza  → Gerencia de Tecnología · Registro de la Propiedad
+                  Registro de Comercio · RPRH
+Mateo Martínez  → Dirección de Registro · Registro de la Propiedad · IGN · ISPI
+```
+
+Un técnico atiende varias Direcciones/Unidades y una Dirección/Unidad puede tener varios técnicos
+—Registro de la Propiedad tiene dos, que es justo el ejemplo del pedido—. La semilla cubre las
+**siete Direcciones/Unidades** que tienen requerimientos: si alguna se quedara sin responsable, sus
+requerimientos no podrían crear Expediente único, y eso habría roto flujos que hoy funcionan.
+
+Una asignación **nunca se borra**: se desactiva. Los equipos aceptados mientras estuvo vigente
+siguen apuntando a ella. Y no se puede desactivar la última de una Dirección/Unidad que tiene
+equipos activos: quedarían sin nadie a quien reclamarle el soporte. Si quedan otros responsables,
+los equipos pasan al primero de ellos, con su evento en la trazabilidad.
+
+## 4. El Técnico de Configuración ya no se elige de una lista global
+
+El modal se llama **Seleccionar Técnico de Configuración** y muestra únicamente a los responsables
+de la Dirección/Unidad del requerimiento, con su Dirección/Unidad atendida, carga, configuraciones
+activas y disponibilidad. Los demás no aparecen deshabilitados: **no aparecen**.
+
+Y cuando no hay ninguno:
+
+```text
+No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento.
+Debe configurar la distribución de soportes antes de crear el Expediente único.
+```
+
+Ese aviso sale en el paso 3, sin obligar a abrir el modal para descubrirlo, con acceso directo a la
+distribución.
+
+**El filtro no es la regla.** La puerta vive en el servicio: `crearExpedienteUnico` consulta
+`bloqueoExpedienteUnico` y devuelve `null` si el técnico no atiende esa Dirección/Unidad, con
+independencia de lo que la pantalla haya mostrado. Filtrar es una comodidad.
+
+## 5. Las siete validaciones
+
+```text
+Solicitud seleccionada
+Solicitud tiene equipo asignado
+Equipo asignado tiene F0288 finalizado y firmado
+Expediente técnico está completado
+Técnico de configuración seleccionado
+Técnico de configuración pertenece a la Dirección/Unidad del requerimiento
+No existe Expediente único previo para esa solicitud
+```
+
+El checklist del paso 3 ganó su sexta línea y el resumen muestra ahora la Dirección y la Unidad
+solicitantes. Si el técnico no corresponde, el mensaje es el del pedido, no un genérico.
+
+## 6. Inventario operativo de Controles
+
+Pantalla nueva, **de consulta**: nada se teclea ahí. Los equipos entran con la aceptación y salen
+con el descargo.
+
+```text
+Activos            inventario · equipo · usuario final · dirección · unidad
+                   soporte responsable · fecha de aceptación · estado
+Ficha              expediente único · requerimiento · serie · técnico de configuración
+                   garantía · estado en controles · estado en Gestión de Equipos
+Descargados        usuario final anterior · dirección anterior · unidad anterior
+                   quién descargó · fecha · motivo · acción posterior · estado
+```
+
+Las fichas de los equipos ya aceptados en el set de datos se **derivan de sus garantías**, que solo
+existen después de la firma. No se inventó ninguna pertenencia: se refleja la que el expediente ya
+registraba. Un equipo pendiente de aceptación no aparece.
+
+## 7. El descargo ahora sabe de quién era el equipo
+
+```text
+Puede descargar    el Técnico de Soporte responsable de esa Dirección/Unidad
+                   el Encargado de Soporte
+                   el Administrador
+
+No puede           el Técnico de Hardware
+                   el Encargado de Hardware
+                   un Técnico de Soporte de otra Dirección/Unidad
+```
+
+El Técnico de Soporte solo ve en el buscador los equipos de las Direcciones/Unidades que atiende, y
+si llega a uno que no le corresponde, el mensaje es explícito y el botón queda deshabilitado. El
+intento bloqueado queda en la trazabilidad.
+
+El **descargo administrativo** —el que hace el Encargado de Soporte o el Administrador— exige motivo
+obligatorio, porque no lo registra quien tenía el equipo a cargo y sin motivo el historial no
+explicaría por qué.
+
+Las cinco comprobaciones del pedido se muestran con su estado, no de a una.
+
+## 8. Qué pasa al descargar
+
+El equipo sale **automáticamente** del inventario activo de su Dirección/Unidad y de Controles. No
+hay una acción manual adicional. La ficha no se borra: se cierra, conservando usuario final,
+Dirección y Unidad anteriores.
+
+```text
+Reingresar a Hardware        → Controles: Descargado
+                               Gestión:   Reingresado a Hardware
+Enviar a nueva preparación   → Controles: Descargado
+                               Gestión:   Reingresado a Hardware para nueva preparación
+Dejar pendiente de revisión  → Controles: Descargado / Pendiente de revisión
+                               Gestión:   Pendiente de revisión
+Preparar para reasignación   → Controles: Descargado
+                               Gestión:   Disponible para nueva asignación
+Marcar como no disponible    → Controles: Descargado / No disponible
+                               Gestión:   No disponible
+Enviar a garantía            → Controles: Descargado / En garantía
+                               Gestión:   Enviado a garantía
+Otro                         → Controles: Descargado
+                               Gestión:   Descargado
+```
+
+Se conservaron los nombres que ya tenía el módulo y se añadieron los dos que faltaban del pedido —
+«Enviar a garantía» y «Otro»—. La pantalla anticipa cómo quedará el equipo antes de registrar.
+
+La evidencia visual del estado físico ya era obligatoria desde la ronda 54 y sigue siéndolo, con el
+mismo mensaje y los mismos formatos.
+
+## 9. Historial y trazabilidad
+
+El historial técnico del equipo estrena el bloque **Pertenencia a Dirección/Unidad e inventario de
+Controles**: una fila por cada ciclo en que perteneció a alguien, con la aceptación, la
+Dirección/Unidad, el usuario final, el técnico de configuración, el soporte responsable, el descargo
+con su motivo y acción posterior, y el estado.
+
+Once eventos nuevos —desde «equipo asociado a Dirección/Unidad» y «soporte responsable determinado»
+hasta «retirado del inventario operativo activo de Controles» y «acción posterior al descargo
+registrada»— con siete campos nuevos en el evento: dirección, unidad, soporte responsable, técnico
+de configuración, estado en Controles, descargo y acción posterior. La línea de tiempo los muestra y
+trata la entrada y la salida de la pertenencia como hitos, no como detalle.
+
+## 10. Casos de prueba
+
+**282 casos, 0 fallos**, con espejos funcionales de lo que puede fallar en silencio: la relación N–N
+de la distribución; que ninguna Dirección/Unidad con requerimientos se quede sin responsable; el
+filtro del Técnico de Configuración en cinco escenarios, incluido que ningún Técnico de Hardware ni
+ningún Encargado se cuele; la tabla completa de permisos del descargo en siete escenarios; el mapeo
+de las siete acciones posteriores a sus catorce estados; y qué expedientes están hoy en Controles.
+
+Regresiones: las veintiséis baterías anteriores, **2010 casos, 0 fallos**. Se actualizó una —la del
+Expediente único— por el nombre del modal, la columna de Dirección/Unidad atendida y el sexto
+requisito del checklist.
+
+## 11. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [9.756 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en once rutas, incluidas las dos nuevas, y en el JSON de la distribución.
+
+**No hubo clics reales en un navegador.** El recorrido nuevo —configurar la distribución, crear el
+Expediente único con el filtro puesto, aceptar la conformidad y ver aparecer el equipo en Controles,
+descargarlo y verlo salir— está verificado por código y por espejos, nunca ejecutado a mano.
+
+## 12. Archivos tocados
+
+```text
+src/app/core/models/models.ts                          (DistribucionSoporte, EquipoControles,
+                                                        EstadoControles; dos acciones posteriores
+                                                        nuevas; siete campos en el evento)
+src/app/core/services/data.service.ts                  (distribuciones y controles; CRUD de la
+                                                        distribución; tecnicosConfiguracionDe;
+                                                        validaciones y bloqueo del Expediente único;
+                                                        registrarPertenencia; bloqueoDescargo y
+                                                        validacionesDescargo; estadoTrasDescargo;
+                                                        retirarDeControles)
+src/app/features/administracion/distribucion-soportes…  (pantalla nueva)
+src/app/features/administracion/inventario-controles…   (pantalla nueva, de consulta)
+src/app/features/expediente-unico/…                    (modal filtrado y validaciones)
+src/app/features/descargo/…                            (permisos, validaciones, motivo
+                                                        administrativo, acciones posteriores)
+src/app/features/trazabilidad/…                        (bloque de pertenencia y Controles)
+src/app/core/config/permisos.ts · app.routes.ts        (dos módulos nuevos)
+src/app/shared/linea-tiempo.ts                         (siete campos y dos hitos nuevos)
+public/assets/data/distribucion-soportes.json          (semilla: ocho asignaciones)
+```

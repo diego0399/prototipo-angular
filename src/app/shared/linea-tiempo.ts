@@ -38,7 +38,9 @@ const PRINCIPALES = [
   /corrección f0302 (iniciada|finalizada|firmada)/i, /marcado como no conforme/i,
   // Garantía con revisión técnica: la decisión de mandar el equipo a Hardware y su desenlace.
   /garantía requiere revisión de hardware/i, /revisión técnica de garantía (generada|finalizada)/i,
-  /garantía (validada por soporte|requiere sustitución)/i, /caso devuelto a soporte/i
+  /garantía (validada por soporte|requiere sustitución)/i, /caso devuelto a soporte/i,
+  // Pertenencia a Dirección/Unidad: cuándo el equipo pasó a ser de una y cuándo dejó de serlo.
+  /asociado a /i, /retirado del inventario activo/i
 ];
 
 /**
@@ -278,6 +280,11 @@ export class LineaTiempoComponent {
       ['Corrección', e.correccion], ['Intento de conformidad', e.intentoConformidad],
       ['Reproceso', e.reproceso], ['Origen del reproceso', e.origenReproceso],
       ['Caso de garantía', e.garantia],
+      ['Dirección', e.direccion], ['Unidad', e.unidad],
+      ['Soporte responsable', e.soporteResponsable],
+      ['Técnico de configuración', e.tecnicoConfiguracion],
+      ['Estado en Controles', e.estadoControles],
+      ['Descargo', e.descargo], ['Acción posterior', e.accionPosterior],
       ['Reportó (Soporte)', e.tecnicoReporta], ['Técnico de Hardware', e.tecnicoHardware],
       ['Encargado que asignó', e.encargadoAsigno], ['Resultado del reproceso', e.resultadoReproceso],
       ['Firma registrada', e.firmaRegistrada], ['Acción tomada', e.accionTomada],

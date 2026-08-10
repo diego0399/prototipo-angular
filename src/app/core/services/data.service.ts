@@ -4,7 +4,7 @@ import { forkJoin } from 'rxjs';
 import {
   AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, ContextoEvidencia, CorreccionNoConformidad, Cronometro, Descargo,
-  DetalleFallaF0302, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
+  DetalleFallaF0302, DistribucionSoporte, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EquipoControles, EstadoControles, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
   EstadoAsignacionEquipo, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
@@ -67,6 +67,17 @@ export class DataService {
    */
   readonly reprocesos = signal<ReprocesoF0288[]>([]);
   /**
+   * Distribución de Soportes por Dirección/Unidad: catálogo administrado por el Encargado de
+   * Soporte. De él salen los técnicos elegibles como Técnico de Configuración de un requerimiento
+   * y el soporte responsable que queda registrado cuando el usuario final acepta el equipo.
+   */
+  readonly distribuciones = signal<DistribucionSoporte[]>([]);
+  /**
+   * Inventario operativo del proyecto de Controles. Un equipo entra aquí **solo** cuando el
+   * usuario final acepta la conformidad, y sale (sin borrarse) cuando se registra su descargo.
+   */
+  readonly controles = signal<EquipoControles[]>([]);
+  /**
    * Base de datos institucional simulada que se consulta por número de inventario al ingresar
    * un equipo. Es solo lectura: no se persiste en localStorage ni se reinicia con la demo,
    * porque representa un sistema externo a SISGOST.
@@ -124,6 +135,12 @@ export class DataService {
         this.http.get<SoftwareCatalogo[]>('assets/data/catalogo-software.json')
           .subscribe((c) => this.catalogoSoftware.set(this.normalizarCatalogoSoftware(c)));
       }
+      // La distribución de soportes también viaja en la foto; una foto anterior a esta regla no
+      // la trae, y sin ella no habría técnicos elegibles para ninguna Dirección/Unidad.
+      if (this.distribuciones().length === 0) {
+        this.http.get<DistribucionSoporte[]>('assets/data/distribucion-soportes.json')
+          .subscribe((d) => this.distribuciones.set(d));
+      }
       this.asegurarIntentosDeConformidades();
       this.listo.set(true);
       return;
@@ -146,6 +163,7 @@ export class DataService {
       ingresos: json<IngresoHardware[]>('ingresos-hardware'),
       descargos: json<Descargo[]>('descargos'),
       reprocesos: json<ReprocesoF0288[]>('reprocesos-f0288'),
+      distribuciones: json<DistribucionSoporte[]>('distribucion-soportes'),
       catalogoSoftware: json<SoftwareCatalogo[]>('catalogo-software')
     }).subscribe((r) => {
       this.usuarios.set(r.usuarios);
@@ -164,7 +182,12 @@ export class DataService {
       this.ingresosHardware.set(r.ingresos);
       this.descargos.set(r.descargos);
       this.reprocesos.set(this.normalizarReprocesos(r.reprocesos ?? []));
+      this.distribuciones.set(r.distribuciones ?? []);
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(r.catalogoSoftware));
+      // El inventario de Controles no tiene JSON semilla: se deriva de las aceptaciones que el
+      // set de datos ya trae. No se inventa ninguna pertenencia — solo entran los equipos cuyo
+      // usuario final firmó la conformidad, que es exactamente la regla del módulo.
+      this.controles.set(this.controlesDeAceptacionesPrevias([]));
       // No hay JSON semilla de intentos/correcciones: el flujo de no conformidad se genera
       // durante la demostración y se conserva luego en localStorage. Se siembra un intento
       // inicial por cada conformidad ya existente para que el estado de aceptación sea coherente.
@@ -234,6 +257,8 @@ export class DataService {
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(this.normalizarCorrecciones(d.correcciones ?? []));
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
+      this.distribuciones.set(d.distribuciones ?? []);
+      this.controles.set(this.controlesDeAceptacionesPrevias(d.controles ?? []));
       this.evid.hidratar(this.evidenciasDeFallasSembradas(d.evidencias ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
@@ -257,6 +282,7 @@ export class DataService {
         ingresosHardware: this.ingresosHardware(), descargos: this.descargos(),
         intentos: this.intentos(), correcciones: this.correcciones(),
         reprocesos: this.reprocesos(),
+        distribuciones: this.distribuciones(), controles: this.controles(),
         // Las imágenes de evidencia viven en su propio servicio, pero se guardan con el resto del
         // estado: si no, se perderían al recargar y los cierres validados quedarían sin respaldo.
         evidencias: this.evid.lista(),
@@ -1360,6 +1386,15 @@ export class DataService {
   private nombreConectado(): string {
     return this.auth.usuario()?.nombre ?? '';
   }
+  /** Rol del usuario conectado, tal como se muestra («Técnico de Soporte»). */
+  rolConectado(): string {
+    return this.auth.usuario()?.rol ?? '';
+  }
+  /** Usuario conectado en el formato «Nombre — Rol» con el que se guardan los responsables. */
+  usuarioConectadoTexto(): string {
+    const u = this.auth.usuario();
+    return u ? `${u.nombre} — ${u.rol}` : '';
+  }
   private esTecnicoConectado(): boolean {
     const c = this.claveConectada();
     return c === 'tec-soporte' || c === 'tec-hardware';
@@ -1968,6 +2003,8 @@ export class DataService {
   registrarDescargo(datos: {
     inventario: string; motivoDescargo: MotivoDescargo; responsableRegistro: string;
     estadoFisico: string; observaciones: string; accionPosterior: AccionPosteriorDescargo;
+    /** Obligatorio cuando descarga el Encargado de Soporte o el Administrador (§27). */
+    motivoAdministrativo?: string;
   }): string | Descargo {
     const eq = this.equipoDe(datos.inventario);
     if (!eq) return 'No se encontró el equipo indicado.';
@@ -1975,6 +2012,24 @@ export class DataService {
     if (!asig) return 'Este equipo no tiene una asignación vigente: no hay nada que descargar.';
     if (this.estadoAceptacion(asig.expediente) !== 'Aceptado' || !this.garantiaDe(asig.expediente)) {
       return 'No se puede registrar el descargo: el equipo debe tener la aceptación del usuario final y la garantía habilitada.';
+    }
+    // Quien descarga debe ser el soporte responsable de la Dirección/Unidad donde el equipo está
+    // activo, el Encargado de Soporte o el Administrador (§18/§19).
+    const bloqueo = this.bloqueoDescargo(datos.inventario);
+    if (bloqueo) {
+      this.registrarEvento(asig.expediente, datos.responsableRegistro,
+        'Intento de descargo por un usuario que no es el soporte responsable', 'Descargo bloqueado',
+        bloqueo, false,
+        { modulo: 'Descargo', inventario: datos.inventario, usuarioFinal: asig.usuarioFinal,
+          rol: this.rolConectado(), soporteResponsable: this.soporteResponsableDeEquipo(datos.inventario) });
+      return bloqueo;
+    }
+    // El descargo administrativo (Encargado de Soporte o Administrador) exige motivo: el equipo
+    // no lo devuelve quien lo tenía a cargo, y sin motivo el historial no explicaría por qué.
+    const administrativo = this.claveConectada() === 'enc-soporte' || this.claveConectada() === 'admin';
+    const motivoAdministrativo = (datos.motivoAdministrativo ?? '').trim();
+    if (administrativo && !motivoAdministrativo) {
+      return 'Debe indicar el motivo administrativo del descargo: lo registra el Encargado de Soporte o el Administrador, no el soporte responsable del equipo.';
     }
 
     // El descargo no se registra sin una imagen del estado físico: es lo que respalda en qué
@@ -1995,23 +2050,39 @@ export class DataService {
       idDescargo: codigo, inventario: datos.inventario, asignacionRelacionada: asig.expediente,
       usuarioFinalEntrega: asig.usuarioFinal, responsableRegistro: datos.responsableRegistro,
       fechaDescargo: this.hoy(), motivoDescargo: datos.motivoDescargo,
-      estadoFisico: datos.estadoFisico, observaciones: datos.observaciones,
+      estadoFisico: datos.estadoFisico,
+      observaciones: administrativo
+        ? `${datos.observaciones} Motivo administrativo: ${motivoAdministrativo}`.trim()
+        : datos.observaciones,
       expedienteUnicoAnterior: expUnico?.codigoUnico,
       accionPosterior: datos.accionPosterior, encargadoDestino: this.responsableOperativo(eq),
       estado: 'Procesado'
     };
     this.descargos.update((list) => [nuevo, ...list]);
+    this.registrarEvento(asig.expediente, datos.responsableRegistro,
+      `Descargo ${codigo} iniciado sobre el equipo ${datos.inventario}`, 'Descargo iniciado',
+      administrativo ? `Descargo administrativo. Motivo: ${motivoAdministrativo}` : '', false,
+      { modulo: 'Descargo', inventario: datos.inventario, usuarioFinal: asig.usuarioFinal,
+        rol: this.rolConectado(), descargo: codigo, motivo: datos.motivoDescargo,
+        soporteResponsable: this.soporteResponsableDeEquipo(datos.inventario) });
 
     // Cierra la asignación vigente (sin borrarla): es el mecanismo central del ciclo múltiple.
     this.asignaciones.update((list) =>
       list.map((a) => (a.expediente === asig.expediente ? { ...a, vigente: false, estado: 'Descargada' } : a)));
 
     this.registrarEvento(asig.expediente, datos.responsableRegistro,
-      `Equipo ${datos.inventario} descargado del usuario final por el Técnico de Soporte (${datos.motivoDescargo})`,
-      'Descargado', datos.observaciones, true,
-      { modulo: 'Descargo', estadoAnterior: 'Asignado', inventario: datos.inventario, usuarioFinal: asig.usuarioFinal });
+      administrativo
+        ? `Equipo ${datos.inventario} descargado del usuario final por el ${this.rolConectado()} (${datos.motivoDescargo})`
+        : `Equipo ${datos.inventario} descargado del usuario final por el soporte responsable (${datos.motivoDescargo})`,
+      'Descargado', nuevo.observaciones, true,
+      { modulo: 'Descargo', estadoAnterior: 'Asignado', inventario: datos.inventario,
+        usuarioFinal: asig.usuarioFinal, rol: this.rolConectado(), descargo: codigo,
+        soporteResponsable: this.soporteResponsableDeEquipo(datos.inventario) });
     this.registrarCierreConEvidencia('Descargo', datos.inventario, asig.expediente,
       datos.responsableRegistro, datos.inventario);
+    // Salida automática del inventario activo de la Dirección/Unidad y de Controles: no requiere
+    // ninguna acción manual adicional (§26).
+    this.retirarDeControles(nuevo, motivoAdministrativo);
 
     // Cierra como histórico todo el ciclo anterior: nunca se reutiliza para uno nuevo.
     if (tec && tec.estado !== 'Cerrado') {
@@ -2080,6 +2151,511 @@ export class DataService {
   direccionDe(tecnicoTexto: string): string {
     if (!tecnicoTexto) return '';
     return this.usuarios().find((u) => tecnicoTexto.includes(u.nombre))?.direccionAsignada ?? '';
+  }
+
+  // ---------- Distribución de Soportes por Dirección/Unidad ----------
+  /**
+   * Mensajes de las tres puertas que abre esta distribución. Se guardan aquí y no en las
+   * pantallas porque la regla es del proceso: quien decide es el servicio, la pantalla solo la
+   * enuncia, y así el texto no se duplica entre el modal, la validación y el bloqueo.
+   */
+  readonly MSG_SIN_DISTRIBUCION =
+    'No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento. Debe configurar la distribución de soportes antes de crear el Expediente único.';
+  readonly MSG_TECNICO_FUERA_DIRECCION =
+    'El Técnico de Configuración seleccionado no está asignado a la Dirección/Unidad de este requerimiento. Seleccione un técnico responsable de esa Dirección/Unidad.';
+  readonly MSG_DESCARGO_FUERA_DIRECCION =
+    'Este equipo pertenece a una Dirección/Unidad que no está asignada a este Técnico de Soporte. Solo el soporte responsable, el Encargado de Soporte o el Administrador pueden registrar este descargo.';
+
+  /** Compara Dirección/Unidad sin que un espacio o una mayúscula de más cambie el resultado. */
+  private claveDirUnidad(direccion: string, unidad: string): string {
+    return `${(direccion || '').trim().toLowerCase()}|${(unidad || '').trim().toLowerCase()}`;
+  }
+
+  /**
+   * Direcciones/Unidades del catálogo, tomadas de los requerimientos y de la distribución ya
+   * registrada. No se teclean aparte: la Dirección/Unidad la define el requerimiento (§4), así
+   * que inventar un catálogo propio sería crear una segunda verdad que se desincroniza sola.
+   */
+  direccionesUnidades(): { direccion: string; unidad: string }[] {
+    const mapa = new Map<string, { direccion: string; unidad: string }>();
+    for (const s of this.solicitudes()) {
+      if (!s.direccionGerencia || !s.unidadDestino) continue;
+      mapa.set(this.claveDirUnidad(s.direccionGerencia, s.unidadDestino),
+        { direccion: s.direccionGerencia, unidad: s.unidadDestino });
+    }
+    for (const d of this.distribuciones()) {
+      mapa.set(this.claveDirUnidad(d.direccion, d.unidad), { direccion: d.direccion, unidad: d.unidad });
+    }
+    return [...mapa.values()].sort((a, b) =>
+      a.direccion.localeCompare(b.direccion) || a.unidad.localeCompare(b.unidad));
+  }
+
+  /** Asignaciones vigentes de una Dirección/Unidad (las desactivadas quedan solo en el historial). */
+  distribucionesDe(direccion: string, unidad: string): DistribucionSoporte[] {
+    const clave = this.claveDirUnidad(direccion, unidad);
+    return this.distribuciones().filter((d) => d.activo && this.claveDirUnidad(d.direccion, d.unidad) === clave);
+  }
+
+  /** Técnicos de Soporte responsables de una Dirección/Unidad, en formato «Nombre — Rol». */
+  tecnicosDeDireccionUnidad(direccion: string, unidad: string): string[] {
+    return this.distribucionesDe(direccion, unidad).map((d) => d.tecnico);
+  }
+
+  /** Direcciones/Unidades que atiende un técnico (§6: «Ver Direcciones/Unidades atendidas»). */
+  direccionesDeTecnico(tecnico: string): DistribucionSoporte[] {
+    if (!tecnico) return [];
+    const nombre = tecnico.split('—')[0].trim();
+    return this.distribuciones().filter((d) => d.activo && d.tecnico.includes(nombre));
+  }
+
+  /** ¿Este técnico está en la distribución vigente de esa Dirección/Unidad? */
+  atiendeDireccionUnidad(tecnico: string, direccion: string, unidad: string): boolean {
+    if (!tecnico) return false;
+    const nombre = tecnico.split('—')[0].trim();
+    return this.distribucionesDe(direccion, unidad).some((d) => d.tecnico.includes(nombre));
+  }
+
+  /**
+   * Soporte responsable de una Dirección/Unidad. Si el técnico que configuró el equipo atiende
+   * esa Dirección/Unidad, es él: ya conoce el equipo y no tiene sentido pasárselo a otro. Si no,
+   * el primero de la distribución vigente.
+   */
+  soporteResponsableDe(direccion: string, unidad: string, preferido = ''): string {
+    const lista = this.distribucionesDe(direccion, unidad);
+    if (!lista.length) return '';
+    if (preferido) {
+      const nombre = preferido.split('—')[0].trim();
+      const propio = lista.find((d) => d.tecnico.includes(nombre));
+      if (propio) return propio.tecnico;
+    }
+    return lista[0].tecnico;
+  }
+
+  /** Solo el Encargado de Soporte y el Administrador gestionan la distribución (§6). */
+  puedeGestionarDistribucion(): boolean {
+    const clave = this.claveConectada();
+    return clave === 'enc-soporte' || clave === 'admin';
+  }
+
+  /** Registra que un Técnico de Soporte atiende una Dirección/Unidad. */
+  asignarDistribucion(datos: { direccion: string; unidad: string; tecnico: string; observacion: string },
+    usuario: string): string | DistribucionSoporte {
+    if (!this.puedeGestionarDistribucion()) {
+      return 'Solo el Encargado de Soporte o el Administrador pueden gestionar la distribución de soportes.';
+    }
+    if (!datos.direccion.trim() || !datos.unidad.trim()) return 'Debe indicar la Dirección y la Unidad.';
+    if (!datos.tecnico) return 'Debe seleccionar el Técnico de Soporte responsable.';
+    const usuarioTec = this.usuarios().find((u) => datos.tecnico.includes(u.nombre));
+    if (!usuarioTec || usuarioTec.clave !== 'tec-soporte') {
+      return 'La distribución solo admite Técnicos de Soporte: Hardware no atiende Direcciones/Unidades.';
+    }
+    if (usuarioTec.estado === 'Inactivo') return 'No se puede asignar un técnico inactivo.';
+    if (this.atiendeDireccionUnidad(datos.tecnico, datos.direccion, datos.unidad)) {
+      return `${usuarioTec.nombre} ya atiende ${datos.direccion} / ${datos.unidad}.`;
+    }
+    const nuevo: DistribucionSoporte = {
+      id: this.siguienteCodigoPorAnio(`DIST-${this.anioActual()}-`, this.distribuciones().map((d) => d.id)),
+      direccion: datos.direccion.trim(), unidad: datos.unidad.trim(), tecnico: datos.tecnico,
+      asignadoPor: usuario, fecha: this.hoy(), hora: this.hora(), activo: true,
+      observacion: datos.observacion.trim()
+    };
+    this.distribuciones.update((list) => [nuevo, ...list]);
+    this.registrarEvento(nuevo.id, usuario,
+      `${usuarioTec.nombre} asignado como Técnico de Soporte de ${nuevo.direccion} / ${nuevo.unidad}`,
+      'Activa', nuevo.observacion, false,
+      { modulo: 'Distribución de soportes', direccion: nuevo.direccion, unidad: nuevo.unidad,
+        soporteResponsable: nuevo.tecnico, rol: this.rolConectado() });
+    return nuevo;
+  }
+
+  /** Cambia el técnico o la observación de una asignación vigente (§6: «Modificar distribución»). */
+  modificarDistribucion(id: string, cambios: { tecnico?: string; observacion?: string }, usuario: string): string | null {
+    if (!this.puedeGestionarDistribucion()) {
+      return 'Solo el Encargado de Soporte o el Administrador pueden gestionar la distribución de soportes.';
+    }
+    const actual = this.distribuciones().find((d) => d.id === id);
+    if (!actual) return 'No se encontró la asignación indicada.';
+    if (!actual.activo) return 'La asignación está desactivada: no puede modificarse.';
+    const tecnico = cambios.tecnico ?? actual.tecnico;
+    const usuarioTec = this.usuarios().find((u) => tecnico.includes(u.nombre));
+    if (!usuarioTec || usuarioTec.clave !== 'tec-soporte') {
+      return 'La distribución solo admite Técnicos de Soporte: Hardware no atiende Direcciones/Unidades.';
+    }
+    if (tecnico !== actual.tecnico && this.atiendeDireccionUnidad(tecnico, actual.direccion, actual.unidad)) {
+      return `${usuarioTec.nombre} ya atiende ${actual.direccion} / ${actual.unidad}.`;
+    }
+    this.distribuciones.update((list) => list.map((d) => (d.id === id
+      ? { ...d, tecnico, observacion: cambios.observacion ?? d.observacion } : d)));
+    this.registrarEvento(id, usuario,
+      `Distribución de ${actual.direccion} / ${actual.unidad} modificada`, 'Activa',
+      tecnico === actual.tecnico ? 'Observación actualizada.'
+        : `Responsable anterior: ${actual.tecnico}. Responsable nuevo: ${tecnico}.`, false,
+      { modulo: 'Distribución de soportes', direccion: actual.direccion, unidad: actual.unidad,
+        soporteResponsable: tecnico, rol: this.rolConectado() });
+    return null;
+  }
+
+  /**
+   * Desactiva una asignación. Nunca se borra: los equipos aceptados mientras estuvo vigente
+   * siguen apuntando a ella, y borrarla dejaría su historial señalando a un responsable que el
+   * sistema ya no sabría nombrar.
+   */
+  desactivarDistribucion(id: string, usuario: string, motivo: string): string | null {
+    if (!this.puedeGestionarDistribucion()) {
+      return 'Solo el Encargado de Soporte o el Administrador pueden gestionar la distribución de soportes.';
+    }
+    const actual = this.distribuciones().find((d) => d.id === id);
+    if (!actual) return 'No se encontró la asignación indicada.';
+    if (!actual.activo) return 'La asignación ya está desactivada.';
+    if (!motivo.trim()) return 'Debe indicar el motivo por el que se desactiva la asignación.';
+    const activos = this.controlesActivos()
+      .filter((c) => this.claveDirUnidad(c.direccion, c.unidad) === this.claveDirUnidad(actual.direccion, actual.unidad)
+        && c.soporteResponsable === actual.tecnico);
+    const quedan = this.distribucionesDe(actual.direccion, actual.unidad).filter((d) => d.id !== id);
+    if (activos.length && !quedan.length) {
+      return `No se puede desactivar: ${actual.direccion} / ${actual.unidad} tiene ${activos.length} equipo(s) activo(s) y quedaría sin ningún Técnico de Soporte responsable.`;
+    }
+    this.distribuciones.update((list) => list.map((d) => (d.id === id
+      ? { ...d, activo: false, desactivadaPor: usuario, fechaDesactivacion: this.hoy(),
+          observacion: `${d.observacion} Desactivada: ${motivo.trim()}`.trim() }
+      : d)));
+    // Los equipos activos que apuntaban a este técnico pasan al responsable que queda vigente:
+    // un equipo en uso nunca puede quedarse sin nadie a quien reclamarle el soporte.
+    if (activos.length && quedan.length) {
+      const nuevo = quedan[0].tecnico;
+      for (const c of activos) {
+        this.controles.update((list) => list.map((x) => (x.inventario === c.inventario && x.expediente === c.expediente
+          ? { ...x, soporteResponsable: nuevo } : x)));
+        this.registrarEvento(c.expediente, usuario,
+          `Soporte responsable determinado tras desactivar la distribución anterior`, c.estado,
+          `${c.inventario}: de ${actual.tecnico} a ${nuevo}.`, false,
+          { modulo: 'Distribución de soportes', inventario: c.inventario, direccion: c.direccion,
+            unidad: c.unidad, soporteResponsable: nuevo, expedienteUnico: c.expedienteUnico });
+      }
+    }
+    this.registrarEvento(id, usuario,
+      `Distribución de ${actual.direccion} / ${actual.unidad} desactivada (${actual.tecnico.split('—')[0].trim()})`,
+      'Desactivada', motivo.trim(), false,
+      { modulo: 'Distribución de soportes', estadoAnterior: 'Activa', direccion: actual.direccion,
+        unidad: actual.unidad, soporteResponsable: actual.tecnico, rol: this.rolConectado() });
+    return null;
+  }
+
+  // ---------- Técnico de Configuración según Dirección/Unidad ----------
+  /** Dirección y Unidad del requerimiento: es de donde salen, nunca de una selección manual (§4). */
+  dirUnidadDeSolicitud(id: string): { direccion: string; unidad: string } {
+    const s = this.solicitud(id);
+    return { direccion: s?.direccionGerencia ?? '', unidad: s?.unidadDestino ?? '' };
+  }
+
+  /**
+   * Técnicos elegibles como Técnico de Configuración de un requerimiento: los de la distribución
+   * vigente de SU Dirección/Unidad, activos y con su carga a la vista. Un técnico que no atiende
+   * esa Dirección/Unidad no aparece — no se muestra deshabilitado, no aparece.
+   */
+  tecnicosConfiguracionDe(id: string): {
+    usuario: UsuarioSistema; nombreRol: string; configuraciones: number; procesos: number;
+    total: number; carga: string; disponibilidad: string; direccionUnidad: string;
+  }[] {
+    const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
+    if (!direccion || !unidad) return [];
+    const responsables = this.tecnicosDeDireccionUnidad(direccion, unidad);
+    return this.tecnicosSoporteConCarga()
+      .filter((t) => responsables.some((r) => r.includes(t.usuario.nombre)))
+      .map((t) => ({ ...t, direccionUnidad: direccion === unidad ? direccion : `${direccion} / ${unidad}` }));
+  }
+
+  /**
+   * Las siete condiciones que deben cumplirse antes de crear el Expediente único (§11). Se
+   * devuelven todas con su estado —no solo la primera que falla— para que la pantalla muestre
+   * qué falta sin obligar a descubrirlo de a una.
+   */
+  validacionesExpedienteUnico(id: string, tecnicoConfiguracion: string): { texto: string; ok: boolean }[] {
+    const s = this.solicitud(id);
+    const asig = this.asignacionDe(id);
+    const inventario = asig?.equipoInventario ?? '';
+    const tec = inventario ? this.expTecnicoDeEquipo(inventario) : undefined;
+    const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
+    const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
+    return [
+      { texto: 'Solicitud seleccionada', ok: !!s },
+      { texto: 'Solicitud tiene equipo asignado', ok: !!inventario },
+      { texto: 'Equipo asignado tiene F0288 finalizado y firmado',
+        ok: !!tec && tec.estado === 'Preparado' && (!prep || (prep.estado === 'Completada' && prep.firma?.estado === 'Firmado')) },
+      { texto: 'Expediente técnico está completado', ok: tec?.estado === 'Preparado' },
+      { texto: 'Técnico de configuración seleccionado', ok: !!tecnicoConfiguracion },
+      { texto: 'Técnico de configuración pertenece a la Dirección/Unidad del requerimiento',
+        ok: !!tecnicoConfiguracion && this.atiendeDireccionUnidad(tecnicoConfiguracion, direccion, unidad) },
+      { texto: 'No existe Expediente único previo para esa solicitud', ok: !this.expedienteUnicoDe(id) }
+    ];
+  }
+
+  /**
+   * Motivo por el que NO se puede crear el Expediente único, o '' si se puede. Es la puerta que
+   * consulta `crearExpedienteUnico`: la pantalla muestra el mismo texto que aplica el servicio.
+   */
+  bloqueoExpedienteUnico(id: string, tecnicoConfiguracion: string): string {
+    const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
+    if (!direccion || !unidad) return 'El requerimiento no tiene Dirección ni Unidad solicitante registradas.';
+    if (!this.tecnicosDeDireccionUnidad(direccion, unidad).length) return this.MSG_SIN_DISTRIBUCION;
+    if (!tecnicoConfiguracion) return 'Debe seleccionar el Técnico de Configuración.';
+    if (!this.atiendeDireccionUnidad(tecnicoConfiguracion, direccion, unidad)) return this.MSG_TECNICO_FUERA_DIRECCION;
+    const pendientes = this.validacionesExpedienteUnico(id, tecnicoConfiguracion).filter((v) => !v.ok);
+    if (pendientes.length) return `Falta: ${pendientes.map((v) => v.texto.toLowerCase()).join('; ')}.`;
+    return '';
+  }
+
+  // ---------- Inventario operativo de Controles ----------
+  /** Ficha vigente del equipo en Controles (la del ciclo actual), esté activa o ya descargada. */
+  controlDe(inventario: string): EquipoControles | undefined {
+    return this.controles().find((c) => c.inventario === inventario);
+  }
+  /** Ficha del equipo solo si sigue activo en su Dirección/Unidad. */
+  controlActivoDe(inventario: string): EquipoControles | undefined {
+    const c = this.controlDe(inventario);
+    return c?.estado === 'Activo en Dirección/Unidad' ? c : undefined;
+  }
+  /** Equipos activos en alguna Dirección/Unidad: lo que cuenta para los controles mensuales. */
+  controlesActivos(): EquipoControles[] {
+    return this.controles().filter((c) => c.estado === 'Activo en Dirección/Unidad');
+  }
+  /** Equipos activos de una Dirección (todas sus unidades). */
+  controlesDeDireccion(direccion: string): EquipoControles[] {
+    const d = direccion.trim().toLowerCase();
+    return this.controlesActivos().filter((c) => c.direccion.trim().toLowerCase() === d);
+  }
+  /** Equipos activos bajo un Técnico de Soporte responsable. */
+  controlesDeSoporte(tecnico: string): EquipoControles[] {
+    if (!tecnico) return [];
+    const nombre = tecnico.split('—')[0].trim();
+    return this.controlesActivos().filter((c) => c.soporteResponsable.includes(nombre));
+  }
+  /** Historial completo del equipo en Controles: los ciclos activos y los ya descargados. */
+  historialControlesDe(inventario: string): EquipoControles[] {
+    return this.controles().filter((c) => c.inventario === inventario);
+  }
+  /** Técnico de Soporte responsable del equipo hoy; '' si el equipo no está activo en ninguna Dirección/Unidad. */
+  soporteResponsableDeEquipo(inventario: string): string {
+    return this.controlActivoDe(inventario)?.soporteResponsable ?? '';
+  }
+
+  /**
+   * Deriva las fichas de Controles de las aceptaciones que el set de datos ya trae. La garantía
+   * solo existe después de que el usuario final firmó, así que sirve de prueba de la aceptación:
+   * no se inventa ninguna pertenencia, solo se refleja la que el expediente ya registra. Los
+   * registros guardados ganan siempre — solo se completan los que faltan.
+   */
+  private controlesDeAceptacionesPrevias(guardados: EquipoControles[]): EquipoControles[] {
+    const resultado = [...guardados];
+    for (const g of this.garantias()) {
+      if (resultado.some((c) => c.expediente === g.expediente && c.inventario === g.inventario)) continue;
+      const ficha = this.fichaControles(g.expediente, g.inventario, g.fechaAceptacion);
+      if (!ficha) continue;
+      // Un descargo del mismo ciclo ya cerró esa pertenencia: la ficha nace descargada, no activa.
+      const desc = this.descargos().find((d) => d.inventario === g.inventario && d.asignacionRelacionada === g.expediente);
+      resultado.push(desc ? this.fichaDescargada(ficha, desc) : ficha);
+    }
+    return resultado;
+  }
+
+  /** Arma la ficha de Controles de un proceso aceptado; devuelve undefined si le falta la solicitud. */
+  private fichaControles(id: string, inventario: string, fechaAceptacion: string): EquipoControles | undefined {
+    const s = this.solicitud(id);
+    if (!s) return undefined;
+    const eq = this.equipoDe(inventario);
+    const asig = this.asignacionDe(id);
+    const tecConfig = asig?.responsablesFase?.tecnicoConfiguracion ?? '';
+    const responsable = this.soporteResponsableDe(s.direccionGerencia, s.unidadDestino, tecConfig);
+    return {
+      inventario, expediente: id,
+      expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico ?? '',
+      tipoEquipo: eq?.tipo ?? s.tipoEquipo,
+      marca: eq?.marca ?? '', modelo: eq?.modelo ?? '', serie: eq?.serie ?? '',
+      usuarioFinal: s.destinatario, correoInstitucional: s.correoDestinatario,
+      direccion: s.direccionGerencia, unidad: s.unidadDestino,
+      soporteResponsable: responsable, tecnicoConfiguracion: tecConfig,
+      fechaAceptacion, estado: 'Activo en Dirección/Unidad',
+      garantia: 'Habilitada',
+      estadoControlMensual: 'Disponible para controles mensuales',
+      estadoGestion: 'Activo en Dirección/Unidad'
+    };
+  }
+
+  /** Aplica un descargo sobre una ficha: la cierra conservando la Dirección/Unidad anterior. */
+  private fichaDescargada(ficha: EquipoControles, d: Descargo): EquipoControles {
+    const estados = this.estadoTrasDescargo(d.accionPosterior);
+    return {
+      ...ficha,
+      estado: 'Descargado de Dirección/Unidad',
+      estadoControlMensual: 'Fuera de controles activos',
+      estadoGestion: estados.gestion,
+      fechaDescargo: d.fechaDescargo, descargadoPor: d.responsableRegistro,
+      motivoDescargo: d.motivoDescargo, estadoFisicoRecibido: d.estadoFisico,
+      accionPosterior: d.accionPosterior, usuarioFinalAnterior: ficha.usuarioFinal,
+      direccionAnterior: ficha.direccion, unidadAnterior: ficha.unidad, descargo: d.idDescargo
+    };
+  }
+
+  /**
+   * Estado con el que queda el equipo en Controles y en Gestión de Equipos según la acción
+   * posterior elegida en el descargo (§21). En Controles siempre queda «Descargado»; lo que
+   * cambia es el matiz que se muestra al lado y el estado del equipo en Gestión de Equipos.
+   */
+  estadoTrasDescargo(accion: AccionPosteriorDescargo): { controles: string; gestion: string } {
+    switch (accion) {
+      case 'Reingresar a Hardware':
+        return { controles: 'Descargado', gestion: 'Reingresado a Hardware' };
+      case 'Enviar a nueva preparación':
+        return { controles: 'Descargado', gestion: 'Reingresado a Hardware para nueva preparación' };
+      case 'Dejar pendiente de revisión':
+        return { controles: 'Descargado / Pendiente de revisión', gestion: 'Pendiente de revisión' };
+      case 'Preparar para reasignación':
+        return { controles: 'Descargado', gestion: 'Disponible para nueva asignación' };
+      case 'Marcar como no disponible':
+        return { controles: 'Descargado / No disponible', gestion: 'No disponible' };
+      case 'Enviar a garantía':
+        return { controles: 'Descargado / En garantía', gestion: 'Enviado a garantía' };
+      default:
+        return { controles: 'Descargado', gestion: 'Descargado' };
+    }
+  }
+
+  /**
+   * Registra la pertenencia del equipo a su Dirección/Unidad y lo incorpora al inventario
+   * operativo de Controles. Se llama en un solo lugar —la aceptación del usuario final— porque
+   * ese es el único momento en que el equipo pasa a pertenecer a una Dirección/Unidad (§1).
+   */
+  private registrarPertenencia(id: string): void {
+    const asig = this.asignacionDe(id);
+    const inventario = asig?.equipoInventario ?? this.conformidadDeProceso(id)?.inventario ?? '';
+    if (!inventario) return;
+    if (this.controles().some((c) => c.expediente === id && c.inventario === inventario
+      && c.estado === 'Activo en Dirección/Unidad')) return;
+    const ficha = this.fichaControles(id, inventario, this.hoy());
+    if (!ficha) return;
+    this.controles.update((list) => [ficha, ...list.filter((c) => !(c.expediente === id && c.inventario === inventario))]);
+
+    const dirUni = ficha.direccion === ficha.unidad ? ficha.direccion : `${ficha.direccion} / ${ficha.unidad}`;
+    const ref = {
+      modulo: 'Inventario operativo de Controles', inventario, direccion: ficha.direccion,
+      unidad: ficha.unidad, soporteResponsable: ficha.soporteResponsable,
+      tecnicoConfiguracion: ficha.tecnicoConfiguracion, expedienteUnico: ficha.expedienteUnico,
+      usuarioFinal: ficha.usuarioFinal
+    };
+    this.registrarEvento(id, 'Sistema',
+      `Equipo ${inventario} asociado a ${dirUni}`, 'Activo en Dirección/Unidad',
+      'El equipo pertenece a la Dirección/Unidad desde la aceptación del usuario final, no antes.',
+      true, { ...ref, estadoAnterior: 'Pendiente de aceptación', estadoControles: 'Activo en Dirección/Unidad' });
+    if (ficha.soporteResponsable) {
+      this.registrarEvento(id, 'Sistema',
+        `Soporte responsable determinado: ${ficha.soporteResponsable.split('—')[0].trim()}`, 'Activo en Dirección/Unidad',
+        `Según la distribución de soportes vigente de ${dirUni}.`, false, ref);
+    } else {
+      // Sin distribución no hay a quién señalar. Se deja dicho en la trazabilidad en vez de
+      // inventar un responsable: el Encargado tiene que configurar la distribución.
+      this.registrarEvento(id, 'Sistema',
+        'Soporte responsable pendiente de determinar', 'Activo en Dirección/Unidad',
+        `${dirUni} no tiene Técnicos de Soporte en la distribución vigente.`, false, ref);
+    }
+    this.registrarEvento(id, 'Sistema',
+      `Equipo ${inventario} incorporado al inventario operativo de Controles`, 'Activo en Dirección/Unidad',
+      'Solo los equipos aceptados por el usuario final pasan a Controles.', false,
+      { ...ref, estadoControles: 'Activo en Dirección/Unidad' });
+    this.registrarEvento(id, 'Sistema',
+      'Equipo disponible para controles mensuales', 'Disponible para controles mensuales',
+      '', false, { ...ref, estadoControles: 'Activo en Dirección/Unidad' });
+  }
+
+  /**
+   * Motivo por el que este usuario NO puede registrar el descargo del equipo, o '' si puede.
+   * Pueden hacerlo el Técnico de Soporte responsable de la Dirección/Unidad donde el equipo está
+   * activo, el Encargado de Soporte y el Administrador (§19). Un Técnico de Soporte de otra
+   * Dirección/Unidad no puede, aunque sea Soporte.
+   */
+  bloqueoDescargo(inventario: string): string {
+    const clave = this.claveConectada();
+    if (clave === 'tec-hardware') {
+      return 'El Técnico de Hardware no registra descargos: el equipo está bajo la Dirección/Unidad de un Técnico de Soporte.';
+    }
+    if (clave === 'enc-hardware') {
+      return 'El Encargado de Hardware no registra descargos de equipos activos en una Dirección/Unidad.';
+    }
+    if (clave === 'enc-soporte' || clave === 'admin') return '';
+    if (clave !== 'tec-soporte') return 'No tiene permisos para registrar descargos.';
+    const control = this.controlActivoDe(inventario);
+    // Un equipo aceptado antes de que existiera el inventario de Controles no tiene ficha; en ese
+    // caso se cae a la Dirección/Unidad del requerimiento, que es la misma fuente del dato.
+    const asig = this.asignacionDeEquipo(inventario);
+    const dirUni = control
+      ? { direccion: control.direccion, unidad: control.unidad }
+      : asig ? this.dirUnidadDeSolicitud(asig.expediente) : { direccion: '', unidad: '' };
+    if (!dirUni.direccion || !dirUni.unidad) return '';
+    const yo = this.usuarioConectadoTexto();
+    return this.atiendeDireccionUnidad(yo, dirUni.direccion, dirUni.unidad) ? '' : this.MSG_DESCARGO_FUERA_DIRECCION;
+  }
+
+  /** Las cinco comprobaciones del inicio de un descargo (§18), con su estado, para mostrarlas. */
+  validacionesDescargo(inventario: string): { texto: string; ok: boolean }[] {
+    const control = this.controlActivoDe(inventario);
+    const asig = this.asignacionDeEquipo(inventario);
+    const clave = this.claveConectada();
+    const yo = this.usuarioConectadoTexto();
+    const dirUni = control ? { direccion: control.direccion, unidad: control.unidad }
+      : asig ? this.dirUnidadDeSolicitud(asig.expediente) : { direccion: '', unidad: '' };
+    return [
+      { texto: 'Equipo está activo en una Dirección/Unidad', ok: !!control || (!!asig && !!dirUni.direccion) },
+      { texto: 'Equipo tiene Usuario Final asociado', ok: !!asig?.usuarioFinal },
+      { texto: 'Equipo tiene soporte responsable asignado',
+        ok: !!(control?.soporteResponsable || this.tecnicosDeDireccionUnidad(dirUni.direccion, dirUni.unidad).length) },
+      { texto: 'El usuario que realiza el descargo es Técnico de Soporte',
+        ok: clave === 'tec-soporte' || clave === 'enc-soporte' || clave === 'admin' },
+      { texto: 'El Técnico de Soporte está asignado a esa Dirección/Unidad',
+        ok: clave !== 'tec-soporte' || this.atiendeDireccionUnidad(yo, dirUni.direccion, dirUni.unidad) }
+    ];
+  }
+
+  /**
+   * Retira el equipo del inventario activo de su Dirección/Unidad. No borra la ficha: la cierra
+   * conservando a qué Dirección/Unidad y a qué usuario final perteneció, porque el descargo no
+   * deshace la historia del equipo, la termina.
+   */
+  private retirarDeControles(d: Descargo, motivoAdministrativo: string): void {
+    const control = this.controlActivoDe(d.inventario);
+    const ficha = control ?? this.fichaControles(d.asignacionRelacionada, d.inventario, this.hoy());
+    if (!ficha) return;
+    const cerrada = this.fichaDescargada(ficha, d);
+    const estados = this.estadoTrasDescargo(d.accionPosterior);
+    this.controles.update((list) => {
+      const sinEsta = list.filter((c) => !(c.inventario === d.inventario && c.expediente === d.asignacionRelacionada));
+      return [cerrada, ...sinEsta];
+    });
+
+    const dirUni = ficha.direccion === ficha.unidad ? ficha.direccion : `${ficha.direccion} / ${ficha.unidad}`;
+    const ref = {
+      modulo: 'Inventario operativo de Controles', inventario: d.inventario,
+      direccion: ficha.direccion, unidad: ficha.unidad,
+      soporteResponsable: ficha.soporteResponsable, usuarioFinal: ficha.usuarioFinal,
+      expedienteUnico: ficha.expedienteUnico, descargo: d.idDescargo,
+      accionPosterior: d.accionPosterior
+    };
+    this.registrarEvento(d.asignacionRelacionada, d.responsableRegistro,
+      'Validación de soporte responsable realizada', 'Descargo autorizado',
+      this.claveConectada() === 'tec-soporte'
+        ? `${d.responsableRegistro.split('—')[0].trim()} atiende ${dirUni}.`
+        : `Descargo administrativo autorizado por ${this.rolConectado()}.`,
+      false, { ...ref, rol: this.rolConectado() });
+    this.registrarEvento(d.asignacionRelacionada, d.responsableRegistro,
+      `Equipo ${d.inventario} retirado del inventario activo de ${dirUni}`, 'Descargado de Dirección/Unidad',
+      `Usuario final anterior: ${ficha.usuarioFinal}. Motivo: ${d.motivoDescargo}.`, true,
+      { ...ref, estadoAnterior: 'Activo en Dirección/Unidad', estadoControles: 'Descargado de Dirección/Unidad' });
+    this.registrarEvento(d.asignacionRelacionada, d.responsableRegistro,
+      `Equipo ${d.inventario} retirado del inventario operativo activo de Controles`, estados.controles,
+      'Deja de contar en los controles mensuales; su historial se conserva.', false,
+      { ...ref, estadoAnterior: 'Disponible para controles mensuales', estadoControles: estados.controles });
+    this.registrarEvento(d.asignacionRelacionada, d.responsableRegistro,
+      `Acción posterior al descargo registrada: ${d.accionPosterior}`, estados.gestion,
+      motivoAdministrativo || d.observaciones, false,
+      { ...ref, estadoControles: estados.controles });
   }
 
   // ---------- Expediente técnico ----------
@@ -2302,6 +2878,10 @@ export class DataService {
     if (!s || !asig || !tec || tec.estado !== 'Preparado' || (prep && prep.estado !== 'Completada')) return null;
     // Una solicitud pertenece a un solo Expediente único: si ya lo tiene, no se crea otro.
     if (this.expedienteUnicoDe(id)) return null;
+    // El Técnico de Configuración debe pertenecer a la distribución de soporte de la
+    // Dirección/Unidad solicitante (§7/§11). La pantalla ya filtra el listado, pero la puerta
+    // vive aquí: filtrar es una comodidad, la regla no puede depender de qué se mostró.
+    if (this.bloqueoExpedienteUnico(id, tecnicoConfiguracion)) return null;
 
     // EXP-AÑO-CORRELATIVO: el correlativo del Expediente único también se reinicia por año.
     const codigo = this.siguienteCodigoPorAnio(
@@ -2420,6 +3000,14 @@ export class DataService {
       this.configuraciones.update((list) => [nuevaConf, ...list]);
     }
     this.setEstadoSolicitud(id, 'En configuración', 'Checklist F0302');
+    const dirUni = this.dirUnidadDeSolicitud(id);
+    this.registrarEvento(id, usuario,
+      `Técnico de configuración validado por Dirección/Unidad: ${tecnicoConfiguracion.split('—')[0].trim()}`,
+      'En configuración',
+      `Pertenece a la distribución de soporte de ${dirUni.direccion === dirUni.unidad ? dirUni.direccion : `${dirUni.direccion} / ${dirUni.unidad}`}.`,
+      false,
+      { modulo: 'Expediente único', inventario: asig.equipoInventario, expedienteUnico: codigo,
+        direccion: dirUni.direccion, unidad: dirUni.unidad, tecnicoConfiguracion, rol: this.rolConectado() });
     this.registrarEvento(id, usuario, `Expediente único ${codigo} creado; continúa la Configuración F0302`, 'En configuración',
       `Técnico de configuración: ${tecnicoConfiguracion}.`, true,
       { modulo: 'Expediente único', estadoAnterior: 'Asignada', inventario: asig.equipoInventario,
@@ -6190,6 +6778,9 @@ export class DataService {
       // El equipo entregado queda con la garantía habilitada.
       this.registrarEvento(id, 'Sistema', 'Equipo con garantía habilitada tras la aceptación del usuario final', 'Garantía habilitada',
         '', false, { modulo: 'Servicio de garantía', estadoAnterior: 'Pendiente de aceptación', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
+      // Aquí —y solo aquí— el equipo pasa a pertenecer a la Dirección/Unidad del requerimiento y
+      // entra al inventario operativo de Controles. Antes de la firma estaba en proceso de entrega.
+      this.registrarPertenencia(id);
       // Aceptación después de una inconformidad: cierra la incidencia que quedó abierta y deja
       // dicho en la trazabilidad que lo aceptado es el equipo ya corregido.
       const previa = this.correccionesDe(id).find((c) => c.intentoNumero === nIntento - 1);
@@ -6228,6 +6819,14 @@ export class DataService {
       this.registrarEvento(id, 'Sistema', 'Garantía no habilitada', 'No habilitada',
         'La garantía solo inicia con la aceptación formal del usuario final.', false,
         { modulo: 'Servicio de garantía', inventario: conf.inventario, usuarioFinal: conf.usuarioFinal });
+      // El equipo NO pasa a pertenecer a la Dirección/Unidad ni entra a Controles: una
+      // inconformidad deja el equipo en proceso de entrega, no entregado.
+      this.registrarEvento(id, 'Sistema', 'Equipo no incorporado al inventario operativo de Controles',
+        'Pendiente de aceptación',
+        'Solo los equipos aceptados por el usuario final pertenecen a una Dirección/Unidad y pasan a Controles.',
+        false, { modulo: 'Inventario operativo de Controles', inventario: conf.inventario,
+          usuarioFinal: conf.usuarioFinal, direccion: this.dirUnidadDeSolicitud(id).direccion,
+          unidad: this.dirUnidadDeSolicitud(id).unidad, estadoControles: 'No incorporado' });
       this.registrarEvento(id, 'Sistema', 'Expediente único pendiente de corrección', 'Pendiente de corrección',
         'El equipo queda pendiente de revisión; el Técnico de Soporte debe atender la no conformidad.', true,
         { modulo: 'Expediente único', estadoAnterior: 'En entrega', inventario: conf.inventario,

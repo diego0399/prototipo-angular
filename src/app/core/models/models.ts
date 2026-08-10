@@ -213,6 +213,90 @@ export interface Asignacion {
   modificaciones?: ModificacionAsignacion[];
 }
 
+/**
+ * Distribución de Soportes por Dirección/Unidad: qué Técnico de Soporte atiende cada
+ * Dirección/Unidad institucional. La gestiona el Encargado de Soporte (o el Administrador);
+ * nadie más la modifica. Un técnico puede atender varias Direcciones/Unidades y una
+ * Dirección/Unidad puede tener varios técnicos responsables.
+ *
+ * De aquí salen dos reglas del proceso: qué técnicos pueden ser Técnico de Configuración de un
+ * requerimiento (la Dirección/Unidad la pone el requerimiento, no el técnico) y quién queda como
+ * soporte responsable del equipo cuando el usuario final acepta.
+ *
+ * Nunca se borra una asignación: se desactiva (`activo: false`), porque los equipos aceptados
+ * mientras estuvo vigente siguen apuntando a ella en su historial.
+ */
+export interface DistribucionSoporte {
+  id: string;
+  direccion: string;
+  unidad: string;
+  /** Técnico de Soporte responsable, en formato «Nombre — Rol». */
+  tecnico: string;
+  /** Encargado de Soporte o Administrador que registró la distribución. */
+  asignadoPor: string;
+  fecha: string;
+  hora: string;
+  activo: boolean;
+  observacion: string;
+  /** Quién y cuándo desactivó la asignación, cuando `activo` es false. */
+  desactivadaPor?: string;
+  fechaDesactivacion?: string;
+}
+
+/**
+ * Estado del equipo dentro del inventario operativo del proyecto de Controles. Un equipo entra
+ * como «Activo en Dirección/Unidad» únicamente cuando el usuario final acepta la conformidad, y
+ * sale como «Descargado de Dirección/Unidad» cuando se registra su descargo. No hay un tercer
+ * estado: antes de la aceptación el equipo sencillamente no figura en Controles.
+ */
+export type EstadoControles = 'Activo en Dirección/Unidad' | 'Descargado de Dirección/Unidad';
+
+/**
+ * Ficha del equipo en el inventario operativo de Controles. Es el registro de **pertenencia**:
+ * dice a qué Dirección/Unidad pertenece el equipo, quién lo usa, quién le da soporte y desde
+ * cuándo. Solo se crea con la aceptación del usuario final —nunca en Inventario de Hardware, ni
+ * en la asignación, ni al crear el Expediente único— y el descargo no lo borra: lo cierra,
+ * conservando la Dirección/Unidad anterior para el historial.
+ */
+export interface EquipoControles {
+  inventario: string;
+  /** Solicitud/requerimiento que originó el proceso. */
+  expediente: string;
+  expedienteUnico: string;
+  tipoEquipo: 'Laptop' | 'Desktop';
+  marca: string;
+  modelo: string;
+  serie: string;
+  usuarioFinal: string;
+  correoInstitucional: string;
+  direccion: string;
+  unidad: string;
+  /** Técnico de Soporte responsable de la atención posterior, según la distribución vigente. */
+  soporteResponsable: string;
+  tecnicoConfiguracion: string;
+  fechaAceptacion: string;
+  estado: EstadoControles;
+  /** «Habilitada» desde la aceptación; el descargo la deja como estaba al cerrarse. */
+  garantia: string;
+  /** Disponible para controles mensuales · Fuera de controles activos. */
+  estadoControlMensual: string;
+  /** Estado equivalente en Gestión de Equipos, derivado de la acción posterior del descargo. */
+  estadoGestion: string;
+  // ---- Datos que solo existen después del descargo ----
+  fechaDescargo?: string;
+  /** Técnico de Soporte (o Encargado/Administrador) que registró el descargo. */
+  descargadoPor?: string;
+  motivoDescargo?: string;
+  estadoFisicoRecibido?: string;
+  accionPosterior?: string;
+  /** Usuario final que tenía el equipo antes del descargo. */
+  usuarioFinalAnterior?: string;
+  direccionAnterior?: string;
+  unidadAnterior?: string;
+  /** Código del descargo que retiró el equipo del inventario activo. */
+  descargo?: string;
+}
+
 /** Motivo por el que un usuario final entrega/deja de tener el equipo. */
 export type MotivoDescargo =
   | 'Cambio de usuario'
@@ -224,13 +308,18 @@ export type MotivoDescargo =
   | 'Finalización de uso'
   | 'Otro';
 
-/** Qué ocurre con el equipo inmediatamente después del descargo. */
+/**
+ * Qué ocurre con el equipo inmediatamente después del descargo. Cada valor determina el estado
+ * con que el equipo queda en Controles y en Gestión de Equipos (ver `estadoTrasDescargo`).
+ */
 export type AccionPosteriorDescargo =
   | 'Reingresar a Hardware'
   | 'Enviar a nueva preparación'
   | 'Dejar pendiente de revisión'
   | 'Marcar como no disponible'
-  | 'Preparar para reasignación';
+  | 'Preparar para reasignación'
+  | 'Enviar a garantía'
+  | 'Otro';
 
 /**
  * Descargo: el equipo deja de estar asignado a un usuario final y vuelve al flujo interno.
@@ -1596,4 +1685,18 @@ export interface EventoTrazabilidad {
   equipoNuevo?: string;
   /** Motivo de la corrección o texto de la observación administrativa. */
   motivo?: string;
+  /** Dirección solicitante a la que pertenece el equipo, en los eventos de pertenencia y descargo. */
+  direccion?: string;
+  /** Unidad solicitante a la que pertenece el equipo. */
+  unidad?: string;
+  /** Técnico de Soporte responsable de la Dirección/Unidad al momento del evento. */
+  soporteResponsable?: string;
+  /** Técnico de configuración validado contra la distribución de la Dirección/Unidad. */
+  tecnicoConfiguracion?: string;
+  /** Estado del equipo en el inventario operativo de Controles. */
+  estadoControles?: string;
+  /** Acción posterior definida al registrar el descargo. */
+  accionPosterior?: string;
+  /** Código del descargo al que pertenece el evento. */
+  descargo?: string;
 }

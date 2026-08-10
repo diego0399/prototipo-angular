@@ -541,6 +541,48 @@ interface FilaTraza {
                 </span>
               }
 
+              <!-- Pertenencia del equipo: a qué Dirección/Unidad pasó al aceptarlo y cuándo salió -->
+              @if (controlesEq().length) {
+                <div class="sec-title mt-3">Pertenencia a Dirección/Unidad e inventario de Controles</div>
+                <div class="table-wrap">
+                  <table class="tbl">
+                    <thead>
+                      <tr><th>Aceptación</th><th>Dirección</th><th>Unidad</th><th>Usuario final</th><th>Técnico de configuración</th><th>Soporte responsable</th><th>Descargo</th><th>Estado</th></tr>
+                    </thead>
+                    <tbody>
+                      @for (c of controlesEq(); track c.expediente + c.fechaAceptacion) {
+                        <tr>
+                          <td class="mono">{{ c.fechaAceptacion }}
+                            <div class="sub-cell">{{ c.expedienteUnico || c.expediente }}</div>
+                          </td>
+                          <td>{{ c.direccionAnterior || c.direccion }}</td>
+                          <td>{{ c.unidadAnterior || c.unidad }}</td>
+                          <td>{{ c.usuarioFinalAnterior || c.usuarioFinal }}</td>
+                          <td>{{ c.tecnicoConfiguracion.split('—')[0].trim() || '—' }}</td>
+                          <td>{{ c.soporteResponsable ? c.soporteResponsable.split('—')[0].trim() : '—' }}</td>
+                          <td>
+                            @if (c.fechaDescargo) {
+                              <div class="mono">{{ c.fechaDescargo }}</div>
+                              <div class="sub-cell">{{ c.motivoDescargo }} · {{ c.accionPosterior }}</div>
+                              <div class="sub-cell">Registrado por {{ (c.descargadoPor || '').split('—')[0].trim() }}</div>
+                            } @else { <span class="muted small">Sin descargo</span> }
+                          </td>
+                          <td>
+                            <ui-badge [estado]="c.estado" />
+                            <div class="sub-cell">{{ c.estadoControlMensual }}</div>
+                            @if (c.fechaDescargo) { <div class="sub-cell">{{ c.estadoGestion }}</div> }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                <span class="hint">
+                  El equipo pertenece a la Dirección/Unidad <b>solo desde la aceptación del usuario final</b>, y sale del
+                  inventario activo con el descargo. La relación histórica con la Dirección/Unidad anterior se conserva.
+                </span>
+              }
+
               <!-- Inconformidades del usuario final: cómo se resolvió cada una (spec §17) -->
               @if (inconformidadesEq().length) {
                 <div class="sec-title mt-3">Inconformidades del usuario final</div>
@@ -1214,6 +1256,16 @@ export class TrazabilidadComponent {
   protected readonly casosGarantiaEq = computed(() => {
     const d = this.detalle();
     return d ? this.data.casosGarantiaDeEquipo(d.equipo.inventario) : [];
+  });
+
+  /**
+   * Fichas del equipo en el inventario operativo de Controles: una por cada ciclo en el que
+   * perteneció a una Dirección/Unidad. Las descargadas se conservan — el descargo termina la
+   * pertenencia, no borra que existió.
+   */
+  protected readonly controlesEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.historialControlesDe(d.equipo.inventario) : [];
   });
 
   /** Revisión técnica de Hardware de un caso de garantía, si se generó. */

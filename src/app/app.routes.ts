@@ -42,6 +42,8 @@ export const routes: Routes = [
       // El Reporte final ya no es un módulo aparte: su resumen y generación viven en Expediente único.
       { path: 'reporte-final', redirectTo: 'expediente-unico' },
       { path: 'trazabilidad', loadComponent: () => import('./features/trazabilidad/trazabilidad.component').then((m) => m.TrazabilidadComponent) },
+      { path: 'inventario-controles', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/inventario-controles.component').then((m) => m.InventarioControlesComponent) },
+      { path: 'distribucion-soportes', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/distribucion-soportes.component').then((m) => m.DistribucionSoportesComponent) },
       { path: 'administracion', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/admin.component').then((m) => m.AdminComponent) }
     ]
   },

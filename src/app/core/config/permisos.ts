@@ -61,6 +61,10 @@ export const NAVEGACION: NavGrupo[] = [
       // Descargo: lo registra el Técnico de Soporte asignado (Encargado de Soporte solo supervisa/consulta);
       // cierra la asignación vigente del equipo y, si aplica, origina un reingreso a Hardware.
       { ruta: '/descargo', icono: 'undo', titulo: 'Descargo de equipo', roles: ['tec-soporte', 'enc-soporte', 'admin'] },
+      // Inventario operativo de Controles: reflejo de los equipos que YA pertenecen a una
+      // Dirección/Unidad (solo entran con la aceptación del usuario final). Es de consulta:
+      // ningún rol captura aquí, el dato llega de la aceptación y del descargo.
+      { ruta: '/inventario-controles', icono: 'box', titulo: 'Inventario de Controles', roles: ['enc-soporte', 'tec-soporte', 'admin'] },
       // Generador de documentos: visible también para Hardware, con opciones limitadas a F0288.
       { ruta: '/generador-documentos', icono: 'file', titulo: 'Generador de documentos', roles: ['enc-soporte', 'enc-hardware', 'tec-soporte', 'tec-hardware', 'admin'] },
       { ruta: '/trazabilidad', icono: 'clock', titulo: 'Trazabilidad' }
@@ -68,8 +72,13 @@ export const NAVEGACION: NavGrupo[] = [
   },
   {
     titulo: 'Sistema',
-    // Administración: únicamente el rol Administrador. Se oculta por completo para el resto (no se muestra deshabilitada).
-    items: [{ ruta: '/administracion', icono: 'users', titulo: 'Administración', roles: ['admin'] }]
+    items: [
+      // Distribución de soportes: la gestionan Encargado de Soporte y Administrador (§6); el
+      // Técnico de Soporte la consulta para saber qué Direcciones/Unidades atiende.
+      { ruta: '/distribucion-soportes', icono: 'users', titulo: 'Distribución de soportes', roles: ['enc-soporte', 'tec-soporte', 'admin'] },
+      // Administración: únicamente el rol Administrador. Se oculta por completo para el resto (no se muestra deshabilitada).
+      { ruta: '/administracion', icono: 'users', titulo: 'Administración', roles: ['admin'] }
+    ]
   }
 ];
 
