@@ -1035,7 +1035,12 @@ export class DataService {
           correoReservaEnviado: resto.datos?.correoReservaEnviado ?? '',
           fechaSolicitudIP: resto.datos?.fechaSolicitudIP ?? ''
         },
-        software: (resto.software ?? []).map((s) => ({
+        software: (resto.software ?? [])
+          // Las credenciales de SISSOR salen del checklist: nunca fueron una actividad que el
+          // técnico ejecutara, y su «Pendiente» bloqueaba el cierre sin nada que hacer. El dato no
+          // se pierde —se muestra como referencia—, deja de ser una casilla.
+          .filter((s) => !this.esCredencialesSISSOR(s.nombre))
+          .map((s) => ({
           ...s,
           origen: s.origen ?? (this.esActividadConfiguracion(s.nombre) ? 'Configuración' as const : 'F0302' as const),
           motivo: s.motivo ?? '',
@@ -1094,6 +1099,29 @@ export class DataService {
    */
   admiteNoAplicaF0302(nombre: string): boolean {
     return this.esAgenteDLP(nombre) || this.esIngresoDominio(nombre);
+  }
+
+  /**
+   * Controles especiales del F0302: cada uno se decide de a uno porque su estado arrastra una
+   * obligación distinta —imagen si está realizado, justificación si no aplica—. Ninguna acción en
+   * bloque los toca: marcarlos de un plumazo produciría exactamente el registro falso que las
+   * reglas de evidencia y justificación existen para evitar.
+   *
+   * Hoy coinciden con los que admiten «No aplica», pero son dos ideas distintas: una dice qué
+   * estados acepta el ítem y esta dice que no se decide en grupo.
+   */
+  esControlEspecialF0302(nombre: string): boolean {
+    return this.esAgenteDLP(nombre) || this.esIngresoDominio(nombre);
+  }
+
+  /**
+   * El ítem de credenciales que el F0302 arrastraba en el checklist. No es una actividad técnica
+   * que el técnico ejecute y marque: el nombre de equipo y la cuenta de red vienen de SISSOR y son
+   * referencia para configurar. Puesto como casilla junto al Agente DLP y al dominio parecía una
+   * tarea más, y su «Pendiente» bloqueaba el cierre sin que hubiera nada que hacer.
+   */
+  private esCredencialesSISSOR(nombre: string): boolean {
+    return /^credenciales\s*:/i.test((nombre ?? '').trim());
   }
 
   /** Mensaje de la justificación que falta, con el nombre del ítem que la exige. */
@@ -3073,11 +3101,13 @@ export class DataService {
       // salieron del F0288 (donde estaban por error) porque no son preparación técnica de Hardware.
       const actividad = (nombre: string, version: string, categoria: string, requiereEvidencia = false): SoftwareF0302 =>
         ({ nombre, version, estado: 'Pendiente', evidencia: null, categoria, origen: 'Configuración', requiereEvidencia });
+      // Solo los dos controles especiales: cada uno se decide de a uno y arrastra su propia
+      // obligación. Las credenciales de SISSOR ya no son una casilla del checklist —no son una
+      // actividad que el técnico ejecute— y se muestran como información de referencia.
       const software: SoftwareF0302[] = [
         // El Agente DLP es control de seguridad institucional: no se da por configurado sin captura.
         actividad('Agente DLP', 'Corporativo', 'Seguridad', true),
-        actividad('Ingreso a dominio', 'Dominio institucional', 'Red'),
-        actividad('Credenciales: nombre de equipo · cuenta de red', 'Según SISSOR', 'Red')
+        actividad('Ingreso a dominio', 'Dominio institucional', 'Red')
       ];
       const nuevaConf: ConfiguracionF0302 = {
         expediente: id,
@@ -3902,10 +3932,12 @@ export class DataService {
    * software adicional del catálogo se marca uno a uno, porque cada ítem lleva su propio motivo.
    */
   marcarCategoriaSoftwareF0302(id: string, categoria: string, estado: 'Realizado' | 'Pendiente', usuario: string): void {
-    // Un ítem marcado «No aplica» queda fuera del «Seleccionar todo»: es una decisión razonada del
-    // técnico, con su justificación escrita, y una acción en bloque no puede deshacerla de paso.
+    // «Seleccionar todo» solo alcanza a los ítems simples. Los controles especiales —Agente DLP e
+    // Ingreso a dominio— quedan fuera siempre, en cualquier estado: cada uno arrastra una imagen o
+    // una justificación, y marcarlos en bloque produciría justo el registro sin respaldo que esas
+    // obligaciones existen para evitar.
     const alcanza = (s: SoftwareF0302) =>
-      s.origen === 'Configuración' && s.categoria === categoria && s.estado !== 'No aplica';
+      s.origen === 'Configuración' && s.categoria === categoria && !this.esControlEspecialF0302(s.nombre);
     // «Seleccionar todo» NO exime de la captura: marca el ítem igual que a mano, así que el Agente
     // DLP queda «Realizado» y sin evidencia, y el cierre lo sigue bloqueando.
     const conCaptura = this.configuracionDe(id)?.software.filter((s) => alcanza(s) && s.requiereEvidencia) ?? [];
@@ -3974,6 +4006,21 @@ export class DataService {
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, nombreEquipo: c.datos.nombrePC });
     return null;
   }
+
+  /**
+   * ¿Esta categoría tiene ítems simples? Si solo contiene controles especiales, el «Seleccionar
+   * todo» no tendría a qué aplicarse: ofrecerlo prometería una acción que no hace nada.
+   */
+  categoriaAdmiteSeleccionarTodo(c: ConfiguracionF0302, categoria: string): boolean {
+    return this.itemsConfiguracionF0302(c)
+      .some((s) => (s.categoria || 'Otros') === categoria && !this.esControlEspecialF0302(s.nombre));
+  }
+
+  // Los datos que SISSOR aporta —nombre de equipo, cuenta de red, usuario, Dirección/Unidad—
+  // siguen viviendo en `ConfiguracionF0302.datos` y los usan el F0302, el expediente único y el
+  // formulario de conformidad. Lo que no existe es una función que los agrupe para pintarlos como
+  // bloque de credenciales: esa vista se retiró, y dejar el ayudante sin llamadas invitaría a
+  // volver a montarla sin querer.
 
   /** Ítems del checklist F0302 marcados que exigen captura y todavía no la tienen. */
   itemsSinCapturaF0302(c: ConfiguracionF0302): SoftwareF0302[] {

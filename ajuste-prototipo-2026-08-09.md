@@ -1407,3 +1407,235 @@ src/app/features/generador-documentos/…     (bloque «Ítems marcados como No 
 src/app/features/trazabilidad/…             (bloque del historial técnico)
 src/app/shared/linea-tiempo.ts              (dos campos y tres hitos nuevos)
 ```
+
+---
+
+# Parte 10 — Controles especiales del F0302 y las credenciales fuera del checklist
+
+**Fecha:** 9 de agosto de 2026, décima sesión del día (ronda 65 del punto de control)
+**Alcance:** la sección «Configuración general del equipo» del F0302, el documento generado y la
+migración de las configuraciones ya guardadas.
+
+## 1. Qué confundía
+
+La sección mezclaba tres cosas de naturaleza distinta bajo la misma apariencia de casilla:
+
+```text
+Seleccionar todo
+Agente DLP                                        ← decisión individual, con imagen o justificación
+Ingreso a dominio                                 ← decisión individual, con justificación
+Credenciales: nombre de equipo · cuenta de red    ← ni siquiera es una actividad
+Según SISSOR
+```
+
+Un «Seleccionar todo» encima de todo eso ofrecía marcar de un plumazo justo los ítems que existen
+para no marcarse a la ligera.
+
+## 2. Controles especiales
+
+El Agente DLP y el Ingreso a dominio pasan a ser **controles especiales**: se deciden de a uno y
+ninguna acción en bloque los toca, **en cualquier estado**.
+
+En la ronda anterior el «Seleccionar todo» ya respetaba un ítem puesto en «No aplica». Eso llegaba
+tarde: protegía la decisión ya tomada, pero seguía permitiendo marcar el Agente DLP como realizado
+sin que nadie lo hubiera decidido. Ahora la exclusión es del ítem, no de su estado.
+
+```text
+Seleccionar todo  →  solo ítems simples
+                     nunca Agente DLP ni Ingreso a dominio
+```
+
+Y donde una categoría solo contiene controles especiales —hoy Seguridad y Red—, el «Seleccionar
+todo» **desaparece**: ofrecerlo prometería una acción que no hace nada. En su lugar la categoría
+dice «Control especial: se decide ítem por ítem».
+
+## 3. Las credenciales salen del checklist
+
+`Credenciales: nombre de equipo · cuenta de red` no era una actividad que el técnico ejecutara: el
+nombre de equipo y la cuenta de red vienen de SISSOR y sirven de referencia para configurar. Como
+casilla parecía una tarea más y su «Pendiente» bloqueaba el cierre sin que hubiera nada que hacer.
+
+Ahora es un bloque de lectura al pie del checklist:
+
+```text
+Credenciales según SISSOR
+Nombre de equipo y cuenta de red utilizados como referencia para la configuración.
+No es una actividad que deba marcarse.
+
+Nombre de equipo · Cuenta de red · Usuario asignado · Dirección / Unidad
+```
+
+**El dato no se pierde: cambia de sitio.** Deja de ser algo que se marca y pasa a ser algo que se
+consulta.
+
+## 4. La migración se ejerce en cada carga
+
+Las configuraciones ya guardadas —las del set de datos y las de cualquier navegador con la demo
+usada— traen el ítem. `normalizarConfiguraciones` lo descarta al hidratar, por las dos vías (JSON
+semilla y `localStorage`).
+
+**El JSON semilla se dejó intacto a propósito.** Que siga trayendo el ítem significa que el filtro
+se ejecuta con datos reales en cada arranque, en vez de ser un camino que solo recorrería alguien
+con una foto vieja guardada.
+
+## 5. La sección queda así
+
+```text
+Seguridad                          Control especial: se decide ítem por ítem
+  Agente DLP
+  Si está Realizado: imagen obligatoria. Si está No aplica: justificación obligatoria.
+  ( ) Pendiente   ( ) Realizado   ( ) No aplica
+
+Red                                Control especial: se decide ítem por ítem
+  Ingreso a dominio
+  Si está Realizado: validación normal. Si está No aplica: justificación obligatoria.
+  ( ) Pendiente   ( ) Realizado   ( ) No aplica
+
+Credenciales según SISSOR          (bloque de referencia, sin casilla)
+```
+
+Cada control enuncia su propia regla debajo del nombre, donde se decide, y no en un tooltip que hay
+que ir a buscar.
+
+## 6. El documento
+
+Tres bloques separados, porque son tres cosas distintas:
+
+```text
+Controles de seguridad con evidencia    Agente DLP: Completado · evidencia asociada: captura-dlp.png
+Controles de configuración validados    Ingreso a dominio: Realizado
+Ítems marcados como No aplica           con su justificación y quién la registró
+Referencia SISSOR                       nombre de equipo, cuenta de red, usuario, Dirección/Unidad
+```
+
+El Ingreso a dominio tiene bloque propio: mezclarlo con los que llevan captura haría parecer que le
+falta una imagen que nunca se le pidió. Y la referencia SISSOR aclara que no son actividades del
+checklist.
+
+## 7. Casos de prueba
+
+**93 casos, 0 fallos**, con espejos funcionales de: qué ítems son controles especiales en nueve
+variantes de nombre; qué categorías ofrecen «Seleccionar todo» —incluida una categoría mixta, donde
+sí aparece pero no alcanza al especial—; qué queda de cada configuración semilla tras la migración,
+comprobando ítem por ítem que pierde las credenciales y **conserva todo lo demás**; y las ocho
+puertas del cierre con el checklist ya sin credenciales.
+
+Regresiones: las treinta baterías anteriores, **2810 casos, 0 fallos**. Se actualizaron tres
+aserciones de la ronda 64: comprobaban que el «Seleccionar todo» respetara un «No aplica», y ahora
+la regla es más fuerte —excluye el control entero—, así que se afinaron al criterio nuevo.
+
+## 8. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [8.085 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en diez rutas.
+
+**No hubo clics reales en un navegador.** Ver desaparecer el «Seleccionar todo» de Seguridad y Red,
+y las credenciales convertidas en bloque de lectura, está verificado por código, nunca ejecutado a
+mano.
+
+## 9. Archivos tocados
+
+```text
+src/app/core/services/data.service.ts       (esControlEspecialF0302, esCredencialesSISSOR,
+                                             categoriaAdmiteSeleccionarTodo, referenciaSISSOR;
+                                             «Seleccionar todo» excluye los controles especiales;
+                                             el checklist nuevo nace sin credenciales; migración
+                                             en normalizarConfiguraciones)
+src/app/features/configuracion/…            («Seleccionar todo» oculto donde no aplica, regla de
+                                             cada control bajo su nombre, bloque de referencia
+                                             SISSOR)
+src/app/features/generador-documentos/…     (controles validados sin evidencia y referencia SISSOR
+                                             en secciones aparte)
+```
+
+---
+
+# Parte 11 — Fuera la sección «Credenciales según SISSOR»
+
+**Fecha:** 9 de agosto de 2026, undécima sesión del día (ronda 66 del punto de control)
+**Alcance:** la pantalla de Configuración F0302 y el documento F0302 generado.
+
+## 1. Qué se retira
+
+La ronda anterior sacó las credenciales del checklist —eso estaba bien— y las dejó como bloque
+informativo al pie. Ese bloque también sobra:
+
+```text
+Credenciales según SISSOR                              ← fuera
+Nombre de equipo · Cuenta de red ·
+Usuario asignado · Dirección / Unidad                  ← fuera
+«Nombre de equipo y cuenta de red utilizados
+ como referencia para la configuración»                ← fuera
+```
+
+No se reemplaza por nada. La sección desaparece, sin versión equivalente con otro nombre.
+
+## 2. El nombre del equipo no dependía de ese bloque
+
+Ya tenía su propia sección en el F0302, con su campo editable y su validación de obligatoriedad al
+finalizar. Retirar las credenciales no lo toca.
+
+```text
+Nombre del equipo *
+DT-KRIVAS-045
+```
+
+## 3. El dato sigue existiendo; la vista no
+
+`ConfiguracionF0302.datos` conserva `nombrePC`, `carne`, `asignadoA`, `direccionGerencia` y
+`unidad`, que usan el F0302, el Expediente único y el formulario de conformidad. Lo que se eliminó
+es la **función que los agrupaba para pintarlos**.
+
+Podría haberla dejado sin llamadas —el ajuste lo permite—, pero un ayudante que solo existe para
+montar una vista retirada es una invitación a volver a montarla sin querer. En su lugar queda un
+comentario que dice dónde vive cada dato y por qué no hay una función que los junte.
+
+## 4. El documento tampoco la lleva
+
+Se retiró el bloque «Referencia SISSOR» del F0302 generado. El documento conserva sus cuatro
+secciones útiles:
+
+```text
+Controles de seguridad con evidencia
+Controles de configuración validados
+Ítems marcados como No aplica          con su justificación
+Software instalado previamente en F0288
+```
+
+El nombre del equipo sigue arriba, con los datos del expediente, donde siempre estuvo.
+
+## 5. Historial y trazabilidad
+
+No se registra ningún evento por mostrar u ocultar credenciales, y la semilla de trazabilidad no
+trae ninguno: se comprobó, no se supuso. El historial técnico conserva sus bloques —ítems No
+aplica, garantía del equipo, pertenencia a Dirección/Unidad— sin ninguno de credenciales.
+
+## 6. Casos de prueba
+
+**63 casos, 0 fallos**. La batería no busca solo la ausencia del título: descarta los comentarios
+del código y comprueba sobre **lo que el usuario puede ver** que no aparezcan la palabra SISSOR, la
+cuenta de red, el usuario asignado, ni ninguno de los seis nombres alternativos que el ajuste
+prohíbe. Los espejos recorren las cuatro pantallas —configuración, documentos, trazabilidad y
+expediente único— confirmando que ninguna renderiza un bloque de credenciales y que el nombre del
+equipo sí se sigue mostrando.
+
+Regresiones: las treinta y una baterías anteriores, **2900 casos, 0 fallos**. Se **invirtieron**
+doce aserciones de la ronda 65 en vez de borrarlas: comprobaban que el bloque existiera y ahora
+comprueban que no exista, así que la batería sigue vigilando la misma zona.
+
+## 7. Verificación
+
+`npm run build` limpio: `Application bundle generation complete. [8.211 seconds]`, 0 errores.
+`ng serve` con HTTP 200 en diez rutas.
+
+**No hubo clics reales en un navegador.** Que la pantalla quede más limpia está verificado por
+código, nunca visto.
+
+## 8. Archivos tocados
+
+```text
+src/app/features/configuracion/…            (bloque y estilos retirados)
+src/app/features/generador-documentos/…     (sección «Referencia SISSOR» retirada)
+src/app/core/services/data.service.ts       (referenciaSISSOR eliminada; el filtro que saca las
+                                             credenciales del checklist se conserva)
+```

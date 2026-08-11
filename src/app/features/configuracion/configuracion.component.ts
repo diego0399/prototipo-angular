@@ -33,6 +33,7 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
     .sug-just { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 6px; }
     .chip-btn { cursor: pointer; border: 1px dashed var(--line-strong); background: transparent; font: inherit; }
     .chip-btn:hover { border-color: var(--blue-500); color: var(--blue-600); }
+    .sec-nota { font-size: 11px; color: var(--tx-3); font-weight: 400; text-transform: none; letter-spacing: 0; margin-left: 10px; }
     .sw-row.heredado td { background: var(--surface-2); }
     .sw-row.heredado .candado { opacity: .75; }
     tr.sel td { background: var(--surface-2); box-shadow: inset 3px 0 0 var(--gold-500); }
@@ -310,12 +311,18 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                   <tr class="cat-row">
                     <td colspan="5">
                       {{ cat }}
-                      <label class="sec-selall" (click)="$event.stopPropagation()">
-                        <input type="checkbox" [checked]="estadoSelAllCat(c, cat) === 'todos'"
-                          [indeterminate]="estadoSelAllCat(c, cat) === 'parcial'"
-                          [disabled]="c.estado === 'Completada'"
-                          (change)="toggleCategoria(c, cat, $event)" /> Seleccionar todo
-                      </label>
+                      <!-- «Seleccionar todo» solo aparece si la categoría tiene ítems simples: los
+                           controles especiales se deciden de a uno y la acción en bloque no los toca. -->
+                      @if (data.categoriaAdmiteSeleccionarTodo(c, cat)) {
+                        <label class="sec-selall" (click)="$event.stopPropagation()">
+                          <input type="checkbox" [checked]="estadoSelAllCat(c, cat) === 'todos'"
+                            [indeterminate]="estadoSelAllCat(c, cat) === 'parcial'"
+                            [disabled]="c.estado === 'Completada'"
+                            (change)="toggleCategoria(c, cat, $event)" /> Seleccionar todo
+                        </label>
+                      } @else {
+                        <span class="sec-nota">Control especial: se decide ítem por ítem</span>
+                      }
                     </td>
                   </tr>
                   @for (s of itemsCategoria(c, cat); track s.nombre) {
@@ -335,6 +342,13 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                         <!-- Agente DLP e Ingreso a dominio pueden no corresponder a un equipo:
                              se eligen entre tres estados, y «No aplica» exige motivo escrito. -->
                         @if (data.admiteNoAplicaF0302(s.nombre)) {
+                          <div class="sub-cell">
+                            @if (s.requiereEvidencia) {
+                              Si está Realizado: imagen obligatoria. Si está No aplica: justificación obligatoria.
+                            } @else {
+                              Si está Realizado: validación normal. Si está No aplica: justificación obligatoria.
+                            }
+                          </div>
                           <div class="estados">
                             @for (op of estadosItem; track op) {
                               <label class="radio-line">
@@ -399,6 +413,10 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
               }
             </table>
           </div>
+          <!-- Las credenciales de SISSOR no se muestran aquí en ninguna forma. Salieron del
+               checklist por no ser una actividad, y tampoco vuelven como bloque de referencia: el
+               nombre del equipo tiene su propia sección más abajo y el resto de los datos del
+               usuario ya viven en el expediente. -->
         </div>
 
         <!-- Imágenes de evidencia: aquí solo se listan. La única que el F0302 exige se adjunta
@@ -1608,9 +1626,10 @@ export class ConfiguracionComponent {
     return this.data.itemsConfiguracionF0302(c).filter((s) => (s.categoria || 'Otros') === categoria);
   }
   protected estadoSelAllCat(c: ConfiguracionF0302, categoria: string): 'todos' | 'ninguno' | 'parcial' {
-    // Los ítems «No aplica» no cuentan: el «Seleccionar todo» no los toca, así que incluirlos
+    // Los controles especiales no cuentan: el «Seleccionar todo» no los toca, así que incluirlos
     // dejaría la casilla en indeterminado para siempre aunque todo lo demás esté hecho.
-    const items = this.itemsCategoria(c, categoria).filter((s) => s.estado !== 'No aplica');
+    const items = this.itemsCategoria(c, categoria)
+      .filter((s) => !this.data.esControlEspecialF0302(s.nombre));
     if (!items.length) return 'ninguno';
     const marcados = items.filter((s) => s.estado === 'Realizado').length;
     if (marcados === 0) return 'ninguno';

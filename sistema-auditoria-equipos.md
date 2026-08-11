@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 64)**.
+nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 66)**.
 
 ---
 
@@ -2781,6 +2781,57 @@ Expediente único.
       rutas) y **119 casos, 0 fallos** —con espejo de las ocho puertas del cierre—, más las
       veintinueve baterías anteriores (2691 casos, 0 fallos; **ninguna necesitó ajuste**: la regla
       es aditiva). **Sin recorrido manual de clics.**
+65. **Agente DLP e Ingreso a dominio como controles especiales; las credenciales de SISSOR salen
+    del checklist F0302** (2026-08-09, décima sesión del día).
+    * La sección mezclaba tres cosas distintas bajo la misma apariencia de casilla, con un
+      «Seleccionar todo» encima que ofrecía marcar de un plumazo justo los ítems que existen para
+      no marcarse a la ligera.
+    * **Controles especiales** (`esControlEspecialF0302`): el Agente DLP y el Ingreso a dominio se
+      deciden de a uno y **ninguna acción en bloque los toca, en cualquier estado**. La ronda 64
+      ya respetaba un ítem puesto en «No aplica», pero eso llegaba tarde: protegía la decisión ya
+      tomada y seguía permitiendo marcar el DLP como realizado sin que nadie lo decidiera. Ahora
+      la exclusión es del ítem, no de su estado.
+    * **El «Seleccionar todo» desaparece** de las categorías que solo contienen controles
+      especiales —hoy Seguridad y Red—: ofrecerlo prometería una acción que no hace nada
+      (`categoriaAdmiteSeleccionarTodo`). En su lugar: «Control especial: se decide ítem por ítem».
+    * **Las credenciales salen del checklist**: `Credenciales: nombre de equipo · cuenta de red`
+      nunca fue una actividad que el técnico ejecutara —viene de SISSOR y es referencia—, y su
+      «Pendiente» bloqueaba el cierre sin nada que hacer. Pasa a ser un bloque de lectura
+      (`referenciaSISSOR`). **El dato no se pierde: cambia de sitio.**
+    * **La migración se ejerce en cada carga**: `normalizarConfiguraciones` descarta el ítem por
+      las dos vías (JSON semilla y `localStorage`), y el **JSON semilla se dejó intacto a
+      propósito** para que el filtro corra con datos reales en cada arranque.
+    * Cada control enuncia su regla debajo de su nombre, donde se decide, no en un tooltip. El
+      documento F0302 separa cuatro bloques: controles con evidencia, controles validados sin
+      evidencia (el dominio, para que no parezca que le falta una imagen que nunca se le pidió),
+      ítems No aplica con su justificación, y Referencia SISSOR.
+    * Verificado con `npm run build` limpio (8.085 s, 0 errores), `ng serve` (HTTP 200 en diez
+      rutas) y **93 casos, 0 fallos** —con espejo de la migración ítem por ítem, comprobando que
+      cada configuración pierde las credenciales y **conserva todo lo demás**—, más las treinta
+      baterías anteriores (2810 casos, 0 fallos; se afinaron tres aserciones de la ronda 64 al
+      criterio más fuerte). **Sin recorrido manual de clics.**
+66. **Fuera la sección «Credenciales según SISSOR» de la Configuración F0302 y del documento**
+    (2026-08-09, undécima sesión del día).
+    * La ronda 65 sacó las credenciales del checklist —eso estaba bien— y las dejó como bloque
+      informativo al pie. Ese bloque también sobraba: se retira **sin reemplazo**, y sin versión
+      equivalente con otro nombre.
+    * **El nombre del equipo no dependía de ese bloque**: ya tenía su propia sección con campo
+      editable y validación de obligatoriedad al finalizar.
+    * **El dato sigue existiendo; la vista no.** `ConfiguracionF0302.datos` conserva `nombrePC`,
+      `carne`, `asignadoA`, `direccionGerencia` y `unidad`, que usan el F0302, el Expediente único
+      y el formulario de conformidad. Lo eliminado es `referenciaSISSOR`, la función que los
+      agrupaba para pintarlos: dejarla sin llamadas —que el ajuste permitía— habría sido una
+      invitación a volver a montar la vista sin querer. Queda un comentario que dice dónde vive
+      cada dato.
+    * El **documento F0302** pierde su bloque «Referencia SISSOR» y conserva sus cuatro secciones
+      útiles. **Trazabilidad**: no se registra ningún evento por mostrar u ocultar credenciales, y
+      se comprobó que la semilla tampoco trae ninguno.
+    * Verificado con `npm run build` limpio (8.211 s, 0 errores), `ng serve` (HTTP 200 en diez
+      rutas) y **63 casos, 0 fallos** —la batería descarta los comentarios del código y comprueba
+      sobre **lo que el usuario puede ver**, incluidos los seis nombres alternativos que el ajuste
+      prohíbe—, más las treinta y una baterías anteriores (2900 casos, 0 fallos; se
+      **invirtieron** doce aserciones de la ronda 65 en vez de borrarlas, para que la batería siga
+      vigilando la misma zona). **Sin recorrido manual de clics.**
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

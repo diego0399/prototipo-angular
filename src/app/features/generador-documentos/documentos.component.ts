@@ -404,6 +404,20 @@ interface FilaDoc {
                 </dl>
               </div>
             }
+            <!-- Ingreso a dominio: se registra su validación, sin evidencia asociada -->
+            @if (f.tipo === 'F0302' && controlesSinEvidenciaDoc(); as ctrls) {
+              <div class="mt-2">
+                <b>Controles de configuración validados</b>
+                <dl class="dl mt-1">
+                  @for (s of ctrls; track s.nombre) {
+                    <dt>{{ s.nombre }}</dt>
+                    <dd>{{ s.estado === 'Realizado' ? 'Realizado' : s.estado }}</dd>
+                  }
+                </dl>
+              </div>
+            }
+            <!-- El documento no lleva bloque de credenciales de SISSOR: el nombre del equipo ya
+                 figura arriba con los datos del expediente y la cuenta de red no es dato del F0302. -->
             <!-- Lo que quedó fuera del checklist, con su motivo: el documento tiene que decir qué
                  no se hizo y por qué, no solo lo que sí se hizo. -->
             @if (f.tipo === 'F0302' && noAplicaDoc(); as fuera) {
@@ -809,6 +823,19 @@ export class DocumentosComponent {
       .filter((s) => s.requiereEvidencia && s.estado !== 'No aplica');
     if (items.length === 0) return undefined;
     return items.map((s) => ({ item: s, evidencia: c.evidencias.find((e) => e.item === s.nombre && e.archivo) }));
+  });
+
+  /**
+   * Controles especiales sin evidencia asociada —hoy el Ingreso a dominio— que sí se registraron.
+   * Van aparte de los que llevan captura: mezclarlos haría parecer que a este le falta una imagen
+   * que nunca se le pidió.
+   */
+  protected readonly controlesSinEvidenciaDoc = computed(() => {
+    const c = this.conf();
+    if (!c) return undefined;
+    const items = this.data.softwareChecklistF0302(c)
+      .filter((s) => this.data.esControlEspecialF0302(s.nombre) && !s.requiereEvidencia && s.estado !== 'No aplica');
+    return items.length ? items : undefined;
   });
 
   /** Ítems del F0302 que quedaron como «No aplica», con su motivo, para el documento generado. */

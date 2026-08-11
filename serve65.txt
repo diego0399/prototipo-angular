@@ -1,0 +1,35 @@
+[33m❯[39m Building...
+[32m✔[39m Building...
+[1mInitial chunk files[22m[2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m
+[32mchunk-NQLNF6EB.js[39m  [2m | [22m[2m-[22m                           [2m | [22m[36m488.04 kB[39m[2m | [22m
+[32mmain.js[39m            [2m | [22m[2mmain[22m                        [2m | [22m [36m37.95 kB[39m[2m | [22m
+[32mchunk-Q6BGUU32.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m25.37 kB[39m[2m | [22m
+[32mstyles.css[39m         [2m | [22m[2mstyles[22m                      [2m | [22m [36m20.31 kB[39m[2m | [22m
+[32mchunk-6WR5YDQF.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m4.63 kB[39m[2m | [22m
+[32mchunk-NSYY34XN.js[39m  [2m | [22m[2m-[22m                           [2m | [22m  [36m1.35 kB[39m[2m | [22m
+
+[1m [22m                  [2m | [22m[1mInitial total[22m               [2m | [22m[1m577.64 kB[22m
+
+[1mLazy chunk files[22m   [2m | [22m[1mNames[22m                       [2m | [22m [1mRaw size[22m
+[32mchunk-FAOTZGJS.js[39m  [2m | [22m[2mconfiguracion-component[22m     [2m | [22m[36m335.12 kB[39m[2m | [22m
+[32mchunk-OI4I5ELV.js[39m  [2m | [22m[2mtrazabilidad-component[22m      [2m | [22m[36m300.69 kB[39m[2m | [22m
+[32mchunk-W4LG54FR.js[39m  [2m | [22m[2mexpediente-unico-component[22m  [2m | [22m[36m208.55 kB[39m[2m | [22m
+[32mchunk-KTEWMJ3G.js[39m  [2m | [22m[2mgarantia-component[22m          [2m | [22m[36m177.72 kB[39m[2m | [22m
+[32mchunk-WZQNNMKJ.js[39m  [2m | [22m[2mdocumentos-component[22m        [2m | [22m[36m166.64 kB[39m[2m | [22m
+[32mchunk-AC4VMCTQ.js[39m  [2m | [22m[2minventario-component[22m        [2m | [22m[36m164.06 kB[39m[2m | [22m
+[32mchunk-5YCNFMHB.js[39m  [2m | [22m[2mreprocesos-component[22m        [2m | [22m[36m156.98 kB[39m[2m | [22m
+[32mchunk-ZUGL2MHF.js[39m  [2m | [22m[2masignacion-component[22m        [2m | [22m[36m154.75 kB[39m[2m | [22m
+[32mchunk-XSHXN7PQ.js[39m  [2m | [22m[2mpreparacion-component[22m       [2m | [22m[36m149.94 kB[39m[2m | [22m
+[32mchunk-7GXTHEWW.js[39m  [2m | [22m[2mentrega-component[22m           [2m | [22m[36m138.13 kB[39m[2m | [22m
+[32mchunk-N3D5BUDA.js[39m  [2m | [22m[2mdashboard-component[22m         [2m | [22m[36m109.35 kB[39m[2m | [22m
+[32mchunk-APQ5NOPC.js[39m  [2m | [22m[2mexpediente-tecnico-component[22m[2m | [22m[36m103.78 kB[39m[2m | [22m
+[32mchunk-CHJAPHRE.js[39m  [2m | [22m[2mcatalogo-software-component[22m [2m | [22m [36m71.39 kB[39m[2m | [22m
+[32mchunk-2WXAADO2.js[39m  [2m | [22m[2mdescargo-component[22m          [2m | [22m [36m51.16 kB[39m[2m | [22m
+[32mchunk-KGE5VDES.js[39m  [2m | [22m[2m-[22m                           [2m | [22m [36m49.46 kB[39m[2m | [22m
+[2m...and 13 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+Application bundle generation complete. [7.301 seconds] - 2026-08-11T04:53:08.268Z
+
+Watch mode enabled. Watching for file changes...
+NOTE: Raw file sizes do not reflect development server per-request transformations.
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m4315[22m/[39m
