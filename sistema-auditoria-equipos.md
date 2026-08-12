@@ -1,7 +1,7 @@
 # SISGOST — Punto de control completo del proyecto
 
 Documento de recuperación de contexto. Léalo completo para continuar el desarrollo en una
-nueva sesión sin perder información. Última actualización: **9 de agosto de 2026 (ronda 66)**.
+nueva sesión sin perder información. Última actualización: **11 de agosto de 2026 (ronda 70)**.
 
 ---
 
@@ -2832,6 +2832,148 @@ Expediente único.
       prohíbe—, más las treinta y una baterías anteriores (2900 casos, 0 fallos; se
       **invirtieron** doce aserciones de la ronda 65 en vez de borrarlas, para que la batería siga
       vigilando la misma zona). **Sin recorrido manual de clics.**
+67. **Documentación visual y de presentación del módulo Gestión de Equipos** (2026-08-09,
+    duodécima sesión del día). *Entregable de documentación: no se tocó el prototipo.*
+    * El usuario **levantó expresamente** la restricción de no tocar diagramas ni PPTX para este
+      entregable. Todo se generó desde el estado actual del prototipo (ronda 66), no desde el
+      documento de requisitos: lo que está dibujado es lo que el prototipo hace hoy.
+    * **Siete diagramas** en `analisis\entregables-gestion-equipos\`, con fuente `.puml` y PNG:
+      casos de uso, actividades, componentes, arquitectura, DER, modelo relacional y un séptimo
+      de flujo integral y trazabilidad del equipo. Todos con el título base «SISGOST — Gestión de
+      Equipos». Renderizados **offline** con el `plantuml.jar` de la extensión de VS Code.
+    * **Tres diagramas se rehicieron tras verlos**: el de casos de uso quedaba ilegible con las
+      aristas de los cinco actores cruzando el lienzo (se agruparon los casos transversales); el
+      de actividades era una tira de 4096 px de alto (se pasó a **carriles por responsable**, que
+      además muestran los traspasos entre unidades); el de trazabilidad tenía la línea principal
+      desordenada (se reordenó de arriba abajo).
+    * **PPTX nuevo** `Propuesta_Gestion_de_Equipos_SISGOST.pptx`: 23 láminas —14 ejecutivas, un
+      separador y 7 anexos con los diagramas embebidos—, generado con `pptxgenjs` en el
+      scratchpad (no se añadió dependencia al prototipo). Solo del módulo Gestión de Equipos.
+    * **`explicacion_diagramas_gestion_equipos.md`**: qué muestra cada diagrama, qué decisiones
+      de diseño refleja y qué deja fuera a propósito, más la tabla de reglas de negocio con el
+      diagrama donde cada una se ve.
+    * Verificado con **98 comprobaciones, 0 fallos**: el PPTX se abre como ZIP OOXML, se extrae el
+      texto real de las 23 láminas y se comprueban títulos, vocabulario prohibido (memorando,
+      Controles mensuales como módulo, Gestión por Dirección como módulo, emojis) y requerido, y
+      las reglas del prototipo. **Dos hallazgos reales corregidos**: faltaba una lámina de roles
+      —el Encargado de Hardware no aparecía en toda la presentación— y faltaba el vocabulario
+      «Requerimiento de CPU / de Laptop».
+    * El prototipo quedó **intacto**: `npm run build` limpio (9.546 s) y las 32 baterías en 2963
+      casos, 0 fallos.
+68. **Manual de Usuario (Word) y Manual de Capacitación (PowerPoint) del módulo Gestión de
+    Equipos** (2026-08-09/10). *Entregable de documentación: no se tocó el prototipo.*
+    * **Capturas reales del prototipo**, no maquetas: se levantó `ng serve`, se recorrió la
+      aplicación con Chrome y se tomaron **23 capturas** a 3200 px de ancho.
+    * **Dos errores de captura que se detectaron y corrigieron**: el primer intento entraba
+      siempre con el mismo usuario —el login es un `<select>`, no un campo de texto— así que las
+      pantallas de Encargado salían con el rol equivocado; y varias pantallas se capturaron
+      vacías («Seleccione un proceso») porque exigen abrir un expediente antes. Se añadió
+      verificación del usuario en la barra superior y apertura automática del primer registro.
+    * **Resaltados anotados en el DOM**, no dibujados sobre el PNG: recuadro dorado y globo
+      numerado inyectados en la página antes de capturar, de modo que la marca cae exactamente
+      sobre el botón. La captura del Agente DLP muestra los tres estados con el resaltado puesto.
+    * **Word** (`Manual_Usuario_SISGOST_Gestion_Equipos.docx`, 13 MB): portada, índice de 35
+      secciones, 21 procedimientos con captura + pasos numerados + nota, y tablas de estados,
+      evidencias, documentos, mensajes, buenas prácticas, preguntas frecuentes y guía rápida.
+    * **PowerPoint** (`Manual_Capacitacion_SISGOST_Gestion_Equipos.pptx`, 12 MB): **30 láminas**
+      gráficas con capturas grandes, pasos numerados y poco texto; no es una copia del Word.
+    * **Validación: 113 comprobaciones, 0 fallos**, sobre el texto real extraído de ambos OOXML.
+      **Cinco hallazgos reales corregidos**: (1) las imágenes del Word se guardaban con extensión
+      `.undefined` —falta `type: 'png'` en `ImageRun`— y Word podía rechazarlas; (2) faltaban
+      Panel ejecutivo, Solicitudes y Catálogo de software; (3) faltaba «Requerimiento de CPU» en
+      el PPTX; (4) la duración de garantía solo estaba en letras; (5) un botón marcado como
+      inventado que sí existía —faltaba ese archivo en el validador—.
+    * La validación contrasta contra el prototipo: los 19 módulos del menú, 19 botones reales, los
+      mensajes exactos del Agente DLP y del dominio, y la ausencia de lenguaje técnico (Angular,
+      backend, JSON, base de datos…).
+    * «Inventario por Dirección» se documenta con su nombre real en el sistema, **Inventario de
+      Controles**, para que quien lo busque en pantalla lo encuentre.
+69. **Carga laboral de los Técnicos de Soporte, al mismo nivel que la de Hardware**
+    (2026-08-11).
+    * **Motor de carga en `DataService`**: `cargaSoporteDe()` desglosa siete contadores
+      —expedientes únicos pendientes de configurar, configuraciones F0302 en proceso,
+      correcciones F0302, inconformidades sin atender, casos de garantía abiertos, descargos
+      pendientes y conformidades en seguimiento— y `procesosActivosDeSoporte()` devuelve la fila
+      concreta de cada uno (código, tipo, equipo, inventario, usuario final, Dirección/Unidad,
+      estado, fecha, prioridad).
+    * **Sin doble conteo**: un expediente único cuyo F0302 ya arrancó se cuenta como
+      configuración y no también como expediente único. El corte lo decide
+      `configuracionIniciada()`, que ya existía. Sin esa separación «carga alta» habría pasado a
+      significar tres trabajos contados dos veces.
+    * **Escala común, conteos distintos** (§5/§9): 0–2 baja, 3–5 media, 6+ alta para las dos
+      áreas, en las constantes `CARGA_MEDIA_DESDE`/`CARGA_ALTA_DESDE`. Hardware pasó a contar sus
+      cuatro procesos (`cargaHardwareDe`: expedientes técnicos activos, preparaciones F0288 sin
+      finalizar, reprocesos asignados y revisiones técnicas de garantía) en vez de solo los
+      expedientes; `cargaLaboral()` ahora delega en él. Un reproceso con origen «Garantía» cuenta
+      como revisión de garantía y no también como reproceso.
+    * **`shared/selector-soporte.component.ts`**: buscador modal —no un select— con búsqueda por
+      nombre, filtros por Dirección/Unidad, carga y disponibilidad, tabla compacta con las nueve
+      columnas pedidas, resumen rápido al pasar el mouse o al pulsar la etiqueta, y «Ver detalle»
+      con la ficha completa más la tabla de procesos activos.
+    * **Conectado en cinco pantallas**: Expediente único (Técnico de Configuración, filtrado por
+      la distribución de la Dirección/Unidad del requerimiento), Distribución de soportes,
+      Configuración F0302 (responsable de la corrección), Atención de inconformidad y Servicio de
+      garantía (responsable de atención). En Descargo se **muestra** la carga pero no se elige
+      técnico: lo registra el soporte responsable de la Dirección/Unidad (regla de la ronda 61).
+    * **Quién reparte**: un Técnico de Soporte queda como responsable de lo que él mismo abre; el
+      Encargado de Soporte y el Administrador eligen a otro. `tecnicosSoporteParaProceso()`
+      ofrece los responsables de la Dirección/Unidad y, si esa Dirección/Unidad aún no tiene
+      distribución, todos: un caso abierto no puede quedarse sin quién lo atienda. La regla
+      estricta sigue aplicando solo al Técnico de Configuración.
+    * **La carga alta advierte, nunca bloquea** (§8). El mensaje exacto vive una sola vez, en
+      `MSG_CARGA_ALTA`; las seis pantallas lo reutilizan.
+    * **Trazabilidad** (§12): `registrarConsultaCargaSoporte()` al abrir el detalle —no en cada
+      búsqueda ni al pasar el mouse— y `registrarSeleccionSoporte()` al asignar, con un evento
+      adicional cuando se asignó pese a la carga alta. La carga se guarda **como dato del
+      evento** (`cargaLaboral`, `procesosActivos`, `detalleCarga`) y no se recalcula: el historial
+      debe seguir diciendo con qué carga se asignó, aunque el técnico se desocupe después.
+    * **Datos de ejemplo** (§11): tercer Técnico de Soporte, **Diana Portillo**, con seis procesos
+      activos (tres F0302 en proceso y tres expedientes únicos pendientes) sobre cadenas
+      completas y coherentes. Quedan los tres niveles: Mateo Martínez 1 → baja, Wendy Carranza
+      4 → media, Diana Portillo 6 → alta. **No se usó «José Ramírez»** del ejemplo del
+      requerimiento: ese nombre ya es de un Técnico de HARDWARE y los módulos relacionan
+      responsables por nombre, así que un homónimo habría mezclado las dos cargas.
+    * Batería `casos-carga-soporte.js`: **260 casos, 0 fallos** (espejo funcional del cálculo,
+      escenarios sintéticos de cada contador y de los cortes, coherencia de las cadenas
+      sembradas y aserciones sobre el código).
+70. **Diagramas y manuales actualizados con la carga laboral de Soporte** (2026-08-11).
+    *Documentación; el prototipo solo se tocó para dos correcciones de presentación.*
+    * **Los 7 diagramas** se actualizaron y sus PNG se regeneraron: casos de uso (paquete «Carga
+      laboral» con cuatro casos y el caso renombrado «Seleccionar Técnico de Configuración según
+      Dirección/Unidad»), actividades (subflujo completo del Expediente único con las decisiones
+      «¿Existen técnicos responsables?» y «¿Carga laboral alta?»), componentes (`app-selector-soporte`
+      y el bloque «Reglas dentro de DataService»), arquitectura (la carga se calcula, no se guarda),
+      DER (tres entidades `<<derivada>>` y la relación Expediente único N a 1 Técnico de
+      Configuración), modelo relacional (tres **vistas**, cuatro columnas nuevas en `trazabilidad`
+      y dos restricciones) y trazabilidad (desvío «Selección del Técnico de Configuración»).
+    * **Defecto de representación corregido, venía de la ronda 67**: el modelo relacional imprimía
+      sus tablas **sin ninguna columna `VARCHAR(n)`**. PlantUML clasifica como método todo miembro
+      con paréntesis y el diagrama tiene `hide methods`, así que solo se veían las columnas INT,
+      DATE, TIME y BOOLEAN — `usuario_sistema` mostraba dos de siete—. Se marcó cada miembro con
+      `{field}` (380 en el relacional, 36 en el DER) y las tablas se imprimen completas.
+    * **Dos diagramas se rehicieron tras verlos**: el de trazabilidad partía la línea principal en
+      dos mitades al meter el grupo nuevo dentro del flujo (se pasó a desvío lateral), y el de
+      casos de uso quedó cruzado de lado a lado por ocho `<<include>>` de carga laboral (se dejó
+      uno y el resto se enumeró en la nota del paquete).
+    * **Tres manuales nuevos en Markdown** en `manuales-gestion-equipos/`: usuario (sin jerga
+      técnica), técnico (modelo de datos, cálculo, servicios y restricciones de diseño) y roles y
+      permisos (tabla módulo por módulo, contrastada con `permisos.ts`).
+    * **Word y PowerPoint regenerados** con cuatro secciones nuevas y 3 capturas reales más del
+      selector: 15,5 MB y 33 láminas. El rango de láminas de la ronda 68 era 20–30; se amplió a
+      20–34 en vez de sacrificar contenido.
+    * **Propuesta ejecutiva**: solo las láminas afectadas —Expediente único, roles, trazabilidad y
+      beneficios— más una nueva, «Repartir el trabajo viendo cuánto tiene cada quien». 24 láminas.
+    * **Dos correcciones reales en el prototipo**, detectadas al mirar las capturas: el modal del
+      selector cortaba «Carga laboral», «Disponibilidad» y el botón «Seleccionar» —diez columnas no
+      caben en 860 px—. Se añadió `[ancho]` a `ui-modal` (`.modal.ancho`, 1320 px) y se ajustaron
+      anchos y tamaño de los encabezados de la tabla.
+    * **Validación: 0 fallos en las tres baterías** — entregables (con 39 comprobaciones nuevas de
+      carga laboral en los diagramas), manuales (con 4 bloques nuevos, incluidos los tres Markdown
+      y la ausencia de jerga en el de usuario) y `casos-carga-soporte.js`, que subió a **263 casos**.
+    * Dos aserciones frágiles se hicieron robustas: la de las láminas de la propuesta comparaba por
+      **índice** y una lámina intermedia hacía fallar diez comprobaciones correctas (ahora busca por
+      título); y las del Markdown no toleraban el ajuste de línea a 100 columnas.
+    * `ng build` limpio.
 Cada ronda de prototipo terminó con `ng build` limpio y smoke test con `ng serve` (HTTP 200);
 la ronda 14 (solo diagramas) se verificó con PlantUML `-checkonly` + render de los 7 archivos.
 La ronda 15 se verificó con `npx ng build` limpio (solo la advertencia preexistente de

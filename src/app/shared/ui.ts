@@ -59,7 +59,7 @@ export class HelpTipComponent {
   imports: [IconComponent],
   template: `
     <div class="modal-backdrop" (click)="cerrar.emit()">
-      <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal" [class.ancho]="ancho()" (click)="$event.stopPropagation()">
         <div class="card-head">
           <div>
             <h3>{{ titulo() }}</h3>
@@ -79,6 +79,8 @@ export class HelpTipComponent {
 export class ModalComponent {
   readonly titulo = input.required<string>();
   readonly sub = input('');
+  /** Modal ancho, para tablas que no caben en el ancho normal sin desplazamiento lateral. */
+  readonly ancho = input(false);
   readonly cerrar = output<void>();
 }
 

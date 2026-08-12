@@ -2,7 +2,7 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
-  AccionRequeridaFalla, ConfiguracionF0302, Cronometro, DetalleFallaF0302, MotivoSoftwareF0302,
+  AccionRequeridaFalla, CargaSoporte, ConfiguracionF0302, Cronometro, DetalleFallaF0302, MotivoSoftwareF0302,
   NivelComplejidad, ReprocesoF0288, RespuestaSiNo,
   SoftwareCatalogo, SoftwareF0302, SolicitudReservaIP, TipoFallaF0302
 } from '../../core/models/models';
@@ -14,10 +14,12 @@ import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/u
 import { IconComponent } from '../../shared/icon';
 import { EvidenciasComponent } from '../../shared/evidencias';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
+import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 
 @Component({
   selector: 'app-configuracion',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent, IconComponent, EvidenciasComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, BuscarExpedienteUnicoModalComponent,
+    IconComponent, EvidenciasComponent, SelectorSoporteComponent],
   styles: `
     .sw-row td .chk { width: 17px; height: 17px; accent-color: var(--ok); cursor: pointer; }
     .cap-row { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
@@ -974,6 +976,27 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
                 }
 
                 @if (correccionAbierta()) {
+                  <!-- Quién responde por la corrección, con la carga de Soporte a la vista -->
+                  <div class="field mt-2">
+                    <label>Técnico responsable de la corrección F0302 <span class="req">*</span></label>
+                    <input class="control" readonly [value]="responsableCorreccion() || 'Sin asignar'" />
+                    @if (cargaResponsable(); as k) {
+                      <div class="small muted mt-1">{{ k.carga }} · {{ k.total }} procesos activos · {{ data.resumenCargaSoporte(k) }}.</div>
+                      @if (k.nivel === 'Alta') {
+                        <div class="alert warn mt-1">
+                          <span class="alert-ico">!</span>
+                          <span>{{ data.MSG_CARGA_ALTA }}</span>
+                        </div>
+                      }
+                    }
+                    @if (puedeElegirResponsable()) {
+                      <button type="button" class="btn btn-outline btn-sm mt-1" (click)="buscarResponsable.set(c.expediente)">
+                        {{ responsableCorreccion() ? 'Cambiar técnico' : 'Seleccionar Técnico de Soporte' }}
+                      </button>
+                    } @else {
+                      <span class="hint">La corrección queda a su nombre. El Encargado de Soporte puede asignarla a otro técnico.</span>
+                    }
+                  </div>
                   <div class="field mt-2">
                     <label>Corrección realizada por Soporte <span class="req">*</span></label>
                     <textarea class="control" rows="2" [ngModel]="cDesc()" (ngModelChange)="cDesc.set($event)"
@@ -1258,6 +1281,20 @@ import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedient
           (seleccionar)="elegir($event)"
           (cerrar)="buscarAbierto.set(false)" />
       }
+
+      <!-- Técnico responsable de la corrección F0302, con la carga de Soporte a la vista -->
+      @if (buscarResponsable(); as id) {
+        <app-selector-soporte
+          titulo="Técnico responsable de Corrección F0302"
+          sub="Se mostrará la carga laboral de cada técnico antes de asignarle la corrección"
+          nota="La corrección se registra dentro del mismo F0302 y queda a nombre de este técnico. Una carga alta no impide asignársela."
+          vacio="No hay Técnicos de Soporte activos registrados."
+          [tecnicos]="data.tecnicosSoporteParaProceso(id)"
+          [seleccionado]="responsableCorreccion()"
+          [expediente]="id"
+          (seleccion)="responsableCorreccion.set($event.nombreRol); buscarResponsable.set('')"
+          (cerrar)="buscarResponsable.set('')" />
+      }
     </div>
   `
 })
@@ -1318,6 +1355,27 @@ export class ConfiguracionComponent {
   protected cEvidImagen = signal('');
   protected sustitucionAbierta = signal(false);
   protected sMotivo = signal('');
+
+  // ---------- Técnico responsable de la corrección F0302 ----------
+  /**
+   * Un Técnico de Soporte corrige él mismo; el Encargado de Soporte y el Administrador reparten
+   * viendo la carga de cada quien. Guarda el expediente cuyo buscador está abierto, no un
+   * booleano, porque la lista de técnicos depende del proceso.
+   */
+  protected buscarResponsable = signal('');
+  protected responsableCorreccion = signal(
+    this.auth.usuario()?.clave === 'tec-soporte'
+      ? `${this.auth.usuario()?.nombre} — ${this.auth.usuario()?.rol}`
+      : '');
+  protected readonly puedeElegirResponsable = computed(() => {
+    const clave = this.auth.usuario()?.clave;
+    return clave === 'enc-soporte' || clave === 'admin';
+  });
+  /** Carga del técnico elegido; se muestra junto al nombre sin reabrir el buscador. */
+  protected cargaResponsable(): CargaSoporte | null {
+    const t = this.responsableCorreccion();
+    return t ? this.data.cargaSoporteDe(t) : null;
+  }
 
   /** Lo que la matriz sugiere con lo que el técnico lleva contestado. */
   protected readonly sugerencia = computed(() => this.data.sugerenciaReproceso(this.fTipo(), this.fDetalle()));
@@ -1884,9 +1942,20 @@ export class ConfiguracionComponent {
   }
 
   protected registrarCorreccion(id: string): void {
-    const error = this.data.registrarCorreccionSoporte(id, this.usuarioActual, this.cDesc(),
+    const responsable = this.responsableCorreccion();
+    if (!responsable) {
+      this.toast.warn('Falta el responsable', 'Seleccione el Técnico de Soporte responsable de la corrección F0302.');
+      return;
+    }
+    const error = this.data.registrarCorreccionSoporte(id, responsable, this.cDesc(),
       this.cEvid(), this.cEvidImagen());
     if (error) { this.toast.error('No se pudo registrar la corrección', error); return; }
+    // La carga queda registrada con la corrección ya hecha: aquí no se reparte trabajo futuro, se
+    // deja constancia de con cuánta carga encima se atendió esta.
+    this.data.registrarSeleccionSoporte(responsable, this.usuarioActual, {
+      expediente: id, modulo: 'Corrección F0302',
+      expedienteUnico: this.data.expedienteUnicoDe(id)?.codigoUnico
+    });
     this.correccionAbierta.set(false);
     this.cDesc.set('');
     this.quitarEvidenciaCorreccion();

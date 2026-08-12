@@ -2,7 +2,8 @@ import { Injectable, effect, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
 import {
-  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
+  AccesorioCatalogoInstitucional, AccesorioVerificado, AccionPosteriorDescargo, AccionRequeridaFalla, Asignacion, CargaHardware, CargaSoporte, CasoGarantia, ChecklistItem, ChecklistSeccion, CierreTecnico,
+  NivelCarga, ProcesoActivo, TecnicoSoporteConCarga,
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, ContextoEvidencia, CorreccionNoConformidad, Cronometro, Descargo,
   DetalleFallaF0302, DistribucionSoporte, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EquipoControles, EstadoControles, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
   EstadoAsignacionEquipo, EstadoDetalleGarantia, EstadoGarantia, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
@@ -750,32 +751,368 @@ export class DataService {
     });
   }
 
+  // ---------- Carga laboral ----------
   /**
-   * Técnicos de Soporte con su carga de trabajo, para elegir a quién se le asigna la configuración.
-   * La carga cuenta los F0302 sin cerrar y los procesos donde ya figura como técnico de
-   * configuración: repartir sin ver esto es cómo se satura siempre al mismo.
+   * Cortes de la escala de carga laboral, común a Hardware y a Soporte: 0 a 2 procesos activos es
+   * baja, 3 a 5 media, 6 o más alta. Lo que cambia entre las dos áreas es **qué se cuenta**
+   * (`cargaSoporteDe` y `cargaHardwareDe`), nunca dónde están los cortes.
    */
-  tecnicosSoporteConCarga(): {
-    usuario: UsuarioSistema; nombreRol: string; configuraciones: number; procesos: number;
-    total: number; carga: string; disponibilidad: string;
-  }[] {
+  private readonly CARGA_MEDIA_DESDE = 3;
+  private readonly CARGA_ALTA_DESDE = 6;
+
+  /** Nivel que corresponde a una cantidad de procesos activos. */
+  nivelDeCarga(total: number): NivelCarga {
+    return total >= this.CARGA_ALTA_DESDE ? 'Alta' : total >= this.CARGA_MEDIA_DESDE ? 'Media' : 'Baja';
+  }
+
+  /**
+   * Aviso que corresponde al nivel de carga. La carga alta **advierte, no bloquea**: quien asigna
+   * sigue pudiendo elegir al técnico, pero se le dice antes y no después.
+   */
+  avisoCarga(nivel: NivelCarga): string {
+    if (nivel === 'Alta') return this.MSG_CARGA_ALTA;
+    if (nivel === 'Media') return 'Este técnico tiene carga laboral media. Verifique si puede asumir un nuevo proceso.';
+    return 'Este técnico tiene carga laboral baja y puede recibir nuevos procesos.';
+  }
+
+  /** Advertencia de carga alta. No impide seleccionar: solo pide revisar la disponibilidad. */
+  readonly MSG_CARGA_ALTA =
+    'Este técnico tiene carga laboral alta. Puede seleccionarlo, pero se recomienda revisar su disponibilidad.';
+
+  /** El nombre suelto de un responsable guardado como «Nombre — Rol». */
+  private soloNombre(tecnico: string): string {
+    return (tecnico ?? '').split('—')[0].trim();
+  }
+
+  /**
+   * Configuraciones F0302 **en proceso** de un Técnico de Soporte: las que ya empezaron y todavía
+   * no se completaron, incluidas las que quedaron «Con falla» —el equipo sigue siendo suyo hasta
+   * que la incidencia se resuelve—. Las que aún no se han iniciado no se cuentan aquí sino como
+   * expediente único pendiente: es trabajo asignado, pero de otra clase.
+   */
+  configuracionesActivasDeSoporte(tecnico: string): ConfiguracionF0302[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.configuraciones().filter((c) =>
+      c.tecnico.includes(nombre) && c.estado !== 'Completada' && this.configuracionIniciada(c.expediente));
+  }
+
+  /**
+   * Expedientes únicos a cargo del técnico cuyo F0302 **todavía no ha empezado**. Junto con
+   * `configuracionesActivasDeSoporte` reparten todo el trabajo de configuración sin solaparse: un
+   * mismo proceso no puede sumar dos veces a la carga, o «Carga alta» dejaría de significar seis
+   * trabajos y pasaría a significar tres contados dos veces.
+   *
+   * Se toma la configuración F0302 como fuente —existe desde que se crea el Expediente único— y se
+   * añaden las asignaciones vigentes que todavía no tienen ninguna, que es como quedaron los
+   * procesos anteriores a que el F0302 se guardara aparte.
+   */
+  expedientesUnicosActivosDeSoporte(tecnico: string): { expediente: string; inventario: string; estado: string; fecha: string }[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    const pendientes = this.configuraciones()
+      .filter((c) => c.tecnico.includes(nombre) && c.estado !== 'Completada' && !this.configuracionIniciada(c.expediente))
+      .map((c) => ({ expediente: c.expediente, inventario: c.datos.inventario, estado: 'Pendiente de configuración', fecha: c.fecha }));
+    const conConfiguracion = new Set(this.configuraciones().map((c) => c.expediente));
+    const sinConfiguracion = this.asignaciones()
+      .filter((a) => a.vigente &&
+        (a.responsablesFase?.tecnicoConfiguracion ?? '').includes(nombre) &&
+        a.responsablesFase?.estadoConfiguracion !== 'Completada' &&
+        !conConfiguracion.has(a.expediente))
+      .map((a) => ({
+        expediente: a.expediente, inventario: a.equipoInventario,
+        estado: a.responsablesFase?.estadoConfiguracion ?? 'Pendiente', fecha: a.fecha
+      }));
+    return [...pendientes, ...sinConfiguracion];
+  }
+
+  /** Correcciones F0302 por inconformidad que el técnico tiene pendientes o en proceso. */
+  correccionesActivasDeSoporte(tecnico: string): CorreccionNoConformidad[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.correcciones().filter((c) =>
+      c.tecnico.includes(nombre) && c.estado !== 'Firmada' && c.estado !== 'Cerrada por reproceso F0288');
+  }
+
+  /**
+   * Inconformidades que todavía nadie empezó a atender, en procesos donde el técnico es el
+   * responsable de la configuración. Es trabajo suyo aunque aún no exista la corrección: por eso
+   * se cuenta aparte de `correccionesActivasDeSoporte`.
+   */
+  inconformidadesPendientesDeSoporte(tecnico: string): IntentoAceptacion[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.intentos().filter((i) => {
+      if (i.resultado !== 'No conforme') return false;
+      if (this.correccionesDe(i.expediente).some((c) => c.intentoNumero === i.numero)) return false;
+      const asig = this.asignacionDe(i.expediente);
+      return (asig?.responsablesFase?.tecnicoConfiguracion ?? '').includes(nombre);
+    });
+  }
+
+  /** Casos de garantía abiertos o en revisión que atiende el técnico. */
+  casosGarantiaActivosDeSoporte(tecnico: string): { garantia: Garantia; caso: CasoGarantia }[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.garantias().flatMap((g) =>
+      g.casos
+        .filter((c) => c.responsableAtencion.includes(nombre) && (c.estado === 'Abierto' || c.estado === 'En revisión'))
+        .map((caso) => ({ garantia: g, caso })));
+  }
+
+  /** Descargos registrados por el técnico que aún no se han procesado. */
+  descargosPendientesDeSoporte(tecnico: string): Descargo[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.descargos().filter((d) => d.responsableRegistro.includes(nombre) && d.estado === 'Registrado');
+  }
+
+  /**
+   * Formularios de conformidad enviados y sin respuesta en procesos donde el técnico participa
+   * (configuró o entregó). Son seguimiento pendiente: el proceso no avanza solo.
+   */
+  conformidadesEnSeguimientoDeSoporte(tecnico: string): Conformidad[] {
+    const nombre = this.soloNombre(tecnico);
+    if (!nombre) return [];
+    return this.conformidades().filter((c) => {
+      if (c.estado !== 'Enviado' && c.estado !== 'Pendiente de respuesta') return false;
+      const e = this.entregaDe(c.expediente);
+      const asig = this.asignacionDe(c.expediente);
+      return (e?.tecnicoConfiguro ?? '').includes(nombre) || (e?.tecnicoEntrega ?? '').includes(nombre)
+        || (asig?.responsablesFase?.tecnicoConfiguracion ?? '').includes(nombre);
+    });
+  }
+
+  /**
+   * Carga laboral de un Técnico de Soporte, con el desglose por tipo de proceso. Cuenta **solo**
+   * procesos del área de Soporte (§9): mezclarlos con los de Hardware daría un total que no
+   * describe el trabajo de ninguno de los dos.
+   */
+  cargaSoporteDe(tecnico: string): CargaSoporte {
+    const expedientesUnicos = this.expedientesUnicosActivosDeSoporte(tecnico).length;
+    const configuraciones = this.configuracionesActivasDeSoporte(tecnico).length;
+    const correcciones = this.correccionesActivasDeSoporte(tecnico).length;
+    const inconformidades = this.inconformidadesPendientesDeSoporte(tecnico).length;
+    const garantias = this.casosGarantiaActivosDeSoporte(tecnico).length;
+    const descargos = this.descargosPendientesDeSoporte(tecnico).length;
+    const conformidades = this.conformidadesEnSeguimientoDeSoporte(tecnico).length;
+    const total = expedientesUnicos + configuraciones + correcciones + inconformidades
+      + garantias + descargos + conformidades;
+    const nivel = this.nivelDeCarga(total);
+    return {
+      expedientesUnicos, configuraciones, correcciones, inconformidades, garantias, descargos,
+      conformidades, total, nivel,
+      carga: `Carga ${nivel.toLowerCase()}`,
+      disponibilidad: nivel === 'Alta' ? 'Ocupado' : 'Disponible'
+    };
+  }
+
+  /**
+   * Los procesos activos que hay detrás de esa carga, uno por fila. Es lo que permite responder
+   * «¿por qué está en carga alta?» sin salir del buscador de técnicos.
+   */
+  procesosActivosDeSoporte(tecnico: string): ProcesoActivo[] {
+    const filas: ProcesoActivo[] = [];
+    const dirUni = (expediente: string): { direccion: string; unidad: string } => {
+      const s = this.solicitud(expediente);
+      return { direccion: s?.direccionGerencia ?? '', unidad: s?.unidadDestino ?? '' };
+    };
+    const nombreEquipo = (inventario: string): string => {
+      const e = this.equipoDe(inventario);
+      return e ? `${e.marca} ${e.modelo}` : '';
+    };
+
+    for (const c of this.configuracionesActivasDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(c.expediente);
+      filas.push({
+        codigo: this.expedienteUnicoDe(c.expediente)?.codigoUnico ?? c.expediente,
+        tipoProceso: 'Configuración F0302',
+        equipo: nombreEquipo(c.datos.inventario), inventario: c.datos.inventario,
+        usuarioFinal: c.datos.asignadoA, direccion: direccion || c.datos.direccionGerencia,
+        unidad: unidad || c.datos.unidad, estado: c.estado, fechaAsignacion: c.fecha,
+        prioridad: c.estado === 'Con falla' ? 'Alta' : 'Normal'
+      });
+    }
+    for (const a of this.expedientesUnicosActivosDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(a.expediente);
+      filas.push({
+        codigo: this.expedienteUnicoDe(a.expediente)?.codigoUnico ?? a.expediente,
+        tipoProceso: 'Expediente único',
+        equipo: nombreEquipo(a.inventario), inventario: a.inventario,
+        usuarioFinal: this.solicitud(a.expediente)?.destinatario ?? '', direccion, unidad,
+        estado: a.estado, fechaAsignacion: a.fecha || this.asignacionDe(a.expediente)?.fecha || '',
+        prioridad: 'Normal'
+      });
+    }
+    for (const c of this.correccionesActivasDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(c.expediente);
+      filas.push({
+        codigo: c.id, tipoProceso: 'Corrección F0302',
+        equipo: nombreEquipo(c.inventario), inventario: c.inventario,
+        usuarioFinal: c.usuarioFinal, direccion, unidad, estado: c.estado,
+        fechaAsignacion: c.fechaInicio, prioridad: 'Alta'
+      });
+    }
+    for (const i of this.inconformidadesPendientesDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(i.expediente);
+      filas.push({
+        codigo: `${i.expediente} · intento ${i.numero}`, tipoProceso: 'Inconformidad',
+        equipo: nombreEquipo(i.inventario), inventario: i.inventario,
+        usuarioFinal: i.usuarioFinal, direccion, unidad, estado: 'Pendiente de atención',
+        fechaAsignacion: i.fecha, prioridad: 'Alta'
+      });
+    }
+    for (const { garantia, caso } of this.casosGarantiaActivosDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(garantia.expediente);
+      filas.push({
+        codigo: caso.codigo, tipoProceso: 'Garantía',
+        equipo: garantia.equipo, inventario: garantia.inventario,
+        usuarioFinal: garantia.usuarioFinal, direccion, unidad, estado: caso.estado,
+        fechaAsignacion: caso.fechaApertura, prioridad: 'Normal'
+      });
+    }
+    for (const d of this.descargosPendientesDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(d.asignacionRelacionada);
+      filas.push({
+        codigo: d.idDescargo, tipoProceso: 'Descargo',
+        equipo: nombreEquipo(d.inventario), inventario: d.inventario,
+        usuarioFinal: d.usuarioFinalEntrega, direccion, unidad, estado: d.estado,
+        fechaAsignacion: d.fechaDescargo, prioridad: 'Normal'
+      });
+    }
+    for (const c of this.conformidadesEnSeguimientoDeSoporte(tecnico)) {
+      const { direccion, unidad } = dirUni(c.expediente);
+      filas.push({
+        codigo: c.token, tipoProceso: 'Formulario de conformidad',
+        equipo: c.marcaModelo, inventario: c.inventario, usuarioFinal: c.usuarioFinal,
+        direccion, unidad, estado: c.estado, fechaAsignacion: c.fechaEnvio.slice(0, 10),
+        prioridad: 'Normal'
+      });
+    }
+    return filas.sort((a, b) => b.fechaAsignacion.localeCompare(a.fechaAsignacion));
+  }
+
+  /** Desglose de la carga en una línea, para tooltips, resúmenes y trazabilidad. */
+  resumenCargaSoporte(carga: CargaSoporte): string {
+    const partes = [
+      [carga.expedientesUnicos, 'expedientes únicos'],
+      [carga.configuraciones, 'configuraciones'],
+      [carga.correcciones, 'correcciones'],
+      [carga.inconformidades, 'inconformidades'],
+      [carga.garantias, 'garantías'],
+      [carga.descargos, 'descargos'],
+      [carga.conformidades, 'conformidades en seguimiento']
+    ] as const;
+    const activas = partes.filter(([n]) => n > 0).map(([n, etiqueta]) => `${n} ${etiqueta}`);
+    return activas.length ? activas.join(' · ') : 'Sin procesos activos';
+  }
+
+  /** Fecha del proceso más reciente que se le asignó al técnico de soporte, si tiene alguno. */
+  ultimaAsignacionSoporte(tecnico: string): string {
+    return this.procesosActivosDeSoporte(tecnico)[0]?.fechaAsignacion ?? '';
+  }
+
+  /**
+   * Técnicos de Soporte activos con su carga laboral desglosada y las Direcciones/Unidades que
+   * atienden. Repartir sin ver esto es cómo se satura siempre al mismo. Se ordena por carga
+   * ascendente: el primero de la lista es el que puede recibir el trabajo con menos costo.
+   */
+  tecnicosSoporteConCarga(): TecnicoSoporteConCarga[] {
     return this.usuarios()
       .filter((u) => u.clave === 'tec-soporte' && u.estado !== 'Inactivo')
       .map((usuario) => {
         const nombreRol = `${usuario.nombre} — ${usuario.rol}`;
-        const configuraciones = this.configuraciones()
-          .filter((c) => c.tecnico.includes(usuario.nombre) && c.estado !== 'Completada').length;
-        const procesos = this.asignaciones()
-          .filter((a) => (a.responsablesFase?.tecnicoConfiguracion ?? '').includes(usuario.nombre)
-            && a.responsablesFase?.estadoConfiguracion !== 'Completada').length;
-        const total = configuraciones + procesos;
+        const carga = this.cargaSoporteDe(nombreRol);
+        const direcciones = this.direccionesDeTecnico(nombreRol)
+          .map((d) => (d.direccion === d.unidad ? d.direccion : `${d.direccion} / ${d.unidad}`));
         return {
-          usuario, nombreRol, configuraciones, procesos, total,
-          carga: total >= 3 ? 'Carga alta' : total >= 1 ? 'Carga media' : 'Carga baja',
-          disponibilidad: total >= 3 ? 'Ocupado' : 'Disponible'
+          ...carga, usuario, nombreRol,
+          direccionUnidad: direcciones.join('; '),
+          ultimaAsignacion: this.ultimaAsignacionSoporte(nombreRol)
         };
       })
-      .sort((a, b) => a.total - b.total);
+      .sort((a, b) => a.total - b.total || a.usuario.nombre.localeCompare(b.usuario.nombre));
+  }
+
+  /**
+   * Carga laboral de un Técnico de **Hardware**. Cuenta lo suyo —expedientes técnicos activos,
+   * preparaciones F0288 sin finalizar, reprocesos asignados y revisiones técnicas de garantía—, y
+   * nunca procesos de Soporte. Un reproceso con origen «Garantía» se cuenta como revisión de
+   * garantía y no como reproceso, para no sumarlo dos veces.
+   */
+  cargaHardwareDe(tecnico: string): CargaHardware {
+    const nombre = this.soloNombre(tecnico);
+    const expedientes = this.expedientesActivosDeTecnico(nombre).length;
+    const preparaciones = this.preparaciones()
+      .filter((p) => p.tecnico.includes(nombre) && p.estado !== 'Completada' && p.estado !== 'Cerrada').length;
+    const abiertos = nombre
+      ? this.reprocesos().filter((r) => r.tecnicoAsignado.includes(nombre)
+          && r.estado !== 'Firmado' && r.estado !== 'No corregido')
+      : [];
+    const revisionesGarantia = abiertos.filter((r) => r.origen === 'Garantía').length;
+    const reprocesos = abiertos.length - revisionesGarantia;
+    const total = expedientes + preparaciones + reprocesos + revisionesGarantia;
+    const nivel = this.nivelDeCarga(total);
+    return {
+      expedientes, preparaciones, reprocesos, revisionesGarantia, total, nivel,
+      carga: `Carga ${nivel.toLowerCase()}`,
+      disponibilidad: nivel === 'Alta' ? 'Ocupado' : 'Disponible'
+    };
+  }
+
+  /** Desglose de la carga de Hardware en una línea. */
+  resumenCargaHardware(carga: CargaHardware): string {
+    const partes = [
+      [carga.expedientes, 'expedientes técnicos'],
+      [carga.preparaciones, 'preparaciones F0288'],
+      [carga.reprocesos, 'reprocesos F0288'],
+      [carga.revisionesGarantia, 'revisiones de garantía']
+    ] as const;
+    const activas = partes.filter(([n]) => n > 0).map(([n, etiqueta]) => `${n} ${etiqueta}`);
+    return activas.length ? activas.join(' · ') : 'Sin procesos activos';
+  }
+
+  /**
+   * Deja constancia de que se consultó el detalle de carga laboral de un Técnico de Soporte. Se
+   * registra al abrir el detalle, no en cada búsqueda ni al pasar el mouse: la trazabilidad debe
+   * poder leerse, y una consulta de solo lectura por cada movimiento del cursor la vuelve inútil.
+   */
+  registrarConsultaCargaSoporte(tecnico: string, usuario: string, expediente = ''): void {
+    const carga = this.cargaSoporteDe(tecnico);
+    const detalle = this.resumenCargaSoporte(carga);
+    this.registrarEvento(expediente || `TECNICO-${this.soloNombre(tecnico)}`, usuario,
+      `Carga laboral de Técnico de Soporte visualizada: ${this.soloNombre(tecnico)}`, 'Consulta realizada',
+      `${carga.carga} — ${carga.total} procesos activos. ${detalle}.`, false,
+      { modulo: 'Carga laboral de Soporte', tecnicoSoporte: tecnico, cargaLaboral: carga.carga,
+        procesosActivos: carga.total, detalleCarga: detalle, rol: this.rolConectado() });
+  }
+
+  /**
+   * Deja constancia de que se seleccionó un Técnico de Soporte, con la carga que tenía **en ese
+   * momento**. Si el técnico venía en carga alta se registra como evento aparte: la advertencia se
+   * mostró y aun así se asignó, y eso es justo lo que después hay que poder auditar.
+   */
+  registrarSeleccionSoporte(tecnico: string, usuario: string, contexto: {
+    expediente?: string; modulo: string; direccion?: string; unidad?: string;
+    inventario?: string; expedienteUnico?: string;
+  }): void {
+    const carga = this.cargaSoporteDe(tecnico);
+    const detalle = this.resumenCargaSoporte(carga);
+    const ref = {
+      modulo: contexto.modulo, tecnicoSoporte: tecnico, cargaLaboral: carga.carga,
+      procesosActivos: carga.total, detalleCarga: detalle, direccion: contexto.direccion,
+      unidad: contexto.unidad, inventario: contexto.inventario,
+      expedienteUnico: contexto.expedienteUnico, rol: this.rolConectado()
+    };
+    const expediente = contexto.expediente || `TECNICO-${this.soloNombre(tecnico)}`;
+    this.registrarEvento(expediente, usuario,
+      `Técnico de Soporte seleccionado: ${this.soloNombre(tecnico)}`, 'Asignación realizada',
+      `${carga.carga} al momento de asignar — ${carga.total} procesos activos. ${detalle}.`, false, ref);
+    if (carga.nivel === 'Alta') {
+      this.registrarEvento(expediente, usuario,
+        `Técnico seleccionado con carga alta: ${this.soloNombre(tecnico)}`, 'Asignación realizada',
+        `${this.MSG_CARGA_ALTA} Se asignó de todos modos con ${carga.total} procesos activos.`, false, ref);
+    }
   }
   /**
    * Un equipo puede recibir un NUEVO expediente técnico si nunca tuvo uno, o si su último
@@ -1623,10 +1960,14 @@ export class DataService {
   expedientesActivosDeTecnico(nombreTecnico: string): ExpedienteTecnico[] {
     return this.expedientesDeTecnico(nombreTecnico).filter((x) => x.estado !== 'Cerrado');
   }
-  /** Clasificación de la carga laboral según la cantidad de expedientes técnicos activos. */
-  cargaLaboral(nombreTecnico: string): 'Baja' | 'Media' | 'Alta' {
-    const n = this.expedientesActivosDeTecnico(nombreTecnico).length;
-    return n >= 6 ? 'Alta' : n >= 3 ? 'Media' : 'Baja';
+  /**
+   * Clasificación de la carga laboral de un Técnico de **Hardware**. Cuenta los cuatro procesos
+   * del área (`cargaHardwareDe`), no solo los expedientes técnicos: un técnico con dos expedientes
+   * y cuatro reprocesos encima no está «con carga baja». Los procesos de Soporte no entran aquí
+   * (§9); para esos está `cargaSoporteDe`.
+   */
+  cargaLaboral(nombreTecnico: string): NivelCarga {
+    return this.cargaHardwareDe(nombreTecnico).nivel;
   }
   /**
    * Expedientes pendientes por preparar de un técnico: activos cuyo F0288 todavía no se ha
@@ -1649,13 +1990,19 @@ export class DataService {
    * no inundar la trazabilidad con consultas de solo lectura.
    */
   registrarConsultaTecnico(tecnico: UsuarioSistema, usuario: UsuarioSistema): void {
-    const carga = this.cargaLaboral(tecnico.nombre);
-    const activos = this.expedientesActivosDeTecnico(tecnico.nombre).length;
+    // Un Técnico de Soporte se consulta con su propia carga: la de Hardware no describe su trabajo.
+    if (tecnico.clave === 'tec-soporte') {
+      this.registrarConsultaCargaSoporte(`${tecnico.nombre} — ${tecnico.rol}`, `${usuario.nombre} — ${usuario.rol}`);
+      return;
+    }
+    const carga = this.cargaHardwareDe(tecnico.nombre);
     const pendientes = this.expedientesPendientesPorPreparar(tecnico.nombre).length;
     this.registrarEvento(`TECNICO-${tecnico.usuario}`, `${usuario.nombre} — ${usuario.rol}`,
       `Detalle de técnico consultado: ${tecnico.nombre}`, 'Consulta realizada',
-      `Unidad: ${tecnico.unidad}. Carga laboral: ${carga} (${activos} activos, ${pendientes} pendientes por preparar).`,
-      false, { modulo: 'Expediente técnico' });
+      `Unidad: ${tecnico.unidad}. ${carga.carga} — ${carga.total} procesos activos. `
+        + `${this.resumenCargaHardware(carga)}. Pendientes por preparar: ${pendientes}.`,
+      false, { modulo: 'Expediente técnico', cargaLaboral: carga.carga, procesosActivos: carga.total,
+        detalleCarga: this.resumenCargaHardware(carga) });
   }
 
   /** F0302: el Técnico de Soporte solo ve las configuraciones asignadas a él. */
@@ -2426,12 +2773,19 @@ export class DataService {
       asignadoPor: usuario, fecha: this.hoy(), hora: this.hora(), activo: true,
       observacion: datos.observacion.trim()
     };
+    // La carga se toma ANTES de sumar la Dirección/Unidad: es con la que se decidió asignársela.
+    const carga = this.cargaSoporteDe(datos.tecnico);
     this.distribuciones.update((list) => [nuevo, ...list]);
     this.registrarEvento(nuevo.id, usuario,
       `${usuarioTec.nombre} asignado como Técnico de Soporte de ${nuevo.direccion} / ${nuevo.unidad}`,
-      'Activa', nuevo.observacion, false,
+      'Activa',
+      `${nuevo.observacion}${nuevo.observacion ? ' ' : ''}`
+        + `${carga.carga} al momento de asignar — ${carga.total} procesos activos. ${this.resumenCargaSoporte(carga)}.`,
+      false,
       { modulo: 'Distribución de soportes', direccion: nuevo.direccion, unidad: nuevo.unidad,
-        soporteResponsable: nuevo.tecnico, rol: this.rolConectado() });
+        soporteResponsable: nuevo.tecnico, tecnicoSoporte: nuevo.tecnico, cargaLaboral: carga.carga,
+        procesosActivos: carga.total, detalleCarga: this.resumenCargaSoporte(carga),
+        rol: this.rolConectado() });
     return nuevo;
   }
 
@@ -2520,16 +2874,25 @@ export class DataService {
    * vigente de SU Dirección/Unidad, activos y con su carga a la vista. Un técnico que no atiende
    * esa Dirección/Unidad no aparece — no se muestra deshabilitado, no aparece.
    */
-  tecnicosConfiguracionDe(id: string): {
-    usuario: UsuarioSistema; nombreRol: string; configuraciones: number; procesos: number;
-    total: number; carga: string; disponibilidad: string; direccionUnidad: string;
-  }[] {
+  tecnicosConfiguracionDe(id: string): TecnicoSoporteConCarga[] {
     const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
     if (!direccion || !unidad) return [];
     const responsables = this.tecnicosDeDireccionUnidad(direccion, unidad);
     return this.tecnicosSoporteConCarga()
-      .filter((t) => responsables.some((r) => r.includes(t.usuario.nombre)))
-      .map((t) => ({ ...t, direccionUnidad: direccion === unidad ? direccion : `${direccion} / ${unidad}` }));
+      .filter((t) => responsables.some((r) => r.includes(t.usuario.nombre)));
+  }
+
+  /**
+   * Técnicos de Soporte que pueden hacerse cargo de un proceso ya en marcha —una corrección, una
+   * inconformidad, un caso de garantía o un descargo—. Se prefiere a los responsables de su
+   * Dirección/Unidad; si esa Dirección/Unidad todavía no tiene distribución vigente se ofrecen
+   * todos, porque un caso abierto no puede quedarse sin quién lo atienda mientras se corrige el
+   * catálogo. La regla estricta de la distribución solo aplica al Técnico de Configuración, que es
+   * donde el requerimiento define a quién le toca desde el inicio.
+   */
+  tecnicosSoporteParaProceso(id: string): TecnicoSoporteConCarga[] {
+    const propios = this.tecnicosConfiguracionDe(id);
+    return propios.length ? propios : this.tecnicosSoporteConCarga();
   }
 
   /**
@@ -2994,9 +3357,10 @@ export class DataService {
     // Carga laboral y pendientes del técnico al momento de asignarle este expediente (se anota en
     // el detalle del evento de creación en vez de generar un evento aparte por cada consulta).
     const nombreTecnico = datos.tecnicoPreparacion.split('—')[0].trim();
-    const carga = this.cargaLaboral(nombreTecnico);
+    const carga = this.cargaHardwareDe(nombreTecnico);
     const pendientes = this.expedientesPendientesPorPreparar(nombreTecnico).length;
-    const detalleCarga = `Carga laboral del técnico al asignar: ${carga} (${this.expedientesActivosDeTecnico(nombreTecnico).length} activos, ${pendientes} pendientes por preparar).`;
+    const detalleCarga = `Carga laboral del técnico al asignar: ${carga.carga} — ${carga.total} procesos activos `
+      + `(${this.resumenCargaHardware(carga)}; ${pendientes} pendientes por preparar).`;
 
     if (anterior) {
       // Reingreso: el equipo ya tenía un expediente técnico (ahora histórico); se referencia
@@ -3049,6 +3413,14 @@ export class DataService {
     // Dirección/Unidad solicitante (§7/§11). La pantalla ya filtra el listado, pero la puerta
     // vive aquí: filtrar es una comodidad, la regla no puede depender de qué se mostró.
     if (this.bloqueoExpedienteUnico(id, tecnicoConfiguracion)) return null;
+
+    // La carga laboral del Técnico de Configuración se deja registrada ANTES de crear nada: es la
+    // que tenía al momento de asignarle este proceso, no la que tendrá ya con él encima (§12).
+    const dirUniSel = this.dirUnidadDeSolicitud(id);
+    this.registrarSeleccionSoporte(tecnicoConfiguracion, usuario, {
+      expediente: id, modulo: 'Expediente único', direccion: dirUniSel.direccion,
+      unidad: dirUniSel.unidad, inventario: asig.equipoInventario
+    });
 
     // EXP-AÑO-CORRELATIVO: el correlativo del Expediente único también se reinicia por año.
     const codigo = this.siguienteCodigoPorAnio(
@@ -3173,10 +3545,12 @@ export class DataService {
     this.registrarEvento(id, usuario,
       `Técnico de configuración validado por Dirección/Unidad: ${tecnicoConfiguracion.split('—')[0].trim()}`,
       'En configuración',
-      `Pertenece a la distribución de soporte de ${dirUni.direccion === dirUni.unidad ? dirUni.direccion : `${dirUni.direccion} / ${dirUni.unidad}`}.`,
+      `Pertenece a la distribución de soporte de ${dirUni.direccion === dirUni.unidad ? dirUni.direccion : `${dirUni.direccion} / ${dirUni.unidad}`}. `
+        + `Asignación realizada por ${usuario}.`,
       false,
       { modulo: 'Expediente único', inventario: asig.equipoInventario, expedienteUnico: codigo,
-        direccion: dirUni.direccion, unidad: dirUni.unidad, tecnicoConfiguracion, rol: this.rolConectado() });
+        direccion: dirUni.direccion, unidad: dirUni.unidad, tecnicoConfiguracion,
+        tecnicoSoporte: tecnicoConfiguracion, rol: this.rolConectado() });
     this.registrarEvento(id, usuario, `Expediente único ${codigo} creado; continúa la Configuración F0302`, 'En configuración',
       `Técnico de configuración: ${tecnicoConfiguracion}.`, true,
       { modulo: 'Expediente único', estadoAnterior: 'Asignada', inventario: asig.equipoInventario,

@@ -6,18 +6,20 @@ import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
-import { CorreccionNoConformidad, ResolucionInconformidad, RespuestaSiNo, TipoProblemaInconformidad } from '../../core/models/models';
+import { CargaSoporte, CorreccionNoConformidad, ResolucionInconformidad, RespuestaSiNo, TipoProblemaInconformidad } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { BuscarExpedienteUnicoModalComponent, FilaExpedienteUnico, filaExpedienteUnico } from '../../shared/buscar-expediente';
 import { EvidenciasComponent } from '../../shared/evidencias';
+import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 
 @Component({
   selector: 'app-entrega',
   imports: [RouterLink, SlicePipe, FormsModule, BadgeComponent, HelpTipComponent, BuscarExpedienteUnicoModalComponent,
-    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent, IconComponent, EvidenciasComponent],
+    ConstanciaCorreccionComponent, ConstanciaReprocesoComponent, IconComponent, EvidenciasComponent,
+    SelectorSoporteComponent],
   styles: `
     .conf-panel { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 16px 18px; }
     .conf-panel .cp-title { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--tx-3); margin-bottom: 8px; }
@@ -208,6 +210,29 @@ import { EvidenciasComponent } from '../../shared/evidencias';
                             <span class="hint">Se generará un reproceso sobre el <b>mismo Expediente técnico</b> ({{ expTecnico() || '—' }}-R#). No se crea un Expediente técnico nuevo, y solo un <b>Encargado</b> puede asignarlo a un Técnico de Hardware.</span>
                           }
                         }
+
+                        <!-- Técnico responsable de atender la inconformidad, con su carga laboral -->
+                        <div class="field mt-2">
+                          <label>Técnico responsable de atención <span class="req">*</span></label>
+                          <input class="control" readonly [value]="responsableAtencion() || 'Sin asignar'" />
+                          @if (cargaResponsable(); as c) {
+                            <div class="small muted mt-1">{{ c.carga }} · {{ c.total }} procesos activos · {{ data.resumenCargaSoporte(c) }}.</div>
+                            @if (c.nivel === 'Alta') {
+                              <div class="alert warn mt-1">
+                                <span class="alert-ico">!</span>
+                                <span>{{ data.MSG_CARGA_ALTA }}</span>
+                              </div>
+                            }
+                          }
+                          @if (puedeElegirResponsable()) {
+                            <button type="button" class="btn btn-outline btn-sm mt-1" (click)="buscarResponsable.set(e.expediente)">
+                              {{ responsableAtencion() ? 'Cambiar técnico' : 'Seleccionar Técnico de Soporte' }}
+                            </button>
+                          } @else {
+                            <span class="hint">La corrección queda a su nombre. El Encargado de Soporte puede asignarla a otro técnico.</span>
+                          }
+                        </div>
+
                         <button class="btn btn-primary btn-sm mt-2" [disabled]="!puedeAtenderAhora()" (click)="atender(e.expediente)">Atender inconformidad</button>
                       }
 
@@ -438,6 +463,20 @@ import { EvidenciasComponent } from '../../shared/evidencias';
           (cerrar)="buscarAbierto.set(false)" />
       }
 
+      <!-- Técnico responsable de atender la inconformidad, con la carga de Soporte a la vista -->
+      @if (buscarResponsable(); as id) {
+        <app-selector-soporte
+          titulo="Técnico responsable de atención de inconformidad"
+          sub="Se mostrará la carga laboral de cada técnico antes de asignarle la corrección"
+          nota="La corrección F0302 y el seguimiento de la inconformidad quedan a cargo de este técnico. Una carga alta no impide asignársela."
+          vacio="No hay Técnicos de Soporte activos registrados."
+          [tecnicos]="data.tecnicosSoporteParaProceso(id)"
+          [seleccionado]="responsableAtencion()"
+          [expediente]="id"
+          (seleccion)="responsableAtencion.set($event.nombreRol); buscarResponsable.set('')"
+          (cerrar)="buscarResponsable.set('')" />
+      }
+
       <ui-constancia-correccion [idCorreccion]="verConstancia()" (cerrado)="verConstancia.set('')" />
       <ui-constancia-reproceso [idReproceso]="verConstanciaReproceso()" (cerrado)="verConstanciaReproceso.set('')" />
     </div>
@@ -526,6 +565,27 @@ export class EntregaComponent {
     return this.data.textoEstadoIncidenciaConformidad(e ? this.data.estadoIncidenciaConformidad(e.expediente) : '');
   });
 
+  // ---------- Técnico responsable de atender la inconformidad ----------
+  /**
+   * Un Técnico de Soporte atiende la inconformidad él mismo; el Encargado de Soporte y el
+   * Administrador la reparten viendo la carga de cada quien. Guarda el expediente cuyo buscador
+   * está abierto, no un booleano, porque la lista de técnicos depende del proceso.
+   */
+  protected buscarResponsable = signal('');
+  protected responsableAtencion = signal(
+    this.auth.usuario()?.clave === 'tec-soporte'
+      ? `${this.auth.usuario()?.nombre} — ${this.auth.usuario()?.rol}`
+      : '');
+  protected readonly puedeElegirResponsable = computed(() => {
+    const clave = this.auth.usuario()?.clave;
+    return clave === 'enc-soporte' || clave === 'admin';
+  });
+  /** Carga del técnico elegido; se muestra junto al nombre sin tener que reabrir el buscador. */
+  protected cargaResponsable(): CargaSoporte | null {
+    const t = this.responsableAtencion();
+    return t ? this.data.cargaSoporteDe(t) : null;
+  }
+
   /** Clasificación de la inconformidad (spec §5, §6). */
   protected readonly tiposProblema: TipoProblemaInconformidad[] = [
     'Problema de configuración', 'Problema de software', 'Problema de usuario o credenciales',
@@ -584,6 +644,8 @@ export class EntregaComponent {
   protected puedeAtenderAhora(): boolean {
     if (!this.tipoProblema() || !this.sugerencia() || !this.resolucion()) return false;
     if (this.resolucion() !== this.sugerencia() && !this.justificacion().trim()) return false;
+    // Sin responsable no hay a quién reclamarle la corrección; la carga alta advierte, no bloquea.
+    if (!this.responsableAtencion()) return false;
     return true;
   }
 
@@ -659,10 +721,17 @@ export class EntregaComponent {
   }
 
   protected atender(id: string): void {
+    const responsable = this.responsableAtencion() || this.usuarioActual();
+    // Se deja constancia de la carga del responsable ANTES de abrir la corrección: es la que tenía
+    // al recibirla, no la que tendrá ya con este caso encima.
+    this.data.registrarSeleccionSoporte(responsable, this.usuarioActual(), {
+      expediente: id, modulo: 'Atención de inconformidad',
+      inventario: this.entrega()?.inventario, expedienteUnico: this.unicoCod()
+    });
     const r = this.data.atenderInconformidad(id, {
       tipoProblema: this.tipoProblema(), resolucion: this.resolucion(),
       justificacionResolucion: this.justificacion(), ...this.detalleDepende()
-    }, this.usuarioActual());
+    }, responsable);
     if (typeof r === 'string') { this.toast.error('No se pudo atender la inconformidad', r); return; }
     this.descCorreccion.set(''); this.hubo.set(''); this.detalle.set(''); this.obsTecnica.set('');
     this.tipoProblema.set(''); this.respuestaDepende.set(''); this.resolucion.set(''); this.justificacion.set('');

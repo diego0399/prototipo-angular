@@ -10,6 +10,7 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
 import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
+import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 
 /**
  * Expediente único: aquí se hace la unión entre la solicitud/requerimiento, el usuario final,
@@ -19,7 +20,7 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
 @Component({
   selector: 'app-expediente-unico',
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, TipoRequerimientoPipe,
-    ConstanciaReprocesoComponent, ConstanciaCorreccionComponent, IconComponent],
+    ConstanciaReprocesoComponent, ConstanciaCorreccionComponent, IconComponent, SelectorSoporteComponent],
   styles: `
     .exp-card { cursor: pointer; transition: box-shadow .15s, border-color .15s; }
     .exp-card:hover { box-shadow: var(--shadow-2); border-color: var(--blue-500); }
@@ -204,9 +205,27 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
                     <div class="datos">
                       <div><span>Técnico de configuración</span><b>{{ t }}</b></div>
                       @if (cargaDe(t); as c) {
-                        <div><span>Carga laboral</span><b>{{ c.carga }} · {{ c.configuraciones }} configuraciones activas</b></div>
+                        <div><span>Carga laboral</span><b>{{ c.carga }} · {{ c.total }} procesos activos</b></div>
+                        <div><span>Expedientes únicos activos</span><b>{{ c.expedientesUnicos }}</b></div>
+                        <div><span>Configuraciones activas</span><b>{{ c.configuraciones }}</b></div>
+                        <div><span>Correcciones pendientes</span><b>{{ c.correcciones }}</b></div>
+                        <div><span>Inconformidades pendientes</span><b>{{ c.inconformidades }}</b></div>
+                        <div><span>Casos de garantía asignados</span><b>{{ c.garantias }}</b></div>
+                        <div><span>Direcciones/Unidades asignadas</span><b>{{ c.direccionUnidad || '—' }}</b></div>
+                        <div><span>Disponibilidad</span><b>{{ c.disponibilidad }}</b></div>
                       }
                     </div>
+                    @if (cargaDe(t); as c) {
+                      @if (c.nivel === 'Alta') {
+                        <!-- §8: advierte, no bloquea; el botón de crear sigue habilitado -->
+                        <div class="alert warn mt-1">
+                          <span class="alert-ico">!</span>
+                          <span>{{ data.MSG_CARGA_ALTA }}</span>
+                        </div>
+                      } @else {
+                        <p class="small mt-1">{{ data.avisoCarga(c.nivel) }}</p>
+                      }
+                    }
                     <button class="btn btn-ghost btn-sm mt-1" (click)="buscarTecnicoAbierto.set(true)">Cambiar técnico</button>
                   } @else {
                     <button class="btn btn-primary" (click)="buscarTecnicoAbierto.set(true)">Seleccionar Técnico de Configuración</button>
@@ -735,68 +754,17 @@ import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccio
 
       <!-- Paso 3 · Selección del técnico de configuración, filtrada por la Dirección/Unidad del requerimiento -->
       @if (buscarTecnicoAbierto()) {
-        <ui-modal titulo="Seleccionar Técnico de Configuración"
+        <app-selector-soporte
+          titulo="Seleccionar Técnico de Configuración"
           [sub]="'Responsables de ' + dirUnidadTexto() + ', con su carga de trabajo'"
-          (cerrar)="buscarTecnicoAbierto.set(false)">
-          <div class="alert mb-2">
-            <span class="alert-ico">i</span>
-            <span>
-              El Técnico de Configuración debe pertenecer a la distribución de soporte de la
-              Dirección/Unidad solicitante. Los técnicos que no la atienden no aparecen en esta lista.
-            </span>
-          </div>
-          <div class="table-wrap">
-            <table class="tbl">
-              <thead>
-                <tr><th>Nombre</th><th>Rol</th><th>Dirección/Unidad atendida</th><th>Carga laboral</th><th>Configuraciones activas</th><th>Disponibilidad</th><th style="text-align:right;">Acción</th></tr>
-              </thead>
-              <tbody>
-                @for (t of tecnicosSoporte(); track t.nombreRol) {
-                  <tr>
-                    <td class="main-cell">{{ t.usuario.nombre }}</td>
-                    <td>{{ t.usuario.rol }}</td>
-                    <td>{{ t.direccionUnidad }}</td>
-                    <td><ui-badge [estado]="t.carga" /></td>
-                    <td class="mono">{{ t.configuraciones }}</td>
-                    <td>{{ t.disponibilidad }}</td>
-                    <td>
-                      <div class="row" style="justify-content: flex-end; flex-wrap: nowrap;">
-                        <button class="btn btn-ghost btn-sm" (click)="detalleTec.set(detalleTec() === t.nombreRol ? '' : t.nombreRol)">
-                          {{ detalleTec() === t.nombreRol ? 'Ocultar' : 'Ver detalle' }}
-                        </button>
-                        <button class="btn btn-primary btn-sm" (click)="seleccionarTecnico(t.nombreRol)">Seleccionar</button>
-                      </div>
-                    </td>
-                  </tr>
-                  @if (detalleTec() === t.nombreRol) {
-                    <tr>
-                      <td colspan="7" class="det-fila">
-                        <div class="datos">
-                          <div><span>Configuraciones F0302 sin cerrar</span><b>{{ t.configuraciones }}</b></div>
-                          <div><span>Procesos donde ya configura</span><b>{{ t.procesos }}</b></div>
-                          <div><span>Carga total</span><b>{{ t.total }} · {{ t.carga }}</b></div>
-                          <div><span>Usuario del sistema</span><b class="mono">{{ t.usuario.usuario }}</b></div>
-                          <div><span>Direcciones/Unidades que atiende</span><b>{{ atiendeTexto(t.nombreRol) }}</b></div>
-                          <div><span>Equipos activos a su cargo</span><b>{{ data.controlesDeSoporte(t.nombreRol).length }}</b></div>
-                        </div>
-                      </td>
-                    </tr>
-                  }
-                } @empty {
-                  <tr><td colspan="7" class="muted" style="text-align:center; padding: 26px;">
-                    <b>No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento.</b>
-                    <div class="mt-1">Debe configurar la distribución de soportes antes de crear el Expediente único.</div>
-                    @if (esEncSoporte()) {
-                      <a class="btn btn-outline btn-sm mt-2" routerLink="/distribucion-soportes" (click)="buscarTecnicoAbierto.set(false)">
-                        Ir a Distribución de soportes
-                      </a>
-                    }
-                  </td></tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </ui-modal>
+          nota="El Técnico de Configuración debe pertenecer a la distribución de soporte de la Dirección/Unidad solicitante. Los técnicos que no la atienden no aparecen en esta lista."
+          vacio="No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento."
+          [rutaVacio]="esEncSoporte() ? '/distribucion-soportes' : ''"
+          [tecnicos]="tecnicosSoporte()"
+          [seleccionado]="tecnicoConfig()"
+          [expediente]="procesoSel()"
+          (seleccion)="seleccionarTecnico($event.nombreRol)"
+          (cerrar)="buscarTecnicoAbierto.set(false)" />
       }
 
       <!-- Constancias consultables desde el expediente único -->
@@ -955,7 +923,6 @@ export class ExpedienteUnicoComponent {
   protected fSol = signal('Todas');
   protected detalleSol = signal('');
   protected buscarTecnicoAbierto = signal(false);
-  protected detalleTec = signal('');
 
   /**
    * Filtros rápidos del catálogo. Ya no hace falta uno de «Sin Expediente único» ni de
@@ -1089,12 +1056,6 @@ export class ExpedienteUnicoComponent {
     if (!direccion && !unidad) return 'la Dirección/Unidad del requerimiento';
     return direccion === unidad ? direccion : `${direccion} / ${unidad}`;
   }
-  /** Direcciones/Unidades que atiende un técnico, para el detalle del modal. */
-  protected atiendeTexto(nombreRol: string): string {
-    const lista = this.data.direccionesDeTecnico(nombreRol)
-      .map((d) => (d.direccion === d.unidad ? d.direccion : `${d.direccion} / ${d.unidad}`));
-    return lista.length ? lista.join('; ') : '—';
-  }
   /** Motivo por el que hoy no se puede crear el Expediente único; '' si se puede. */
   protected readonly bloqueo = computed(() =>
     this.procesoSel() ? this.data.bloqueoExpedienteUnico(this.procesoSel(), this.tecnicoConfig()) : '');
@@ -1159,7 +1120,6 @@ export class ExpedienteUnicoComponent {
   protected seleccionarTecnico(nombreRol: string): void {
     this.tecnicoConfig.set(nombreRol);
     this.buscarTecnicoAbierto.set(false);
-    this.detalleTec.set('');
   }
 
   protected crearUnico(): void {

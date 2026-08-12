@@ -1,5 +1,446 @@
 [
   {
+    "expediente": "SOL-2026-0158",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "",
+    "estado": "Pendiente",
+    "datos": {
+      "requerimiento": "Requerimiento de CPU",
+      "inventario": "2201-1215-2026",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "T. Guevara",
+      "carne": "05634",
+      "direccionGerencia": "Dirección del RPRH",
+      "unidad": "RPRH",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-07-24"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    }
+  },
+  {
+    "expediente": "SOL-2026-0157",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "2026-07-23",
+    "estado": "En curso",
+    "datos": {
+      "requerimiento": "Requerimiento de Laptop",
+      "inventario": "2201-1210-2026",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "S. Melgar",
+      "carne": "05628",
+      "direccionGerencia": "Dirección del IGN",
+      "unidad": "IGN",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-07-23"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    },
+    "cronometro": {
+      "fechaInicio": "2026-07-23",
+      "horaInicio": "09:05",
+      "iniciadoPor": "Diana Portillo — Técnico de Soporte",
+      "fechaFin": "",
+      "horaFin": "",
+      "finalizadoPor": "",
+      "duracionMinutos": null
+    }
+  },
+  {
+    "expediente": "SOL-2026-0156",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "",
+    "estado": "Pendiente",
+    "datos": {
+      "requerimiento": "Requerimiento de Laptop",
+      "inventario": "2201-1220-2026",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "B. Alfaro",
+      "carne": "05610",
+      "direccionGerencia": "Dirección de Registro",
+      "unidad": "Dirección de Registro",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-07-23"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    }
+  },
+  {
+    "expediente": "SOL-2026-0147",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "",
+    "estado": "Pendiente",
+    "datos": {
+      "requerimiento": "Requerimiento de CPU",
+      "inventario": "2201-0703-2021",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "A. Guzmán",
+      "carne": "05230",
+      "direccionGerencia": "Dirección de Registros",
+      "unidad": "Registro de la Propiedad",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2025-12-09"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    }
+  },
+  {
+    "expediente": "SOL-2026-0153",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "2026-07-21",
+    "estado": "En curso",
+    "datos": {
+      "requerimiento": "Requerimiento de CPU",
+      "inventario": "2201-0899-2023",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "F. Alvarado",
+      "carne": "05377",
+      "direccionGerencia": "Dirección de Registros",
+      "unidad": "Registro de la Propiedad",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Balmore Mejía · Técnico de Hardware",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-07-01"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    },
+    "cronometro": {
+      "fechaInicio": "2026-07-21",
+      "horaInicio": "09:05",
+      "iniciadoPor": "Diana Portillo — Técnico de Soporte",
+      "fechaFin": "",
+      "horaFin": "",
+      "finalizadoPor": "",
+      "duracionMinutos": null
+    }
+  },
+  {
+    "expediente": "SOL-2026-0155",
+    "tecnico": "Diana Portillo — Técnico de Soporte",
+    "seleccionadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "2026-07-22",
+    "estado": "En curso",
+    "datos": {
+      "requerimiento": "Requerimiento de Laptop",
+      "inventario": "2201-1201-2026",
+      "nombrePC": "",
+      "tipoServicio": "Asignación de equipo",
+      "asignadoA": "K. Rivas",
+      "carne": "05512",
+      "direccionGerencia": "Gerencia de Tecnología",
+      "unidad": "Gerencia de Tecnología",
+      "puesto": "Según registro de RRHH",
+      "sistemaOperativo": "Windows 11 Pro",
+      "arquitectura": "64 bits",
+      "requiereReservaIP": "",
+      "ipReservada": "",
+      "macEquipo": "",
+      "justificacionSinReservaIP": "",
+      "estadoSolicitudIP": "",
+      "correoReservaEnviado": "",
+      "fechaSolicitudIP": ""
+    },
+    "software": [
+      {
+        "nombre": "Agente DLP",
+        "version": "Corporativo",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Seguridad",
+        "origen": "Configuración",
+        "requiereEvidencia": true
+      },
+      {
+        "nombre": "Ingreso a dominio",
+        "version": "Dominio institucional",
+        "estado": "Pendiente",
+        "evidencia": null,
+        "categoria": "Red",
+        "origen": "Configuración"
+      }
+    ],
+    "evidencias": [
+      {
+        "nombre": "Captura de instalación/configuración del Agente DLP",
+        "estado": "Pendiente",
+        "item": "Agente DLP",
+        "tipo": "Agente DLP",
+        "formulario": "F0302"
+      }
+    ],
+    "firmas": {
+      "preparo": {
+        "quien": "Wendy Carranza · Técnico de Soporte",
+        "detalle": "Firma registrada al cerrar la preparación (F0288)",
+        "estado": "Firmado",
+        "fecha": "2026-07-12"
+      },
+      "configuro": {
+        "quien": "Diana Portillo · Técnico de Soporte",
+        "detalle": "Se registra al finalizar la configuración",
+        "estado": "Pendiente",
+        "fecha": ""
+      }
+    },
+    "cronometro": {
+      "fechaInicio": "2026-07-22",
+      "horaInicio": "09:05",
+      "iniciadoPor": "Diana Portillo — Técnico de Soporte",
+      "fechaFin": "",
+      "horaFin": "",
+      "finalizadoPor": "",
+      "duracionMinutos": null
+    }
+  },
+  {
     "expediente": "SOL-2026-0141",
     "tecnico": "Wendy Carranza — Técnico de Soporte",
     "seleccionadoPor": "Carlos González — Encargado de Soporte",

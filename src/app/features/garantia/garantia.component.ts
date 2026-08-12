@@ -6,10 +6,11 @@ import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import {
-  CasoGarantia, Garantia, ReprocesoF0288, RespuestaSiNo, TipoComentarioCaso, TipoGarantia
+  CargaSoporte, CasoGarantia, Garantia, ReprocesoF0288, RespuestaSiNo, TipoComentarioCaso, TipoGarantia
 } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { EvidenciasComponent } from '../../shared/evidencias';
+import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 
 /**
  * Servicio de garantía: los Expedientes únicos aceptados por el usuario final aparecen aquí
@@ -18,7 +19,8 @@ import { EvidenciasComponent } from '../../shared/evidencias';
  */
 @Component({
   selector: 'app-garantia',
-  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent],
+  imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent,
+    SelectorSoporteComponent],
   styles: `
     .exp-cod { font-family: var(--font-mono, monospace); font-size: 12.5px; font-weight: 700; color: var(--navy-900); }
     .caso { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-top: 10px; }
@@ -579,17 +581,48 @@ import { EvidenciasComponent } from '../../shared/evidencias';
             <textarea class="control" rows="3" placeholder="Describa lo reportado por el usuario…" [(ngModel)]="descripcion"></textarea>
           </div>
           <div class="field mb-2">
-            <label>Responsable de atención</label>
-            <input class="control" readonly [value]="auth.usuario()?.nombre + ' — ' + auth.usuario()?.rol" />
+            <label>Técnico responsable de atención <span class="req">*</span></label>
+            @if (puedeElegirResponsable()) {
+              <!-- El Encargado reparte el caso: ve la carga de cada técnico antes de decidir -->
+              <input class="control mb-1" readonly [value]="responsableCaso() || 'Sin asignar'" />
+              @if (cargaResponsable(); as c) {
+                <div class="small muted">{{ c.carga }} · {{ c.total }} procesos activos · {{ data.resumenCargaSoporte(c) }}.</div>
+                @if (c.nivel === 'Alta') {
+                  <div class="alert warn mt-1">
+                    <span class="alert-ico">!</span>
+                    <span>{{ data.MSG_CARGA_ALTA }}</span>
+                  </div>
+                }
+              }
+              <button type="button" class="btn btn-outline btn-sm mt-1" (click)="buscarResponsable.set(true)">
+                {{ responsableCaso() ? 'Cambiar técnico' : 'Seleccionar Técnico de Soporte' }}
+              </button>
+            } @else {
+              <input class="control" readonly [value]="responsableCaso()" />
+              <span class="hint">El caso queda a su nombre. El Encargado de Soporte puede asignarlo a otro técnico.</span>
+            }
           </div>
           <div class="alert mb-2">
             <span class="alert-ico">i</span>
             <span>El caso quedará asociado al <b>Expediente único</b> del equipo y registrado en la trazabilidad.</span>
           </div>
           <div class="row" style="justify-content: flex-end;">
-            <button class="btn btn-primary" [disabled]="!motivo() || !descripcion().trim()" (click)="registrarCaso(g)">Abrir caso</button>
+            <button class="btn btn-primary" [disabled]="!motivo() || !descripcion().trim() || !responsableCaso()" (click)="registrarCaso(g)">Abrir caso</button>
           </div>
         </ui-modal>
+
+        @if (buscarResponsable()) {
+          <app-selector-soporte
+            titulo="Técnico responsable de atención de garantía"
+            [sub]="g.equipo + ' · ' + g.inventario"
+            nota="Elija quién atiende el caso viendo los procesos que cada técnico ya tiene abiertos. Una carga alta no impide asignarlo."
+            vacio="No hay Técnicos de Soporte activos registrados."
+            [tecnicos]="data.tecnicosSoporteParaProceso(g.expediente)"
+            [seleccionado]="responsableCaso()"
+            [expediente]="g.expediente"
+            (seleccion)="responsableCaso.set($event.nombreRol); buscarResponsable.set(false)"
+            (cerrar)="buscarResponsable.set(false)" />
+        }
       }
 
       <!-- Agregar comentario al caso -->
@@ -909,7 +942,25 @@ export class GarantiaComponent {
   protected abrirRegistro(g: Garantia): void {
     this.motivo.set('');
     this.descripcion.set('');
+    this.buscarResponsable.set(false);
+    // Un Técnico de Soporte abre el caso a su nombre; el Encargado y el Administrador reparten:
+    // arrancan sin responsable y lo eligen viendo la carga de cada quien.
+    const u = this.auth.usuario();
+    this.responsableCaso.set(u?.clave === 'tec-soporte' ? `${u.nombre} — ${u.rol}` : '');
     this.abrirCaso.set(g);
+  }
+
+  /** Solo Encargado de Soporte y Administrador asignan el caso a otro técnico. */
+  protected readonly puedeElegirResponsable = computed(() => {
+    const clave = this.auth.usuario()?.clave;
+    return clave === 'enc-soporte' || clave === 'admin';
+  });
+  protected buscarResponsable = signal(false);
+  protected responsableCaso = signal('');
+  /** Carga del técnico elegido, para mostrarla junto al nombre sin reabrir el buscador. */
+  protected cargaResponsable(): CargaSoporte | null {
+    const t = this.responsableCaso();
+    return t ? this.data.cargaSoporteDe(t) : null;
   }
 
   protected abrirComentar(g: Garantia, c: CasoGarantia): void {
@@ -940,7 +991,14 @@ export class GarantiaComponent {
 
   protected registrarCaso(g: Garantia): void {
     const u = this.auth.usuario();
-    const caso = this.data.registrarCasoGarantia(g.expediente, this.motivo(), this.descripcion().trim(), `${u?.nombre} — ${u?.rol}`);
+    const quien = `${u?.nombre} — ${u?.rol}`;
+    const responsable = this.responsableCaso() || quien;
+    // La carga del responsable se registra antes de abrir el caso: es la que tenía al recibirlo.
+    this.data.registrarSeleccionSoporte(responsable, quien, {
+      expediente: g.expediente, modulo: 'Servicio de garantía', inventario: g.inventario,
+      expedienteUnico: this.unicoDe(g)
+    });
+    const caso = this.data.registrarCasoGarantia(g.expediente, this.motivo(), this.descripcion().trim(), responsable);
     if (caso) {
       this.toast.ok(`Caso ${caso.codigo} abierto`, 'El caso quedó asociado al Expediente único y registrado en la trazabilidad.');
       this.seleccion.set(this.data.garantias().find((x) => x.expediente === g.expediente) ?? null);

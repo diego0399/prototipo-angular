@@ -2,7 +2,7 @@ import { Component, computed, inject, input, output, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../core/services/auth.service';
 import { DataService } from '../core/services/data.service';
-import { UsuarioSistema } from '../core/models/models';
+import { CargaHardware, UsuarioSistema } from '../core/models/models';
 import { BadgeComponent, ModalComponent } from './ui';
 
 /**
@@ -56,8 +56,13 @@ import { BadgeComponent, ModalComponent } from './ui';
               <div class="popover" [class.abierta]="popoverAbierto() === t.usuario">
                 <b>{{ t.nombre }}</b><br />
                 Unidad: {{ t.unidad }}<br />
-                Carga laboral: <b>{{ data.cargaLaboral(t.nombre) }}</b><br />
-                Expedientes activos: {{ data.expedientesActivosDeTecnico(t.nombre).length }}<br />
+                @if (carga(t); as c) {
+                  Carga laboral: <b>{{ c.nivel }}</b> · {{ c.total }} procesos activos<br />
+                  Expedientes técnicos activos: {{ c.expedientes }}<br />
+                  Preparaciones F0288 sin finalizar: {{ c.preparaciones }}<br />
+                  Reprocesos F0288 asignados: {{ c.reprocesos }}<br />
+                  Revisiones técnicas de garantía: {{ c.revisionesGarantia }}<br />
+                }
                 Pendientes por preparar: {{ data.expedientesPendientesPorPreparar(t.nombre).length }}
                 @for (p of data.expedientesPendientesPorPreparar(t.nombre); track p.codigo) {
                   <div class="pend-item">
@@ -82,23 +87,19 @@ import { BadgeComponent, ModalComponent } from './ui';
           <span><b>Técnico seleccionado:</b> {{ t.nombre }} — {{ t.rol }}</span>
           <ui-badge [estado]="'Carga ' + data.cargaLaboral(t.nombre)" />
         </div>
-        <div class="small muted mt-1">
-          Expedientes activos: {{ data.expedientesActivosDeTecnico(t.nombre).length }} ·
-          Pendientes por preparar: {{ data.expedientesPendientesPorPreparar(t.nombre).length }}
-        </div>
-        @if (data.cargaLaboral(t.nombre) === 'Baja') {
-          <p class="small mt-1">Este técnico tiene carga baja y puede recibir nuevos expedientes.</p>
-        }
-        @if (data.cargaLaboral(t.nombre) === 'Media') {
-          <p class="small mt-1">Este técnico tiene carga media. Verifique si puede asumir un nuevo expediente.</p>
-        }
-        @if (data.cargaLaboral(t.nombre) === 'Alta') {
-          <div class="alert warn mt-1">
-            <span class="alert-ico">!</span>
-            <span>
-              Este técnico tiene carga alta. Se recomienda revisar sus pendientes antes de asignarle un nuevo expediente.
-            </span>
+        @if (carga(t); as c) {
+          <div class="small muted mt-1">
+            {{ c.total }} procesos activos · {{ data.resumenCargaHardware(c) }} ·
+            Pendientes por preparar: {{ data.expedientesPendientesPorPreparar(t.nombre).length }}
           </div>
+          @if (c.nivel === 'Alta') {
+            <div class="alert warn mt-1">
+              <span class="alert-ico">!</span>
+              <span>{{ data.MSG_CARGA_ALTA }}</span>
+            </div>
+          } @else {
+            <p class="small mt-1">{{ data.avisoCarga(c.nivel) }}</p>
+          }
         }
       </div>
     }
@@ -110,8 +111,14 @@ import { BadgeComponent, ModalComponent } from './ui';
           <dt>Unidad</dt><dd>{{ t.unidad }}</dd>
           <dt>Rol</dt><dd>{{ t.rol }}</dd>
           <dt>Estado</dt><dd><ui-badge [estado]="t.estado" /></dd>
-          <dt>Carga laboral</dt><dd><ui-badge [estado]="'Carga ' + data.cargaLaboral(t.nombre)" /></dd>
-          <dt>Expedientes activos</dt><dd>{{ data.expedientesActivosDeTecnico(t.nombre).length }}</dd>
+          @if (carga(t); as c) {
+            <dt>Carga laboral</dt><dd><ui-badge [estado]="c.carga" /> · {{ c.total }} procesos activos</dd>
+            <dt>Expedientes técnicos activos</dt><dd>{{ c.expedientes }}</dd>
+            <dt>Preparaciones F0288 sin finalizar</dt><dd>{{ c.preparaciones }}</dd>
+            <dt>Reprocesos F0288 asignados</dt><dd>{{ c.reprocesos }}</dd>
+            <dt>Revisiones técnicas de garantía</dt><dd>{{ c.revisionesGarantia }}</dd>
+            <dt>Disponibilidad</dt><dd>{{ c.disponibilidad }}</dd>
+          }
           <dt>Pendientes por preparar</dt><dd>{{ data.expedientesPendientesPorPreparar(t.nombre).length }}</dd>
           <dt>Expedientes finalizados</dt><dd>{{ data.expedientesFinalizadosDeTecnico(t.nombre).length }}</dd>
           <dt>Última asignación</dt><dd>{{ data.ultimaAsignacionTecnico(t.nombre) || '—' }}</dd>
@@ -120,7 +127,7 @@ import { BadgeComponent, ModalComponent } from './ui';
         @if (data.cargaLaboral(t.nombre) === 'Alta') {
           <div class="alert warn mt-2">
             <span class="alert-ico">!</span>
-            <span>Este técnico tiene carga alta. Revise sus expedientes pendientes antes de asignarle uno nuevo.</span>
+            <span>{{ data.MSG_CARGA_ALTA }}</span>
           </div>
         }
 
@@ -183,6 +190,14 @@ export class TecnicoBuscadorComponent {
   protected readonly seleccionado = computed(() =>
     this.data.usuarios().find((u) => `${u.nombre} — ${u.rol}` === this.nombreSeleccionado())
   );
+
+  /**
+   * Carga de Hardware del técnico. Se resuelve aquí y no en el servicio dentro de la plantilla
+   * para no recalcularla una vez por cada dato del popover y del detalle.
+   */
+  protected carga(t: UsuarioSistema): CargaHardware {
+    return this.data.cargaHardwareDe(t.nombre);
+  }
 
   protected esSeleccionado(t: UsuarioSistema): boolean {
     return `${t.nombre} — ${t.rol}` === this.nombreSeleccionado();

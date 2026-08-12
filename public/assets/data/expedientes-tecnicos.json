@@ -1,5 +1,47 @@
 [
   {
+    "codigo": "EXP-PT-2026-0098",
+    "inventario": "2201-1215-2026",
+    "tipoEquipo": "Desktop",
+    "condicion": "Nuevo",
+    "marcaModelo": "Dell OptiPlex 7010",
+    "unidadResponsable": "Hardware",
+    "creadoPor": "Samuel Cruz — Encargado de Hardware",
+    "tecnicoPreparacion": "Balmore Mejía — Técnico de Hardware",
+    "tipoExpediente": "CPU nuevo",
+    "observaciones": "CPU preparado por Hardware; listo para configuración.",
+    "estado": "Preparado",
+    "fecha": "2026-07-24"
+  },
+  {
+    "codigo": "EXP-PT-2026-0097",
+    "inventario": "2201-1210-2026",
+    "tipoEquipo": "Laptop",
+    "condicion": "Nuevo",
+    "marcaModelo": "Dell Latitude 5450",
+    "unidadResponsable": "Hardware",
+    "creadoPor": "Samuel Cruz — Encargado de Hardware",
+    "tecnicoPreparacion": "Balmore Mejía — Técnico de Hardware",
+    "tipoExpediente": "Laptop nueva",
+    "observaciones": "Laptop preparado por Hardware; listo para configuración.",
+    "estado": "Preparado",
+    "fecha": "2026-07-23"
+  },
+  {
+    "codigo": "EXP-PT-2026-0096",
+    "inventario": "2201-1220-2026",
+    "tipoEquipo": "Laptop",
+    "condicion": "Nuevo",
+    "marcaModelo": "HP EliteBook 840 G11",
+    "unidadResponsable": "Hardware",
+    "creadoPor": "Samuel Cruz — Encargado de Hardware",
+    "tecnicoPreparacion": "Balmore Mejía — Técnico de Hardware",
+    "tipoExpediente": "Laptop nueva",
+    "observaciones": "Laptop preparado por Hardware; listo para configuración.",
+    "estado": "Preparado",
+    "fecha": "2026-07-23"
+  },
+  {
     "codigo": "EXP-PT-2026-0094",
     "inventario": "2201-1300-2026",
     "tipoEquipo": "Desktop",

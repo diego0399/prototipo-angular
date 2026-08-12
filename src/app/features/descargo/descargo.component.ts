@@ -155,6 +155,17 @@ const ACCIONES: AccionPosteriorDescargo[] = [
             <div class="field">
               <label>Técnico de Soporte que registra</label>
               <input class="control" readonly [value]="responsableTxt()" />
+              <!-- El descargo lo registra el soporte responsable de la Dirección/Unidad: no se
+                   elige a otro. Lo que sí se muestra es con cuánta carga lo está registrando. -->
+              @if (cargaResponsable(); as k) {
+                <div class="small muted mt-1">{{ k.carga }} · {{ k.total }} procesos activos · {{ data.resumenCargaSoporte(k) }}.</div>
+                @if (k.nivel === 'Alta') {
+                  <div class="alert warn mt-1">
+                    <span class="alert-ico">!</span>
+                    <span>{{ data.MSG_CARGA_ALTA }}</span>
+                  </div>
+                }
+              }
             </div>
 
             <!-- El descargo administrativo no lo hace quien tenía el equipo a cargo: exige motivo -->
@@ -280,6 +291,13 @@ export class DescargoComponent {
     const u = this.auth.usuario();
     return u ? `${u.nombre} — ${u.rol}` : '—';
   });
+  /**
+   * Carga laboral de quien está registrando el descargo, cuando es un Técnico de Soporte. El
+   * descargo no se reparte —lo registra el soporte responsable de la Dirección/Unidad—, así que
+   * aquí la carga es información, no un criterio de selección.
+   */
+  protected readonly cargaResponsable = computed(() =>
+    this.rol() === 'tec-soporte' ? this.data.cargaSoporteDe(this.responsableTxt()) : null);
 
   /** Ficha del equipo en Controles: dice a qué Dirección/Unidad pertenece y quién le da soporte. */
   protected readonly control = computed(() =>

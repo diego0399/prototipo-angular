@@ -278,6 +278,115 @@ export interface DistribucionSoporte {
 }
 
 /**
+ * Nivel de carga laboral de un técnico. La escala es común a Hardware y a Soporte —0 a 2 procesos
+ * activos es baja, 3 a 5 media, 6 o más alta—; lo que cambia entre las dos áreas es **qué se
+ * cuenta**, nunca dónde están los cortes. Un nivel alto advierte, nunca bloquea la selección.
+ */
+export type NivelCarga = 'Baja' | 'Media' | 'Alta';
+
+/**
+ * Tipo de proceso que suma a la carga laboral de un Técnico de Soporte. Cada proceso activo cuenta
+ * **una sola vez**: un expediente único que ya tiene su F0302 abierto se cuenta como configuración,
+ * no como las dos cosas, porque de lo contrario la carga se inflaría sin que el técnico tuviera más
+ * trabajo del que ya tiene.
+ */
+export type TipoProcesoSoporte =
+  | 'Expediente único'
+  | 'Configuración F0302'
+  | 'Corrección F0302'
+  | 'Inconformidad'
+  | 'Garantía'
+  | 'Descargo'
+  | 'Formulario de conformidad';
+
+/** Tipo de proceso que suma a la carga laboral de un Técnico de Hardware. */
+export type TipoProcesoHardware =
+  | 'Expediente técnico'
+  | 'Preparación F0288'
+  | 'Reproceso F0288'
+  | 'Revisión técnica de garantía';
+
+/**
+ * Una fila del detalle de carga laboral: el proceso concreto que el técnico tiene abierto. Es lo
+ * que convierte «Carga alta» en algo consultable —qué expedientes son, de qué Dirección/Unidad y
+ * desde cuándo— en vez de una etiqueta que hay que creer.
+ */
+export interface ProcesoActivo {
+  /** Código del proceso: expediente, corrección, caso de garantía o descargo. */
+  codigo: string;
+  tipoProceso: TipoProcesoSoporte | TipoProcesoHardware;
+  equipo: string;
+  inventario: string;
+  usuarioFinal: string;
+  direccion: string;
+  unidad: string;
+  estado: string;
+  /** Fecha en que el proceso quedó a cargo del técnico. */
+  fechaAsignacion: string;
+  prioridad: 'Alta' | 'Normal';
+}
+
+/**
+ * Carga laboral de un Técnico de Soporte, desglosada por tipo de proceso. Se calcula con los
+ * procesos propios del área de Soporte y **nunca** se mezcla con la de Hardware: son dos oficios
+ * distintos y sumarlos daría un número que no significa nada para ninguno de los dos.
+ */
+export interface CargaSoporte {
+  /** Expedientes únicos a su cargo cuyo F0302 todavía no ha empezado. */
+  expedientesUnicos: number;
+  /** Configuraciones F0302 en proceso (pendientes, en configuración o con falla sin resolver). */
+  configuraciones: number;
+  /** Correcciones F0302 por inconformidad pendientes o en proceso. */
+  correcciones: number;
+  /** Inconformidades del usuario final que todavía nadie ha empezado a atender. */
+  inconformidades: number;
+  /** Casos de garantía abiertos o en revisión que atiende el técnico. */
+  garantias: number;
+  /** Descargos registrados por el técnico que aún no se han procesado. */
+  descargos: number;
+  /** Formularios de conformidad enviados y sin respuesta, de procesos donde el técnico participa. */
+  conformidades: number;
+  total: number;
+  nivel: NivelCarga;
+  /** Etiqueta lista para mostrar: «Carga baja» · «Carga media» · «Carga alta». */
+  carga: string;
+  disponibilidad: 'Disponible' | 'Ocupado';
+}
+
+/**
+ * Carga laboral de un Técnico de Hardware. Cuenta los procesos del área de Hardware —preparaciones,
+ * reprocesos y revisiones técnicas de garantía—; ver `CargaSoporte` para el otro lado.
+ */
+export interface CargaHardware {
+  /** Expedientes técnicos activos (todo lo que no está cerrado). */
+  expedientes: number;
+  /** Preparaciones F0288 sin finalizar. */
+  preparaciones: number;
+  /** Reprocesos F0288 asignados y sin cerrar, sin contar los de garantía. */
+  reprocesos: number;
+  /** Revisiones técnicas de garantía asignadas y sin cerrar. */
+  revisionesGarantia: number;
+  total: number;
+  nivel: NivelCarga;
+  carga: string;
+  disponibilidad: 'Disponible' | 'Ocupado';
+}
+
+/**
+ * Técnico de Soporte con su carga laboral y las Direcciones/Unidades que atiende, tal como se
+ * muestra en el buscador de técnicos. Es lo que se consulta antes de asignar.
+ */
+export interface TecnicoSoporteConCarga extends CargaSoporte {
+  usuario: UsuarioSistema;
+  /** «Nombre — Rol»: el formato con el que se guarda el responsable en todos los módulos. */
+  nombreRol: string;
+  /** Direcciones/Unidades que atiende, ya en texto («Dirección / Unidad; …»). */
+  direccionUnidad: string;
+  /** Fecha del proceso más reciente que se le asignó, si tiene alguno. */
+  ultimaAsignacion: string;
+}
+
+/**
  * Estado del equipo dentro del inventario operativo del proyecto de Controles. Un equipo entra
  * como «Activo en Dirección/Unidad» únicamente cuando el usuario final acepta la conformidad, y
  * sale como «Descargado de Dirección/Unidad» cuando se registra su descargo. No hay un tercer
@@ -1843,4 +1952,16 @@ export interface EventoTrazabilidad {
   itemChecklist?: string;
   /** Estado con que quedó ese ítem: Pendiente · Realizado · No aplica. */
   estadoItem?: string;
+  /** Técnico de Soporte consultado o seleccionado, en los eventos de carga laboral. */
+  tecnicoSoporte?: string;
+  /**
+   * Carga laboral que tenía el técnico **al momento de la acción**. Se guarda como dato del evento
+   * y no se recalcula: si mañana el técnico se desocupa, el historial debe seguir diciendo con qué
+   * carga se le asignó el proceso.
+   */
+  cargaLaboral?: string;
+  /** Total de procesos activos del técnico en ese momento. */
+  procesosActivos?: number;
+  /** Desglose de esos procesos activos, en texto («2 configuraciones · 1 corrección…»). */
+  detalleCarga?: string;
 }

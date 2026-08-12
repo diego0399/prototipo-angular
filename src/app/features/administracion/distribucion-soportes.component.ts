@@ -3,9 +3,10 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
-import { DistribucionSoporte } from '../../core/models/models';
+import { DistribucionSoporte, TecnicoSoporteConCarga } from '../../core/models/models';
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
+import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 
 /**
  * Distribución de Soportes por Dirección/Unidad. Es el catálogo del que dependen dos reglas del
@@ -15,7 +16,7 @@ import { IconComponent } from '../../shared/icon';
  */
 @Component({
   selector: 'app-distribucion-soportes',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent, SelectorSoporteComponent],
   styles: `
     .dir-card { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 14px 16px; }
     .dir-card .d-dir { font-size: 14px; font-weight: 700; color: var(--navy-900); }
@@ -24,6 +25,7 @@ import { IconComponent } from '../../shared/icon';
     .tec-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--surface-2); }
     .tec-linea.off { opacity: .55; }
     .sin-tec { font-size: 12.5px; color: var(--danger, #b3261e); font-weight: 600; }
+    .tec-elegido { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; margin-bottom: 8px; }
   `,
   template: `
     <div class="page">
@@ -164,13 +166,16 @@ import { IconComponent } from '../../shared/icon';
             </div>
             <div class="field full">
               <label>Técnico de Soporte <span class="req">*</span></label>
-              <select class="control" [(ngModel)]="tecnicoSel">
-                <option value="">Seleccione…</option>
-                @for (t of tecnicos(); track t.nombreRol) {
-                  <option [value]="t.nombreRol">{{ t.usuario.nombre }} · {{ t.carga }}</option>
-                }
-              </select>
-              <span class="hint">Solo Técnicos de Soporte activos: Hardware no atiende Direcciones/Unidades.</span>
+              @if (tecnicoSel()) {
+                <div class="tec-elegido">{{ resumenSeleccionado() }}</div>
+              }
+              <button type="button" class="btn btn-outline" (click)="buscarTecnico.set(true)">
+                {{ tecnicoSel() ? 'Cambiar técnico' : 'Buscar Técnico de Soporte' }}
+              </button>
+              <span class="hint">
+                Solo Técnicos de Soporte activos: Hardware no atiende Direcciones/Unidades. El
+                buscador muestra la carga laboral de cada uno antes de asignarle una más.
+              </span>
             </div>
             <div class="field full">
               <label>Observación</label>
@@ -189,11 +194,10 @@ import { IconComponent } from '../../shared/icon';
           <div class="form-grid">
             <div class="field full">
               <label>Técnico de Soporte responsable <span class="req">*</span></label>
-              <select class="control" [(ngModel)]="tecnicoSel">
-                @for (t of tecnicos(); track t.nombreRol) {
-                  <option [value]="t.nombreRol">{{ t.usuario.nombre }} · {{ t.carga }}</option>
-                }
-              </select>
+              @if (tecnicoSel()) {
+                <div class="tec-elegido">{{ resumenSeleccionado() }}</div>
+              }
+              <button type="button" class="btn btn-outline" (click)="buscarTecnico.set(true)">Cambiar técnico</button>
             </div>
             <div class="field full">
               <label>Observación</label>
@@ -205,6 +209,19 @@ import { IconComponent } from '../../shared/icon';
             <button class="btn btn-primary" (click)="guardarEdicion()">Guardar cambios</button>
           </div>
         </ui-modal>
+      }
+
+      <!-- Buscador con carga laboral: la distribución también reparte trabajo, no solo nombres -->
+      @if (buscarTecnico()) {
+        <app-selector-soporte
+          titulo="Seleccionar Técnico de Soporte"
+          sub="Todos los Técnicos de Soporte activos, con su carga laboral"
+          nota="Un técnico puede atender varias Direcciones/Unidades. Antes de sumarle una más, revise los procesos que ya tiene activos."
+          vacio="No hay Técnicos de Soporte activos registrados."
+          [tecnicos]="tecnicos()"
+          [seleccionado]="tecnicoSel()"
+          (seleccion)="elegirTecnico($event)"
+          (cerrar)="buscarTecnico.set(false)" />
       }
 
       @if (modo() === 'baja' && seleccionada(); as d) {
@@ -267,6 +284,19 @@ export class DistribucionSoportesComponent {
   protected tecnicoSel = signal('');
   protected observacion = signal('');
   protected motivoBaja = signal('');
+  protected buscarTecnico = signal(false);
+
+  /** Carga del técnico elegido, para no tener que reabrir el buscador para recordarla. */
+  protected resumenSeleccionado(): string {
+    const t = this.tecnicos().find((x) => x.nombreRol === this.tecnicoSel());
+    if (!t) return this.tecnicoSel();
+    return `${t.usuario.nombre} — ${t.carga} · ${t.total} procesos activos · ${this.data.resumenCargaSoporte(t)}`;
+  }
+
+  protected elegirTecnico(t: TecnicoSoporteConCarga): void {
+    this.tecnicoSel.set(t.nombreRol);
+    this.buscarTecnico.set(false);
+  }
 
   private get quien(): string {
     const u = this.auth.usuario();
@@ -277,6 +307,7 @@ export class DistribucionSoportesComponent {
     this.dirUnidadSel.set('');
     this.tecnicoSel.set('');
     this.observacion.set('');
+    this.buscarTecnico.set(false);
     this.modo.set('nueva');
   }
   protected abrirEditar(d: DistribucionSoporte): void {
@@ -293,6 +324,7 @@ export class DistribucionSoportesComponent {
   protected cerrar(): void {
     this.modo.set('');
     this.seleccionada.set(null);
+    this.buscarTecnico.set(false);
   }
 
   protected guardarNueva(): void {
