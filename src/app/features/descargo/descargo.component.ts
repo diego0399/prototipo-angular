@@ -8,6 +8,7 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe } from '../../shared/
 import { IconComponent } from '../../shared/icon';
 import { BuscarEquipoAsignadoModalComponent, FilaEquipoAsignado, filaEquipoAsignado } from '../../shared/buscar-expediente';
 import { EvidenciasComponent } from '../../shared/evidencias';
+import { DocumentoDescargoComponent } from '../../shared/documento-descargo';
 
 const MOTIVOS: MotivoDescargo[] = [
   'Cambio de usuario', 'Cambio de equipo', 'Devolución', 'Reasignación', 'Falla', 'Garantía', 'Finalización de uso', 'Otro'
@@ -26,7 +27,8 @@ const ACCIONES: AccionPosteriorDescargo[] = [
  */
 @Component({
   selector: 'app-descargo',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent, IconComponent, EvidenciasComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, MarcaModeloPipe, BuscarEquipoAsignadoModalComponent,
+    IconComponent, EvidenciasComponent, DocumentoDescargoComponent],
   styles: `
     .resumen-eq { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 16px; }
     .resumen-eq .eq-nombre { font-size: 17px; font-weight: 700; color: var(--navy-900); }
@@ -229,21 +231,25 @@ const ACCIONES: AccionPosteriorDescargo[] = [
         <div class="card-body table-wrap">
           <table class="tbl">
             <thead>
-              <tr><th>Fecha</th><th>Inventario</th><th>Usuario final entregó</th><th>Técnico de Soporte</th><th>Motivo</th><th>Acción posterior</th><th>Encargado destino</th></tr>
+              <tr><th>Documento</th><th>Fecha</th><th>Inventario</th><th>Usuario final entregó</th><th>Técnico de Soporte</th><th>Motivo</th><th>Acción posterior</th><th>Encargado destino</th><th style="text-align:right;">Acciones</th></tr>
             </thead>
             <tbody>
               @for (d of descargos(); track d.idDescargo) {
                 <tr>
+                  <td class="mono main-cell">{{ d.idDescargo }}<div class="sub-cell">Documento de Descargo</div></td>
                   <td class="mono">{{ d.fechaDescargo }}</td>
-                  <td class="mono main-cell">{{ d.inventario }}</td>
+                  <td class="mono">{{ d.inventario }}</td>
                   <td>{{ d.usuarioFinalEntrega }}</td>
                   <td>{{ d.responsableRegistro.split('—')[0].trim() }}</td>
                   <td>{{ d.motivoDescargo }}</td>
                   <td>{{ d.accionPosterior }}</td>
                   <td><ui-badge [estado]="d.encargadoDestino" /></td>
+                  <td style="text-align:right;">
+                    <button class="btn btn-outline btn-sm" (click)="verDocumento.set(d.idDescargo)">Ver documento</button>
+                  </td>
                 </tr>
               } @empty {
-                <tr><td colspan="7" class="muted" style="text-align:center; padding: 22px;">Aún no hay descargos registrados.</td></tr>
+                <tr><td colspan="9" class="muted" style="text-align:center; padding: 22px;">Aún no hay descargos registrados.</td></tr>
               }
             </tbody>
           </table>
@@ -256,6 +262,8 @@ const ACCIONES: AccionPosteriorDescargo[] = [
           (seleccionar)="seleccionarEquipo($event)"
           (cerrar)="buscarAbierto.set(false)" />
       }
+
+      <ui-documento-descargo [idDescargo]="verDocumento()" (cerrado)="verDocumento.set('')" />
     </div>
   `
 })
@@ -275,6 +283,8 @@ export class DescargoComponent {
   protected motivoAdministrativo = signal('');
 
   protected buscarAbierto = signal(false);
+  /** Descargo cuyo documento se está consultando en el visor; '' cierra la vista previa. */
+  protected verDocumento = signal('');
 
   protected readonly rol = computed(() => this.auth.usuario()?.clave ?? '');
   /**

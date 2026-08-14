@@ -406,3 +406,136 @@ details.acc.subtle { border-style: dashed; background: var(--surface-2); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; border: 2px solid var(--bg); }
 ::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- Visor de documentos ----------
+   La hoja formal en la que se abre cualquier documento generado (F0288, F0302, las tres
+   constancias, el descargo, la entrega y el reporte final). Vive aquí y no en el componente
+   porque es el lenguaje visual de todos los documentos y porque las reglas de impresión, que
+   por fuerza son globales, tienen que hablar de estas mismas clases. */
+.visor {
+  position: fixed; inset: 0; z-index: 100;
+  background: #2b3644; display: flex; flex-direction: column;
+}
+
+/* ---------- Barra de acciones (no se imprime) ---------- */
+.visor-barra {
+  flex: none; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 18px; background: var(--navy-950); color: var(--tx-inv);
+  border-bottom: 1px solid #000;
+}
+.visor-barra .vb-id { display: flex; align-items: center; gap: 10px; min-width: 0; margin-right: auto; }
+.visor-barra .vb-id .vb-ico { flex: none; color: var(--gold-500); }
+.visor-barra .vb-nombre { font-size: 13.5px; font-weight: 700; line-height: 1.25; }
+.visor-barra .vb-meta { font-size: 11.5px; color: #a9b8cc; font-variant-numeric: tabular-nums; }
+.visor-barra .btn { border-color: rgba(255, 255, 255, .28); }
+.visor-barra .btn-ghost { color: #d7e1ee; }
+.visor-barra .btn-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, .12); color: #fff; }
+
+/* ---------- Área de lectura ---------- */
+.visor-area { flex: 1; overflow: auto; padding: 26px 20px 44px; display: flex; justify-content: center; align-items: flex-start; }
+
+/* ---------- La hoja ---------- */
+.hoja {
+  width: min(880px, 100%); min-height: 1120px; background: #fff; color: #1b2430;
+  padding: 54px 62px 40px; box-shadow: 0 10px 34px rgba(0, 0, 0, .38);
+  font-family: var(--font-brand); font-size: 13.5px; line-height: 1.55;
+}
+.hoja b, .hoja strong { font-weight: 700; }
+.hoja .mono { font-family: var(--font-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+
+.hoja-cab { display: flex; align-items: flex-start; gap: 16px; border-bottom: 2.5px solid var(--navy-900); padding-bottom: 12px; }
+.hoja-cab img { height: 46px; flex: none; }
+.hoja-inst { flex: 1; min-width: 0; }
+.hoja-inst .h-org { font-size: 15px; font-weight: 700; color: var(--navy-900); letter-spacing: .01em; }
+/* El nombre del sistema no se parte: si algo tiene que ceder ancho es el código del documento,
+   que sí puede envolverse sin quedar ilegible. */
+.hoja-inst .h-sis { font-size: 11.5px; color: #4b5d73; white-space: nowrap; }
+.hoja-inst .h-mod { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold-600); font-weight: 700; margin-top: 3px; }
+.hoja-ref { flex: 0 1 auto; min-width: 0; text-align: right; font-size: 11px; color: #4b5d73; }
+.hoja-ref .r-cod { font-family: var(--font-mono); font-size: 12.5px; color: var(--navy-900); font-weight: 700; overflow-wrap: anywhere; }
+
+.hoja-tit { text-align: center; margin: 26px 0 4px; }
+.hoja-tit h1 { font-size: 19px; font-weight: 700; color: var(--navy-900); letter-spacing: .02em; text-transform: uppercase; line-height: 1.3; }
+.hoja-tit p { font-size: 12px; color: #4b5d73; margin-top: 4px; }
+.hoja-regla { height: 1px; background: var(--gold-500); width: 96px; margin: 12px auto 22px; }
+
+.hoja-ident { width: 100%; border-collapse: collapse; margin-bottom: 26px; }
+.hoja-ident th, .hoja-ident td { border: 1px solid #c3cedd; padding: 6px 10px; font-size: 12px; text-align: left; vertical-align: top; }
+.hoja-ident th { width: 22%; background: #f2f5fa; font-weight: 700; color: var(--navy-900); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+
+.hoja-sec { margin-bottom: 22px; break-inside: avoid; }
+.hoja-sec > h2 {
+  font-size: 12px; font-weight: 700; letter-spacing: .09em; text-transform: uppercase;
+  color: var(--navy-900); border-bottom: 1px solid #c3cedd; padding-bottom: 5px; margin-bottom: 10px;
+  display: flex; align-items: baseline; gap: 9px;
+}
+.hoja-sec > h2 .s-num { font-family: var(--font-mono); font-size: 11px; color: var(--gold-600); }
+.hoja-sec .s-nota { font-size: 11px; color: #72859b; margin-top: 7px; font-style: italic; }
+.hoja-sec .s-texto { font-size: 13px; white-space: pre-wrap; }
+
+.hoja-campos { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 3px 26px; }
+.hoja-campos .c { display: grid; grid-template-columns: 41% 1fr; gap: 10px; padding: 3px 0; border-bottom: 1px dotted #dde4ee; }
+.hoja-campos .c.ancho { grid-column: 1 / -1; grid-template-columns: 20% 1fr; }
+.hoja-campos .c dt { font-size: 11.5px; color: #4b5d73; }
+.hoja-campos .c dd { margin: 0; font-size: 12.5px; color: #1b2430; font-weight: 500; overflow-wrap: anywhere; }
+
+.hoja-tabla { width: 100%; border-collapse: collapse; margin-top: 4px; }
+.hoja-tabla th { background: #f2f5fa; color: var(--navy-900); font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; }
+.hoja-tabla th, .hoja-tabla td { border: 1px solid #c3cedd; padding: 6px 9px; font-size: 12px; text-align: left; vertical-align: top; }
+.hoja-tabla tbody tr:nth-child(even) { background: #f9fbfd; }
+
+.hoja-check { list-style: none; margin: 0; padding: 0; }
+.hoja-check li { display: flex; gap: 10px; align-items: flex-start; padding: 4px 0; border-bottom: 1px dotted #dde4ee; }
+.hoja-check .k-caja {
+  flex: none; width: 15px; height: 15px; margin-top: 2px; border: 1px solid #4b5d73;
+  display: grid; place-items: center; color: var(--navy-900);
+}
+.hoja-check .k-caja.na { color: #72859b; font-weight: 700; font-size: 11px; line-height: 1; }
+.hoja-check .k-txt { flex: 1; min-width: 0; font-size: 12.5px; }
+.hoja-check .k-nota { font-size: 11.5px; color: #4b5d73; }
+.hoja-check .k-est { flex: none; font-size: 11px; color: #4b5d73; }
+
+/* `auto-fill` y no `auto-fit`: con una sola firma, la línea debe medir lo que mide una firma y no
+   estirarse de margen a margen como si faltara alguien por firmar. */
+.hoja-firmas { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 26px 30px; margin-top: 20px; }
+.hoja-firma { break-inside: avoid; }
+.hoja-firma .fi-linea { border-bottom: 1px solid #1b2430; height: 44px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; }
+.hoja-firma .fi-rubrica { font-family: var(--font-brand); font-size: 21px; color: var(--navy-900); font-style: italic; }
+.hoja-firma .fi-vacia { font-size: 11px; color: #a3b0c2; }
+.hoja-firma .fi-rot { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--navy-900); margin-top: 6px; }
+.hoja-firma .fi-det { font-size: 11.5px; color: #4b5d73; }
+
+.hoja-pie { border-top: 1px solid #c3cedd; margin-top: 34px; padding-top: 10px; display: flex; gap: 16px; align-items: flex-end; }
+.hoja-pie .p-txt { flex: 1; font-size: 10.5px; color: #72859b; line-height: 1.5; }
+.hoja-pie .p-huella { flex: none; text-align: right; font-family: var(--font-mono); font-size: 10.5px; color: #4b5d73; }
+
+@media (max-width: 760px) {
+  .hoja { padding: 30px 22px; min-height: 0; }
+  .hoja-campos { grid-template-columns: minmax(0, 1fr); }
+  .hoja-campos .c.ancho { grid-template-columns: 41% 1fr; }
+}
+
+/* ---------- Impresión del visor de documentos ----------
+   Cuando hay una hoja abierta en el visor, lo que sale por la impresora es la hoja y nada más:
+   ni el menú, ni la barra de acciones del visor, ni la pantalla que quedó detrás. Las reglas
+   viven aquí y no en el componente porque hay que apagar el resto de la aplicación, que está
+   fuera de su alcance. */
+@page { size: A4 portrait; margin: 14mm; }
+@media print {
+  body { background: #fff; }
+  /* Con una hoja abierta se oculta todo y se vuelve a mostrar solo el visor. Las dos reglas se
+     escriben con el mismo prefijo a propósito: `body:has(.visor) *` pesa más que un `.visor`
+     suelto, y sin igualar la especificidad la hoja también saldría oculta y no se imprimiría nada. */
+  body:has(.visor) * { visibility: hidden; }
+  body:has(.visor) .visor,
+  body:has(.visor) .visor * { visibility: visible; }
+  .visor {
+    position: absolute; top: 0; left: 0; width: 100%;
+    background: #fff; display: block; overflow: visible;
+  }
+  .visor-barra { display: none; }
+  .visor-area { display: block; overflow: visible; padding: 0; }
+  .visor .hoja { width: 100%; min-height: 0; padding: 0; box-shadow: none; }
+  /* Los botones de la galería de evidencias no tienen sentido sobre el papel. */
+  .visor .hoja .btn { display: none; }
+}

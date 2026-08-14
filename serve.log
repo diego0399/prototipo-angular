@@ -1,36 +1,81 @@
 > Building...
 √ Building...
-Initial chunk files | Names                        |  Raw size
-chunk-RC4BIUP4.js   | -                            | 224.37 kB | 
-main.js             | main                         |  37.54 kB | 
-styles.css          | styles                       |  20.31 kB | 
-chunk-H6XRGIZF.js   | -                            |  16.81 kB | 
-chunk-LRHQCRQP.js   | -                            |   3.61 kB | 
-chunk-GOMI4DH3.js   | -                            |   1.37 kB | 
-chunk-NSYY34XN.js   | -                            |   1.35 kB | 
+Initial chunk files | Names                           |  Raw size
+chunk-27PRBTCN.js   | -                               | 506.60 kB | 
+main.js             | main                            |  37.95 kB | 
+styles.css          | styles                          |  27.58 kB | 
+chunk-Q6BGUU32.js   | -                               |  25.37 kB | 
+chunk-6WR5YDQF.js   | -                               |   4.63 kB | 
+chunk-NSYY34XN.js   | -                               |   1.35 kB | 
 
-                    | Initial total                | 305.36 kB
+                    | Initial total                   | 603.48 kB
 
-Lazy chunk files    | Names                        |  Raw size
-chunk-ZFUBY3FM.js   | configuracion-component      | 215.66 kB | 
-chunk-QSBGUREZ.js   | trazabilidad-component       | 200.37 kB | 
-chunk-FWN35UAT.js   | inventario-component         | 155.25 kB | 
-chunk-FJDT3BXZ.js   | preparacion-component        | 145.32 kB | 
-chunk-K6CJOSKG.js   | expediente-unico-component   | 144.12 kB | 
-chunk-7MT32PTE.js   | documentos-component         | 115.96 kB | 
-chunk-K3R4WRM6.js   | dashboard-component          | 109.35 kB | 
-chunk-SRE4WSV7.js   | expediente-tecnico-component |  99.68 kB | 
-chunk-TGKCT4KP.js   | entrega-component            |  97.32 kB | 
-chunk-WKVRXROU.js   | catalogo-software-component  |  71.20 kB | 
-chunk-YC6MP4WD.js   | garantia-component           |  65.52 kB | 
-chunk-2KVF4BTP.js   | asignacion-component         |  60.46 kB | 
-chunk-WVZ55SID.js   | -                            |  49.46 kB | 
-chunk-4TVR6K4Z.js   | conformidad-component        |  48.59 kB | 
-chunk-ZONM4QDU.js   | descargo-component           |  34.06 kB | 
-...and 7 more lazy chunks files. Use "--verbose" to show all the files.
+Lazy chunk files    | Names                           |  Raw size
+chunk-GONWB4VD.js   | configuracion-component         | 342.23 kB | 
+chunk-5RBRKY6M.js   | trazabilidad-component          | 300.90 kB | 
+chunk-A6Q5ESDQ.js   | expediente-unico-component      | 203.48 kB | 
+chunk-RJB6C4TQ.js   | garantia-component              | 186.44 kB | 
+chunk-AMGORWQO.js   | inventario-component            | 164.06 kB | 
+chunk-WNPNLF2M.js   | reprocesos-component            | 157.01 kB | 
+chunk-BFFSXAA3.js   | asignacion-component            | 154.75 kB | 
+chunk-XSK6QN6G.js   | preparacion-component           | 149.94 kB | 
+chunk-RS72KCQY.js   | entrega-component               | 148.66 kB | 
+chunk-32ISEXNN.js   | documentos-component            | 146.57 kB | 
+chunk-TPLBIBXJ.js   | dashboard-component             | 109.35 kB | 
+chunk-ZLJUVOTH.js   | expediente-tecnico-component    | 107.20 kB | 
+chunk-7VL3FFNI.js   | catalogo-software-component     |  71.39 kB | 
+chunk-PTB2F55P.js   | descargo-component              |  56.37 kB | 
+chunk-T2ULMVWX.js   | distribucion-soportes-component |  51.36 kB | 
+...and 16 more lazy chunks files. Use "--verbose" to show all the files.
 
-Application bundle generation complete. [6.403 seconds] - 2026-08-03T22:49:30.583Z
+Application bundle generation complete. [11.700 seconds] - 2026-08-14T02:37:22.687Z
 
 Watch mode enabled. Watching for file changes...
 NOTE: Raw file sizes do not reflect development server per-request transformations.
-  ➜  Local:   http://localhost:4287/
+  ➜  Local:   http://localhost:4330/
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names  | Raw size
+styles.css          | styles | 27.65 kB | 
+
+Application bundle generation complete. [0.020 seconds] - 2026-08-14T02:47:23.927Z
+
+Stylesheet update sent to client(s).
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names  | Raw size
+styles.css          | styles | 27.65 kB | 
+
+Application bundle generation complete. [0.009 seconds] - 2026-08-14T02:47:27.156Z
+
+Stylesheet update sent to client(s).
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names  | Raw size
+styles.css          | styles | 27.68 kB | 
+
+Application bundle generation complete. [0.011 seconds] - 2026-08-14T02:47:45.152Z
+
+Stylesheet update sent to client(s).
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 |  37.95 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-RH3ZEQF5.js   | documentos-component | 146.89 kB | 
+
+Application bundle generation complete. [4.874 seconds] - 2026-08-14T02:52:21.659Z
+
+Page reload sent to client(s).
+> Changes detected. Rebuilding...
+√ Changes detected. Rebuilding...
+Initial chunk files | Names                |  Raw size
+main.js             | main                 |  37.95 kB | 
+
+Lazy chunk files    | Names                |  Raw size
+chunk-HQ4XJY7N.js   | documentos-component | 147.23 kB | 
+
+Application bundle generation complete. [0.473 seconds] - 2026-08-14T02:52:22.136Z
+
+Page reload sent to client(s).

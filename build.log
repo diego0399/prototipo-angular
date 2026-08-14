@@ -1,0 +1,36 @@
+> Building...
+√ Building...
+Initial chunk files | Names                        |  Raw size | Estimated transfer size
+chunk-IAD3DXOW.js   | -                            | 288.33 kB |                52.77 kB
+chunk-TWO4TJ5X.js   | -                            | 172.42 kB |                49.94 kB
+chunk-TMTLEKIX.js   | -                            |  88.79 kB |                22.43 kB
+styles-IVA3M6ZD.css | styles                       |  22.30 kB |                 4.82 kB
+main-GGR5TQZC.js    | main                         |  14.88 kB |                 4.38 kB
+chunk-MLQ65INV.js   | -                            |   4.27 kB |                 1.36 kB
+chunk-A6K3YOU2.js   | -                            |   2.28 kB |               665 bytes
+chunk-KL52AAL4.js   | -                            | 511 bytes |               511 bytes
+
+                    | Initial total                | 593.78 kB |               136.88 kB
+
+Lazy chunk files    | Names                        |  Raw size | Estimated transfer size
+chunk-4VVU5CJM.js   | configuracion-component      |  96.13 kB |                21.04 kB
+chunk-EYWQXZTW.js   | trazabilidad-component       |  81.69 kB |                18.02 kB
+chunk-XHMBGUCU.js   | expediente-unico-component   |  58.28 kB |                13.78 kB
+chunk-C6DUCNV7.js   | documentos-component         |  57.17 kB |                12.97 kB
+chunk-5BXMJKKC.js   | garantia-component           |  55.04 kB |                12.66 kB
+chunk-PI37RDFF.js   | inventario-component         |  46.84 kB |                11.03 kB
+chunk-KDT7GDJB.js   | asignacion-component         |  46.60 kB |                10.52 kB
+chunk-V2QQCX6A.js   | preparacion-component        |  45.53 kB |                10.98 kB
+chunk-47NAMYP3.js   | reprocesos-component         |  45.16 kB |                11.19 kB
+chunk-SYWERM6P.js   | entrega-component            |  41.85 kB |                10.31 kB
+chunk-X4LXUKXF.js   | dashboard-component          |  32.38 kB |                 7.53 kB
+chunk-KATNGORB.js   | expediente-tecnico-component |  31.54 kB |                 8.48 kB
+chunk-C4CFNIEX.js   | -                            |  26.15 kB |                 5.90 kB
+chunk-YFQWFSL3.js   | catalogo-software-component  |  21.64 kB |                 5.80 kB
+chunk-WKCEYCPQ.js   | descargo-component           |  17.45 kB |                 5.17 kB
+...and 17 more lazy chunks files. Use "--verbose" to show all the files.
+
+Application bundle generation complete. [6.512 seconds] - 2026-08-14T02:58:02.070Z
+
+Output location: C:\projects\claude\analisis\prototipo-angular\dist\prototipo-angular
+

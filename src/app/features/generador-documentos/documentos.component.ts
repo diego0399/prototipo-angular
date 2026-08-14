@@ -6,11 +6,13 @@ import { DataService } from '../../core/services/data.service';
 import { ToastService } from '../../core/services/toast.service';
 import { CasoActivoService } from '../../core/services/caso-activo.service';
 import { AccesorioVerificado, DocumentoGenerado, EstadoDocumento, ExpedienteTecnico, FirmaProceso, ModuloEvidencia } from '../../core/models/models';
-import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { ConstanciaReprocesoComponent } from '../../shared/constancia-reproceso';
 import { ConstanciaCorreccionComponent } from '../../shared/constancia-correccion';
-import { EvidenciasComponent } from '../../shared/evidencias';
+import { DocumentoDescargoComponent } from '../../shared/documento-descargo';
+import { EvidenciaVista } from '../../shared/evidencias';
+import { CampoDoc, SeccionDoc, VisorDocumentoComponent } from '../../shared/visor-documento';
 import {
   BuscarExpedienteTecnicoModalComponent, BuscarExpedienteUnicoModalComponent,
   FilaExpedienteTecnico, FilaExpedienteUnico, filaExpedienteTecnico, filaExpedienteUnico
@@ -33,24 +35,13 @@ interface FilaDoc {
 @Component({
   selector: 'app-documentos',
   imports: [
-    FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent,
+    FormsModule, RouterLink, BadgeComponent, HelpTipComponent,
     BuscarExpedienteUnicoModalComponent, BuscarExpedienteTecnicoModalComponent, ConstanciaReprocesoComponent,
-    ConstanciaCorreccionComponent, IconComponent, EvidenciasComponent],
+    ConstanciaCorreccionComponent, DocumentoDescargoComponent, IconComponent, VisorDocumentoComponent],
   styles: `
     .cat-busq { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .cat-busq input[type='search'] { flex: 1 1 340px; font-size: 13.5px; padding: 10px 14px; }
     .cat-busq select { max-width: 220px; }
-    .doc-preview { border: 1px solid var(--line); border-radius: var(--r-md); padding: 26px 30px; background: var(--surface); }
-    .doc-preview .dp-head { display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--navy-900); padding-bottom: 12px; margin-bottom: 16px; }
-    .doc-preview .dp-head img { height: 38px; }
-    .doc-preview .dp-tit { text-align: right; }
-    .doc-preview .dp-tit b { font-size: 15px; color: var(--navy-900); display: block; }
-    .doc-preview .dp-tit span { font-size: 11px; color: var(--tx-3); letter-spacing: .08em; text-transform: uppercase; }
-    .dp-firmas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 22px; }
-    .dp-f { border-top: 1px solid var(--tx-2); padding-top: 6px; font-size: 11.5px; color: var(--tx-2); }
-    .dp-f .f-cap { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--tx-3); }
-    .dp-f .f-nombre { font-family: var(--font-brand); font-size: 17px; color: var(--navy-900); margin: 2px 0; }
-    .dp-hash { font-size: 10.5px; color: var(--tx-3); margin-top: 16px; text-align: right; font-variant-numeric: tabular-nums; }
     .fr-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line); }
     .fr-item:last-child { border-bottom: 0; }
     .fr-sello { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 2px solid var(--gold-500); color: var(--gold-600); display: grid; place-items: center; font-family: var(--font-brand); font-size: 13px; }
@@ -294,6 +285,43 @@ interface FilaDoc {
             </div>
           }
 
+          <!-- Documento de Descargo: existe desde que el equipo se descarga de su usuario final -->
+          @if (descargosDelProceso().length) {
+            <div class="card mt-2 table-wrap">
+              <div class="card-head">
+                <div>
+                  <h2>
+                    Documento de Descargo
+                    <ui-help texto="Documento que respalda la salida del equipo del inventario activo de la Dirección/Unidad. Se genera con el registro del descargo y queda disponible para consultarlo después." />
+                  </h2>
+                  <p class="sub">Un documento por descargo registrado sobre el equipo de este expediente</p>
+                </div>
+                <span class="chip">{{ descargosDelProceso().length }}</span>
+              </div>
+              <table class="tbl">
+                <thead>
+                  <tr><th>Documento</th><th>Inventario</th><th>Usuario final entregó</th><th>Motivo</th><th>Acción posterior</th><th>Fecha</th><th>Estado</th><th style="text-align:right;">Acciones</th></tr>
+                </thead>
+                <tbody>
+                  @for (d of descargosDelProceso(); track d.idDescargo) {
+                    <tr>
+                      <td class="mono main-cell">{{ d.idDescargo }}<div class="sub-cell">Documento de Descargo</div></td>
+                      <td class="mono">{{ d.inventario }}</td>
+                      <td>{{ d.usuarioFinalEntrega }}</td>
+                      <td>{{ d.motivoDescargo }}</td>
+                      <td>{{ d.accionPosterior }}</td>
+                      <td class="mono">{{ d.fechaDescargo }}</td>
+                      <td><ui-badge [estado]="d.estado" /></td>
+                      <td style="text-align:right;">
+                        <button class="btn btn-outline btn-sm" (click)="verDescargo.set(d.idDescargo)">Ver documento</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
           <!-- Firmas simuladas capturadas durante el proceso (se incluyen al descargar) -->
           <div class="card mt-2">
             <div class="card-head">
@@ -327,253 +355,48 @@ interface FilaDoc {
         }
       }
 
-      <!-- Vista previa del documento (modo Soporte) -->
+      <!-- Vista previa formal del documento (modo Soporte) -->
       @if (ver(); as f) {
-        <ui-modal [titulo]="f.nombre" [sub]="'Vista simulada del documento generado'" (cerrar)="ver.set(null)">
-          <div class="doc-preview">
-            <div class="dp-head">
-              <img src="assets/logos/LogoCNR.png" alt="CNR" />
-              <div class="dp-tit">
-                <b>{{ f.nombre }}</b>
-                <span>SISGOST · Centro Nacional de Registros</span>
-              </div>
-            </div>
-            <dl class="dl">
-              <dt>Expediente único</dt><dd>{{ expediente()?.codigoUnico }}</dd>
-              <dt>Solicitud</dt><dd>{{ expediente()?.expediente }} · {{ data.tipoRequerimientoTexto(sol()) }}</dd>
-              <dt>Equipo</dt><dd>{{ equipoTxt() }}</dd>
-              @if (f.tipo === 'F0302' && conf(); as c) {
-                <dt>Nombre del equipo</dt><dd class="mono">{{ c.datos.nombrePC }}</dd>
-                <dt>¿Requiere reserva de IP?</dt>
-                <dd>{{ c.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad' }}</dd>
-                <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(c) }}</dd>
-                @if (c.datos.requiereReservaIP === 'Sí') {
-                  <dt>MAC del equipo</dt><dd class="mono">{{ c.datos.macEquipo || 'Sin registrar' }}</dd>
-                  <dt>Solicitud de reserva de IP</dt>
-                  <dd>{{ data.textoEstadoSolicitudIP(c) }}@if (c.datos.fechaSolicitudIP) { · correo simulado a Servidores el {{ c.datos.fechaSolicitudIP }}}</dd>
-                } @else if (c.datos.requiereReservaIP === 'No') {
-                  <dt>Justificación de no reserva</dt><dd>{{ c.datos.justificacionSinReservaIP || 'Sin registrar' }}</dd>
-                }
-                @if (c.datos.ipValidadaPor) {
-                  <dt>Reserva validada por</dt><dd>{{ c.datos.ipValidadaPor }} · {{ c.datos.ipValidadaEl }}</dd>
-                }
-                @if (historialCiclo().length) {
-                  <dt>Historial del ciclo</dt>
-                  <dd>
-                    @for (linea of historialCiclo(); track $index) { <div class="sub-cell">{{ linea }}</div> }
-                    <div class="sub-cell"><b>Expediente técnico: {{ expTecnicoDoc() || '—' }}</b> — el mismo durante todo el ciclo, incluidos los reprocesos.</div>
-                  </dd>
-                }
-              }
-              <dt>Usuario final</dt><dd>{{ sol()?.destinatario }} — {{ sol()?.unidadDestino }}</dd>
-              <dt>Generado</dt><dd>{{ f.doc?.fecha }} por {{ f.doc?.generadoPor }}</dd>
-            </dl>
-            <p class="small muted mt-2">
-              @switch (f.tipo) {
-                @case ('F0288') { Contenido: checklist digital de preparación técnica completado dentro de SISGOST, con evidencias verificadas y firma del técnico que preparó. }
-                @case ('F0302') { Contenido: checklist digital de configuración e instalación, software heredado de la Preparación F0288, software agregado según el requerimiento, evidencias verificadas y firmas de preparación y configuración. }
-                @case ('Entrega y aceptación') { Contenido: constancia de entrega del equipo con la respuesta del formulario externo y la firma de conformidad simulada del usuario final. }
-                @case ('Reporte final') { Contenido: consolidación del expediente único — solicitud, asignación, expediente técnico, F0288, F0302, conformidad del usuario final, garantía y trazabilidad — con las firmas capturadas durante el proceso. }
-              }
-            </p>
-            <!-- Las imágenes que respaldaban la etapa cuando se generó el documento -->
-            @if (evidenciasDoc(f); as lista) {
-              <ui-evidencias titulo="Imágenes de evidencia del documento" [lista]="lista"
-                (visualizar)="verEvidenciaDoc(f, $event)" />
-              @if (retiradasDoc(f); as retiradas) {
-                @if (retiradas.length) {
-                  <span class="hint">
-                    El documento certificó además: {{ retiradas.join(' · ') }}. Ya no está entre las imágenes de la etapa.
-                  </span>
-                }
-              }
-            }
-            @if (f.tipo === 'F0302' && capturasDoc(); as caps) {
-              <div class="mt-2">
-                <b>Controles de seguridad con evidencia</b>
-                <dl class="dl mt-1">
-                  @for (x of caps; track x.item.nombre) {
-                    <dt>{{ x.item.nombre }}</dt>
-                    <dd>
-                      {{ x.item.estado === 'Realizado' ? 'Completado' : x.item.estado }}
-                      @if (x.evidencia; as ev) {
-                        · evidencia asociada: {{ ev.archivo }} · {{ ev.cargadaPor }} · {{ ev.fecha }} · {{ ev.formulario }}
-                      } @else if (x.item.evidencia) { · evidencia asociada: {{ x.item.evidencia }} }
-                    </dd>
-                  }
-                </dl>
-              </div>
-            }
-            <!-- Ingreso a dominio: se registra su validación, sin evidencia asociada -->
-            @if (f.tipo === 'F0302' && controlesSinEvidenciaDoc(); as ctrls) {
-              <div class="mt-2">
-                <b>Controles de configuración validados</b>
-                <dl class="dl mt-1">
-                  @for (s of ctrls; track s.nombre) {
-                    <dt>{{ s.nombre }}</dt>
-                    <dd>{{ s.estado === 'Realizado' ? 'Realizado' : s.estado }}</dd>
-                  }
-                </dl>
-              </div>
-            }
-            <!-- El documento no lleva bloque de credenciales de SISSOR: el nombre del equipo ya
-                 figura arriba con los datos del expediente y la cuenta de red no es dato del F0302. -->
-            <!-- Lo que quedó fuera del checklist, con su motivo: el documento tiene que decir qué
-                 no se hizo y por qué, no solo lo que sí se hizo. -->
-            @if (f.tipo === 'F0302' && noAplicaDoc(); as fuera) {
-              <div class="mt-2">
-                <b>Ítems marcados como No aplica</b>
-                <dl class="dl mt-1">
-                  @for (s of fuera; track s.nombre) {
-                    <dt>{{ s.nombre }}</dt>
-                    <dd>
-                      No aplica
-                      <div class="small muted">Justificación: {{ s.justificacionNoAplica }}</div>
-                      @if (s.noAplicaPor) {
-                        <div class="small muted">Registrado por {{ s.noAplicaPor.split('—')[0].trim() }} · {{ s.fechaNoAplica }}</div>
-                      }
-                    </dd>
-                  }
-                </dl>
-              </div>
-            }
-            @if (f.tipo === 'F0302' && heredadoDoc(); as hs) {
-              <div class="mt-2">
-                <b>Software instalado previamente en F0288</b>
-                <dl class="dl mt-1">
-                  @for (s of hs; track s.codigoSoftware) {
-                    <dt>{{ s.nombre }}</dt>
-                    <dd>Versión {{ s.version }} · instalado en la Preparación F0288 ({{ s.expedienteTecnico }})@if (s.evidencia) { · evidencia: {{ s.evidencia }} }</dd>
-                  }
-                </dl>
-              </div>
-            }
-            @if (f.tipo === 'F0302') {
-              <div class="mt-2">
-                <b>Software agregado en Configuración F0302</b>
-                @if (adicionalDoc(); as sws) {
-                  <dl class="dl mt-1">
-                    @for (s of sws; track s.nombre) {
-                      <dt>{{ s.nombre }}</dt>
-                      <dd>
-                        {{ s.version }} · {{ s.motivo || 'sin motivo registrado' }} · {{ s.estado }}
-                        @if (s.observacion) { · {{ s.observacion }} }
-                      </dd>
-                    }
-                  </dl>
-                } @else {
-                  <p class="small muted mt-1">No se agregó software adicional: el requerimiento no lo necesitaba.</p>
-                }
-              </div>
-            }
-            @if (f.tipo === 'F0288' && softwareDoc(); as sws) {
-              <div class="mt-2">
-                <b>Software instalado en la preparación</b>
-                <dl class="dl mt-1">
-                  @for (s of sws; track s.nombre) {
-                    <dt>{{ s.nombre }}</dt>
-                    <dd>
-                      {{ s.estado }}@if (s.versionSeleccionada) { — versión {{ s.versionSeleccionada }} }
-                      @if (s.evidencia) { · evidencia: {{ s.evidencia }} }
-                    </dd>
-                  }
-                </dl>
-              </div>
-            }
-            @if (f.tipo === 'F0288' && accesoriosDoc(); as accs) {
-              <div class="mt-2">
-                <b>Accesorios verificados</b>
-                <dl class="dl mt-1">
-                  @for (a of accs; track a.nombre) {
-                    <dt>{{ a.nombre }}</dt>
-                    <dd>{{ detalleAccesorio(a) }}</dd>
-                  }
-                </dl>
-              </div>
-            }
-            <div class="dp-firmas">
-              @for (fp of firmasDe(f); track fp.rotulo) {
-                <div class="dp-f">
-                  <div class="f-cap">{{ fp.rotulo }}</div>
-                  @if (fp.estado === 'Capturada') {
-                    <div class="f-nombre">{{ fp.nombre }}</div>
-                    <div>Firmado electrónicamente por: {{ fp.nombre }}@if (fp.rol) { — {{ fp.rol }} }</div>
-                    <div>Fecha: {{ fp.fecha }}@if (fp.hora) { · {{ fp.hora }} } · firma simulada</div>
-                  } @else if (fp.estado === 'No aplica') {
-                    <div>No aplica: el usuario final registró inconformidad; no se genera firma de aceptación.</div>
-                  } @else {
-                    <div>Firma pendiente de captura.</div>
-                  }
-                </div>
-              }
-            </div>
-            <div class="dp-hash">Huella de integridad: {{ f.doc?.hash }}</div>
-          </div>
-        </ui-modal>
+        <ui-visor-documento
+          [abierto]="true"
+          [nombre]="f.nombre"
+          [subtitulo]="subtituloDoc(f)"
+          [codigo]="codigoDoc(f)"
+          [fecha]="f.doc?.fecha ?? ''"
+          [hora]="f.doc?.hora ?? ''"
+          [generadoPor]="f.doc?.generadoPor ?? ''"
+          [estado]="f.doc?.estado ?? 'Generado'"
+          [huella]="f.doc?.hash ?? ''"
+          [referencia]="referenciaDoc()"
+          [secciones]="seccionesDoc()"
+          [evidencias]="evidenciasVisor()"
+          [tituloEvidencias]="tituloEvidenciasDoc(f)"
+          [retiradas]="retiradasDoc(f)"
+          [firmas]="firmasDe(f)"
+          (verEvidencia)="verEvidenciaDoc(f, $event)"
+          (descargar)="descargar(f)"
+          (cerrar)="ver.set(null)" />
       }
 
-      <!-- Vista previa del F0288 (modo Hardware) -->
+      <!-- Vista previa formal del F0288 (modo Hardware) -->
       @if (verTec(); as t) {
-        <ui-modal titulo="F0288 — Preparación técnica" sub="Vista simulada del documento generado" (cerrar)="verTec.set(null)">
-          <div class="doc-preview">
-            <div class="dp-head">
-              <img src="assets/logos/LogoCNR.png" alt="CNR" />
-              <div class="dp-tit">
-                <b>F0288 — Preparación técnica</b>
-                <span>SISGOST · Centro Nacional de Registros</span>
-              </div>
-            </div>
-            <dl class="dl">
-              <dt>Expediente técnico</dt><dd>{{ t.codigo }} · {{ t.tipoExpediente }}</dd>
-              <dt>Equipo</dt><dd>{{ t.marcaModelo }} · inventario {{ t.inventario }}</dd>
-              <dt>Unidad responsable</dt><dd>{{ t.unidadResponsable }}</dd>
-              <dt>Técnico de preparación</dt><dd>{{ t.tecnicoPreparacion }}</dd>
-              <dt>Generado</dt><dd>{{ docTecVer()?.fecha }} por {{ docTecVer()?.generadoPor }}</dd>
-            </dl>
-            <p class="small muted mt-2">Contenido: checklist digital de preparación técnica completado dentro de SISGOST, con evidencias verificadas y firma del técnico que preparó.</p>
-            @if (softwareDeTec(t); as sws) {
-              <div class="mt-2">
-                <b>Software instalado en la preparación</b>
-                <dl class="dl mt-1">
-                  @for (s of sws; track s.nombre) {
-                    <dt>{{ s.nombre }}</dt>
-                    <dd>
-                      {{ s.estado }}@if (s.versionSeleccionada) { — versión {{ s.versionSeleccionada }} }
-                      @if (s.evidencia) { · evidencia: {{ s.evidencia }} }
-                      @else if (s.requiereEvidencia && s.estado === 'Realizado') { · <span class="muted">sin captura registrada</span> }
-                    </dd>
-                  }
-                </dl>
-              </div>
-            }
-            @if (observacionDeTec(t); as obs) {
-              <div class="mt-2">
-                <b>Observaciones de la preparación</b>
-                <p class="small mt-1">{{ obs }}</p>
-              </div>
-            }
-            @if (accesoriosDeTec(t); as accs) {
-              <div class="mt-2">
-                <b>Accesorios verificados</b>
-                <dl class="dl mt-1">
-                  @for (a of accs; track a.nombre) {
-                    <dt>{{ a.nombre }}</dt>
-                    <dd>{{ detalleAccesorio(a) }}</dd>
-                  }
-                </dl>
-              </div>
-            }
-            <div class="dp-firmas">
-              <div class="dp-f">
-                <div class="f-cap">Técnico que preparó el equipo</div>
-                <div class="f-nombre">{{ nombreDe(t.tecnicoPreparacion) }}</div>
-                <div>Firmado electrónicamente por: {{ t.tecnicoPreparacion }}</div>
-                <div>Fecha: {{ firmaPrep(t)?.fecha || docTecVer()?.fecha }}@if (firmaPrep(t)?.hora) { · {{ firmaPrep(t)?.hora }} } · firma simulada</div>
-              </div>
-            </div>
-            <div class="dp-hash">Huella de integridad: {{ docTecVer()?.hash }}</div>
-          </div>
-        </ui-modal>
+        <ui-visor-documento
+          [abierto]="true"
+          nombre="F0288 — Preparación técnica"
+          [subtitulo]="'Expediente técnico ' + t.codigo + ' · ' + t.tipoExpediente"
+          [codigo]="docTecVer()?.codigo || 'F0288-' + t.codigo"
+          [fecha]="docTecVer()?.fecha ?? ''"
+          [hora]="docTecVer()?.hora ?? ''"
+          [generadoPor]="docTecVer()?.generadoPor ?? ''"
+          [estado]="docTecVer()?.estado ?? 'Generado'"
+          [huella]="docTecVer()?.hash ?? ''"
+          [referencia]="t.codigo"
+          [secciones]="seccionesTec()"
+          [evidencias]="evidenciasTecVisor()"
+          tituloEvidencias="Imágenes de evidencia de la preparación"
+          [firmas]="firmasTec()"
+          (descargar)="descargarTec(t)"
+          (cerrar)="verTec.set(null)" />
       }
 
       @if (buscarAbierto()) {
@@ -645,6 +468,7 @@ interface FilaDoc {
         </div>
       </div>
 
+      <ui-documento-descargo [idDescargo]="verDescargo()" (cerrado)="verDescargo.set('')" />
       <ui-constancia-reproceso [idReproceso]="verConstancia()" (cerrado)="verConstancia.set('')" />
       <ui-constancia-correccion [idCorreccion]="verConstanciaCor()" (cerrado)="verConstanciaCor.set('')" />
     </div>
@@ -964,6 +788,609 @@ export class DocumentosComponent {
   protected readonly unidadPreparo = computed(() => {
     const x = this.expediente();
     return x ? this.data.expTecnicoDe(x.expediente)?.unidadResponsable ?? '' : '';
+  });
+
+  // ================= Armado de los documentos formales =================
+  // El visor solo dibuja: aquí se decide qué lleva cada documento y en qué orden. Los datos son
+  // los mismos que ya se mostraban y que van en la descarga; lo que cambia es que ahora se leen
+  // como una hoja institucional y no como una tarjeta del panel.
+
+  /** Descargo cuyo documento se está consultando desde este módulo; '' cierra el visor. */
+  protected verDescargo = signal('');
+
+  /** Descargos registrados sobre el equipo del expediente abierto. */
+  protected readonly descargosDelProceso = computed(() => {
+    const inv = this.sol()?.equipoInventario;
+    return inv ? this.data.descargosDeEquipo(inv) : [];
+  });
+
+  /** Proceso al que pertenece el documento, tal como se imprime en el encabezado de la hoja. */
+  protected readonly referenciaDoc = computed(() => {
+    const x = this.expediente();
+    return x ? `${x.codigoUnico} · solicitud ${x.expediente}` : '';
+  });
+
+  /**
+   * Código del documento. Los F0288/F0302 del prototipo no llevan uno propio —se identifican por
+   * su huella—, así que se deriva del tipo y del expediente único para que la hoja no salga sin
+   * identificación, que es lo primero que se busca en un documento impreso.
+   */
+  protected codigoDoc(f: FilaDoc): string {
+    const x = this.expediente();
+    return f.doc?.codigo || (x ? `${f.tipo.replace(/ /g, '-')}-${x.codigoUnico}` : '');
+  }
+
+  protected subtituloDoc(f: FilaDoc): string {
+    const inv = this.sol()?.equipoInventario ?? '';
+    const x = this.expediente();
+    switch (f.tipo) {
+      case 'F0288': return `Preparación técnica del equipo ${inv}`;
+      case 'F0302': return `Configuración e instalación del equipo ${inv}`;
+      case 'Entrega y aceptación': return `Entrega del equipo ${inv} y aceptación del usuario final`;
+      default: return `Consolidación de auditoría del expediente único ${x?.codigoUnico ?? ''}`;
+    }
+  }
+
+  protected tituloEvidenciasDoc(f: FilaDoc): string {
+    switch (f.tipo) {
+      case 'F0288': return 'Imágenes de evidencia de la preparación';
+      case 'F0302': return 'Imágenes de evidencia de la configuración';
+      case 'Reporte final': return 'Imágenes de evidencia de todo el expediente';
+      default: return 'Imágenes de evidencia del documento';
+    }
+  }
+
+  /**
+   * Imágenes que acompañan al documento abierto. El reporte final las reúne todas —es la
+   * consolidación del expediente—; los demás muestran las de su propia etapa.
+   */
+  protected readonly evidenciasVisor = computed<EvidenciaVista[]>(() => {
+    const f = this.ver();
+    if (!f) return [];
+    if (f.tipo === 'Reporte final') {
+      const x = this.expediente();
+      return x ? this.data.evidenciasDelExpediente(x.expediente).flatMap((g) => g.lista) : [];
+    }
+    return this.evidenciasDoc(f) ?? [];
+  });
+
+  // ---------- Bloques comunes a los cuatro documentos ----------
+
+  private seccionExpediente(): SeccionDoc {
+    const x = this.expediente();
+    const s = this.sol();
+    return {
+      titulo: 'Datos del expediente',
+      campos: [
+        { etiqueta: 'Expediente único', valor: x?.codigoUnico ?? '—', mono: true },
+        { etiqueta: 'Solicitud', valor: x?.expediente ?? '—', mono: true },
+        { etiqueta: 'Tipo de requerimiento', valor: this.data.tipoRequerimientoTexto(s) },
+        { etiqueta: 'Referencia de origen', valor: s?.origenRef || '—', mono: true },
+        { etiqueta: 'Expediente técnico', valor: this.expTecnicoDoc() || '—', mono: true },
+        { etiqueta: 'Fecha de la solicitud', valor: s?.fecha ?? '—', mono: true },
+        { etiqueta: 'Estado del expediente', valor: x?.resumenEstado ?? '—', ancho: true }
+      ]
+    };
+  }
+
+  private seccionEquipo(): SeccionDoc {
+    const inv = this.sol()?.equipoInventario ?? '';
+    const eq = inv ? this.data.equipoDe(inv) : undefined;
+    return {
+      titulo: 'Datos del equipo',
+      campos: [
+        { etiqueta: 'Equipo', valor: eq ? `${eq.marca} ${eq.modelo}` : '—' },
+        { etiqueta: 'Tipo de equipo', valor: eq ? (eq.tipo === 'Desktop' ? 'CPU' : 'Laptop') : '—' },
+        { etiqueta: 'Número de inventario', valor: inv || '—', mono: true },
+        { etiqueta: 'Número de serie', valor: eq?.serie ?? '—', mono: true },
+        { etiqueta: 'Condición', valor: eq?.condicion ?? '—' },
+        { etiqueta: 'Procesador', valor: eq?.procesador ?? '—' },
+        { etiqueta: 'Memoria RAM', valor: eq?.ram ?? '—' },
+        { etiqueta: 'Disco', valor: eq?.disco ?? '—' },
+        { etiqueta: 'Sistema operativo', valor: eq?.sistemaOperativo ?? '—' }
+      ]
+    };
+  }
+
+  private seccionUsuarioFinal(): SeccionDoc {
+    const s = this.sol();
+    return {
+      titulo: 'Datos del usuario final',
+      campos: [
+        { etiqueta: 'Usuario final', valor: s?.destinatario ?? '—' },
+        { etiqueta: 'Carné', valor: s?.carne ?? '—', mono: true },
+        { etiqueta: 'Dirección o Unidad', valor: s?.unidadDestino ?? '—' },
+        { etiqueta: 'Dirección o Gerencia', valor: s?.direccionGerencia ?? '—' },
+        { etiqueta: 'Correo institucional', valor: s?.correoDestinatario ?? '—' }
+      ]
+    };
+  }
+
+  /** Quién trabajó el documento. Cambia con el tipo: no es el mismo técnico en cada etapa. */
+  private seccionTecnico(tipo: FilaDoc['tipo']): SeccionDoc {
+    const x = this.expediente();
+    const tec = x ? this.data.expTecnicoDe(x.expediente) : undefined;
+    const prep = this.prep();
+    const c = this.conf();
+    const e = x ? this.data.entregaDe(x.expediente) : undefined;
+    const campos: CampoDoc[] = [];
+
+    if (tipo === 'F0288' || tipo === 'Reporte final') {
+      campos.push(
+        { etiqueta: 'Técnico que preparó el equipo', valor: prep?.tecnico || tec?.tecnicoPreparacion || '—' },
+        { etiqueta: 'Unidad responsable de la preparación', valor: tec?.unidadResponsable ?? '—' });
+    }
+    if (tipo === 'F0302' || tipo === 'Reporte final') {
+      campos.push(
+        { etiqueta: 'Técnico de Configuración', valor: c?.tecnico || '—' },
+        { etiqueta: 'Asignado por', valor: c?.seleccionadoPor || '—' });
+    }
+    if (tipo === 'Entrega y aceptación' || tipo === 'Reporte final') {
+      campos.push(
+        { etiqueta: 'Técnico que entregó el equipo', valor: e?.tecnicoEntrega || '—' },
+        { etiqueta: 'Técnico que configuró', valor: e?.tecnicoConfiguro || c?.tecnico || '—' });
+    }
+    return { titulo: 'Técnico responsable', campos };
+  }
+
+  // ---------- Bloques propios de cada documento ----------
+
+  /** El checklist del F0288 completo, sección por sección, tal como se trabajó. */
+  private seccionesChecklistF0288(): SeccionDoc[] {
+    const prep = this.prep();
+    if (!prep) return [];
+    return prep.secciones
+      .filter((s) => s.items.length)
+      .map((s) => ({
+        titulo: `Checklist de preparación — ${s.titulo}`,
+        items: s.items.map((i) => ({
+          nombre: i.nombre + (i.versionSeleccionada ? ` (versión ${i.versionSeleccionada})` : ''),
+          estado: i.estado,
+          nota: [i.nota, i.evidencia ? `Evidencia: ${i.evidencia}` : ''].filter(Boolean).join(' · ')
+        }))
+      }));
+  }
+
+  private seccionesF0288(): SeccionDoc[] {
+    const prep = this.prep();
+    if (!prep) {
+      return [{
+        titulo: 'Contenido de la preparación',
+        texto: 'No hay checklist de Preparación F0288 guardado para este proceso: el documento se generó '
+          + 'en su momento y conserva su huella de integridad, pero el detalle de la preparación no está '
+          + 'disponible para reconstruirlo.'
+      }];
+    }
+    const secciones: SeccionDoc[] = [...this.seccionesChecklistF0288()];
+
+    const software = this.softwareDoc();
+    if (software) {
+      secciones.push({
+        titulo: 'Software instalado en la preparación',
+        columnas: ['Software', 'Estado', 'Versión', 'Evidencia'],
+        filas: software.map((s) => [s.nombre, s.estado, s.versionSeleccionada ?? '—', s.evidencia ?? 'Sin captura registrada'])
+      });
+    }
+    const accesorios = this.accesoriosDoc();
+    if (accesorios) {
+      secciones.push({
+        titulo: 'Accesorios verificados',
+        columnas: ['Accesorio', 'Detalle de la verificación'],
+        filas: accesorios.map((a) => [a.nombre, this.detalleAccesorio(a)]),
+        nota: 'Cada accesorio tiene su propio número de inventario, distinto al del equipo principal.'
+      });
+    }
+    const cierre = prep?.cierre;
+    if (cierre) {
+      secciones.push({
+        titulo: 'Cierre técnico de la preparación',
+        campos: [
+          { etiqueta: 'Nivel de complejidad', valor: cierre.nivel },
+          { etiqueta: '¿Hubo complejidad?', valor: cierre.hubo || 'Sin responder' },
+          { etiqueta: 'Observaciones', valor: (cierre.hubo === 'Sí' ? cierre.detalle : cierre.observacion) || 'Sin observaciones registradas.', ancho: true }
+        ]
+      });
+    }
+    if (prep?.cronometro) {
+      secciones.push({
+        titulo: 'Tiempo registrado en la preparación',
+        campos: [
+          { etiqueta: 'Inicio', valor: `${prep.cronometro.fechaInicio} ${prep.cronometro.horaInicio}`.trim() || '—' },
+          { etiqueta: 'Finalización', valor: `${prep.cronometro.fechaFin} ${prep.cronometro.horaFin}`.trim() || '—' },
+          { etiqueta: 'Tiempo trabajado', valor: this.data.formatoDuracion(prep.cronometro.duracionMinutos) || 'menos de 1 min' }
+        ]
+      });
+    }
+    return secciones;
+  }
+
+  private seccionesF0302(): SeccionDoc[] {
+    const c = this.conf();
+    // Hay documentos F0302 de procesos anteriores cuyo checklist ya no está guardado. El documento
+    // lo dice en vez de salir con las secciones vacías, que es peor: parecería que no se configuró.
+    if (!c) {
+      return [{
+        titulo: 'Contenido de la configuración',
+        texto: 'No hay checklist de Configuración F0302 guardado para este proceso: el documento se generó '
+          + 'en su momento y conserva su huella de integridad, pero el detalle de la configuración no está '
+          + 'disponible para reconstruirlo.'
+      }];
+    }
+    const secciones: SeccionDoc[] = [{
+      titulo: 'Configuración del equipo',
+      campos: [
+        { etiqueta: 'Nombre del equipo', valor: c.datos.nombrePC || 'Sin registrar', mono: true },
+        { etiqueta: 'Tipo de servicio', valor: c.datos.tipoServicio || '—' },
+        { etiqueta: 'Sistema operativo', valor: c.datos.sistemaOperativo || '—' },
+        { etiqueta: 'Arquitectura', valor: c.datos.arquitectura || '—' },
+        { etiqueta: 'Puesto del usuario final', valor: c.datos.puesto || '—' },
+        { etiqueta: 'Estado de la configuración', valor: c.estado }
+      ]
+    }];
+
+    // Reserva de IP: dato del expediente, no del checklist. Va en su propio apartado porque de
+    // él depende que el formulario de conformidad pueda enviarse.
+    const reserva: CampoDoc[] = [
+      { etiqueta: '¿Requiere reserva de IP?',
+        valor: c.datos.requiereReservaIP || 'Pendiente de validación antes de conformidad' },
+      { etiqueta: 'IP reservada', valor: this.data.textoIPReservada(c), mono: true }
+    ];
+    if (c.datos.requiereReservaIP === 'Sí') {
+      reserva.push(
+        { etiqueta: 'MAC del equipo', valor: c.datos.macEquipo || 'Sin registrar', mono: true },
+        { etiqueta: 'Solicitud de reserva',
+          valor: this.data.textoEstadoSolicitudIP(c)
+            + (c.datos.fechaSolicitudIP ? ` · correo simulado al Departamento de Servidores el ${c.datos.fechaSolicitudIP}` : ''),
+          ancho: true });
+    } else if (c.datos.requiereReservaIP === 'No') {
+      reserva.push({ etiqueta: 'Justificación de no reserva',
+        valor: c.datos.justificacionSinReservaIP || 'Sin registrar', ancho: true });
+    }
+    if (c.datos.ipValidadaPor) {
+      reserva.push({ etiqueta: 'Reserva validada por',
+        valor: `${c.datos.ipValidadaPor} · ${c.datos.ipValidadaEl}`, ancho: true });
+    }
+    secciones.push({ titulo: 'Reserva de IP', campos: reserva });
+
+    if (this.historialCiclo().length) {
+      secciones.push({
+        titulo: 'Historial del ciclo',
+        items: this.historialCiclo().map((linea) => ({ nombre: linea, estado: '' })),
+        nota: `Expediente técnico: ${this.expTecnicoDoc() || '—'} — el mismo durante todo el ciclo, incluidos los reprocesos.`
+      });
+    }
+
+    const caps = this.capturasDoc();
+    if (caps) {
+      secciones.push({
+        titulo: 'Controles de seguridad con evidencia',
+        columnas: ['Control', 'Estado', 'Evidencia asociada'],
+        filas: caps.map((x) => [
+          x.item.nombre,
+          x.item.estado === 'Realizado' ? 'Completado' : x.item.estado,
+          x.evidencia
+            ? `${x.evidencia.archivo} · ${x.evidencia.cargadaPor} · ${x.evidencia.fecha} · ${x.evidencia.formulario}`
+            : x.item.evidencia || 'Sin evidencia registrada'
+        ])
+      });
+    }
+    const ctrls = this.controlesSinEvidenciaDoc();
+    if (ctrls) {
+      secciones.push({
+        titulo: 'Controles de configuración validados',
+        items: ctrls.map((s) => ({ nombre: s.nombre, estado: s.estado })),
+        nota: 'Estos controles se registran validados y no llevan imagen asociada: no se les pidió captura.'
+      });
+    }
+    const fuera = this.noAplicaDoc();
+    if (fuera) {
+      secciones.push({
+        titulo: 'Ítems marcados como No aplica',
+        columnas: ['Ítem', 'Justificación', 'Registrado por'],
+        filas: fuera.map((s) => [
+          s.nombre, s.justificacionNoAplica || 'Sin justificación registrada',
+          s.noAplicaPor ? `${s.noAplicaPor.split('—')[0].trim()} · ${s.fechaNoAplica}` : '—'
+        ]),
+        nota: 'El documento deja constancia de lo que no se hizo y por qué, no solo de lo que sí se hizo.'
+      });
+    }
+    const heredado = this.heredadoDoc();
+    secciones.push({
+      titulo: 'Software instalado previamente en la Preparación F0288',
+      columnas: ['Software', 'Versión', 'Origen', 'Evidencia'],
+      filas: heredado
+        ? heredado.map((s) => [s.nombre, s.version, `Preparación F0288 (${s.expedienteTecnico})`, s.evidencia || '—'])
+        : [],
+      texto: heredado ? '' : 'No hay software del catálogo registrado en la Preparación F0288 de este equipo.',
+      nota: 'Este software se hereda del F0288: no se vuelve a configurar en la etapa de Soporte.'
+    });
+    const adicional = this.adicionalDoc();
+    secciones.push({
+      titulo: 'Software agregado en la Configuración F0302',
+      columnas: ['Software', 'Versión', 'Motivo', 'Estado', 'Observación'],
+      filas: adicional
+        ? adicional.map((s) => [s.nombre, s.version, s.motivo || 'Sin motivo registrado', s.estado, s.observacion || '—'])
+        : [],
+      texto: adicional ? '' : 'No se agregó software adicional: el requerimiento no lo necesitaba.'
+    });
+    return secciones;
+  }
+
+  private seccionesEntrega(): SeccionDoc[] {
+    const x = this.expediente();
+    if (!x) return [];
+    const e = this.data.entregaDe(x.expediente);
+    const conf = this.data.conformidades().find((c) => c.expediente === x.expediente);
+    const secciones: SeccionDoc[] = [{
+      titulo: 'Entrega del equipo',
+      campos: [
+        { etiqueta: 'Fecha de entrega', valor: e?.fechaEntrega ?? '—', mono: true },
+        { etiqueta: 'Equipo entregado', valor: e?.equipo ?? '—' },
+        { etiqueta: 'Número de inventario', valor: e?.inventario ?? '—', mono: true },
+        { etiqueta: 'Estado de la entrega', valor: e?.estado ?? '—' },
+        { etiqueta: 'Preparado por', valor: e?.preparadoPor ?? '—' },
+        { etiqueta: 'Formulario de conformidad', valor: e?.conformidadToken ?? '—', mono: true }
+      ]
+    }];
+
+    if (conf) {
+      secciones.push({
+        titulo: 'Aceptación del usuario final',
+        campos: [
+          { etiqueta: 'Estado de la conformidad', valor: conf.estado },
+          { etiqueta: 'Enviado el', valor: conf.fechaEnvio || '—', mono: true },
+          { etiqueta: 'Vence el', valor: conf.vence || '—', mono: true },
+          { etiqueta: 'Respondido el', valor: conf.fechaRespuesta || 'Sin responder', mono: true },
+          { etiqueta: 'Nombre del equipo aceptado', valor: conf.nombreEquipo || this.conf()?.datos.nombrePC || '—', mono: true },
+          { etiqueta: 'IP reservada', valor: conf.ipReservada || this.data.textoIPReservada(this.conf()), mono: true },
+          { etiqueta: 'Respuesta del usuario final', valor: conf.respuesta || '—', ancho: true },
+          { etiqueta: 'Observaciones del usuario final', valor: conf.observaciones || 'Sin observaciones.', ancho: true }
+        ],
+        nota: conf.aceptaTerminos
+          ? 'El usuario final declaró recibir el equipo conforme y aceptó los términos de resguardo.'
+          : 'El usuario final aún no ha aceptado los términos de resguardo.'
+      });
+    }
+    return secciones;
+  }
+
+  /**
+   * Reporte final: no es un documento más, es la consolidación del expediente. Recorre el proceso
+   * completo en el orden en que ocurrió y termina diciendo en qué estado quedó.
+   */
+  private seccionesReporteFinal(): SeccionDoc[] {
+    const x = this.expediente();
+    if (!x) return [];
+    const id = x.expediente;
+    const tec = this.data.expTecnicoDe(id);
+    const prep = this.prep();
+    const c = this.conf();
+    const gar = this.data.garantiaDe(id);
+    const secciones: SeccionDoc[] = [];
+
+    secciones.push({
+      titulo: 'Expediente técnico',
+      campos: [
+        { etiqueta: 'Código', valor: tec?.codigo ?? '—', mono: true },
+        { etiqueta: 'Tipo de expediente', valor: tec?.tipoExpediente ?? '—' },
+        { etiqueta: 'Unidad responsable', valor: tec?.unidadResponsable ?? '—' },
+        { etiqueta: 'Creado por', valor: tec?.creadoPor ?? '—' },
+        { etiqueta: 'Fecha de creación', valor: tec?.fecha ?? '—', mono: true },
+        { etiqueta: 'Estado', valor: tec?.estado ?? '—' }
+      ]
+    });
+
+    secciones.push({
+      titulo: 'Preparación F0288',
+      campos: [
+        { etiqueta: 'Técnico que preparó', valor: prep?.tecnico ?? '—' },
+        { etiqueta: 'Unidad', valor: prep?.unidad ?? '—' },
+        { etiqueta: 'Fecha', valor: prep?.fecha ?? '—', mono: true },
+        { etiqueta: 'Estado', valor: prep?.estado ?? 'Sin preparación registrada' },
+        { etiqueta: 'Tiempo trabajado',
+          valor: this.data.formatoDuracion(prep?.cronometro?.duracionMinutos ?? null) || '—' },
+        { etiqueta: 'Complejidad', valor: prep?.cierre?.nivel ?? '—' }
+      ],
+      texto: prep ? '' : 'Este expediente no tiene preparación F0288 registrada.'
+    });
+
+    secciones.push({
+      titulo: 'Configuración F0302',
+      campos: [
+        { etiqueta: 'Técnico de Configuración', valor: c?.tecnico ?? '—' },
+        { etiqueta: 'Nombre del equipo', valor: c?.datos.nombrePC || '—', mono: true },
+        { etiqueta: 'Fecha', valor: c?.fecha ?? '—', mono: true },
+        { etiqueta: 'Estado', valor: c?.estado ?? 'Sin configuración registrada' },
+        { etiqueta: '¿Requiere reserva de IP?', valor: c?.datos.requiereReservaIP || '—' },
+        { etiqueta: 'IP reservada', valor: this.data.textoIPReservada(c), mono: true }
+      ],
+      texto: c ? '' : 'Este expediente no tiene configuración F0302 registrada.'
+    });
+
+    secciones.push(...this.seccionesEntrega());
+
+    if (gar) {
+      secciones.push({
+        titulo: 'Garantía',
+        campos: [
+          { etiqueta: 'Tipo de garantía', valor: gar.tipoGarantia ?? '—' },
+          { etiqueta: 'Estado', valor: gar.estado },
+          { etiqueta: 'Inicio de vigencia', valor: gar.fechaInicio || '—', mono: true },
+          { etiqueta: 'Vencimiento', valor: gar.fechaVencimiento || '—', mono: true },
+          { etiqueta: 'Proveedor', valor: gar.proveedor || '—' },
+          { etiqueta: 'Casos abiertos', valor: String(gar.casos.length) }
+        ],
+        columnas: gar.casos.length ? ['Caso', 'Apertura', 'Motivo', 'Responsable', 'Estado', 'Resultado'] : undefined,
+        filas: gar.casos.map((k) => [k.codigo, k.fechaApertura, k.motivo, k.responsableAtencion, k.estado, k.resultado || '—'])
+      });
+    }
+
+    const descargos = this.descargosDelProceso();
+    if (descargos.length) {
+      secciones.push({
+        titulo: 'Descargo del equipo',
+        columnas: ['Documento', 'Fecha', 'Motivo', 'Estado físico', 'Acción posterior', 'Registrado por'],
+        filas: descargos.map((d) => [d.idDescargo, d.fechaDescargo, d.motivoDescargo, d.estadoFisico,
+          d.accionPosterior, d.responsableRegistro]),
+        nota: 'El descargo cierra el ciclo: la asignación deja de estar vigente y el expediente queda como histórico.'
+      });
+    }
+
+    // Trazabilidad resumida: solo los hitos. El detalle completo vive en el módulo Trazabilidad y
+    // copiarlo entero convertiría el reporte en un registro, no en un resumen.
+    const hitos = this.data.eventosDe(id).filter((e) => e.hito);
+    secciones.push({
+      titulo: 'Trazabilidad resumida',
+      columnas: ['Fecha', 'Hora', 'Acción', 'Estado', 'Responsable'],
+      filas: hitos.map((e) => [e.fecha, e.hora, e.accion, e.estado, e.usuario]),
+      texto: hitos.length ? '' : 'Este expediente todavía no registra hitos de trazabilidad.',
+      nota: 'Resumen de hitos. El registro completo de eventos se consulta en el módulo Trazabilidad.'
+    });
+
+    const grupos = this.data.evidenciasDelExpediente(id);
+    secciones.push({
+      titulo: 'Resumen de evidencias del expediente',
+      columnas: ['Etapa', 'Proceso', 'Imágenes'],
+      filas: grupos.map((g) => [g.etapa, g.proceso, String(g.lista.length)]),
+      texto: grupos.length ? '' : 'Este expediente no tiene imágenes de evidencia registradas.'
+    });
+
+    const documentos = this.data.documentosDe(id);
+    secciones.push({
+      titulo: 'Documentos del expediente',
+      columnas: ['Documento', 'Generado', 'Generado por', 'Huella'],
+      filas: documentos.map((d) => [d.tipo, `${d.fecha} ${d.hora ?? ''}`.trim(), d.generadoPor, d.hash])
+    });
+
+    secciones.push({
+      titulo: 'Estado final del proceso',
+      campos: [
+        { etiqueta: 'Estado del expediente único', valor: x.estado },
+        { etiqueta: 'Resumen', valor: x.resumenEstado, ancho: true },
+        { etiqueta: 'Aceptación del usuario final', valor: this.data.estadoAceptacion(id) },
+        { etiqueta: 'Estado de la garantía', valor: gar?.estado ?? 'Sin garantía habilitada' },
+        { etiqueta: 'Equipo descargado', valor: descargos.length ? `Sí · ${descargos[0].idDescargo}` : 'No' }
+      ],
+      nota: 'El cierre es de auditoría: el expediente sigue disponible para casos de garantía mientras la garantía esté vigente.'
+    });
+    return secciones;
+  }
+
+  /** El documento abierto, sección por sección. */
+  protected readonly seccionesDoc = computed<SeccionDoc[]>(() => {
+    const f = this.ver();
+    if (!f) return [];
+    const base = [this.seccionExpediente(), this.seccionEquipo(), this.seccionUsuarioFinal(),
+      this.seccionTecnico(f.tipo)];
+    switch (f.tipo) {
+      case 'F0288': return [...base, ...this.seccionesF0288()];
+      case 'F0302': return [...base, ...this.seccionesF0302()];
+      case 'Entrega y aceptación': return [...base, ...this.seccionesEntrega()];
+      case 'Reporte final': return [...base, ...this.seccionesReporteFinal()];
+      default: return base;
+    }
+  });
+
+  // ---------- El F0288 que consulta Hardware ----------
+
+  /** Imágenes de la preparación técnica que respalda el F0288 abierto en modo Hardware. */
+  protected readonly evidenciasTecVisor = computed<EvidenciaVista[]>(() => {
+    const t = this.verTec();
+    return t ? this.data.evid.de('Preparación F0288', t.codigo) : [];
+  });
+
+  /** Firma del técnico que preparó el equipo, la única que lleva el F0288. */
+  protected readonly firmasTec = computed<FirmaProceso[]>(() => {
+    const t = this.verTec();
+    if (!t) return [];
+    const firma = this.data.preparacionPorCodigo(t.codigo)?.firma;
+    return [{
+      documento: 'F0288',
+      rotulo: 'Técnico que preparó el equipo',
+      nombre: this.nombreDe(t.tecnicoPreparacion),
+      rol: t.tecnicoPreparacion.split('—')[1]?.trim() ?? '',
+      fecha: firma?.fecha || this.docTecVer()?.fecha || '',
+      hora: firma?.hora ?? '',
+      estado: firma?.estado === 'Pendiente' ? 'Pendiente' : 'Capturada',
+      detalle: 'Firma simulada registrada al cerrar la preparación técnica.'
+    }];
+  });
+
+  protected readonly seccionesTec = computed<SeccionDoc[]>(() => {
+    const t = this.verTec();
+    if (!t) return [];
+    const eq = this.data.equipoDe(t.inventario);
+    const prep = this.data.preparacionPorCodigo(t.codigo);
+    const secciones: SeccionDoc[] = [
+      {
+        titulo: 'Datos del expediente técnico',
+        campos: [
+          { etiqueta: 'Expediente técnico', valor: t.codigo, mono: true },
+          { etiqueta: 'Tipo de expediente', valor: t.tipoExpediente },
+          { etiqueta: 'Unidad responsable', valor: t.unidadResponsable },
+          { etiqueta: 'Creado por', valor: t.creadoPor },
+          { etiqueta: 'Fecha de creación', valor: t.fecha, mono: true },
+          { etiqueta: 'Estado', valor: t.estado }
+        ]
+      },
+      {
+        titulo: 'Datos del equipo',
+        campos: [
+          { etiqueta: 'Equipo', valor: t.marcaModelo },
+          { etiqueta: 'Tipo de equipo', valor: t.tipoEquipo === 'Desktop' ? 'CPU' : 'Laptop' },
+          { etiqueta: 'Número de inventario', valor: t.inventario, mono: true },
+          { etiqueta: 'Número de serie', valor: eq?.serie ?? '—', mono: true },
+          { etiqueta: 'Condición', valor: t.condicion },
+          { etiqueta: 'Sistema operativo', valor: eq?.sistemaOperativo ?? '—' }
+        ]
+      },
+      {
+        titulo: 'Técnico responsable de la preparación',
+        campos: [
+          { etiqueta: 'Técnico de preparación', valor: t.tecnicoPreparacion },
+          { etiqueta: 'Fecha de la preparación', valor: prep?.fecha ?? '—', mono: true },
+          { etiqueta: 'Estado de la preparación', valor: prep?.estado ?? '—' },
+          { etiqueta: 'Tiempo trabajado',
+            valor: this.data.formatoDuracion(prep?.cronometro?.duracionMinutos ?? null) || '—' }
+        ]
+      }
+    ];
+
+    for (const s of prep?.secciones ?? []) {
+      if (!s.items.length) continue;
+      secciones.push({
+        titulo: `Checklist de preparación — ${s.titulo}`,
+        items: s.items.map((i) => ({
+          nombre: i.nombre + (i.versionSeleccionada ? ` (versión ${i.versionSeleccionada})` : ''),
+          estado: i.estado,
+          nota: [i.nota, i.evidencia ? `Evidencia: ${i.evidencia}` : ''].filter(Boolean).join(' · ')
+        }))
+      });
+    }
+
+    const software = this.softwareDeTec(t);
+    if (software) {
+      secciones.push({
+        titulo: 'Software instalado en la preparación',
+        columnas: ['Software', 'Estado', 'Versión', 'Evidencia'],
+        filas: software.map((s) => [s.nombre, s.estado, s.versionSeleccionada ?? '—',
+          s.evidencia ?? (s.requiereEvidencia && s.estado === 'Realizado' ? 'Sin captura registrada' : '—')])
+      });
+    }
+    const accesorios = this.accesoriosDeTec(t);
+    if (accesorios) {
+      secciones.push({
+        titulo: 'Accesorios verificados',
+        columnas: ['Accesorio', 'Detalle de la verificación'],
+        filas: accesorios.map((a) => [a.nombre, this.detalleAccesorio(a)])
+      });
+    }
+    const obs = this.observacionDeTec(t);
+    secciones.push({
+      titulo: 'Observaciones de la preparación',
+      texto: obs || 'La preparación no registró observaciones.'
+    });
+    return secciones;
   });
 
   protected elegir(id: string): void {
