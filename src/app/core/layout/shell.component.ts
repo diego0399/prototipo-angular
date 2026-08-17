@@ -7,6 +7,7 @@ import { DataService } from '../services/data.service';
 import { ToastService } from '../services/toast.service';
 import { IconComponent } from '../../shared/icon';
 import { NAVEGACION, NavGrupo } from '../config/permisos';
+import { URL_CONTROLES_MENSUALES } from '../config/modulos';
 
 @Component({
   selector: 'app-shell',
@@ -37,6 +38,7 @@ import { NAVEGACION, NavGrupo } from '../config/permisos';
     }
     .brand-rule { height: 2px; margin: 0 34px 6px; background: linear-gradient(90deg, transparent, var(--gold-500) 30%, var(--gold-500) 70%, transparent); border-radius: 2px; flex: none; }
 
+    /* El selector de módulo del ecosistema vive en styles.css (presupuesto de CSS por componente). */
     nav { flex: 1; padding: 4px 14px 20px; }
     .nav-g { margin-top: 18px; }
     .nav-g:first-child { margin-top: 10px; }
@@ -120,10 +122,21 @@ import { NAVEGACION, NavGrupo } from '../config/permisos';
         <img src="assets/logos/LogoCNR_white.png" alt="Centro Nacional de Registros" />
         <div class="b-txt">
           <div class="b-name">SISGO<span class="gold">ST</span></div>
-          <div class="b-sub">Sistema de Gestión y Seguimiento<br />de Soporte Técnico</div>
+          <div class="b-sub">Gestión de Equipos<br />Sistema de Gestión y Seguimiento de Soporte Técnico</div>
         </div>
       </div>
       <div class="brand-rule"></div>
+
+      <!-- Selector de módulo del ecosistema SISGOST -->
+      <div class="mod-sel">
+        <div class="mod-title">SISGOST</div>
+        <div class="mod-a on"><ui-icon name="box" /><span>Gestión de Equipos</span></div>
+        <a class="mod-a" [href]="urlControles"
+          title="Ir a SISGOST — Controles Mensuales: controles normados, bitácora diaria, justificaciones e inventario operativo">
+          <ui-icon name="clipboard" /><span>Ir a Controles Mensuales</span>
+          <ui-icon name="external" [size]="12" />
+        </a>
+      </div>
 
       <nav>
         @for (g of grupos(); track g.titulo) {
@@ -142,6 +155,7 @@ import { NAVEGACION, NavGrupo } from '../config/permisos';
       <div class="side-foot">
         <b>Prototipo institucional</b>
         Datos simulados (JSON) · sin backend<br />
+        Conectado con SISGOST — Controles Mensuales<br />
         Centro Nacional de Registros · DTI
       </div>
     </aside>
@@ -187,6 +201,9 @@ export class ShellComponent {
   protected readonly data = inject(DataService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+
+  /** Enlace al módulo hermano del ecosistema (ver core/config/modulos.ts). */
+  protected readonly urlControles = URL_CONTROLES_MENSUALES;
 
   /**
    * Menú por rol (tabla en core/config/permisos.ts, compartida con el guard de rutas): los

@@ -141,5 +141,18 @@
     "hora": "08:30",
     "activo": true,
     "observacion": ""
+  },
+  {
+    "id": "DIST-2026-0014",
+    "direccion": "Dirección de Registros",
+    "unidad": "Archivo Registral",
+    "tecnico": "Wendy Carranza — Técnico de Soporte",
+    "asignadoPor": "Carlos González — Encargado de Soporte",
+    "fecha": "2026-01-15",
+    "hora": "08:52",
+    "activo": false,
+    "observacion": "Desactivada: redistribución de carga del Registro de la Propiedad. La unidad quedó pendiente de reasignación de soporte.",
+    "desactivadaPor": "Carlos González — Encargado de Soporte",
+    "fechaDesactivacion": "2026-07-31"
   }
 ]

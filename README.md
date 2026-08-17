@@ -30,6 +30,34 @@ ng serve
 
 Abrir `http://localhost:4200`. Cualquier contraseña es válida; seleccione un usuario del sistema.
 
+## Ecosistema SISGOST: módulo hermano
+
+Este módulo (**Gestión de Equipos**) convive con **SISGOST — Controles Mensuales**
+(`analisis/sisgost-controles-mensuales`, `ng serve` en el puerto **4300**). Son dos aplicaciones
+Angular independientes que **comparten los datos base** —usuarios y roles, Direcciones/Unidades,
+equipos y la distribución de soportes—, con enlace directo desde la barra lateral
+(«Ir a Controles Mensuales»; la URL se configura en `src/app/core/config/modulos.ts`).
+
+| Dato | Se administra en | Lo consume |
+|---|---|---|
+| Usuarios, roles y Direcciones/Unidades | Directorio compartido | Ambos módulos |
+| **Distribución de soportes** | **Controles Mensuales** | Ambos módulos |
+| Equipos y su ciclo de vida | **Gestión de Equipos** | Controles Mensuales, como inventario operativo |
+
+Dos consecuencias visibles aquí:
+
+1. **El Técnico de Configuración se filtra por la distribución.** Al crear el expediente único
+   solo se ofrecen los Técnicos de Soporte responsables de la Dirección/Unidad del requerimiento.
+   La consulta vive en `SupportDistributionService` (`src/app/core/services/`), el **mismo
+   servicio** que existe en Controles Mensuales sobre el mismo `distribucion-soportes.json`.
+2. **La pantalla «Distribución de Soportes» quedó en modo consulta**: las asignaciones se crean y
+   se desactivan en Controles Mensuales (Administración → Distribución de soportes), para que el
+   registro compartido tenga un solo lugar de edición.
+
+Cuando el usuario final acepta la conformidad, el equipo queda activo en su Dirección/Unidad y
+pasa al inventario operativo de Controles Mensuales, donde alimenta el F0422, el mantenimiento
+preventivo y el análisis de vulnerabilidades; el descargo lo retira de ese inventario.
+
 ## Estructura
 
 ```text

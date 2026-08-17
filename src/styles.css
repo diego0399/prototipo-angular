@@ -539,3 +539,20 @@ details.acc.subtle { border-style: dashed; background: var(--surface-2); }
   /* Los botones de la galería de evidencias no tienen sentido sobre el papel. */
   .visor .hoja .btn { display: none; }
 }
+
+/* ============================== Selector de módulo del ecosistema SISGOST ==============================
+   Vive aquí y no en shell.component.ts para no exceder el presupuesto de CSS por componente. */
+
+app-shell .mod-sel { padding: 6px 14px 2px; }
+app-shell .mod-title { font-size: 10px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #7e93b5; padding: 0 12px 6px; }
+app-shell .mod-a {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 12px; margin: 3px 0; border-radius: 9px;
+  border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04);
+  color: #c7d4e8; font-size: 12.5px; font-weight: 500; text-decoration: none;
+  transition: background .12s, color .12s, border-color .12s;
+}
+app-shell .mod-a:hover { background: rgba(255, 255, 255, .1); color: #fff; border-color: var(--gold-500); text-decoration: none; }
+app-shell .mod-a.on { background: rgba(46, 111, 196, .28); border-color: rgba(46, 111, 196, .5); color: #fff; font-weight: 600; cursor: default; }
+app-shell .mod-a span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+app-shell .mod-a ui-icon { --icon-size: 15px; opacity: .9; flex: none; }

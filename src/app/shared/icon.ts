@@ -56,6 +56,8 @@ import { Component, input } from '@angular/core';
         @case ('info') { <circle cx="12" cy="12" r="9"/><path d="M12 11v5.5"/><path d="M12 7.6h.01"/> }
         @case ('edit') { <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m14.5 6.5 3 3"/> }
         @case ('chevron') { <path d="m9 5 7 7-7 7"/> }
+        @case ('clipboard') { <rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4a2 2 0 0 1 6 0"/><path d="M9 11h6M9 15h6"/> }
+        @case ('external') { <path d="M14 4h6v6"/><path d="M20 4 11 13"/><path d="M18 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/> }
       }
     </svg>
   `

@@ -16,6 +16,7 @@ import {
 } from '../models/models';
 import { AuthService } from './auth.service';
 import { EvidenciaService } from './evidencia.service';
+import { SupportDistributionService } from './support-distribution.service';
 
 /**
  * Familias de inventario de los accesorios institucionales. Un accesorio se asocia a un equipo
@@ -41,6 +42,12 @@ export class DataService {
    * trazabilidad, que es lo que cambia de un módulo a otro.
    */
   readonly evid = inject(EvidenciaService);
+  /**
+   * Distribución de soportes por Dirección/Unidad: **registro compartido del ecosistema SISGOST**.
+   * Se administra en SISGOST — Controles Mensuales y este módulo lo consume para decidir qué
+   * Técnicos de Soporte pueden recibir equipos para configurar en cada Dirección/Unidad.
+   */
+  readonly soportes = inject(SupportDistributionService);
 
   readonly listo = signal(false);
 
@@ -73,7 +80,7 @@ export class DataService {
    * Soporte. De él salen los técnicos elegibles como Técnico de Configuración de un requerimiento
    * y el soporte responsable que queda registrado cuando el usuario final acepta el equipo.
    */
-  readonly distribuciones = signal<DistribucionSoporte[]>([]);
+  readonly distribuciones = this.soportes.registros;
   /**
    * Inventario operativo del proyecto de Controles. Un equipo entra aquí **solo** cuando el
    * usuario final acepta la conformidad, y sale (sin borrarse) cuando se registra su descargo.
@@ -2706,27 +2713,22 @@ export class DataService {
 
   /** Asignaciones vigentes de una Dirección/Unidad (las desactivadas quedan solo en el historial). */
   distribucionesDe(direccion: string, unidad: string): DistribucionSoporte[] {
-    const clave = this.claveDirUnidad(direccion, unidad);
-    return this.distribuciones().filter((d) => d.activo && this.claveDirUnidad(d.direccion, d.unidad) === clave);
+    return this.soportes.deDireccionUnidad(direccion, unidad);
   }
 
   /** Técnicos de Soporte responsables de una Dirección/Unidad, en formato «Nombre — Rol». */
   tecnicosDeDireccionUnidad(direccion: string, unidad: string): string[] {
-    return this.distribucionesDe(direccion, unidad).map((d) => d.tecnico);
+    return this.soportes.tecnicosDe(direccion, unidad);
   }
 
   /** Direcciones/Unidades que atiende un técnico (§6: «Ver Direcciones/Unidades atendidas»). */
   direccionesDeTecnico(tecnico: string): DistribucionSoporte[] {
-    if (!tecnico) return [];
-    const nombre = tecnico.split('—')[0].trim();
-    return this.distribuciones().filter((d) => d.activo && d.tecnico.includes(nombre));
+    return this.soportes.deTecnico(tecnico);
   }
 
   /** ¿Este técnico está en la distribución vigente de esa Dirección/Unidad? */
   atiendeDireccionUnidad(tecnico: string, direccion: string, unidad: string): boolean {
-    if (!tecnico) return false;
-    const nombre = tecnico.split('—')[0].trim();
-    return this.distribucionesDe(direccion, unidad).some((d) => d.tecnico.includes(nombre));
+    return this.soportes.atiende(tecnico, direccion, unidad);
   }
 
   /**
@@ -2735,14 +2737,7 @@ export class DataService {
    * el primero de la distribución vigente.
    */
   soporteResponsableDe(direccion: string, unidad: string, preferido = ''): string {
-    const lista = this.distribucionesDe(direccion, unidad);
-    if (!lista.length) return '';
-    if (preferido) {
-      const nombre = preferido.split('—')[0].trim();
-      const propio = lista.find((d) => d.tecnico.includes(nombre));
-      if (propio) return propio.tecnico;
-    }
-    return lista[0].tecnico;
+    return this.soportes.responsableDe(direccion, unidad, preferido);
   }
 
   /** Solo el Encargado de Soporte y el Administrador gestionan la distribución (§6). */

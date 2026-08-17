@@ -7,6 +7,7 @@ import { DistribucionSoporte, TecnicoSoporteConCarga } from '../../core/models/m
 import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
 import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
+import { URL_CONTROLES_MENSUALES } from '../../core/config/modulos';
 
 /**
  * Distribución de Soportes por Dirección/Unidad. Es el catálogo del que dependen dos reglas del
@@ -43,15 +44,20 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
         }
       </div>
 
-      @if (!puedeGestionar()) {
-        <div class="alert warn mb-2">
-          <span class="alert-ico">!</span>
-          <span>
-            <b>Solo el Encargado de Soporte y el Administrador gestionan la distribución.</b>
-            La pantalla se muestra en modo consulta.
-          </span>
-        </div>
-      }
+      <div class="alert mb-2">
+        <span class="alert-ico">i</span>
+        <span>
+          <b>La distribución se administra en SISGOST — Controles Mensuales.</b>
+          Es un registro compartido por los dos módulos: allí se asignan y desactivan los Técnicos de
+          Soporte por Dirección/Unidad, y aquí se aplica —solo pueden recibir equipos para configurar
+          los técnicos responsables de la Dirección/Unidad del requerimiento—.
+          @if (rolPuedeGestionar()) {
+            <a [href]="urlControles">Administrar la distribución en Controles Mensuales</a>.
+          } @else {
+            Esta pantalla se muestra en modo consulta.
+          }
+        </span>
+      </div>
 
       @if (sinResponsable().length) {
         <div class="alert warn mb-3">
@@ -251,10 +257,21 @@ export class DistribucionSoportesComponent {
   private readonly auth = inject(AuthService);
   private readonly toast = inject(ToastService);
 
-  protected readonly puedeGestionar = computed(() => {
+  protected readonly urlControles = URL_CONTROLES_MENSUALES;
+
+  /** El rol tendría permiso, pero la administración ya no vive en este módulo. */
+  protected readonly rolPuedeGestionar = computed(() => {
     const clave = this.auth.usuario()?.clave;
     return clave === 'enc-soporte' || clave === 'admin';
   });
+
+  /**
+   * La distribución de soportes se ADMINISTRA en SISGOST — Controles Mensuales: es un registro
+   * compartido (`SupportDistributionService`) y tener dos pantallas que lo editan crearía dos
+   * verdades. Aquí se consulta y se aplica: este módulo la usa para ofrecer únicamente los
+   * técnicos responsables de la Dirección/Unidad como Técnico de Configuración.
+   */
+  protected readonly puedeGestionar = computed(() => false);
 
   protected readonly direcciones = computed(() => this.data.direccionesUnidades());
   protected readonly tecnicos = computed(() => this.data.tecnicosSoporteConCarga());
