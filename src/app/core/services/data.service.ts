@@ -2991,11 +2991,17 @@ export class DataService {
     const asig = this.asignacionDe(id);
     const tecConfig = asig?.responsablesFase?.tecnicoConfiguracion ?? '';
     const responsable = this.soporteResponsableDe(s.direccionGerencia, s.unidadDestino, tecConfig);
+    // Datos técnicos con los que quedó configurado el equipo. Viajan con la ficha al inventario
+    // operativo de Controles: allí el F0387 identifica los equipos por su IP.
+    const cfg = this.configuracionDe(id)?.datos;
     return {
       inventario, expediente: id,
       expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico ?? '',
       tipoEquipo: eq?.tipo ?? s.tipoEquipo,
       marca: eq?.marca ?? '', modelo: eq?.modelo ?? '', serie: eq?.serie ?? '',
+      nombreEquipo: cfg?.nombrePC ?? '',
+      ip: (cfg?.requiereReservaIP === 'Sí' ? cfg?.ipReservada ?? '' : '').trim(),
+      mac: (cfg?.macEquipo ?? '').trim(),
       usuarioFinal: s.destinatario, correoInstitucional: s.correoDestinatario,
       direccion: s.direccionGerencia, unidad: s.unidadDestino,
       soporteResponsable: responsable, tecnicoConfiguracion: tecConfig,

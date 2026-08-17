@@ -410,6 +410,15 @@ export interface EquipoControles {
   marca: string;
   modelo: string;
   serie: string;
+  /** Nombre del equipo (hostname) registrado en el F0302; viaja con la ficha a Controles. */
+  nombreEquipo?: string;
+  /**
+   * IP reservada del equipo, congelada al aceptar la conformidad. Controles Mensuales la usa para
+   * identificar el equipo en el F0387: sin ella el equipo no puede verificarse por IP.
+   */
+  ip?: string;
+  /** MAC con la que se solicitó la reserva de IP. */
+  mac?: string;
   usuarioFinal: string;
   correoInstitucional: string;
   direccion: string;

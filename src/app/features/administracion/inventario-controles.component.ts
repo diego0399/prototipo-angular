@@ -62,7 +62,12 @@ import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
               @for (c of activosFiltrados(); track c.inventario + c.expediente) {
                 <tr>
                   <td class="mono main-cell">{{ c.inventario }}</td>
-                  <td>{{ c.marca }} {{ c.modelo }}<div class="sub-cell">{{ c.tipoEquipo }}</div></td>
+                  <td>
+                    {{ c.marca }} {{ c.modelo }}
+                    <div class="sub-cell">
+                      {{ c.tipoEquipo }}@if (c.nombreEquipo) { · {{ c.nombreEquipo }} }@if (c.ip) { · IP {{ c.ip }} }
+                    </div>
+                  </td>
                   <td>{{ c.usuarioFinal }}<div class="sub-cell">{{ c.correoInstitucional }}</div></td>
                   <td>{{ c.direccion }}</td>
                   <td>{{ c.unidad }}</td>
@@ -85,6 +90,9 @@ import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
                         <div><span>Expediente único</span><b class="mono">{{ c.expedienteUnico || '—' }}</b></div>
                         <div><span>Requerimiento</span><b class="mono">{{ c.expediente }}</b></div>
                         <div><span>Serie</span><b class="mono">{{ c.serie || '—' }}</b></div>
+                        <div><span>Nombre del equipo</span><b class="mono">{{ c.nombreEquipo || '—' }}</b></div>
+                        <div><span>IP reservada</span><b class="mono">{{ c.ip || 'Sin reserva de IP' }}</b></div>
+                        <div><span>MAC</span><b class="mono">{{ c.mac || '—' }}</b></div>
                         <div><span>Técnico de configuración</span><b>{{ c.tecnicoConfiguracion.split('—')[0].trim() || '—' }}</b></div>
                         <div><span>Garantía</span><b>{{ c.garantia }}</b></div>
                         <div><span>Estado en controles</span><b>{{ c.estadoControlMensual }}</b></div>
