@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<title>SISGOST · Puente del inventario operativo</title>
+</head>
+<body>
+<!--
+  Puente del inventario operativo compartido.
+
+  Gestión de Equipos y Controles Mensuales corren en puertos distintos (4200 y 4300), y
+  `localStorage` está aislado POR ORIGEN: el puerto forma parte del origen, así que una clave
+  escrita en 4200 no se ve desde 4300. Esta página vive en el origen de Gestión de Equipos y sirve
+  de ventanilla: Controles Mensuales la carga en un iframe oculto y le pide, por `postMessage`, el
+  contenido de la clave compartida.
+
+  No hay backend: solo se lee y se escribe `localStorage` del propio origen.
+-->
+<script>
+  (function () {
+    var CLAVE = 'sisgost_operational_inventory';
+    // Orígenes autorizados a consultar el puente (los módulos del ecosistema en desarrollo).
+    var PERMITIDOS = [
+      'http://localhost:4300', 'http://127.0.0.1:4300',
+      'http://localhost:4310', 'http://localhost:4200', 'http://127.0.0.1:4200'
+    ];
+
+    function leer() {
+      try {
+        var crudo = localStorage.getItem(CLAVE);
+        var lista = crudo ? JSON.parse(crudo) : [];
+        return Array.isArray(lista) ? lista : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function responder(origen, mensaje) {
+      if (!parent || parent === window) return;
+      parent.postMessage(mensaje, origen);
+    }
+
+    window.addEventListener('message', function (ev) {
+      if (PERMITIDOS.indexOf(ev.origin) === -1) return;
+      var datos = ev.data || {};
+      if (datos.tipo === 'sisgost:leer-inventario') {
+        responder(ev.origin, {
+          tipo: 'sisgost:inventario',
+          peticion: datos.peticion,
+          equipos: leer(),
+          origenModulo: 'SISGOST — Gestión de Equipos'
+        });
+      }
+    });
+
+    // Avisa que el puente quedó listo; el padre puede pedir el inventario desde ese momento.
+    for (var i = 0; i < PERMITIDOS.length; i++) {
+      if (parent && parent !== window) parent.postMessage({ tipo: 'sisgost:puente-listo' }, PERMITIDOS[i]);
+    }
+  })();
+</script>
+<p style="font-family: system-ui, sans-serif; font-size: 13px; color: #475569;">
+  Puente del inventario operativo compartido de SISGOST. Esta página no se navega: la usa
+  SISGOST — Controles Mensuales para leer los equipos aceptados en Gestión de Equipos.
+</p>
+</body>
+</html>

@@ -17,6 +17,7 @@ import {
 import { AuthService } from './auth.service';
 import { EvidenciaService } from './evidencia.service';
 import { SupportDistributionService } from './support-distribution.service';
+import { SharedInventoryService } from './shared-inventory.service';
 
 /**
  * Familias de inventario de los accesorios institucionales. Un accesorio se asocia a un equipo
@@ -48,6 +49,8 @@ export class DataService {
    * Técnicos de Soporte pueden recibir equipos para configurar en cada Dirección/Unidad.
    */
   readonly soportes = inject(SupportDistributionService);
+  /** Inventario operativo compartido con SISGOST — Controles Mensuales. */
+  private readonly inventarioCompartido = inject(SharedInventoryService);
 
   readonly listo = signal(false);
 
@@ -3095,6 +3098,73 @@ export class DataService {
     this.registrarEvento(id, 'Sistema',
       'Equipo disponible para controles mensuales', 'Disponible para controles mensuales',
       '', false, { ...ref, estadoControles: 'Activo en Dirección/Unidad' });
+    // Y se publica en el inventario operativo COMPARTIDO, que es lo que lee Controles Mensuales.
+    this.syncAcceptedEquipmentToOperationalInventory(id, ficha);
+  }
+
+  /**
+   * Publica el equipo aceptado en el inventario operativo compartido del ecosistema. Es el punto
+   * exacto en que Controles Mensuales se entera: no hay botón que incorporar el equipo allá.
+   * Idempotente — reabrir la pantalla o volver a guardar la aceptación no duplica el registro.
+   */
+  private syncAcceptedEquipmentToOperationalInventory(id: string, ficha: EquipoControles): void {
+    // El expediente técnico se lleva por número de inventario, no por requerimiento.
+    const expTecnico = this.expedientesTecnicos().find((x) => x.inventario === ficha.inventario)?.codigo ?? '';
+    const { resultado, registro, anterior } = this.inventarioCompartido.registrarAceptacion({
+      numeroInventario: ficha.inventario,
+      tipoEquipo: ficha.tipoEquipo,
+      marca: ficha.marca, modelo: ficha.modelo, serie: ficha.serie,
+      nombreEquipo: ficha.nombreEquipo ?? '',
+      ip: ficha.ip ?? '', mac: ficha.mac ?? '',
+      usuarioFinal: ficha.usuarioFinal, correoUsuarioFinal: ficha.correoInstitucional,
+      direccion: ficha.direccion, unidad: ficha.unidad,
+      tecnicoConfiguracion: ficha.tecnicoConfiguracion,
+      soporteResponsable: ficha.soporteResponsable,
+      expediente: id,
+      expedienteUnico: ficha.expedienteUnico,
+      expedienteTecnico: expTecnico,
+      fechaAceptacion: ficha.fechaAceptacion,
+      garantia: ficha.garantia
+    });
+
+    const dirUni = registro.direccion === registro.unidad
+      ? registro.direccion : `${registro.direccion} / ${registro.unidad}`;
+    const ref = {
+      modulo: 'Inventario operativo compartido', inventario: registro.numeroInventario,
+      direccion: registro.direccion, unidad: registro.unidad,
+      usuarioFinal: registro.usuarioFinal, expedienteUnico: registro.expedienteUnico,
+      soporteResponsable: registro.soporteResponsable, estadoControles: registro.estadoOperativo
+    };
+
+    if (resultado === 'sin-cambios') {
+      // No se reescribe nada, pero queda constancia de que el intento se detectó y se evitó.
+      this.registrarEvento(id, 'Sistema',
+        `Intento de sincronización duplicada evitado (${registro.numeroInventario})`,
+        'Activo en Dirección/Unidad',
+        'El equipo ya figuraba activo en el inventario operativo compartido con los mismos datos.',
+        false, { ...ref, estadoAnterior: 'Activo en Dirección/Unidad' });
+      return;
+    }
+    if (resultado === 'nuevo-ciclo' && anterior) {
+      this.registrarEvento(id, 'Sistema',
+        `Ciclo operativo anterior de ${registro.numeroInventario} pasado a histórico`, 'Histórico',
+        `El equipo inicia un nuevo ciclo en ${dirUni}; el registro de ${anterior.direccion} / ${anterior.unidad} se conserva como historia.`,
+        false, { ...ref, estadoAnterior: 'Activo en Dirección/Unidad', estadoControles: 'Histórico' });
+    }
+    this.registrarEvento(id, 'Sistema',
+      resultado === 'actualizado'
+        ? `Equipo ${registro.numeroInventario} actualizado en el inventario operativo compartido`
+        : `Equipo ${registro.numeroInventario} incorporado automáticamente al inventario operativo de Controles Mensuales`,
+      'Activo en Dirección/Unidad',
+      `${dirUni} · usuario final ${registro.usuarioFinal}${registro.ip ? ` · IP ${registro.ip}` : ' · sin reserva de IP'}. Sincronizado a las ${registro.fechaSincronizacion.slice(11)}.`,
+      true, { ...ref, estadoAnterior: 'Pendiente de aceptación' });
+    if (!registro.soporteResponsable) {
+      this.registrarEvento(id, 'Sistema',
+        'La Dirección/Unidad del equipo no tiene Técnico de Soporte asignado en la distribución',
+        'Activo en Dirección/Unidad',
+        `${dirUni} no figura en la distribución de soportes vigente: el equipo queda activo pero sin responsable en Controles Mensuales.`,
+        true, ref);
+    }
   }
 
   /**
@@ -3187,6 +3257,21 @@ export class DataService {
       `Acción posterior al descargo registrada: ${d.accionPosterior}`, estados.gestion,
       motivoAdministrativo || d.observaciones, false,
       { ...ref, estadoControles: estados.controles });
+
+    // El inventario operativo compartido también se cierra: Controles Mensuales dejará de ver el
+    // equipo como activo sin que allá haya que aplicar nada a mano.
+    const cerrado = this.inventarioCompartido.registrarDescargo(d.inventario, {
+      fechaDescargo: d.fechaDescargo || this.hoy(),
+      motivoDescargo: d.motivoDescargo,
+      accionPosterior: d.accionPosterior
+    });
+    if (cerrado) {
+      this.registrarEvento(d.asignacionRelacionada, d.responsableRegistro,
+        `Equipo ${d.inventario} retirado del inventario operativo compartido`, 'Descargado',
+        `Controles Mensuales dejará de contarlo como activo en ${dirUni}. Sincronizado a las ${cerrado.fechaSincronizacion.slice(11)}.`,
+        true, { ...ref, modulo: 'Inventario operativo compartido',
+          estadoAnterior: 'Activo en Dirección/Unidad', estadoControles: 'Descargado' });
+    }
   }
 
   // ---------- Expediente técnico ----------
