@@ -5,6 +5,11 @@ import { IconComponent } from './icon';
 /** Clasifica un estado libre en una variante visual del badge. */
 export function estadoKind(estado: string): 'ok' | 'warn' | 'danger' | 'info' | 'gold' | 'neutral' {
   const e = (estado || '').toLowerCase();
+  // Prioridad del requerimiento: se compara la cadena completa para no chocar con estados que
+  // contienen las mismas palabras.
+  if (e === 'alta') return 'danger';
+  if (e === 'media') return 'warn';
+  if (e === 'baja') return 'neutral';
   if (/(carga alta)/.test(e)) return 'danger';
   if (/(carga media)/.test(e)) return 'warn';
   if (/(carga baja)/.test(e)) return 'ok';

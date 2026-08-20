@@ -42,20 +42,45 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
             Solicitudes
             <ui-help texto="Las solicitudes provienen de requerimientos de Laptop o de CPU registrados externamente. En este tablero se consultan, filtran y se da seguimiento a su estado; no se crean solicitudes desde SISGOST." />
           </h1>
-          <p class="page-sub">Consulta y seguimiento de requerimientos de Laptop y CPU.</p>
+          <p class="page-sub">Consulta y seguimiento de requerimientos de Laptop y CPU · la condición Nuevo/Usado es del equipo asignado, no del requerimiento.</p>
         </div>
       </div>
 
       <div class="card mb-2 card-pad">
         <div class="filtros">
           <input class="control" type="search" placeholder="Buscar por código, destinatario, unidad o equipo…" [(ngModel)]="busqueda" />
-          <div class="chips">
-            <button class="f-chip" [class.on]="filtro() === ''" (click)="filtro.set('')">Todas ({{ data.solicitudes().length }})</button>
-            @for (e of estados(); track e) {
-              <button class="f-chip" [class.on]="filtro() === e" (click)="filtro.set(e)">{{ e }} ({{ contar(e) }})</button>
-            }
-          </div>
+          <select id="f-tipo" class="control" style="width: 190px;" [(ngModel)]="fTipo">
+            <option value="">Tipo requerido: todos</option>
+            <option value="Desktop">Requerimiento de CPU</option>
+            <option value="Laptop">Requerimiento de Laptop</option>
+          </select>
+          <select id="f-dir" class="control" style="width: 210px;" [(ngModel)]="fDireccion" (ngModelChange)="fUnidad.set('')">
+            <option value="">Dirección: todas</option>
+            @for (d of direcciones(); track d) { <option [value]="d">{{ d }}</option> }
+          </select>
+          <select id="f-uni" class="control" style="width: 200px;" [(ngModel)]="fUnidad">
+            <option value="">Unidad: todas</option>
+            @for (u of unidades(); track u) { <option [value]="u">{{ u }}</option> }
+          </select>
+          <select id="f-prio" class="control" style="width: 160px;" [(ngModel)]="fPrioridad">
+            <option value="">Prioridad: todas</option>
+            <option value="Alta">Alta</option>
+            <option value="Media">Media</option>
+            <option value="Baja">Baja</option>
+          </select>
+          <input id="f-usuario" class="control" style="max-width: 200px;" placeholder="Usuario final…" [(ngModel)]="fUsuario" />
         </div>
+        <div class="chips" style="margin-top: 10px;">
+          <button class="f-chip" [class.on]="filtro() === ''" (click)="filtro.set('')">Todas ({{ data.solicitudes().length }})</button>
+          @for (e of estados(); track e) {
+            <button class="f-chip" [class.on]="filtro() === e" (click)="filtro.set(e)">{{ e }} ({{ contar(e) }})</button>
+          }
+        </div>
+        <p class="muted" style="margin: 10px 0 0; font-size: 12px;">
+          {{ filtradas().length }} requerimiento(s). El requerimiento indica <b>qué tipo de equipo</b>
+          se necesita; que el equipo sea nuevo o usado se decide al asignarlo desde el Inventario de
+          Hardware y se muestra en la columna del equipo.
+        </p>
       </div>
 
       <div class="card table-wrap">
@@ -63,10 +88,10 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
           <thead>
             <tr>
               <th>Solicitud / requerimiento</th>
-              <th>Descripción</th>
               <th>Usuario final</th>
-              <th>Unidad</th>
-              <th>Equipo</th>
+              <th>Dirección / Unidad</th>
+              <th>Prioridad</th>
+              <th>Equipo asignado</th>
               <th>Estado</th>
               <th></th>
             </tr>
@@ -78,13 +103,19 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                   <div class="main-cell mono">{{ s.expediente }}</div>
                   <div class="origen">{{ s.tipoEquipo | tipoRequerimiento }}</div>
                 </td>
-                <td><div class="desc-cell" [title]="s.descripcion">{{ s.descripcion }}</div></td>
-                <td><div class="trunc" [title]="s.destinatario">{{ s.destinatario }}</div></td>
-                <td><div class="trunc" [title]="s.unidadDestino + ' · ' + s.direccionGerencia">{{ s.unidadDestino }}</div></td>
+                <td>
+                  <div class="main-cell">{{ s.destinatario }}</div>
+                  <div class="sub-cell">{{ s.cargoDestinatario }}</div>
+                </td>
+                <td><div class="trunc" [title]="s.direccionGerencia + ' / ' + s.unidadDestino">{{ s.direccionGerencia }}</div>
+                  <div class="sub-cell">{{ s.unidadDestino }}</div>
+                </td>
+                <td><ui-badge [estado]="s.prioridad" /></td>
                 <td>
                   @if (s.equipoInventario) {
                     <div class="main-cell">{{ data.equipoDe(s.equipoInventario) | marcaModelo }}</div>
-                    <div class="sub-cell mono">{{ s.equipoInventario }}</div>
+                    <!-- La condición del equipo se muestra solo aquí: pertenece al equipo, no al requerimiento. -->
+                    <div class="sub-cell mono">{{ s.equipoInventario }} · {{ data.equipoDe(s.equipoInventario)?.condicion }}</div>
                   } @else {
                     <span class="sin-asig">SIN ASIGNACIÓN</span>
                   }
@@ -113,19 +144,22 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
               <div class="sec-title">Destinatario</div>
               <dl class="dl">
                 <dt>Usuario final</dt><dd>{{ s.destinatario }} (carné {{ s.carne }})</dd>
-                <dt>Unidad destino</dt><dd>{{ s.unidadDestino }}</dd>
+                <dt>Cargo</dt><dd>{{ s.cargoDestinatario }}</dd>
+                <dt>Dirección / Unidad</dt><dd>{{ s.direccionGerencia }} / {{ s.unidadDestino }}</dd>
                 <dt>Correo institucional</dt><dd>{{ s.correoDestinatario }}</dd>
               </dl>
             </div>
             <div>
               <div class="sec-title">Equipo</div>
               <dl class="dl">
-                <dt>Descripción</dt><dd>{{ s.descripcion }}</dd>
+                <dt>Tipo requerido</dt><dd>{{ s.tipoEquipo | tipoRequerimiento: true }}</dd>
                 @if (s.equipoInventario) {
-                  <dt>Equipo asignado</dt><dd>{{ data.equipoDe(s.equipoInventario) | marcaModelo }}</dd>
+                  <dt>Equipo asignado</dt>
+                  <dd>{{ data.equipoDe(s.equipoInventario) | marcaModelo }} — {{ data.equipoDe(s.equipoInventario)?.condicion }}</dd>
                   <dt>Inventario</dt><dd>{{ s.equipoInventario }}</dd>
                 } @else {
                   <dt>Equipo asignado</dt><dd><span class="sin-asig">SIN ASIGNACIÓN</span></dd>
+                  <dt>Condición</dt><dd class="muted">Se define al asignar el equipo desde el Inventario de Hardware.</dd>
                 }
               </dl>
             </div>
@@ -133,7 +167,8 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
           <hr class="divider" />
           <dl class="dl">
             <dt>Tipo de requerimiento</dt><dd>{{ s.tipoEquipo | tipoRequerimiento }}</dd>
-            <dt>Dirección / gerencia</dt><dd>{{ s.direccionGerencia }}</dd>
+            <dt>Motivo</dt><dd>{{ s.motivo }}</dd>
+            <dt>Prioridad</dt><dd><ui-badge [estado]="s.prioridad" /></dd>
             <dt>Estado actual</dt><dd><ui-badge [estado]="s.estado" /></dd>
             <dt>Recibida el</dt><dd>{{ s.fecha }} · {{ s.diasEnFase }} día(s) en la fase actual</dd>
             <dt>Siguiente pendiente</dt><dd>{{ s.pendiente }}</dd>
@@ -155,7 +190,19 @@ export class SolicitudesComponent {
 
   protected busqueda = signal('');
   protected filtro = signal('');
+  protected fTipo = signal('');
+  protected fDireccion = signal('');
+  protected fUnidad = signal('');
+  protected fPrioridad = signal('');
+  protected fUsuario = signal('');
   protected detalle = signal<Solicitud | null>(null);
+
+  /** Direcciones y Unidades presentes en los requerimientos: el filtro no inventa catálogo. */
+  protected readonly direcciones = computed(() =>
+    [...new Set(this.data.solicitudes().map((s) => s.direccionGerencia))].sort());
+  protected readonly unidades = computed(() => [...new Set(this.data.solicitudes()
+    .filter((s) => !this.fDireccion() || s.direccionGerencia === this.fDireccion())
+    .map((s) => s.unidadDestino))].sort());
 
   protected readonly estados = computed(() => {
     const orden = ['Entrante', 'Asignada', 'En preparación', 'En configuración', 'Pendiente de aceptación', 'Entregado', 'No conforme', 'Cerrado'];
@@ -170,12 +217,18 @@ export class SolicitudesComponent {
   protected readonly filtradas = computed(() => {
     const q = this.busqueda().toLowerCase().trim();
     const f = this.filtro();
+    const usuario = this.fUsuario().toLowerCase().trim();
     return this.data.solicitudes().filter((s) => {
       if (f && s.estado !== f) return false;
+      if (this.fTipo() && s.tipoEquipo !== this.fTipo()) return false;
+      if (this.fDireccion() && s.direccionGerencia !== this.fDireccion()) return false;
+      if (this.fUnidad() && s.unidadDestino !== this.fUnidad()) return false;
+      if (this.fPrioridad() && s.prioridad !== this.fPrioridad()) return false;
+      if (usuario && !s.destinatario.toLowerCase().includes(usuario)) return false;
       if (!q) return true;
       const eq = this.data.equipoDe(s.equipoInventario);
       const tipoTxt = s.tipoEquipo === 'Desktop' ? 'requerimiento de cpu' : 'requerimiento de laptop';
-      const texto = `${s.expediente} ${tipoTxt} ${s.destinatario} ${s.unidadDestino} ${s.descripcion} ${s.direccionGerencia} ${eq?.marca ?? ''} ${eq?.modelo ?? ''}`.toLowerCase();
+      const texto = `${s.expediente} ${tipoTxt} ${s.destinatario} ${s.cargoDestinatario} ${s.unidadDestino} ${s.motivo} ${s.direccionGerencia} ${eq?.marca ?? ''} ${eq?.modelo ?? ''}`.toLowerCase();
       return texto.includes(q);
     });
   });

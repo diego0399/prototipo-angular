@@ -25,20 +25,37 @@ export interface Solicitud {
   expediente: string;
   origenTipo: 'Memorando' | 'Requerimiento';
   origenRef: string;
+  /**
+   * **Tipo de equipo requerido**, y nada más. La solicitud pide un CPU o una Laptop; que el
+   * equipo sea nuevo o usado es una condición del equipo que se asigna desde el Inventario de
+   * Hardware, no del requerimiento: cuando la solicitud llega no se sabe todavía cuál se le dará.
+   */
   tipoEquipo: 'Laptop' | 'Desktop';
   descripcion: string;
   destinatario: string;
   carne: string;
+  /** Cargo del usuario final que recibirá el equipo. */
+  cargoDestinatario: string;
   unidadDestino: string;
   direccionGerencia: string;
+  /** IDs estables de la Dirección/Unidad: los mismos con los que trabaja la distribución. */
+  direccionId: string;
+  unidadId: string;
   correoDestinatario: string;
   estado: string;
   fecha: string;
   diasEnFase: number;
   pendiente: string;
   equipoInventario: string;
+  /** Por qué se solicita el equipo. */
+  motivo: string;
+  /** Prioridad de atención del requerimiento. */
+  prioridad: PrioridadSolicitud;
   nota: string;
 }
+
+/** Prioridad con la que se atiende un requerimiento de equipo. */
+export type PrioridadSolicitud = 'Alta' | 'Media' | 'Baja';
 
 /**
  * Equipo del Inventario de Hardware. Sus estados de preparación (Pendiente de preparación ·
@@ -262,6 +279,13 @@ export interface Asignacion {
  */
 export interface DistribucionSoporte {
   id: string;
+  /**
+   * IDs estables de la responsabilidad. Todo se compara por ellos: los nombres visibles se
+   * escriben de más de una forma y compararlos era el origen de las desincronizaciones.
+   */
+  tecnicoId: string;
+  direccionId: string;
+  unidadId: string;
   direccion: string;
   unidad: string;
   /** Técnico de Soporte responsable, en formato «Nombre — Rol». */
@@ -275,6 +299,8 @@ export interface DistribucionSoporte {
   /** Quién y cuándo desactivó la asignación, cuando `activo` es false. */
   desactivadaPor?: string;
   fechaDesactivacion?: string;
+  /** Por qué se dejó de atender esa Dirección/Unidad; obligatorio al desactivar. */
+  motivoDesactivacion?: string;
 }
 
 /**

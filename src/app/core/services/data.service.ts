@@ -16,7 +16,7 @@ import {
 } from '../models/models';
 import { AuthService } from './auth.service';
 import { EvidenciaService } from './evidencia.service';
-import { SupportDistributionService } from './support-distribution.service';
+import { DireccionOrganizacion, SupportDistributionService } from './support-distribution.service';
 import { SharedInventoryService } from './shared-inventory.service';
 
 /**
@@ -140,6 +140,16 @@ export class DataService {
       this.http.get<AccesorioCatalogoInstitucional[]>('assets/data/accesorios-institucionales.json')
         .subscribe((c) => this.catalogoAccesorios.set(c));
     }
+    // El catálogo organizacional tampoco forma parte del estado guardado y es quien resuelve el
+    // nombre de una Dirección/Unidad a su ID estable: sin él, la distribución no encuentra a nadie.
+    if (this.soportes.organizacion().length === 0) {
+      this.http.get<DireccionOrganizacion[]>('assets/data/direcciones.json')
+        .subscribe((d) => {
+          this.soportes.cargarOrganizacion(d);
+          // Las asignaciones ya cargadas se renormalizan contra el catálogo recién llegado.
+          this.soportes.cargar(this.distribuciones());
+        });
+    }
     if (this.hidratarDesdeLocalStorage()) {
       // El catálogo de software SÍ viaja dentro de la foto guardada (es administrable); si una
       // foto anterior a esta funcionalidad no lo trae, se siembra aparte desde el JSON original.
@@ -151,7 +161,10 @@ export class DataService {
       // la trae, y sin ella no habría técnicos elegibles para ninguna Dirección/Unidad.
       if (this.distribuciones().length === 0) {
         this.http.get<DistribucionSoporte[]>('assets/data/distribucion-soportes.json')
-          .subscribe((d) => this.distribuciones.set(d));
+          .subscribe((d) => this.soportes.cargar(d));
+      } else {
+        // Una foto guardada antes de los IDs estables trae las asignaciones sin ellos.
+        this.soportes.cargar(this.distribuciones());
       }
       this.asegurarIntentosDeConformidades();
       this.listo.set(true);
@@ -176,6 +189,7 @@ export class DataService {
       descargos: json<Descargo[]>('descargos'),
       reprocesos: json<ReprocesoF0288[]>('reprocesos-f0288'),
       distribuciones: json<DistribucionSoporte[]>('distribucion-soportes'),
+      organizacion: json<DireccionOrganizacion[]>('direcciones'),
       catalogoSoftware: json<SoftwareCatalogo[]>('catalogo-software')
     }).subscribe((r) => {
       this.usuarios.set(r.usuarios);
@@ -194,7 +208,10 @@ export class DataService {
       this.ingresosHardware.set(r.ingresos);
       this.descargos.set(r.descargos);
       this.reprocesos.set(this.normalizarReprocesos(r.reprocesos ?? []));
-      this.distribuciones.set(r.distribuciones ?? []);
+      // El catálogo organizacional se carga primero: resuelve nombre → ID estable, y la
+      // distribución se normaliza contra él al entrar.
+      this.soportes.cargarOrganizacion(r.organizacion ?? []);
+      this.soportes.cargar(r.distribuciones ?? []);
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(r.catalogoSoftware));
       // El inventario de Controles no tiene JSON semilla: se deriva de las aceptaciones que el
       // set de datos ya trae. No se inventa ninguna pertenencia — solo entran los equipos cuyo
@@ -269,7 +286,7 @@ export class DataService {
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(this.normalizarCorrecciones(d.correcciones ?? []));
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
-      this.distribuciones.set(d.distribuciones ?? []);
+      this.soportes.cargar(d.distribuciones ?? []);
       this.controles.set(this.controlesDeAceptacionesPrevias(d.controles ?? []));
       this.evid.hidratar(this.evidenciasDeFallasSembradas(d.evidencias ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
@@ -2767,6 +2784,9 @@ export class DataService {
     }
     const nuevo: DistribucionSoporte = {
       id: this.siguienteCodigoPorAnio(`DIST-${this.anioActual()}-`, this.distribuciones().map((d) => d.id)),
+      tecnicoId: this.soportes.idTecnico(datos.tecnico),
+      direccionId: this.soportes.idDireccion(datos.direccion),
+      unidadId: this.soportes.idUnidad(datos.direccion, datos.unidad),
       direccion: datos.direccion.trim(), unidad: datos.unidad.trim(), tecnico: datos.tecnico,
       asignadoPor: usuario, fecha: this.hoy(), hora: this.hora(), activo: true,
       observacion: datos.observacion.trim()

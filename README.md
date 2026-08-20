@@ -201,16 +201,37 @@ según selección, acordeones); aquí se documentan completas.
 ### Solicitudes
 
 - Tablero de **consulta**: las solicitudes no se crean en SISGOST.
-- Columnas: número, tipo de documento (Requerimiento/Memorando), descripción, usuario final,
-  unidad y dirección/gerencia, equipo, estado, fecha y observaciones.
-- La columna **Descripción** indica el tipo de equipo solicitado con un **texto corto**
-  (p. ej. «Laptop para usuario final»), **sin mencionar si es nuevo o usado**: la condición
-  pertenece al equipo del Inventario, no a la solicitud.
+- Columnas: número y **tipo requerido** («Requerimiento de CPU» / «Requerimiento de Laptop»),
+  usuario final con su cargo, Dirección/Unidad, prioridad, equipo asignado y estado.
+- **La solicitud solo declara qué tipo de equipo se necesita.** Que el equipo sea **Nuevo o
+  Usado** es una condición del equipo, no del requerimiento: cuando la solicitud llega todavía no
+  se sabe cuál se le dará. Por eso la condición aparece **únicamente** en la columna del equipo
+  asignado —«Dell Latitude 5420 · Usado»— y, mientras no haya equipo, el detalle dice «Se define al
+  asignar el equipo desde el Inventario de Hardware».
+- Filtros: **tipo requerido**, estado, Dirección, Unidad, usuario final y prioridad. El filtro
+  Nuevo/Usado **no existe aquí**: vive en el Inventario de Hardware, en la selección de equipo
+  disponible, en el detalle del equipo y en su historial, que es donde se elige.
+- Cada solicitud guarda además el **cargo** del usuario final, el **motivo** del requerimiento, su
+  **prioridad** y los **IDs estables** de su Dirección/Unidad (`direccionId`, `unidadId`), los
+  mismos con los que trabaja la distribución de soportes.
 - La tabla es **compacta**: filas de altura moderada, textos largos truncados con puntos
   suspensivos y sin explicaciones extensas en las celdas. La información completa (tipo de
   documento, dirección/gerencia, observaciones y justificación) vive en **«Ver detalle»**.
 - Si la solicitud aún no tiene equipo asignado, la columna Equipo muestra **SIN ASIGNACIÓN**
-  (nunca vacía ni con datos inventados); si ya lo tiene, muestra marca, modelo e inventario.
+  (nunca vacía ni con datos inventados); si ya lo tiene, muestra marca, modelo, inventario y
+  condición.
+
+#### Datos de demostración
+
+El set de datos trae **32 requerimientos —16 de CPU y 16 de Laptop—** repartidos por las
+Direcciones/Unidades del catálogo institucional y en distintos estados (entrantes, asignados, en
+configuración, pendientes de aceptación, entregados y cerrados), y **32 equipos** en el Inventario
+de Hardware con CPU y Laptops **nuevos y usados**. Siempre hay equipos disponibles de los cuatro
+tipos para asignar y requerimientos sin equipo que los reciban, de modo que la demostración puede
+recorrerse entera: ver los requerimientos → asignar un equipo del tipo requerido → crear el
+Expediente único (donde el Técnico de Configuración se filtra por la distribución de soportes) →
+configurar → simular la aceptación del Usuario Final → verlo aparecer en el inventario operativo de
+SISGOST — Controles Mensuales.
 
 ### Asignación de equipo a usuario final
 
