@@ -479,5 +479,30 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Laptop usada: equipo preparado; falta crear el Expediente único y configurarlo."
   }
+ },
+ {
+  "expediente": "SOL-2026-0161",
+  "equipoInventario": "2201-1330-2026",
+  "usuarioFinal": "Nancy Portillo — Archivo Registral",
+  "tipoEquipo": "Desktop",
+  "condicion": "Nuevo",
+  "responsableAsignacion": "Carlos González — Encargado de Soporte",
+  "decideDireccion": false,
+  "fecha": "2026-08-05",
+  "estado": "Vigente",
+  "observacion": "El requerimiento pedía un CPU; se asignó un equipo nuevo del Inventario de Hardware.",
+  "vigente": true,
+  "responsablesFase": {
+   "expedienteTecnico": "EXP-PT-2026-0106",
+   "unidadPreparacion": "Hardware",
+   "tecnicoPreparacion": "Balmore Mejía — Técnico de Hardware",
+   "estadoPreparacion": "Completada",
+   "unidadConfiguracion": "Soporte",
+   "tecnicoConfiguracion": "Por asignar",
+   "estadoConfiguracion": "Pendiente",
+   "responsableEntrega": "Por asignar",
+   "estadoEntrega": "Pendiente",
+   "observaciones": "Bloqueado: el Archivo Registral no tiene Técnico de Soporte asignado en la distribución."
+  }
  }
 ]

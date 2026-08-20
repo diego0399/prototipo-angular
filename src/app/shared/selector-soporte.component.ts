@@ -206,7 +206,8 @@ import { BadgeComponent, ModalComponent } from './ui';
                 } @else {
                   <b>{{ vacio() }}</b>
                   @if (rutaVacio(); as r) {
-                    <div class="mt-1">Debe configurar la distribución de soportes antes de continuar.</div>
+                    <div class="mt-1">Debe configurar la Distribución de Soportes en Controles Mensuales
+                      antes de continuar; este módulo la lee automáticamente.</div>
                     <a class="btn btn-outline btn-sm mt-2" [routerLink]="r" (click)="cerrar.emit()">Ir a Distribución de soportes</a>
                   }
                 }

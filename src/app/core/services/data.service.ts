@@ -17,6 +17,7 @@ import {
 import { AuthService } from './auth.service';
 import { EvidenciaService } from './evidencia.service';
 import { DireccionOrganizacion, SupportDistributionService } from './support-distribution.service';
+import { SupportDistributionBridgeService } from './support-distribution-bridge.service';
 import { SharedInventoryService } from './shared-inventory.service';
 
 /**
@@ -49,6 +50,8 @@ export class DataService {
    * Técnicos de Soporte pueden recibir equipos para configurar en cada Dirección/Unidad.
    */
   readonly soportes = inject(SupportDistributionService);
+  /** Lectura automática de la distribución que se edita en Controles Mensuales. */
+  readonly puenteDistribucion = inject(SupportDistributionBridgeService);
   /** Inventario operativo compartido con SISGOST — Controles Mensuales. */
   private readonly inventarioCompartido = inject(SharedInventoryService);
 
@@ -167,6 +170,7 @@ export class DataService {
         this.soportes.cargar(this.distribuciones());
       }
       this.asegurarIntentosDeConformidades();
+      this.sincronizarDistribucionCompartida('carga de la aplicación');
       this.listo.set(true);
       return;
     }
@@ -211,7 +215,9 @@ export class DataService {
       // El catálogo organizacional se carga primero: resuelve nombre → ID estable, y la
       // distribución se normaliza contra él al entrar.
       this.soportes.cargarOrganizacion(r.organizacion ?? []);
+      // La semilla solo siembra la demostración: si ya hay distribución compartida, manda esa.
       this.soportes.cargar(r.distribuciones ?? []);
+      this.sincronizarDistribucionCompartida('carga de la aplicación');
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(r.catalogoSoftware));
       // El inventario de Controles no tiene JSON semilla: se deriva de las aceptaciones que el
       // set de datos ya trae. No se inventa ninguna pertenencia — solo entran los equipos cuyo
@@ -2220,6 +2226,38 @@ export class DataService {
    * agrega el módulo, el estado anterior y las referencias del evento (inventario,
    * expediente técnico, expediente único, usuario final) cuando aplican.
    */
+  /**
+   * Relee la distribución de soportes que edita Controles Mensuales y, si cambió, lo deja trazado.
+   *
+   * Se llama al arrancar, al entrar al expediente único, al abrir el selector de Técnico de
+   * Configuración, al cambiar de requerimiento o de usuario, y ante cualquier aviso del navegador.
+   * **No hay botón de sincronizar**: la lista de técnicos elegibles se recalcula sola porque sale
+   * de `soportes`, que es lo que esta lectura actualiza.
+   */
+  sincronizarDistribucionCompartida(motivo: string): void {
+    this.puenteDistribucion.listenForDistributionChanges((aviso) => this.trazarDistribucionLeida(aviso));
+    void this.puenteDistribucion.refreshDistributionFromStorage()
+      .then((cambio) => { if (cambio) this.trazarDistribucionLeida(motivo); });
+  }
+
+  /** Traza de que este módulo adoptó una distribución nueva y con qué consecuencia. */
+  private trazarDistribucionLeida(motivo: string): void {
+    const vigentes = this.soportes.activas();
+    const resumen = vigentes
+      .map((d) => `${this.soportes.soloNombre(d.tecnico)} → ${this.soportes.etiqueta(d.direccion, d.unidad)}`)
+      .join('; ');
+    this.registrarEvento('DISTRIBUCION-SOPORTES', this.usuarioConectadoTexto(),
+      'Gestión de Equipos leyó la distribución de soportes actualizada', 'Vigente',
+      `Motivo de la lectura: ${motivo}. ${vigentes.length} responsabilidad(es) vigente(s). ${resumen}`,
+      false,
+      { modulo: 'Distribución de soportes', rol: this.rolConectado() });
+    this.registrarEvento('DISTRIBUCION-SOPORTES', this.usuarioConectadoTexto(),
+      'Técnicos de Configuración recalculados', 'Vigente',
+      'Los técnicos elegibles de cada requerimiento vuelven a salir de la distribución vigente; no se usa ninguna lista fija de este módulo.',
+      false,
+      { modulo: 'Expediente único', rol: this.rolConectado() });
+  }
+
   registrarEvento(expediente: string, usuario: string, accion: string, estado: string, observacion = '', hito = false,
     detalle: Partial<EventoTrazabilidad> = {}): void {
     this.eventos.update((list) => [
@@ -2701,7 +2739,8 @@ export class DataService {
    * enuncia, y así el texto no se duplica entre el modal, la validación y el bloqueo.
    */
   readonly MSG_SIN_DISTRIBUCION =
-    'No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento. Debe configurar la distribución de soportes antes de crear el Expediente único.';
+    'No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento. '
+    + 'Debe configurar la Distribución de Soportes en Controles Mensuales antes de crear el Expediente único.';
   readonly MSG_TECNICO_FUERA_DIRECCION =
     'El Técnico de Configuración seleccionado no está asignado a la Dirección/Unidad de este requerimiento. Seleccione un técnico responsable de esa Dirección/Unidad.';
   readonly MSG_DESCARGO_FUERA_DIRECCION =
@@ -2902,15 +2941,22 @@ export class DataService {
 
   /**
    * Técnicos de Soporte que pueden hacerse cargo de un proceso ya en marcha —una corrección, una
-   * inconformidad, un caso de garantía o un descargo—. Se prefiere a los responsables de su
-   * Dirección/Unidad; si esa Dirección/Unidad todavía no tiene distribución vigente se ofrecen
-   * todos, porque un caso abierto no puede quedarse sin quién lo atienda mientras se corrige el
-   * catálogo. La regla estricta de la distribución solo aplica al Técnico de Configuración, que es
-   * donde el requerimiento define a quién le toca desde el inicio.
+   * inconformidad, un caso de garantía o un descargo—: los responsables de su Dirección/Unidad,
+   * los mismos que para el Técnico de Configuración.
+   *
+   * **Ya no hay lista de reserva con todos.** Ofrecer a cualquiera cuando la Dirección/Unidad no
+   * tenía distribución rompía la regla del proceso justo donde más se nota. Lo único que se
+   * conserva es al técnico que **ya lleva el caso**: un proceso abierto no puede quedarse sin
+   * quién lo continúe por un cambio de distribución posterior, y eso no abre la puerta a nadie más.
    */
   tecnicosSoporteParaProceso(id: string): TecnicoSoporteConCarga[] {
     const propios = this.tecnicosConfiguracionDe(id);
-    return propios.length ? propios : this.tecnicosSoporteConCarga();
+    if (propios.length) return propios;
+    const actual = this.configuracionDe(id)?.tecnico ?? '';
+    if (!actual) return [];
+    const idActual = this.soportes.idTecnico(actual);
+    return this.tecnicosSoporteConCarga()
+      .filter((t) => this.soportes.idTecnico(t.usuario.nombre) === idActual);
   }
 
   /**

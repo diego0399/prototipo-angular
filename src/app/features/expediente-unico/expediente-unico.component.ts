@@ -226,9 +226,9 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                         <p class="small mt-1">{{ data.avisoCarga(c.nivel) }}</p>
                       }
                     }
-                    <button class="btn btn-ghost btn-sm mt-1" (click)="buscarTecnicoAbierto.set(true)">Cambiar técnico</button>
+                    <button class="btn btn-ghost btn-sm mt-1" (click)="abrirBusquedaTecnico()">Cambiar técnico</button>
                   } @else {
-                    <button class="btn btn-primary" (click)="buscarTecnicoAbierto.set(true)">Seleccionar Técnico de Configuración</button>
+                    <button class="btn btn-primary" (click)="abrirBusquedaTecnico()">Seleccionar Técnico de Configuración</button>
                     <span class="hint">
                       Solo aparecen los Técnicos de Soporte responsables de {{ dirUnidadTexto() }},
                       con su carga laboral y disponibilidad.
@@ -240,8 +240,11 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                     <div class="alert warn mt-2">
                       <span class="alert-ico">!</span>
                       <span>
-                        <b>No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento.</b>
-                        <div>Debe configurar la distribución de soportes antes de crear el Expediente único.</div>
+                        <!-- El texto sale del servicio: la regla y su enunciado no se duplican. -->
+                        <b>{{ data.MSG_SIN_DISTRIBUCION }}</b>
+                        <div>La distribución se edita en SISGOST — Controles Mensuales y este módulo la lee
+                          automáticamente: en cuanto se asigne un responsable a esta Dirección/Unidad,
+                          aparecerá aquí sin necesidad de recargar.</div>
                         @if (esEncSoporte()) {
                           <a class="btn btn-outline btn-sm mt-2" routerLink="/distribucion-soportes">Ir a Distribución de soportes</a>
                         }
@@ -895,6 +898,14 @@ export class ExpedienteUnicoComponent {
   );
 
   constructor() {
+    // Entrar aquí es uno de los momentos en que la distribución debe releerse: puede haberse
+    // editado en Controles Mensuales hace un segundo, en la otra pestaña. Y cambiar de usuario
+    // cambia lo que ese usuario puede ver, así que también dispara la lectura.
+    effect(() => {
+      const quien = this.auth.usuario()?.usuario ?? '';
+      this.data.sincronizarDistribucionCompartida(
+        quien ? `entrada al Expediente único (${quien})` : 'entrada al Expediente único');
+    });
     effect(() => {
       const id = this.expediente();
       const x = id ? this.data.expedienteUnicoDe(id) : undefined;
@@ -1112,9 +1123,20 @@ export class ExpedienteUnicoComponent {
   protected seleccionarSolicitud(id: string): void {
     this.procesoSel.set(id);
     this.buscarSolAbierto.set(false);
+    // Otra Dirección/Unidad, otros responsables: se relee antes de volver a ofrecer técnicos.
+    this.data.sincronizarDistribucionCompartida('cambio de Dirección/Unidad del requerimiento');
     // Cambiar de requerimiento cambia la Dirección/Unidad y, con ella, quiénes pueden configurar:
     // conservar la selección anterior dejaría elegido a un técnico que ya no es responsable.
     this.tecnicoConfig.set('');
+  }
+
+  /**
+   * Abrir el selector relee la distribución antes de dibujar la lista: es el punto exacto donde
+   * se decide quién puede configurar, y donde más caro sale mostrar una lista vieja.
+   */
+  protected abrirBusquedaTecnico(): void {
+    this.data.sincronizarDistribucionCompartida('apertura del selector de Técnico de Configuración');
+    this.buscarTecnicoAbierto.set(true);
   }
 
   protected seleccionarTecnico(nombreRol: string): void {

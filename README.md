@@ -46,10 +46,36 @@ equipos y la distribución de soportes—, con enlace directo desde la barra lat
 
 Dos consecuencias visibles aquí:
 
-1. **El Técnico de Configuración se filtra por la distribución.** Al crear el expediente único
-   solo se ofrecen los Técnicos de Soporte responsables de la Dirección/Unidad del requerimiento.
-   La consulta vive en `SupportDistributionService` (`src/app/core/services/`), el **mismo
-   servicio** que existe en Controles Mensuales sobre el mismo `distribucion-soportes.json`.
+1. **El Técnico de Configuración se filtra por la distribución vigente.** Al crear el expediente
+   único solo se ofrecen los Técnicos de Soporte responsables de la Dirección/Unidad del
+   requerimiento, y esa lista **se relee sola**: la distribución se edita en Controles Mensuales y
+   este módulo la toma de la fuente compartida del ecosistema.
+
+   | Clave / evento | Para qué |
+   |---|---|
+   | `sisgost_support_distribution` | La distribución completa, con IDs y nombres |
+   | `sisgost_support_distribution_updated_at` | ISO de la última escritura |
+   | `sisgost_support_distribution_version` | Versión del contrato guardado |
+   | `sisgost-support-distribution-updated` | Aviso dentro del mismo origen |
+
+   `SupportDistributionBridgeService` (`src/app/core/services/`) la lee **al arrancar la
+   aplicación, al entrar al Expediente único, al abrir el selector de Técnico de Configuración, al
+   cambiar de requerimiento o de usuario, ante el evento `storage`, ante el evento del ecosistema y
+   cuando la ventana recupera el foco**. No hay ningún botón de sincronizar.
+
+   Como los dos módulos corren en puertos distintos y `localStorage` está aislado por origen, la
+   lectura se completa con `puente-distribucion.html`, que Controles Mensuales publica en su propio
+   origen —el espejo de `puente-inventario.html`, que este módulo publica para el inventario
+   operativo—. Si Controles Mensuales no está levantado, aquí se sigue trabajando con la
+   distribución que ya se tenía: nunca se borra ni se sustituye por datos de la semilla.
+
+   Si la Dirección/Unidad del requerimiento **no tiene ningún Técnico de Soporte asignado**, no se
+   ofrece a nadie —tampoco «todos» como lista de reserva— y el expediente único queda bloqueado con
+   el motivo: «No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento.
+   Debe configurar la Distribución de Soportes en Controles Mensuales antes de crear el Expediente
+   único.» El requerimiento `SOL-2026-0161` (Dirección de Registros / Archivo Registral) está en el
+   set de datos justamente para poder demostrarlo: en cuanto se le asigna un soporte en Controles
+   Mensuales, se desbloquea sin recargar nada.
 2. **La pantalla «Distribución de Soportes» quedó en modo consulta**: las asignaciones se crean y
    se desactivan en Controles Mensuales (Administración → Distribución de soportes), para que el
    registro compartido tenga un solo lugar de edición.

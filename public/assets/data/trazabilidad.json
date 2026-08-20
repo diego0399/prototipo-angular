@@ -1,5 +1,20 @@
 [
  {
+  "expediente": "SOL-2026-0161",
+  "fecha": "2026-08-05",
+  "hora": "11:20",
+  "usuario": "Carlos González — Encargado de Soporte",
+  "accion": "Expediente único bloqueado por falta de soporte asignado",
+  "estado": "Asignada",
+  "estadoAnterior": "Asignada",
+  "observacion": "El Archivo Registral no tiene Técnico de Soporte en la distribución vigente; el Expediente único queda bloqueado hasta que se le asigne uno en SISGOST — Controles Mensuales.",
+  "hito": false,
+  "modulo": "Expediente único",
+  "direccion": "Dirección de Registros",
+  "unidad": "Archivo Registral",
+  "inventario": "2201-1330-2026"
+ },
+ {
   "expediente": "SOL-2026-0159",
   "fecha": "2026-07-28",
   "hora": "08:20",
@@ -32,11 +47,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Nancy Portillo — Encargada de Archivo · Dirección de Registros / Registro de la Propiedad · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Nancy Portillo — Encargada de Archivo · Dirección de Registros / Archivo Registral · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
   "direccion": "Dirección de Registros",
-  "unidad": "Registro de la Propiedad"
+  "unidad": "Archivo Registral"
  },
  {
   "expediente": "SOL-2026-0162",
