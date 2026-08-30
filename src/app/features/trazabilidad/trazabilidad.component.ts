@@ -638,9 +638,9 @@ interface FilaTraza {
                 }
               }
 
-              <!-- Pertenencia del equipo: a qué Dirección/Unidad pasó al aceptarlo y cuándo salió -->
+              <!-- Pertenencia del equipo: a qué Dirección/Registro pasó al aceptarlo y cuándo salió -->
               @if (controlesEq().length) {
-                <div class="sec-title mt-3">Pertenencia a Dirección/Unidad e inventario de Controles</div>
+                <div class="sec-title mt-3">Pertenencia a Dirección/Registro e inventario de Controles</div>
                 <div class="table-wrap">
                   <table class="tbl">
                     <thead>
@@ -675,8 +675,8 @@ interface FilaTraza {
                   </table>
                 </div>
                 <span class="hint">
-                  El equipo pertenece a la Dirección/Unidad <b>solo desde la aceptación del usuario final</b>, y sale del
-                  inventario activo con el descargo. La relación histórica con la Dirección/Unidad anterior se conserva.
+                  El equipo pertenece a la Dirección/Registro <b>solo desde la aceptación del usuario final</b>, y sale del
+                  inventario activo con el descargo. La relación histórica con la Dirección/Registro anterior se conserva.
                 </span>
               }
 
@@ -1380,7 +1380,7 @@ export class TrazabilidadComponent {
 
   /**
    * Fichas del equipo en el inventario operativo de Controles: una por cada ciclo en el que
-   * perteneció a una Dirección/Unidad. Las descargadas se conservan — el descargo termina la
+   * perteneció a una Dirección/Registro. Las descargadas se conservan — el descargo termina la
    * pertenencia, no borra que existió.
    */
   protected readonly controlesEq = computed(() => {

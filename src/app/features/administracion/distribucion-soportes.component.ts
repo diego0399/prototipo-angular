@@ -2,31 +2,65 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
-import { ToastService } from '../../core/services/toast.service';
-import { DistribucionSoporte, TecnicoSoporteConCarga } from '../../core/models/models';
-import { BadgeComponent, HelpTipComponent, ModalComponent } from '../../shared/ui';
+import { DistribucionSoporte } from '../../core/models/models';
+import { etiquetaRoles } from '../../core/models/roles';
+import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
 import { IconComponent } from '../../shared/icon';
-import { SelectorSoporteComponent } from '../../shared/selector-soporte.component';
 import { URL_CONTROLES_MENSUALES } from '../../core/config/modulos';
 
+/** Una fila territorial: un ámbito de distribución con quién responde por él. */
+interface FilaAmbito {
+  clave: string;
+  zona: string;
+  zonaId: string;
+  departamentoId: string;
+  departamento: string;
+  ambito: string;
+  tipo: 'Departamento' | 'Dirección/Registro';
+  porDireccion: boolean;
+  /** Direcciones/Registros que el ámbito cubre; en un departamento completo, todas las suyas. */
+  alcance: string[];
+  asignaciones: DistribucionSoporte[];
+  equipos: number;
+  solicitudes: number;
+}
+
 /**
- * Distribución de Soportes por Dirección/Unidad. Es el catálogo del que dependen dos reglas del
- * proceso: qué técnicos pueden configurar el equipo de un requerimiento y quién queda como
- * soporte responsable cuando el usuario final acepta. Solo lo gestionan el Encargado de Soporte
- * y el Administrador; el resto lo consulta.
+ * Distribución de Soportes — **vista de consulta** del ecosistema.
+ *
+ * La distribución es un registro compartido con una sola fuente de escritura: se administra en
+ * **SISGOST — Controles Mensuales** y este módulo la CONSUME. Aquí se muestra tal como la aplica
+ * Gestión de Equipos, que es lo que hay que poder verificar antes de crear un Expediente único:
+ * qué técnicos pueden configurar el equipo de un requerimiento y quién quedará como soporte
+ * responsable cuando el usuario final acepte.
+ *
+ * ## La regla territorial
+ *
+ * · En **San Salvador** la distribución es por **Dirección/Registro**: al crear el expediente
+ *   único solo aparecen los técnicos asignados a ese Registro.
+ * · En **los demás departamentos** es por **Departamento**: aparece el responsable del
+ *   departamento aunque nunca se le haya asignado ese Registro en particular.
+ *
+ * Editar desde aquí abriría una segunda fuente de escritura sobre el mismo registro compartido,
+ * que es exactamente lo que la regla del ecosistema evita. Por eso las acciones llevan a
+ * Controles Mensuales en lugar de duplicarse.
  */
 @Component({
   selector: 'app-distribucion-soportes',
-  imports: [FormsModule, BadgeComponent, HelpTipComponent, ModalComponent, IconComponent, SelectorSoporteComponent],
+  imports: [FormsModule, BadgeComponent, HelpTipComponent, IconComponent],
   styles: `
-    .dir-card { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); padding: 14px 16px; }
-    .dir-card .d-dir { font-size: 14px; font-weight: 700; color: var(--navy-900); }
-    .dir-card .d-uni { font-size: 11.5px; color: var(--gold-600); font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
-    .dir-card .d-tecs { margin-top: 10px; display: grid; gap: 6px; }
-    .tec-linea { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 12.5px; padding: 6px 8px; border-radius: var(--r-sm); background: var(--surface-2); }
-    .tec-linea.off { opacity: .55; }
+    .filtros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+    @media (max-width: 1000px) { .filtros { grid-template-columns: repeat(2, 1fr); } }
+    .zona-h {
+      display: flex; align-items: baseline; gap: 10px; margin: 18px 0 8px;
+      padding-bottom: 6px; border-bottom: 2px solid var(--gold-500);
+    }
+    .zona-h h2 { margin: 0; font-size: 15px; color: var(--navy-900); }
+    .zona-h .n { font-size: 12px; color: var(--tx-3); }
     .sin-tec { font-size: 12.5px; color: var(--danger, #b3261e); font-weight: 600; }
-    .tec-elegido { font-size: 12.5px; background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 8px 10px; margin-bottom: 8px; }
+    .alcance { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+    .mini { font-size: 11.5px; color: var(--tx-3); }
+    .resp-lista { display: grid; gap: 3px; }
   `,
   template: `
     <div class="page">
@@ -34,28 +68,27 @@ import { URL_CONTROLES_MENSUALES } from '../../core/config/modulos';
         <div>
           <div class="page-kicker">Sistema</div>
           <h1>
-            Distribución de Soportes por Dirección/Unidad
-            <ui-help texto="Define qué Técnico de Soporte atiende cada Dirección/Unidad. De aquí salen los técnicos que pueden ser Técnico de Configuración de un requerimiento y el soporte responsable del equipo una vez aceptado." />
+            Distribución de Soportes por Departamento y Dirección/Registro
+            <ui-help texto="Define qué Técnico de Soporte responde por cada Departamento o Dirección/Registro. De aquí salen los técnicos que pueden ser Técnico de Configuración de un requerimiento y el soporte responsable del equipo una vez aceptado." />
           </h1>
-          <p class="page-sub">Un técnico puede atender varias Direcciones/Unidades; una Dirección/Unidad puede tener varios responsables.</p>
+          <p class="page-sub">
+            En San Salvador la responsabilidad es por Dirección/Registro; en los demás departamentos,
+            por Departamento completo.
+          </p>
         </div>
-        @if (puedeGestionar()) {
-          <button class="btn btn-primary" (click)="abrirNueva()"><ui-icon name="plus" [size]="14" /> Asignar técnico</button>
-        }
+        <a class="btn btn-outline" [href]="urlControles">
+          <ui-icon name="external" [size]="13" /> Administrar en Controles Mensuales
+        </a>
       </div>
 
       <div class="alert mb-2">
         <span class="alert-ico">i</span>
         <span>
           <b>La distribución se administra en SISGOST — Controles Mensuales.</b>
-          Es un registro compartido por los dos módulos: allí se asignan y desactivan los Técnicos de
-          Soporte por Dirección/Unidad, y aquí se aplica —solo pueden recibir equipos para configurar
-          los técnicos responsables de la Dirección/Unidad del requerimiento—.
-          @if (rolPuedeGestionar()) {
-            <a [href]="urlControles">Administrar la distribución en Controles Mensuales</a>.
-          } @else {
-            Esta pantalla se muestra en modo consulta.
-          }
+          Es un registro compartido por los dos módulos: allí se asignan y desactivan los responsables,
+          y aquí se aplica —al crear el Expediente único solo pueden recibir equipos para configurar
+          los técnicos que responden por el requerimiento—. Esta pantalla es de consulta y se
+          actualiza sola: no hay ningún botón de sincronizar.
         </span>
       </div>
 
@@ -63,58 +96,118 @@ import { URL_CONTROLES_MENSUALES } from '../../core/config/modulos';
         <div class="alert warn mb-3">
           <span class="alert-ico">!</span>
           <span>
-            <b>{{ sinResponsable().length }} Dirección/Unidad sin Técnico de Soporte responsable.</b>
+            <b>{{ sinResponsable().length }} ámbito(s) sin Técnico de Soporte responsable.</b>
             No se podrá crear el Expediente único de sus requerimientos hasta asignar uno:
             {{ textoSinResponsable() }}.
           </span>
         </div>
       }
 
-      <!-- Vista por Dirección/Unidad: quién atiende cada una -->
-      <div class="mb-2 sec-title">Direcciones y Unidades</div>
-      <div class="grid grid-2 mb-3">
-        @for (du of direcciones(); track du.direccion + du.unidad) {
-          <div class="dir-card">
-            <div class="d-uni">{{ du.direccion }}</div>
-            <div class="d-dir">{{ du.unidad }}</div>
-            <div class="d-tecs">
-              @for (d of activasDe(du.direccion, du.unidad); track d.id) {
-                <div class="tec-linea">
-                  <span>
-                    <b>{{ d.tecnico.split('—')[0].trim() }}</b>
-                    <span class="muted"> · desde {{ d.fecha }}</span>
-                  </span>
-                  @if (puedeGestionar()) {
-                    <span class="row" style="flex-wrap: nowrap; gap: 6px;">
-                      <button class="btn btn-ghost btn-sm" (click)="abrirEditar(d)">Modificar</button>
-                      <button class="btn btn-ghost btn-sm" (click)="abrirBaja(d)">Desactivar</button>
-                    </span>
-                  }
-                </div>
-              } @empty {
-                <div class="sin-tec">Sin Técnico de Soporte asignado.</div>
-              }
-            </div>
+      <div class="card mb-3">
+        <div class="card-head">
+          <div>
+            <h2>Mapa territorial</h2>
+            <p class="sub">{{ filas().length }} ámbito(s) · {{ conResponsable() }} con responsable</p>
           </div>
-        }
+        </div>
+        <div class="card-body">
+          <div class="filtros">
+            <select class="control" [(ngModel)]="fZona" (ngModelChange)="fDepartamento.set('')">
+              <option value="">Zona: todas</option>
+              @for (z of data.territorio.zonasOrdenadas(); track z.id) { <option [value]="z.id">{{ z.nombre }}</option> }
+            </select>
+            <select class="control" [(ngModel)]="fDepartamento">
+              <option value="">Departamento: todos</option>
+              @for (d of departamentosFiltro(); track d.id) { <option [value]="d.id">{{ d.nombre }}</option> }
+            </select>
+            <select class="control" [(ngModel)]="fTecnico">
+              <option value="">Técnico de Soporte: todos</option>
+              @for (t of data.tecnicosSoporteConCarga(); track t.nombreRol) {
+                <option [value]="t.usuario.usuario">{{ t.usuario.nombre }}</option>
+              }
+            </select>
+            <select class="control" [(ngModel)]="fEstado">
+              <option value="">Estado: todos</option>
+              <option value="activo">Con responsable</option>
+              <option value="inactivo">Sin responsable</option>
+            </select>
+          </div>
+
+          @for (g of porZona(); track g.zonaId) {
+            <div class="zona-h">
+              <h2>{{ g.zona }}</h2>
+              <span class="n">{{ g.filas.length }} ámbito(s)</span>
+            </div>
+            <div class="table-wrap">
+              <table class="tbl">
+                <thead>
+                  <tr>
+                    <th>Departamento</th><th>Dirección/Registro</th><th>Tipo de asignación</th>
+                    <th>Técnico responsable</th><th>Roles del técnico</th><th>Desde</th>
+                    <th>Equipos activos</th><th>Requerimientos</th><th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (f of g.filas; track f.clave) {
+                    <tr>
+                      <td class="main-cell">{{ f.departamento }}</td>
+                      <td>
+                        {{ f.ambito }}
+                        @if (!f.porDireccion) {
+                          <div class="mini">Cubre {{ f.alcance.length }} Direcciones/Registros</div>
+                          <div class="alcance">
+                            @for (r of f.alcance; track r) { <span class="badge">{{ r }}</span> }
+                          </div>
+                        }
+                      </td>
+                      <td>{{ f.tipo }}</td>
+                      <td>
+                        <div class="resp-lista">
+                          @for (d of f.asignaciones; track d.id) { <b>{{ soloNombre(d.tecnico) }}</b> }
+                          @if (!f.asignaciones.length) { <span class="sin-tec">Sin responsable</span> }
+                        </div>
+                      </td>
+                      <td class="mini">
+                        @for (d of f.asignaciones; track d.id) { <div>{{ rolesDe(d.tecnico) }}</div> }
+                        @if (!f.asignaciones.length) { <span class="muted">—</span> }
+                      </td>
+                      <td class="mono">
+                        @for (d of f.asignaciones; track d.id) { <div>{{ d.fecha }}</div> }
+                        @if (!f.asignaciones.length) { <span class="muted">—</span> }
+                      </td>
+                      <td class="mono">{{ f.equipos }}</td>
+                      <td class="mono">{{ f.solicitudes }}</td>
+                      <td><ui-badge [estado]="f.asignaciones.length ? 'Activa' : 'Sin asignar'" /></td>
+                    </tr>
+                  } @empty {
+                    <tr><td colspan="9" class="muted" style="text-align:center; padding: 22px;">Ningún ámbito coincide con los filtros.</td></tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @empty {
+            <p class="muted">Ningún ámbito coincide con los filtros seleccionados.</p>
+          }
+        </div>
       </div>
 
-      <!-- Vista por técnico: qué atiende cada uno -->
-      <div class="mb-2 sec-title">Direcciones/Unidades atendidas por cada soporte</div>
+      <!-- Vista por técnico: qué atiende cada uno, con el alcance real de sus asignaciones -->
+      <div class="mb-2 sec-title">Ámbitos atendidos por cada soporte</div>
       <div class="card table-wrap mb-3">
         <table class="tbl">
           <thead>
-            <tr><th>Técnico de Soporte</th><th>Direcciones/Unidades atendidas</th><th>Equipos activos a su cargo</th><th>Estado</th></tr>
+            <tr><th>Técnico de Soporte</th><th>Roles</th><th>Ámbitos asignados</th><th>Equipos activos a su cargo</th><th>Estado</th></tr>
           </thead>
           <tbody>
-            @for (t of tecnicos(); track t.nombreRol) {
+            @for (t of data.tecnicosSoporteConCarga(); track t.nombreRol) {
               <tr>
-                <td class="main-cell">{{ t.usuario.nombre }}<div class="sub-cell">{{ t.usuario.rol }}</div></td>
+                <td class="main-cell">{{ t.usuario.nombre }}<div class="sub-cell">{{ t.usuario.unidad }}</div></td>
+                <td class="mini">{{ etiqueta(t.usuario.roles) }}</td>
                 <td>
                   @for (d of data.direccionesDeTecnico(t.nombreRol); track d.id) {
-                    <div>{{ d.direccion === d.unidad ? d.direccion : d.direccion + ' / ' + d.unidad }}</div>
+                    <div>{{ data.soportes.etiqueta(d.direccion, d.unidad) }}</div>
                   } @empty {
-                    <span class="muted">No atiende ninguna Dirección/Unidad.</span>
+                    <span class="muted">No atiende ningún ámbito territorial.</span>
                   }
                 </td>
                 <td class="mono">{{ data.controlesDeSoporte(t.nombreRol).length }}</td>
@@ -135,241 +228,146 @@ import { URL_CONTROLES_MENSUALES } from '../../core/config/modulos';
         </div>
         <table class="tbl">
           <thead>
-            <tr><th>Código</th><th>Dirección</th><th>Unidad</th><th>Técnico</th><th>Asignada por</th><th>Fecha</th><th>Estado</th></tr>
+            <tr>
+              <th>Código</th><th>Zona</th><th>Departamento</th><th>Dirección/Registro</th><th>Tipo</th>
+              <th>Técnico</th><th>Asignada por</th><th>Fecha</th><th>Estado</th>
+            </tr>
           </thead>
           <tbody>
             @for (d of todas(); track d.id) {
-              <tr>
+              <tr [style.opacity]="d.activo ? 1 : .6">
                 <td class="mono main-cell">{{ d.id }}</td>
+                <td>{{ zonaDe(d) }}</td>
                 <td>{{ d.direccion }}</td>
                 <td>{{ d.unidad }}</td>
-                <td>{{ d.tecnico.split('—')[0].trim() }}</td>
-                <td>{{ d.asignadoPor.split('—')[0].trim() }}</td>
+                <td>{{ tipoDe(d) }}</td>
+                <td>{{ soloNombre(d.tecnico) }}</td>
+                <td>{{ soloNombre(d.asignadoPor) }}</td>
                 <td class="mono">{{ d.fecha }}</td>
                 <td><ui-badge [estado]="d.activo ? 'Activa' : 'Desactivada'" /></td>
               </tr>
             } @empty {
-              <tr><td colspan="7" class="muted" style="text-align:center; padding: 22px;">Aún no hay distribución registrada.</td></tr>
+              <tr><td colspan="9" class="muted" style="text-align:center; padding: 22px;">Aún no hay distribución registrada.</td></tr>
             }
           </tbody>
         </table>
       </div>
-
-      @if (modo() === 'nueva') {
-        <ui-modal titulo="Asignar Técnico de Soporte a Dirección/Unidad"
-          sub="La Dirección/Unidad sale de los requerimientos registrados" (cerrar)="cerrar()">
-          <div class="form-grid">
-            <div class="field full">
-              <label>Dirección / Unidad <span class="req">*</span></label>
-              <select class="control" [(ngModel)]="dirUnidadSel">
-                <option value="">Seleccione…</option>
-                @for (du of direcciones(); track du.direccion + du.unidad) {
-                  <option [value]="du.direccion + '||' + du.unidad">
-                    {{ du.direccion === du.unidad ? du.direccion : du.direccion + ' / ' + du.unidad }}
-                  </option>
-                }
-              </select>
-            </div>
-            <div class="field full">
-              <label>Técnico de Soporte <span class="req">*</span></label>
-              @if (tecnicoSel()) {
-                <div class="tec-elegido">{{ resumenSeleccionado() }}</div>
-              }
-              <button type="button" class="btn btn-outline" (click)="buscarTecnico.set(true)">
-                {{ tecnicoSel() ? 'Cambiar técnico' : 'Buscar Técnico de Soporte' }}
-              </button>
-              <span class="hint">
-                Solo Técnicos de Soporte activos: Hardware no atiende Direcciones/Unidades. El
-                buscador muestra la carga laboral de cada uno antes de asignarle una más.
-              </span>
-            </div>
-            <div class="field full">
-              <label>Observación</label>
-              <input class="control" [(ngModel)]="observacion" placeholder="Motivo de la asignación, cobertura…" />
-            </div>
-          </div>
-          <div class="row-between mt-3">
-            <span class="small muted">El técnico asignado podrá configurar equipos de esa Dirección/Unidad.</span>
-            <button class="btn btn-primary" (click)="guardarNueva()">Asignar</button>
-          </div>
-        </ui-modal>
-      }
-
-      @if (modo() === 'editar' && seleccionada(); as d) {
-        <ui-modal titulo="Modificar distribución" [sub]="d.direccion + ' / ' + d.unidad" (cerrar)="cerrar()">
-          <div class="form-grid">
-            <div class="field full">
-              <label>Técnico de Soporte responsable <span class="req">*</span></label>
-              @if (tecnicoSel()) {
-                <div class="tec-elegido">{{ resumenSeleccionado() }}</div>
-              }
-              <button type="button" class="btn btn-outline" (click)="buscarTecnico.set(true)">Cambiar técnico</button>
-            </div>
-            <div class="field full">
-              <label>Observación</label>
-              <input class="control" [(ngModel)]="observacion" />
-            </div>
-          </div>
-          <div class="row-between mt-3">
-            <span class="small muted">Responsable actual: <b>{{ d.tecnico.split('—')[0].trim() }}</b>.</span>
-            <button class="btn btn-primary" (click)="guardarEdicion()">Guardar cambios</button>
-          </div>
-        </ui-modal>
-      }
-
-      <!-- Buscador con carga laboral: la distribución también reparte trabajo, no solo nombres -->
-      @if (buscarTecnico()) {
-        <app-selector-soporte
-          titulo="Seleccionar Técnico de Soporte"
-          sub="Todos los Técnicos de Soporte activos, con su carga laboral"
-          nota="Un técnico puede atender varias Direcciones/Unidades. Antes de sumarle una más, revise los procesos que ya tiene activos."
-          vacio="No hay Técnicos de Soporte activos registrados."
-          [tecnicos]="tecnicos()"
-          [seleccionado]="tecnicoSel()"
-          (seleccion)="elegirTecnico($event)"
-          (cerrar)="buscarTecnico.set(false)" />
-      }
-
-      @if (modo() === 'baja' && seleccionada(); as d) {
-        <ui-modal titulo="Desactivar asignación" [sub]="d.tecnico.split('—')[0].trim() + ' · ' + d.direccion + ' / ' + d.unidad" (cerrar)="cerrar()">
-          <div class="alert mb-2">
-            <span class="alert-ico">i</span>
-            <span>
-              La asignación no se borra: queda como histórico. Si quedan otros responsables de la
-              Dirección/Unidad, los equipos activos pasan al primero de ellos.
-            </span>
-          </div>
-          <div class="field full">
-            <label>Motivo <span class="req">*</span></label>
-            <textarea class="control" rows="2" [(ngModel)]="motivoBaja" placeholder="Cambio de cobertura, traslado del técnico…"></textarea>
-          </div>
-          <div class="row-between mt-3">
-            <span class="small muted">Equipos activos a su cargo en esta Dirección/Unidad: <b>{{ activosDe(d) }}</b>.</span>
-            <button class="btn btn-primary" (click)="guardarBaja()">Desactivar</button>
-          </div>
-        </ui-modal>
-      }
     </div>
   `
 })
 export class DistribucionSoportesComponent {
   protected readonly data = inject(DataService);
-  private readonly auth = inject(AuthService);
-  private readonly toast = inject(ToastService);
+  protected readonly auth = inject(AuthService);
 
   protected readonly urlControles = URL_CONTROLES_MENSUALES;
 
-  /** El rol tendría permiso, pero la administración ya no vive en este módulo. */
-  protected readonly rolPuedeGestionar = computed(() => {
-    const clave = this.auth.usuario()?.clave;
-    return clave === 'enc-soporte' || clave === 'admin';
+  protected readonly fZona = signal('');
+  protected readonly fDepartamento = signal('');
+  protected readonly fTecnico = signal('');
+  protected readonly fEstado = signal('');
+
+  protected departamentosFiltro() {
+    const z = this.fZona();
+    const lista = this.data.territorio.departamentosActivos();
+    return z ? lista.filter((d) => d.zonaId === z) : lista;
+  }
+
+  /** Un ámbito por cada fila que la regla territorial admite. */
+  protected readonly filas = computed<FilaAmbito[]>(() => {
+    const t = this.data.territorio;
+    return t.ambitosDistribuibles()
+      .map((a) => {
+        const registro = a.direccionRegistroId ? t.nombreRegistro(a.direccionRegistroId) : '';
+        const alcance = a.direccionRegistroId
+          ? [registro]
+          : t.registrosDe(a.departamentoId).map((r) => r.nombre);
+        return {
+          clave: `${a.departamentoId}|${a.direccionRegistroId ?? '*'}`,
+          zonaId: a.zonaId,
+          zona: t.nombreZona(a.zonaId),
+          departamentoId: a.departamentoId,
+          departamento: t.nombreDepartamento(a.departamentoId),
+          ambito: registro || 'Todo el departamento',
+          tipo: (a.tipo === 'DIRECCION_REGISTRO' ? 'Dirección/Registro' : 'Departamento') as FilaAmbito['tipo'],
+          porDireccion: a.tipo === 'DIRECCION_REGISTRO',
+          alcance,
+          asignaciones: this.data.soportes.deDireccionUnidad(a.departamentoId, registro),
+          equipos: this.equiposDe(a.departamentoId, registro),
+          solicitudes: this.solicitudesDe(a.departamentoId, registro)
+        };
+      })
+      .filter((f) => !this.fZona() || f.zonaId === this.fZona())
+      .filter((f) => !this.fDepartamento() || f.departamentoId === this.fDepartamento())
+      .filter((f) => !this.fTecnico() || f.asignaciones.some((d) => d.tecnicoId === this.idDe(this.fTecnico())))
+      .filter((f) => !this.fEstado()
+        || (this.fEstado() === 'activo' ? f.asignaciones.length > 0 : f.asignaciones.length === 0));
   });
 
-  /**
-   * La distribución de soportes se ADMINISTRA en SISGOST — Controles Mensuales: es un registro
-   * compartido (`SupportDistributionService`) y tener dos pantallas que lo editan crearía dos
-   * verdades. Aquí se consulta y se aplica: este módulo la usa para ofrecer únicamente los
-   * técnicos responsables de la Dirección/Unidad como Técnico de Configuración.
-   */
-  protected readonly puedeGestionar = computed(() => false);
+  protected readonly porZona = computed(() => this.data.territorio.zonasOrdenadas()
+    .map((z) => ({ zonaId: z.id, zona: z.nombre, filas: this.filas().filter((f) => f.zonaId === z.id) }))
+    .filter((g) => g.filas.length > 0));
 
-  protected readonly direcciones = computed(() => this.data.direccionesUnidades());
-  protected readonly tecnicos = computed(() => this.data.tecnicosSoporteConCarga());
-  protected readonly todas = computed(() =>
-    [...this.data.distribuciones()].sort((a, b) => b.id.localeCompare(a.id)));
+  protected readonly conResponsable = computed(() => this.filas().filter((f) => f.asignaciones.length).length);
 
-  /** Direcciones/Unidades que hoy no podrían crear un Expediente único. */
-  protected readonly sinResponsable = computed(() =>
-    this.direcciones().filter((du) => !this.data.tecnicosDeDireccionUnidad(du.direccion, du.unidad).length));
+  /** Ámbitos sin responsable **que tienen requerimientos o equipos**: los que bloquean el proceso. */
+  protected readonly sinResponsable = computed(() => this.data.territorio.ambitosDistribuibles()
+    .map((a) => {
+      const registro = a.direccionRegistroId ? this.data.territorio.nombreRegistro(a.direccionRegistroId) : '';
+      return {
+        etiqueta: this.data.territorio.etiqueta(a.departamentoId, registro),
+        asignaciones: this.data.soportes.deDireccionUnidad(a.departamentoId, registro).length,
+        solicitudes: this.solicitudesDe(a.departamentoId, registro)
+      };
+    })
+    .filter((a) => !a.asignaciones && a.solicitudes > 0));
+
   protected textoSinResponsable(): string {
-    return this.sinResponsable()
-      .map((du) => (du.direccion === du.unidad ? du.direccion : `${du.direccion} / ${du.unidad}`))
-      .join('; ');
+    return this.sinResponsable().map((a) => a.etiqueta).join('; ');
   }
 
-  protected activasDe(direccion: string, unidad: string): DistribucionSoporte[] {
-    return this.data.distribucionesDe(direccion, unidad);
-  }
-  protected activosDe(d: DistribucionSoporte): number {
-    return this.data.controlesDeSoporte(d.tecnico)
-      .filter((c) => c.direccion === d.direccion && c.unidad === d.unidad).length;
-  }
-
-  protected modo = signal<'' | 'nueva' | 'editar' | 'baja'>('');
-  protected seleccionada = signal<DistribucionSoporte | null>(null);
-  protected dirUnidadSel = signal('');
-  protected tecnicoSel = signal('');
-  protected observacion = signal('');
-  protected motivoBaja = signal('');
-  protected buscarTecnico = signal(false);
-
-  /** Carga del técnico elegido, para no tener que reabrir el buscador para recordarla. */
-  protected resumenSeleccionado(): string {
-    const t = this.tecnicos().find((x) => x.nombreRol === this.tecnicoSel());
-    if (!t) return this.tecnicoSel();
-    return `${t.usuario.nombre} — ${t.carga} · ${t.total} procesos activos · ${this.data.resumenCargaSoporte(t)}`;
+  private equiposDe(departamento: string, registro: string): number {
+    const t = this.data.territorio;
+    const reg = t.idRegistro(departamento, registro);
+    return this.data.controles().filter((c) => c.estado === 'Activo en Dirección/Registro'
+      && t.idDepartamento(c.direccion) === departamento
+      && (!reg || t.idRegistro(departamento, c.unidad) === reg)).length;
   }
 
-  protected elegirTecnico(t: TecnicoSoporteConCarga): void {
-    this.tecnicoSel.set(t.nombreRol);
-    this.buscarTecnico.set(false);
+  private solicitudesDe(departamento: string, registro: string): number {
+    const t = this.data.territorio;
+    const reg = t.idRegistro(departamento, registro);
+    return this.data.solicitudes().filter((s) => t.idDepartamento(s.departamentoId || s.direccionGerencia) === departamento
+      && (!reg || t.idRegistro(departamento, s.direccionRegistroId || s.unidadDestino) === reg)).length;
   }
 
-  private get quien(): string {
-    const u = this.auth.usuario();
-    return u ? `${u.nombre} — ${u.rol}` : '';
+  private idDe(usuario: string): string {
+    const u = this.data.usuarios().find((x) => x.usuario === usuario);
+    return this.data.soportes.idTecnico(u?.nombre ?? usuario);
   }
 
-  protected abrirNueva(): void {
-    this.dirUnidadSel.set('');
-    this.tecnicoSel.set('');
-    this.observacion.set('');
-    this.buscarTecnico.set(false);
-    this.modo.set('nueva');
-  }
-  protected abrirEditar(d: DistribucionSoporte): void {
-    this.seleccionada.set(d);
-    this.tecnicoSel.set(d.tecnico);
-    this.observacion.set(d.observacion);
-    this.modo.set('editar');
-  }
-  protected abrirBaja(d: DistribucionSoporte): void {
-    this.seleccionada.set(d);
-    this.motivoBaja.set('');
-    this.modo.set('baja');
-  }
-  protected cerrar(): void {
-    this.modo.set('');
-    this.seleccionada.set(null);
-    this.buscarTecnico.set(false);
+  /** Todas las asignaciones, vigentes primero, para el registro histórico. */
+  protected readonly todas = computed(() => [...this.data.distribuciones()]
+    .sort((a, b) => Number(b.activo) - Number(a.activo)
+      || a.direccion.localeCompare(b.direccion) || a.unidad.localeCompare(b.unidad)));
+
+  protected soloNombre(texto: string): string { return this.data.soportes.soloNombre(texto); }
+
+  protected zonaDe(d: DistribucionSoporte): string {
+    return this.data.territorio.nombreZona(d.zonaId || this.data.territorio.zonaDe(d.departamentoId || d.direccion));
   }
 
-  protected guardarNueva(): void {
-    const [direccion, unidad] = this.dirUnidadSel().split('||');
-    const r = this.data.asignarDistribucion(
-      { direccion: direccion ?? '', unidad: unidad ?? '', tecnico: this.tecnicoSel(), observacion: this.observacion() },
-      this.quien);
-    if (typeof r === 'string') { this.toast.error('No se pudo asignar', r); return; }
-    this.toast.ok('Distribución registrada',
-      `${r.tecnico.split('—')[0].trim()} atiende ${r.direccion} / ${r.unidad}.`);
-    this.cerrar();
+  protected tipoDe(d: DistribucionSoporte): string {
+    return d.tipoAsignacion === 'DIRECCION_REGISTRO' ? 'Dirección/Registro' : 'Departamento';
   }
 
-  protected guardarEdicion(): void {
-    const d = this.seleccionada();
-    if (!d) return;
-    const error = this.data.modificarDistribucion(d.id, { tecnico: this.tecnicoSel(), observacion: this.observacion() }, this.quien);
-    if (error) { this.toast.error('No se pudo modificar', error); return; }
-    this.toast.ok('Distribución modificada', `${d.direccion} / ${d.unidad} actualizada.`);
-    this.cerrar();
+  /** Todos los roles del técnico, no solo aquel con el que figura en la asignación. */
+  protected rolesDe(tecnico: string): string {
+    const id = this.data.soportes.idTecnico(tecnico);
+    const u = this.data.usuarios().find((x) => this.data.soportes.idTecnico(x.nombre) === id);
+    return u ? etiquetaRoles(u.roles ?? []) : this.data.soportes.rolDe(tecnico);
   }
 
-  protected guardarBaja(): void {
-    const d = this.seleccionada();
-    if (!d) return;
-    const error = this.data.desactivarDistribucion(d.id, this.quien, this.motivoBaja());
-    if (error) { this.toast.error('No se pudo desactivar', error); return; }
-    this.toast.ok('Asignación desactivada', `${d.tecnico.split('—')[0].trim()} ya no atiende ${d.direccion} / ${d.unidad}.`);
-    this.cerrar();
+  protected etiqueta(roles: FilaAmbito['alcance'] | string[] | undefined): string {
+    return etiquetaRoles((roles ?? []) as never);
   }
 }

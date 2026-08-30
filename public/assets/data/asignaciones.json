@@ -5,7 +5,7 @@
   "usuarioFinal": "T. Guevara",
   "carne": "05634",
   "correo": "tguevara@cnr.gob.sv",
-  "unidadDestino": "RPRH",
+  "unidadDestino": "Registro de la Propiedad Raíz e Hipotecas",
   "equipoInventario": "2201-1215-2026",
   "equipo": "Dell OptiPlex 7010 · Desktop nuevo",
   "fecha": "2026-07-24",
@@ -21,7 +21,7 @@
    "estadoConfiguracion": "Pendiente",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
@@ -31,7 +31,7 @@
   "usuarioFinal": "S. Melgar",
   "carne": "05628",
   "correo": "smelgar@cnr.gob.sv",
-  "unidadDestino": "IGN",
+  "unidadDestino": "Instituto Geográfico y del Catastro Nacional (IGCN)",
   "equipoInventario": "2201-1210-2026",
   "equipo": "Dell Latitude 5450 · Laptop nuevo",
   "fecha": "2026-07-23",
@@ -47,7 +47,7 @@
    "estadoConfiguracion": "En configuración",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
@@ -57,7 +57,7 @@
   "usuarioFinal": "B. Alfaro",
   "carne": "05610",
   "correo": "balfaro@cnr.gob.sv",
-  "unidadDestino": "Dirección de Registro",
+  "unidadDestino": "Santa Ana",
   "equipoInventario": "2201-1220-2026",
   "equipo": "HP EliteBook 840 G11 · Laptop nuevo",
   "fecha": "2026-07-23",
@@ -73,7 +73,7 @@
    "estadoConfiguracion": "Pendiente",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
@@ -83,7 +83,7 @@
   "usuarioFinal": "A. Guzmán",
   "carne": "05230",
   "correo": "aguzman@cnr.gob.sv",
-  "unidadDestino": "Registro de la Propiedad",
+  "unidadDestino": "Registro de la Propiedad Raíz e Hipotecas",
   "equipoInventario": "2201-0703-2021",
   "equipo": "Dell OptiPlex 3070 · Desktop usado",
   "fecha": "2026-07-08",
@@ -99,7 +99,7 @@
    "estadoConfiguracion": "Pendiente",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
@@ -109,7 +109,7 @@
   "usuarioFinal": "F. Alvarado",
   "carne": "05377",
   "correo": "falvarado@cnr.gob.sv",
-  "unidadDestino": "Registro de la Propiedad",
+  "unidadDestino": "Registro de la Propiedad Raíz e Hipotecas",
   "equipoInventario": "2201-0899-2023",
   "equipo": "Dell OptiPlex 3060 · Desktop usado",
   "fecha": "2026-07-21",
@@ -125,7 +125,7 @@
    "estadoConfiguracion": "En configuración",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
@@ -135,7 +135,7 @@
   "usuarioFinal": "K. Rivas",
   "carne": "05512",
   "correo": "krivas@cnr.gob.sv",
-  "unidadDestino": "Gerencia de Tecnología",
+  "unidadDestino": "San Salvador",
   "equipoInventario": "2201-1201-2026",
   "equipo": "HP EliteBook 840 G11 · Laptop nuevo",
   "fecha": "2026-07-22",
@@ -151,14 +151,14 @@
    "estadoConfiguracion": "En configuración",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Unidad."
+   "observaciones": "Configuración a cargo del tercer Técnico de Soporte de la Dirección/Registro."
   },
   "modificaciones": []
  },
  {
   "expediente": "SOL-2026-0150",
   "equipoInventario": "2201-1300-2026",
-  "usuarioFinal": "J. Ramírez — Dirección de Registro",
+  "usuarioFinal": "J. Ramírez — Santa Ana",
   "tipoEquipo": "Desktop",
   "condicion": "Usado",
   "responsableAsignacion": "Samuel Cruz — Encargado de Hardware",
@@ -183,7 +183,7 @@
  {
   "expediente": "SOL-2026-0145",
   "equipoInventario": "2201-1187-2026",
-  "usuarioFinal": "M. Aguilar — Dirección de Registro",
+  "usuarioFinal": "M. Aguilar — Santa Ana",
   "tipoEquipo": "Laptop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -208,7 +208,7 @@
  {
   "expediente": "SOL-2026-0144",
   "equipoInventario": "2201-1098-2026",
-  "usuarioFinal": "R. Menjívar — RPRH",
+  "usuarioFinal": "R. Menjívar — Registro de la Propiedad Raíz e Hipotecas",
   "tipoEquipo": "Desktop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -233,7 +233,7 @@
  {
   "expediente": "SOL-2026-0141",
   "equipoInventario": "2201-0954-2023",
-  "usuarioFinal": "J. Portillo — IGN",
+  "usuarioFinal": "J. Portillo — Instituto Geográfico y del Catastro Nacional (IGCN)",
   "tipoEquipo": "Desktop",
   "condicion": "Usado",
   "responsableAsignacion": "Samuel Cruz — Encargado de Hardware",
@@ -283,7 +283,7 @@
  {
   "expediente": "SOL-2026-0132",
   "equipoInventario": "2201-1041-2026",
-  "usuarioFinal": "L. Chacón — ISPI",
+  "usuarioFinal": "L. Chacón — Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
   "tipoEquipo": "Desktop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Samuel Cruz — Encargado de Hardware",
@@ -308,7 +308,7 @@
  {
   "expediente": "SOL-2025-0210",
   "equipoInventario": "2201-0788-2022",
-  "usuarioFinal": "R. Campos — Registro de la Propiedad",
+  "usuarioFinal": "R. Campos — Registro de la Propiedad Raíz e Hipotecas",
   "tipoEquipo": "Desktop",
   "condicion": "Usado",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -333,7 +333,7 @@
  {
   "expediente": "SOL-2026-0162",
   "equipoInventario": "2201-1320-2026",
-  "usuarioFinal": "Iván Alvarenga — Gerencia de Tecnología",
+  "usuarioFinal": "Iván Alvarenga — San Salvador",
   "tipoEquipo": "Laptop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -358,7 +358,7 @@
  {
   "expediente": "SOL-2026-0163",
   "equipoInventario": "2201-1321-2026",
-  "usuarioFinal": "Silvia Cornejo — RPRH",
+  "usuarioFinal": "Silvia Cornejo — Registro de la Propiedad Raíz e Hipotecas",
   "tipoEquipo": "Desktop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -383,7 +383,7 @@
  {
   "expediente": "SOL-2026-0164",
   "equipoInventario": "2201-1322-2026",
-  "usuarioFinal": "Ricardo Bonilla — IGN",
+  "usuarioFinal": "Ricardo Bonilla — Instituto Geográfico y del Catastro Nacional (IGCN)",
   "tipoEquipo": "Laptop",
   "condicion": "Usado",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -408,7 +408,7 @@
  {
   "expediente": "SOL-2026-0166",
   "equipoInventario": "2201-1323-2026",
-  "usuarioFinal": "Héctor Zelaya — Dirección de Registro",
+  "usuarioFinal": "Héctor Zelaya — Santa Ana",
   "tipoEquipo": "Laptop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -433,7 +433,7 @@
  {
   "expediente": "SOL-2026-0167",
   "equipoInventario": "2201-1324-2026",
-  "usuarioFinal": "Marta Guzmán — Gerencia de Tecnología",
+  "usuarioFinal": "Marta Guzmán — San Salvador",
   "tipoEquipo": "Desktop",
   "condicion": "Usado",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -458,7 +458,7 @@
  {
   "expediente": "SOL-2026-0168",
   "equipoInventario": "2201-1325-2026",
-  "usuarioFinal": "Julio Interiano — Registro de la Propiedad",
+  "usuarioFinal": "Julio Interiano — Registro de la Propiedad Raíz e Hipotecas",
   "tipoEquipo": "Laptop",
   "condicion": "Usado",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -483,7 +483,7 @@
  {
   "expediente": "SOL-2026-0161",
   "equipoInventario": "2201-1330-2026",
-  "usuarioFinal": "Nancy Portillo — Archivo Registral",
+  "usuarioFinal": "Nancy Portillo — Instituto Geográfico y del Catastro Nacional (IGCN)",
   "tipoEquipo": "Desktop",
   "condicion": "Nuevo",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
@@ -502,7 +502,7 @@
    "estadoConfiguracion": "Pendiente",
    "responsableEntrega": "Por asignar",
    "estadoEntrega": "Pendiente",
-   "observaciones": "Bloqueado: el Archivo Registral no tiene Técnico de Soporte asignado en la distribución."
+   "observaciones": "Bloqueado: el Instituto Geográfico y del Catastro Nacional (IGCN) no tiene Técnico de Soporte asignado en la distribución."
   }
  }
 ]

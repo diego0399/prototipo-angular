@@ -41,7 +41,7 @@ const PRINCIPALES = [
   // Garantía con revisión técnica: la decisión de mandar el equipo a Hardware y su desenlace.
   /garantía requiere revisión de hardware/i, /revisión técnica de garantía (generada|finalizada)/i,
   /garantía (validada por soporte|requiere sustitución)/i, /caso devuelto a soporte/i,
-  // Pertenencia a Dirección/Unidad: cuándo el equipo pasó a ser de una y cuándo dejó de serlo.
+  // Pertenencia a Dirección/Registro: cuándo el equipo pasó a ser de una y cuándo dejó de serlo.
   /asociado a /i, /retirado del inventario activo/i,
   // Vigencia de la garantía: de qué responde el equipo, desde cuándo, y cada vez que se movió.
   /garantía de proveedor (asignada|pendiente|vencida|calculada)/i, /responsabilidad interna de soporte asignada/i,

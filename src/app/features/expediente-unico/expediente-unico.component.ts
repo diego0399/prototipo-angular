@@ -211,7 +211,7 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                         <div><span>Correcciones pendientes</span><b>{{ c.correcciones }}</b></div>
                         <div><span>Inconformidades pendientes</span><b>{{ c.inconformidades }}</b></div>
                         <div><span>Casos de garantía asignados</span><b>{{ c.garantias }}</b></div>
-                        <div><span>Direcciones/Unidades asignadas</span><b>{{ c.direccionUnidad || '—' }}</b></div>
+                        <div><span>Direcciones/Registros asignadas</span><b>{{ c.direccionUnidad || '—' }}</b></div>
                         <div><span>Disponibilidad</span><b>{{ c.disponibilidad }}</b></div>
                       }
                     </div>
@@ -243,8 +243,8 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                         <!-- El texto sale del servicio: la regla y su enunciado no se duplican. -->
                         <b>{{ data.MSG_SIN_DISTRIBUCION }}</b>
                         <div>La distribución se edita en SISGOST — Controles Mensuales y este módulo la lee
-                          automáticamente: en cuanto se asigne un responsable a esta Dirección/Unidad,
-                          aparecerá aquí sin necesidad de recargar.</div>
+                          automáticamente: en cuanto se asigne un responsable —a esta Dirección/Registro en San
+                          Salvador, o al Departamento completo en el resto del país— aparecerá aquí sin recargar.</div>
                         @if (esEncSoporte()) {
                           <a class="btn btn-outline btn-sm mt-2" routerLink="/distribucion-soportes">Ir a Distribución de soportes</a>
                         }
@@ -280,8 +280,8 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                     <div class="alert warn mt-2">
                       <span class="alert-ico">!</span>
                       <span>
-                        <b>El Técnico de Configuración seleccionado no está asignado a la Dirección/Unidad de este requerimiento.</b>
-                        <div>Seleccione un técnico responsable de esa Dirección/Unidad.</div>
+                        <b>El Técnico de Configuración seleccionado no está asignado a la Dirección/Registro de este requerimiento.</b>
+                        <div>Seleccione un técnico responsable de esa Dirección/Registro.</div>
                       </span>
                     </div>
                   }
@@ -755,13 +755,13 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
         </ui-modal>
       }
 
-      <!-- Paso 3 · Selección del técnico de configuración, filtrada por la Dirección/Unidad del requerimiento -->
+      <!-- Paso 3 · Selección del técnico de configuración, filtrada por la Dirección/Registro del requerimiento -->
       @if (buscarTecnicoAbierto()) {
         <app-selector-soporte
           titulo="Seleccionar Técnico de Configuración"
           [sub]="'Responsables de ' + dirUnidadTexto() + ', con su carga de trabajo'"
-          nota="El Técnico de Configuración debe pertenecer a la distribución de soporte de la Dirección/Unidad solicitante. Los técnicos que no la atienden no aparecen en esta lista."
-          vacio="No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento."
+          nota="El Técnico de Configuración sale de la Distribución de Soportes: en San Salvador, el responsable de esa Dirección/Registro; en los demás departamentos, el responsable del Departamento completo. Quien no responde por el requerimiento no aparece en esta lista."
+          [vacio]="data.MSG_SIN_DISTRIBUCION"
           [rutaVacio]="esEncSoporte() ? '/distribucion-soportes' : ''"
           [tecnicos]="tecnicosSoporte()"
           [seleccionado]="tecnicoConfig()"
@@ -986,7 +986,7 @@ export class ExpedienteUnicoComponent {
     this.esEncSoporte() && !!this.proceso() && !!this.proceso()?.correoDestinatario &&
     !!this.asigProceso() && !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' &&
     !this.data.expedienteUnicoDe(this.procesoSel()) && !!this.tecnicoConfig() &&
-    // El técnico elegido debe atender la Dirección/Unidad del requerimiento: es la regla nueva y
+    // El técnico elegido debe atender la Dirección/Registro del requerimiento: es la regla nueva y
     // la aplica el servicio, aquí solo se refleja para no ofrecer un botón que va a fallar.
     !this.data.bloqueoExpedienteUnico(this.procesoSel(), this.tecnicoConfig())
   );
@@ -1013,8 +1013,8 @@ export class ExpedienteUnicoComponent {
     { lbl: 'Expediente técnico completado', falta: 'un expediente técnico completado', ok: this.expTecProceso()?.estado === 'Preparado' },
     { lbl: 'F0288 firmado', falta: 'finalizar y firmar el F0288 del equipo', ok: this.f0288Listo() },
     { lbl: 'Técnico de configuración asignado', falta: 'asignar técnico de configuración', ok: !!this.tecnicoConfig() },
-    // El técnico no basta con que exista: debe atender la Dirección/Unidad del requerimiento.
-    { lbl: 'Técnico responsable de la Dirección/Unidad', falta: 'un técnico de la distribución de soporte de esa Dirección/Unidad',
+    // El técnico no basta con que exista: debe atender la Dirección/Registro del requerimiento.
+    { lbl: 'Técnico responsable de la Dirección/Registro', falta: 'un técnico de la distribución de soporte de esa Dirección/Registro',
       ok: !!this.tecnicoConfig() && this.data.atiendeDireccionUnidad(this.tecnicoConfig(), this.dirUnidad().direccion, this.dirUnidad().unidad) }
   ]);
 
@@ -1050,9 +1050,9 @@ export class ExpedienteUnicoComponent {
   }
 
   /**
-   * Técnicos elegibles del paso 3: solo los responsables de la Dirección/Unidad del requerimiento
+   * Técnicos elegibles del paso 3: solo los responsables de la Dirección/Registro del requerimiento
    * seleccionado, con su carga. Sin requerimiento seleccionado la lista está vacía a propósito —
-   * la Dirección/Unidad la pone el requerimiento, no el Encargado.
+   * la Dirección/Registro la pone el requerimiento, no el Encargado.
    */
   protected readonly tecnicosSoporte = computed(() =>
     this.procesoSel() ? this.data.tecnicosConfiguracionDe(this.procesoSel()) : []);
@@ -1060,11 +1060,11 @@ export class ExpedienteUnicoComponent {
     return this.tecnicosSoporte().find((t) => t.nombreRol === nombreRol);
   }
 
-  /** Dirección/Unidad del requerimiento seleccionado, tal como se muestra en el paso 3. */
+  /** Dirección/Registro del requerimiento seleccionado, tal como se muestra en el paso 3. */
   protected readonly dirUnidad = computed(() => this.data.dirUnidadDeSolicitud(this.procesoSel()));
   protected dirUnidadTexto(): string {
     const { direccion, unidad } = this.dirUnidad();
-    if (!direccion && !unidad) return 'la Dirección/Unidad del requerimiento';
+    if (!direccion && !unidad) return 'la Dirección/Registro del requerimiento';
     return direccion === unidad ? direccion : `${direccion} / ${unidad}`;
   }
   /** Motivo por el que hoy no se puede crear el Expediente único; '' si se puede. */
@@ -1123,9 +1123,9 @@ export class ExpedienteUnicoComponent {
   protected seleccionarSolicitud(id: string): void {
     this.procesoSel.set(id);
     this.buscarSolAbierto.set(false);
-    // Otra Dirección/Unidad, otros responsables: se relee antes de volver a ofrecer técnicos.
-    this.data.sincronizarDistribucionCompartida('cambio de Dirección/Unidad del requerimiento');
-    // Cambiar de requerimiento cambia la Dirección/Unidad y, con ella, quiénes pueden configurar:
+    // Otra Dirección/Registro, otros responsables: se relee antes de volver a ofrecer técnicos.
+    this.data.sincronizarDistribucionCompartida('cambio de Dirección/Registro del requerimiento');
+    // Cambiar de requerimiento cambia la Dirección/Registro y, con ella, quiénes pueden configurar:
     // conservar la selección anterior dejaría elegido a un técnico que ya no es responsable.
     this.tecnicoConfig.set('');
   }
@@ -1136,6 +1136,8 @@ export class ExpedienteUnicoComponent {
    */
   protected abrirBusquedaTecnico(): void {
     this.data.sincronizarDistribucionCompartida('apertura del selector de Técnico de Configuración');
+    // Queda trazado con qué regla territorial se armó la lista, no solo que se abrió (§32).
+    if (this.procesoSel()) this.data.registrarFiltroTecnicoConfiguracion(this.procesoSel());
     this.buscarTecnicoAbierto.set(true);
   }
 
@@ -1151,8 +1153,8 @@ export class ExpedienteUnicoComponent {
       return;
     }
     if (!p || !this.puedeCrear()) {
-      // La Dirección/Unidad tiene su propio mensaje: decir «falta un dato» cuando el problema es
-      // que el técnico no atiende esa Dirección/Unidad no explica qué hacer.
+      // La Dirección/Registro tiene su propio mensaje: decir «falta un dato» cuando el problema es
+      // que el técnico no atiende esa Dirección/Registro no explica qué hacer.
       const bloqueo = this.bloqueo();
       if (bloqueo === this.data.MSG_TECNICO_FUERA_DIRECCION || bloqueo === this.data.MSG_SIN_DISTRIBUCION) {
         this.toast.error('No se puede crear el Expediente único', bloqueo);

@@ -1,108 +1,108 @@
 [
-  {
-    "tipo": "F0288",
-    "expediente": "EXP-PT-2026-0094",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2026-07-16",
-    "hash": "6b2d…f710"
-  },
-  {
-    "tipo": "F0288",
-    "expediente": "EXP-PT-2026-0093",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2026-05-05",
-    "hash": "1e9a…44c8"
-  },
-  {
-    "tipo": "F0288",
-    "expediente": "SOL-2026-0139",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2026-06-28",
-    "hash": "a3f1…9c2e"
-  },
-  {
-    "tipo": "F0302",
-    "expediente": "SOL-2026-0139",
-    "generadoPor": "Wendy Carranza",
-    "fecha": "2026-06-30",
-    "hash": "7b52…e0a1"
-  },
-  {
-    "tipo": "F0288",
-    "expediente": "SOL-2026-0141",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2026-06-26",
-    "hash": "d18c…44f6"
-  },
-  {
-    "tipo": "F0302",
-    "expediente": "SOL-2026-0141",
-    "generadoPor": "Wendy Carranza",
-    "fecha": "2026-07-06",
-    "hash": "5e2a…b93d"
-  },
-  {
-    "tipo": "Reporte final",
-    "expediente": "SOL-2026-0132",
-    "generadoPor": "Sistema",
-    "fecha": "2026-06-21",
-    "hash": "c9d4…55b7"
-  },
-  {
-    "tipo": "F0288",
-    "expediente": "EXP-PT-2025-0041",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2025-12-09",
-    "hash": "f7a2…31c8"
-  },
-  {
-    "tipo": "F0288",
-    "expediente": "SOL-2025-0210",
-    "generadoPor": "Balmore Mejía",
-    "fecha": "2025-11-25",
-    "hash": "2b9e…d604"
-  },
-  {
-    "tipo": "F0302",
-    "expediente": "SOL-2025-0210",
-    "generadoPor": "Mateo Martínez",
-    "fecha": "2025-12-01",
-    "hash": "8c31…a97f"
-  },
-  {
-    "tipo": "Reporte final",
-    "expediente": "SOL-2025-0210",
-    "generadoPor": "Carlos González",
-    "fecha": "2025-12-04",
-    "hash": "41d7…e2b5"
-  },
-  {
-    "tipo": "Entrega y aceptación",
-    "expediente": "SOL-2026-0139",
-    "generadoPor": "Sistema (formulario externo)",
-    "fecha": "2026-06-30",
-    "hash": "e6b1…2f8d"
-  },
-  {
-    "tipo": "Entrega y aceptación",
-    "expediente": "SOL-2025-0210",
-    "generadoPor": "Sistema (formulario externo)",
-    "fecha": "2025-12-02",
-    "hash": "93cf…7ab2"
-  },
-  {
-    "tipo": "Constancia de reproceso F0288",
-    "expediente": "SOL-2026-0141",
-    "reproceso": "EXP-PT-2026-0086-R1",
-    "generadoPor": "Balmore Mejía — Técnico de Hardware",
-    "fecha": "2026-07-01",
-    "hash": "a1f4…9c07",
-    "codigo": "CONST-REP-2026-0001",
-    "hora": "11:46",
-    "estado": "Disponible para consulta",
-    "expedienteTecnico": "EXP-PT-2026-0086",
-    "inventario": "2201-0954-2023",
-    "tecnicoHardware": "Balmore Mejía — Técnico de Hardware",
-    "resultado": "Corregido"
-  }
+ {
+  "tipo": "F0288",
+  "expediente": "EXP-PT-2026-0094",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2026-07-16",
+  "hash": "6b2d…f710"
+ },
+ {
+  "tipo": "F0288",
+  "expediente": "EXP-PT-2026-0093",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2026-05-05",
+  "hash": "1e9a…44c8"
+ },
+ {
+  "tipo": "F0288",
+  "expediente": "SOL-2026-0139",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2026-06-28",
+  "hash": "a3f1…9c2e"
+ },
+ {
+  "tipo": "F0302",
+  "expediente": "SOL-2026-0139",
+  "generadoPor": "Wendy Carranza",
+  "fecha": "2026-06-30",
+  "hash": "7b52…e0a1"
+ },
+ {
+  "tipo": "F0288",
+  "expediente": "SOL-2026-0141",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2026-06-26",
+  "hash": "d18c…44f6"
+ },
+ {
+  "tipo": "F0302",
+  "expediente": "SOL-2026-0141",
+  "generadoPor": "Wendy Carranza",
+  "fecha": "2026-07-06",
+  "hash": "5e2a…b93d"
+ },
+ {
+  "tipo": "Reporte final",
+  "expediente": "SOL-2026-0132",
+  "generadoPor": "Sistema",
+  "fecha": "2026-06-21",
+  "hash": "c9d4…55b7"
+ },
+ {
+  "tipo": "F0288",
+  "expediente": "EXP-PT-2025-0041",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2025-12-09",
+  "hash": "f7a2…31c8"
+ },
+ {
+  "tipo": "F0288",
+  "expediente": "SOL-2025-0210",
+  "generadoPor": "Balmore Mejía",
+  "fecha": "2025-11-25",
+  "hash": "2b9e…d604"
+ },
+ {
+  "tipo": "F0302",
+  "expediente": "SOL-2025-0210",
+  "generadoPor": "Mateo Martínez",
+  "fecha": "2025-12-01",
+  "hash": "8c31…a97f"
+ },
+ {
+  "tipo": "Reporte final",
+  "expediente": "SOL-2025-0210",
+  "generadoPor": "Carlos González",
+  "fecha": "2025-12-04",
+  "hash": "41d7…e2b5"
+ },
+ {
+  "tipo": "Entrega y aceptación",
+  "expediente": "SOL-2026-0139",
+  "generadoPor": "Sistema (formulario externo)",
+  "fecha": "2026-06-30",
+  "hash": "e6b1…2f8d"
+ },
+ {
+  "tipo": "Entrega y aceptación",
+  "expediente": "SOL-2025-0210",
+  "generadoPor": "Sistema (formulario externo)",
+  "fecha": "2025-12-02",
+  "hash": "93cf…7ab2"
+ },
+ {
+  "tipo": "Constancia de reproceso F0288",
+  "expediente": "SOL-2026-0141",
+  "reproceso": "EXP-PT-2026-0086-R1",
+  "generadoPor": "Balmore Mejía — Técnico de Hardware",
+  "fecha": "2026-07-01",
+  "hash": "a1f4…9c07",
+  "codigo": "CONST-REP-2026-0001",
+  "hora": "11:46",
+  "estado": "Disponible para consulta",
+  "expedienteTecnico": "EXP-PT-2026-0086",
+  "inventario": "2201-0954-2023",
+  "tecnicoHardware": "Balmore Mejía — Técnico de Hardware",
+  "resultado": "Corregido"
+ }
 ]

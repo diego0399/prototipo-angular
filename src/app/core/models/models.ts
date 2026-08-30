@@ -1,14 +1,31 @@
 // Interfaces de SISGOST — Sistema de Gestión y Seguimiento de Soporte Técnico (CNR)
 // Los datos provienen de archivos JSON simulados en assets/data; no hay backend ni base de datos.
 
-/** Roles internos con acceso al sistema. Dirección y Usuario Final NO son roles: participan solo como datos del proceso. */
-export type RolClave = 'tec-soporte' | 'tec-hardware' | 'enc-soporte' | 'enc-hardware' | 'admin';
+import { ClaveRolSistema, RolSistema } from './roles';
+import { TipoAsignacion } from './territorio';
+
+export * from './roles';
+export * from './territorio';
+
+/**
+ * Forma corta del **rol activo** de la sesión. El catálogo completo de roles vive en `roles.ts`,
+ * compartido con Controles Mensuales. Dirección y Usuario Final NO son roles: participan solo
+ * como datos del proceso.
+ */
+export type RolClave = ClaveRolSistema;
 
 export interface UsuarioSistema {
   usuario: string;
   nombre: string;
+  /** Nombre visible del **rol activo**. */
   rol: string;
+  /** Forma corta del **rol activo**; es la que leen el menú, los guards y las pantallas. */
   clave: RolClave;
+  /**
+   * **Todos los roles del usuario.** Un usuario puede tener más de uno y sigue siendo un solo
+   * usuario: no se duplica la cuenta ni se crea una por rol.
+   */
+  roles: RolSistema[];
   iniciales: string;
   unidad: string;
   estado: string;
@@ -36,11 +53,20 @@ export interface Solicitud {
   carne: string;
   /** Cargo del usuario final que recibirá el equipo. */
   cargoDestinatario: string;
+  /** Nombre de la **Dirección/Registro** destino («Registro de Comercio», «IGCN»). */
   unidadDestino: string;
+  /** Nombre del **departamento** donde se atiende el requerimiento («San Salvador»). */
   direccionGerencia: string;
-  /** IDs estables de la Dirección/Unidad: los mismos con los que trabaja la distribución. */
+  /**
+   * IDs estables del ámbito territorial: los mismos con los que trabaja la distribución.
+   * `direccionId` es el departamento y `unidadId`, el ámbito (`SS::SS-RC`).
+   */
   direccionId: string;
   unidadId: string;
+  /** Zona · Departamento · Dirección/Registro del requerimiento (§15). */
+  zonaId: string;
+  departamentoId: string;
+  direccionRegistroId: string;
   correoDestinatario: string;
   estado: string;
   fecha: string;
@@ -265,13 +291,13 @@ export interface Asignacion {
 }
 
 /**
- * Distribución de Soportes por Dirección/Unidad: qué Técnico de Soporte atiende cada
- * Dirección/Unidad institucional. La gestiona el Encargado de Soporte (o el Administrador);
- * nadie más la modifica. Un técnico puede atender varias Direcciones/Unidades y una
- * Dirección/Unidad puede tener varios técnicos responsables.
+ * Distribución de Soportes por Dirección/Registro: qué Técnico de Soporte atiende cada
+ * Dirección/Registro institucional. La gestiona el Encargado de Soporte (o el Administrador);
+ * nadie más la modifica. Un técnico puede atender varias Direcciones/Registros y una
+ * Dirección/Registro puede tener varios técnicos responsables.
  *
  * De aquí salen dos reglas del proceso: qué técnicos pueden ser Técnico de Configuración de un
- * requerimiento (la Dirección/Unidad la pone el requerimiento, no el técnico) y quién queda como
+ * requerimiento (la Dirección/Registro la pone el requerimiento, no el técnico) y quién queda como
  * soporte responsable del equipo cuando el usuario final acepta.
  *
  * Nunca se borra una asignación: se desactiva (`activo: false`), porque los equipos aceptados
@@ -282,11 +308,27 @@ export interface DistribucionSoporte {
   /**
    * IDs estables de la responsabilidad. Todo se compara por ellos: los nombres visibles se
    * escriben de más de una forma y compararlos era el origen de las desincronizaciones.
+   *
+   * `direccionId` es el **departamento** (`SS`, `STA`) y `unidadId`, el **ámbito** completo
+   * (`SS::SS-RC` para una Dirección/Registro; `STA::*` para el departamento entero).
    */
   tecnicoId: string;
   direccionId: string;
   unidadId: string;
+  /**
+   * Alcance territorial de la asignación:
+   * · `DIRECCION_REGISTRO` — solo en los departamentos que se llevan por Dirección/Registro
+   *   (hoy, San Salvador): el técnico responde por ese Registro y por ningún otro.
+   * · `DEPARTAMENTO` — el técnico atiende **todas** las Direcciones/Registros del departamento.
+   */
+  tipoAsignacion: TipoAsignacion;
+  zonaId: string;
+  departamentoId: string;
+  /** `null` cuando la asignación cubre el departamento completo. */
+  direccionRegistroId: string | null;
+  /** Nombre del departamento, para mostrar. */
   direccion: string;
+  /** Nombre de la Dirección/Registro, o «Todo el departamento». */
   unidad: string;
   /** Técnico de Soporte responsable, en formato «Nombre — Rol». */
   tecnico: string;
@@ -299,7 +341,7 @@ export interface DistribucionSoporte {
   /** Quién y cuándo desactivó la asignación, cuando `activo` es false. */
   desactivadaPor?: string;
   fechaDesactivacion?: string;
-  /** Por qué se dejó de atender esa Dirección/Unidad; obligatorio al desactivar. */
+  /** Por qué se dejó de atender esa Dirección/Registro; obligatorio al desactivar. */
   motivoDesactivacion?: string;
 }
 
@@ -334,7 +376,7 @@ export type TipoProcesoHardware =
 
 /**
  * Una fila del detalle de carga laboral: el proceso concreto que el técnico tiene abierto. Es lo
- * que convierte «Carga alta» en algo consultable —qué expedientes son, de qué Dirección/Unidad y
+ * que convierte «Carga alta» en algo consultable —qué expedientes son, de qué Dirección/Registro y
  * desde cuándo— en vez de una etiqueta que hay que creer.
  */
 export interface ProcesoActivo {
@@ -399,14 +441,14 @@ export interface CargaHardware {
 }
 
 /**
- * Técnico de Soporte con su carga laboral y las Direcciones/Unidades que atiende, tal como se
+ * Técnico de Soporte con su carga laboral y las Direcciones/Registros que atiende, tal como se
  * muestra en el buscador de técnicos. Es lo que se consulta antes de asignar.
  */
 export interface TecnicoSoporteConCarga extends CargaSoporte {
   usuario: UsuarioSistema;
   /** «Nombre — Rol»: el formato con el que se guarda el responsable en todos los módulos. */
   nombreRol: string;
-  /** Direcciones/Unidades que atiende, ya en texto («Dirección / Unidad; …»). */
+  /** Direcciones/Registros que atiende, ya en texto («Dirección / Unidad; …»). */
   direccionUnidad: string;
   /** Fecha del proceso más reciente que se le asignó, si tiene alguno. */
   ultimaAsignacion: string;
@@ -414,18 +456,18 @@ export interface TecnicoSoporteConCarga extends CargaSoporte {
 
 /**
  * Estado del equipo dentro del inventario operativo del proyecto de Controles. Un equipo entra
- * como «Activo en Dirección/Unidad» únicamente cuando el usuario final acepta la conformidad, y
- * sale como «Descargado de Dirección/Unidad» cuando se registra su descargo. No hay un tercer
+ * como «Activo en Dirección/Registro» únicamente cuando el usuario final acepta la conformidad, y
+ * sale como «Descargado de Dirección/Registro» cuando se registra su descargo. No hay un tercer
  * estado: antes de la aceptación el equipo sencillamente no figura en Controles.
  */
-export type EstadoControles = 'Activo en Dirección/Unidad' | 'Descargado de Dirección/Unidad';
+export type EstadoControles = 'Activo en Dirección/Registro' | 'Descargado de Dirección/Registro';
 
 /**
  * Ficha del equipo en el inventario operativo de Controles. Es el registro de **pertenencia**:
- * dice a qué Dirección/Unidad pertenece el equipo, quién lo usa, quién le da soporte y desde
+ * dice a qué Dirección/Registro pertenece el equipo, quién lo usa, quién le da soporte y desde
  * cuándo. Solo se crea con la aceptación del usuario final —nunca en Inventario de Hardware, ni
  * en la asignación, ni al crear el Expediente único— y el descargo no lo borra: lo cierra,
- * conservando la Dirección/Unidad anterior para el historial.
+ * conservando la Dirección/Registro anterior para el historial.
  */
 export interface EquipoControles {
   inventario: string;
@@ -447,8 +489,14 @@ export interface EquipoControles {
   mac?: string;
   usuarioFinal: string;
   correoInstitucional: string;
+  /** Departamento donde el equipo queda en operación. */
   direccion: string;
+  /** Dirección/Registro concreta dentro del departamento. */
   unidad: string;
+  /** Ámbito territorial resuelto, con los IDs estables del catálogo (§27). */
+  zonaId?: string;
+  departamentoId?: string;
+  direccionRegistroId?: string;
   /** Técnico de Soporte responsable de la atención posterior, según la distribución vigente. */
   soporteResponsable: string;
   tecnicoConfiguracion: string;
@@ -1891,6 +1939,21 @@ export interface EventoTrazabilidad {
   hito: boolean;
   modulo?: string;
   estadoAnterior?: string;
+  /** Rol activo con el que actuaba el usuario, y todos los roles que tenía en ese momento. */
+  rolActivo?: string;
+  rolesUsuario?: string;
+  /** Usuario sobre el que recae el cambio, en los eventos de administración de roles. */
+  usuarioAfectado?: string;
+  rolesAnteriores?: string;
+  rolesNuevos?: string;
+  /** Ámbito territorial del evento (§32). */
+  zona?: string;
+  departamento?: string;
+  direccionRegistro?: string;
+  /** `DEPARTAMENTO` o `DIRECCION_REGISTRO`, en los eventos de distribución territorial. */
+  tipoAsignacion?: string;
+  /** Técnico de Soporte responsable según la distribución, en los eventos territoriales. */
+  tecnicoResponsable?: string;
   inventario?: string;
   expedienteTecnico?: string;
   expedienteUnico?: string;
@@ -1961,9 +2024,9 @@ export interface EventoTrazabilidad {
   direccion?: string;
   /** Unidad solicitante a la que pertenece el equipo. */
   unidad?: string;
-  /** Técnico de Soporte responsable de la Dirección/Unidad al momento del evento. */
+  /** Técnico de Soporte responsable de la Dirección/Registro al momento del evento. */
   soporteResponsable?: string;
-  /** Técnico de configuración validado contra la distribución de la Dirección/Unidad. */
+  /** Técnico de configuración validado contra la distribución de la Dirección/Registro. */
   tecnicoConfiguracion?: string;
   /** Estado del equipo en el inventario operativo de Controles. */
   estadoControles?: string;

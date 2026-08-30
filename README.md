@@ -13,6 +13,21 @@ mes y el reporte final de auditoría.
 
 ---
 
+## Organización territorial y roles
+
+La estructura organizacional es **Zona → Departamento → Dirección/Registro**
+(`public/assets/data/territorio.json`, compartido con Controles Mensuales). El **Técnico de
+Configuración** se filtra con la regla territorial: en San Salvador, por Dirección/Registro; en
+los demás departamentos, por Departamento completo —quien responde por Santa Ana atiende sus
+cuatro Direcciones/Registros—. Si no hay responsable, la creación del Expediente Único se bloquea
+y no se ofrece a nadie como respaldo.
+
+Un **usuario puede tener varios roles** (`roles: RolSistema[]`) y elige cuál usar en la sesión;
+el rol activo ordena el menú y los permisos visibles, y se cambia sin cerrar sesión. La
+**Distribución de Soportes** se administra en Controles Mensuales; aquí es de consulta.
+
+El detalle completo está en `ajuste-prototipo-2026-08-30.md`.
+
 ## Tecnologías
 
 - Angular 21 (componentes standalone, signals, control flow `@if/@for`)
@@ -34,20 +49,20 @@ Abrir `http://localhost:4200`. Cualquier contraseña es válida; seleccione un u
 
 Este módulo (**Gestión de Equipos**) convive con **SISGOST — Controles Mensuales**
 (`analisis/sisgost-controles-mensuales`, `ng serve` en el puerto **4300**). Son dos aplicaciones
-Angular independientes que **comparten los datos base** —usuarios y roles, Direcciones/Unidades,
+Angular independientes que **comparten los datos base** —usuarios y roles, Direcciones/Registros,
 equipos y la distribución de soportes—, con enlace directo desde la barra lateral
 («Ir a Controles Mensuales»; la URL se configura en `src/app/core/config/modulos.ts`).
 
 | Dato | Se administra en | Lo consume |
 |---|---|---|
-| Usuarios, roles y Direcciones/Unidades | Directorio compartido | Ambos módulos |
+| Usuarios, roles y Direcciones/Registros | Directorio compartido | Ambos módulos |
 | **Distribución de soportes** | **Controles Mensuales** | Ambos módulos |
 | Equipos y su ciclo de vida | **Gestión de Equipos** | Controles Mensuales, como inventario operativo |
 
 Dos consecuencias visibles aquí:
 
 1. **El Técnico de Configuración se filtra por la distribución vigente.** Al crear el expediente
-   único solo se ofrecen los Técnicos de Soporte responsables de la Dirección/Unidad del
+   único solo se ofrecen los Técnicos de Soporte responsables de la Dirección/Registro del
    requerimiento, y esa lista **se relee sola**: la distribución se edita en Controles Mensuales y
    este módulo la toma de la fuente compartida del ecosistema.
 
@@ -69,9 +84,9 @@ Dos consecuencias visibles aquí:
    operativo—. Si Controles Mensuales no está levantado, aquí se sigue trabajando con la
    distribución que ya se tenía: nunca se borra ni se sustituye por datos de la semilla.
 
-   Si la Dirección/Unidad del requerimiento **no tiene ningún Técnico de Soporte asignado**, no se
+   Si la Dirección/Registro del requerimiento **no tiene ningún Técnico de Soporte asignado**, no se
    ofrece a nadie —tampoco «todos» como lista de reserva— y el expediente único queda bloqueado con
-   el motivo: «No hay Técnicos de Soporte asignados a la Dirección/Unidad de este requerimiento.
+   el motivo: «No hay Técnicos de Soporte asignados a la Dirección/Registro de este requerimiento.
    Debe configurar la Distribución de Soportes en Controles Mensuales antes de crear el Expediente
    único.» El requerimiento `SOL-2026-0161` (Dirección de Registros / Archivo Registral) está en el
    set de datos justamente para poder demostrarlo: en cuanto se le asigna un soporte en Controles
@@ -80,7 +95,7 @@ Dos consecuencias visibles aquí:
    se desactivan en Controles Mensuales (Administración → Distribución de soportes), para que el
    registro compartido tenga un solo lugar de edición.
 
-Cuando el usuario final acepta la conformidad, el equipo queda activo en su Dirección/Unidad y
+Cuando el usuario final acepta la conformidad, el equipo queda activo en su Dirección/Registro y
 pasa al inventario operativo de Controles Mensuales, donde alimenta el F0422, el mantenimiento
 preventivo y el análisis de vulnerabilidades; el descargo lo retira de ese inventario.
 
@@ -228,7 +243,7 @@ según selección, acordeones); aquí se documentan completas.
 
 - Tablero de **consulta**: las solicitudes no se crean en SISGOST.
 - Columnas: número y **tipo requerido** («Requerimiento de CPU» / «Requerimiento de Laptop»),
-  usuario final con su cargo, Dirección/Unidad, prioridad, equipo asignado y estado.
+  usuario final con su cargo, Dirección/Registro, prioridad, equipo asignado y estado.
 - **La solicitud solo declara qué tipo de equipo se necesita.** Que el equipo sea **Nuevo o
   Usado** es una condición del equipo, no del requerimiento: cuando la solicitud llega todavía no
   se sabe cuál se le dará. Por eso la condición aparece **únicamente** en la columna del equipo
@@ -238,7 +253,7 @@ según selección, acordeones); aquí se documentan completas.
   Nuevo/Usado **no existe aquí**: vive en el Inventario de Hardware, en la selección de equipo
   disponible, en el detalle del equipo y en su historial, que es donde se elige.
 - Cada solicitud guarda además el **cargo** del usuario final, el **motivo** del requerimiento, su
-  **prioridad** y los **IDs estables** de su Dirección/Unidad (`direccionId`, `unidadId`), los
+  **prioridad** y los **IDs estables** de su Dirección/Registro (`direccionId`, `unidadId`), los
   mismos con los que trabaja la distribución de soportes.
 - La tabla es **compacta**: filas de altura moderada, textos largos truncados con puntos
   suspensivos y sin explicaciones extensas en las celdas. La información completa (tipo de
@@ -250,7 +265,7 @@ según selección, acordeones); aquí se documentan completas.
 #### Datos de demostración
 
 El set de datos trae **32 requerimientos —16 de CPU y 16 de Laptop—** repartidos por las
-Direcciones/Unidades del catálogo institucional y en distintos estados (entrantes, asignados, en
+Direcciones/Registros del catálogo institucional y en distintos estados (entrantes, asignados, en
 configuración, pendientes de aceptación, entregados y cerrados), y **32 equipos** en el Inventario
 de Hardware con CPU y Laptops **nuevos y usados**. Siempre hay equipos disponibles de los cuatro
 tipos para asignar y requerimientos sin equipo que los reciban, de modo que la demostración puede

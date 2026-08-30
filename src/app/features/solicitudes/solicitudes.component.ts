@@ -107,7 +107,9 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
                   <div class="main-cell">{{ s.destinatario }}</div>
                   <div class="sub-cell">{{ s.cargoDestinatario }}</div>
                 </td>
-                <td><div class="trunc" [title]="s.direccionGerencia + ' / ' + s.unidadDestino">{{ s.direccionGerencia }}</div>
+                <td>
+                  <div class="sub-cell">{{ zonaDe(s) }}</div>
+                  <div class="trunc" [title]="data.rutaTerritorial(s.direccionId, s.unidadDestino)">{{ s.direccionGerencia }}</div>
                   <div class="sub-cell">{{ s.unidadDestino }}</div>
                 </td>
                 <td><ui-badge [estado]="s.prioridad" /></td>
@@ -145,7 +147,15 @@ import { BadgeComponent, HelpTipComponent, MarcaModeloPipe, ModalComponent, Tipo
               <dl class="dl">
                 <dt>Usuario final</dt><dd>{{ s.destinatario }} (carné {{ s.carne }})</dd>
                 <dt>Cargo</dt><dd>{{ s.cargoDestinatario }}</dd>
-                <dt>Dirección / Unidad</dt><dd>{{ s.direccionGerencia }} / {{ s.unidadDestino }}</dd>
+                <dt>Zona</dt><dd>{{ zonaDe(s) }}</dd>
+                <dt>Departamento</dt><dd>{{ s.direccionGerencia }}</dd>
+                <dt>Dirección / Registro</dt><dd>{{ s.unidadDestino }}</dd>
+                <dt>Distribución de soportes</dt>
+                <dd>
+                  {{ porDireccion(s)
+                    ? 'Por Dirección/Registro: solo los técnicos asignados a esta Dirección/Registro pueden configurar el equipo.'
+                    : 'Por Departamento: el técnico responsable del departamento atiende todas sus Direcciones/Registros.' }}
+                </dd>
                 <dt>Correo institucional</dt><dd>{{ s.correoDestinatario }}</dd>
               </dl>
             </div>
@@ -197,7 +207,7 @@ export class SolicitudesComponent {
   protected fUsuario = signal('');
   protected detalle = signal<Solicitud | null>(null);
 
-  /** Direcciones y Unidades presentes en los requerimientos: el filtro no inventa catálogo. */
+  /** Departamentos y Direcciones/Registros presentes en los requerimientos: el filtro no inventa catálogo. */
   protected readonly direcciones = computed(() =>
     [...new Set(this.data.solicitudes().map((s) => s.direccionGerencia))].sort());
   protected readonly unidades = computed(() => [...new Set(this.data.solicitudes()
@@ -209,6 +219,16 @@ export class SolicitudesComponent {
     const presentes = new Set(this.data.solicitudes().map((s) => s.estado));
     return orden.filter((e) => presentes.has(e));
   });
+
+  /** Zona del requerimiento, resuelta con el catálogo territorial compartido. */
+  protected zonaDe(sol: Solicitud): string {
+    return this.data.territorio.nombreZona(this.data.territorio.zonaDe(sol.departamentoId || sol.direccionId || sol.direccionGerencia));
+  }
+
+  /** ¿La distribución de ese departamento se lleva por Dirección/Registro? */
+  protected porDireccion(sol: Solicitud): boolean {
+    return this.data.territorio.distribuyePorDireccion(sol.departamentoId || sol.direccionId || sol.direccionGerencia);
+  }
 
   protected contar(estado: string): number {
     return this.data.solicitudes().filter((s) => s.estado === estado).length;

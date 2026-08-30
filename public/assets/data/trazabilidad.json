@@ -7,11 +7,11 @@
   "accion": "Expediente único bloqueado por falta de soporte asignado",
   "estado": "Asignada",
   "estadoAnterior": "Asignada",
-  "observacion": "El Archivo Registral no tiene Técnico de Soporte en la distribución vigente; el Expediente único queda bloqueado hasta que se le asigne uno en SISGOST — Controles Mensuales.",
+  "observacion": "El Instituto Geográfico y del Catastro Nacional (IGCN) no tiene Técnico de Soporte en la distribución vigente; el Expediente único queda bloqueado hasta que se le asigne uno en SISGOST — Controles Mensuales.",
   "hito": false,
   "modulo": "Expediente único",
-  "direccion": "Dirección de Registros",
-  "unidad": "Archivo Registral",
+  "direccion": "CAB",
+  "unidad": "Instituto Geográfico y del Catastro Nacional (IGCN)",
   "inventario": "2201-1330-2026"
  },
  {
@@ -21,11 +21,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Karla Rivas — Analista de Propiedad Raíz · Dirección de Registros / Registro de la Propiedad · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Karla Rivas — Analista de Propiedad Raíz · San Salvador / Registro de la Propiedad Raíz e Hipotecas · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registros",
-  "unidad": "Registro de la Propiedad"
+  "direccion": "SS",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0160",
@@ -34,10 +34,10 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Óscar Menjívar — Analista de Registro de Comercio · Dirección de Registros / Registro de Comercio · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Óscar Menjívar — Analista de Registro de Comercio · San Salvador / Registro de Comercio · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registros",
+  "direccion": "SS",
   "unidad": "Registro de Comercio"
  },
  {
@@ -47,11 +47,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Nancy Portillo — Encargada de Archivo · Dirección de Registros / Archivo Registral · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Nancy Portillo — Encargada de Archivo · San Salvador / Instituto Geográfico y del Catastro Nacional (IGCN) · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registros",
-  "unidad": "Archivo Registral"
+  "direccion": "CAB",
+  "unidad": "Instituto Geográfico y del Catastro Nacional (IGCN)"
  },
  {
   "expediente": "SOL-2026-0162",
@@ -60,11 +60,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Iván Alvarenga — Administrador de Base de Datos · Gerencia de Tecnología / Gerencia de Tecnología · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Iván Alvarenga — Administrador de Base de Datos · San Salvador / San Salvador · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Gerencia de Tecnología",
-  "unidad": "Gerencia de Tecnología"
+  "direccion": "SS",
+  "unidad": "Registro de Garantías Mobiliarias"
  },
  {
   "expediente": "SOL-2026-0163",
@@ -73,11 +73,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Silvia Cornejo — Analista de Recursos Humanos · Dirección del RPRH / RPRH · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Silvia Cornejo — Analista de Recursos Humanos · Sonsonate / Registro de la Propiedad Raíz e Hipotecas · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del RPRH",
-  "unidad": "RPRH"
+  "direccion": "SON",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0164",
@@ -86,11 +86,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Ricardo Bonilla — Técnico en Geodesia · Dirección del IGN / IGN · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Ricardo Bonilla — Técnico en Geodesia · San Salvador / Instituto Geográfico y del Catastro Nacional (IGCN) · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del IGN",
-  "unidad": "IGN"
+  "direccion": "SS",
+  "unidad": "Instituto Geográfico y del Catastro Nacional (IGCN)"
  },
  {
   "expediente": "SOL-2026-0165",
@@ -99,11 +99,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Gabriela Escobar — Analista de Propiedad Intelectual · Dirección del ISPI / ISPI · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Gabriela Escobar — Analista de Propiedad Intelectual · San Salvador / Instituto Salvadoreño de la Propiedad Intelectual (ISPI) · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del ISPI",
-  "unidad": "ISPI"
+  "direccion": "SS",
+  "unidad": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)"
  },
  {
   "expediente": "SOL-2026-0166",
@@ -112,11 +112,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Héctor Zelaya — Jefe de Unidad · Dirección de Registro / Dirección de Registro · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Héctor Zelaya — Jefe de Unidad · Santa Ana / Santa Ana · prioridad alta. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registro",
-  "unidad": "Dirección de Registro"
+  "direccion": "STA",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0167",
@@ -125,11 +125,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Marta Guzmán — Analista de Soporte Técnico · Gerencia de Tecnología / Gerencia de Tecnología · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Marta Guzmán — Analista de Soporte Técnico · San Salvador / San Salvador · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Gerencia de Tecnología",
-  "unidad": "Gerencia de Tecnología"
+  "direccion": "SS",
+  "unidad": "Registro de Garantías Mobiliarias"
  },
  {
   "expediente": "SOL-2026-0168",
@@ -138,11 +138,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Julio Interiano — Registrador Auxiliar · Dirección de Registros / Registro de la Propiedad · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Julio Interiano — Registrador Auxiliar · San Salvador / Registro de la Propiedad Raíz e Hipotecas · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registros",
-  "unidad": "Registro de la Propiedad"
+  "direccion": "SS",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0169",
@@ -151,11 +151,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Andrea Hernández — Asistente Cartográfica · Dirección del IGN / IGN · prioridad baja. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Andrea Hernández — Asistente Cartográfica · San Salvador / Instituto Geográfico y del Catastro Nacional (IGCN) · prioridad baja. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del IGN",
-  "unidad": "IGN"
+  "direccion": "SS",
+  "unidad": "Instituto Geográfico y del Catastro Nacional (IGCN)"
  },
  {
   "expediente": "SOL-2026-0170",
@@ -164,11 +164,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Fernando Ayala — Analista de Planillas · Dirección del RPRH / RPRH · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Fernando Ayala — Analista de Planillas · Sonsonate / Registro de la Propiedad Raíz e Hipotecas · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del RPRH",
-  "unidad": "RPRH"
+  "direccion": "SON",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0171",
@@ -177,10 +177,10 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de CPU",
   "estado": "Entrante",
-  "observacion": "Lorena Cáceres — Analista de Registro de Comercio · Dirección de Registros / Registro de Comercio · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Lorena Cáceres — Analista de Registro de Comercio · San Salvador / Registro de Comercio · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registros",
+  "direccion": "SS",
   "unidad": "Registro de Comercio"
  },
  {
@@ -190,11 +190,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Mauricio Flores — Especialista en Marcas · Dirección del ISPI / ISPI · prioridad baja. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Mauricio Flores — Especialista en Marcas · San Salvador / Instituto Salvadoreño de la Propiedad Intelectual (ISPI) · prioridad baja. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección del ISPI",
-  "unidad": "ISPI"
+  "direccion": "SS",
+  "unidad": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)"
  },
  {
   "expediente": "SOL-2026-0173",
@@ -203,11 +203,11 @@
   "usuario": "Sistema (datos de demostración)",
   "accion": "Solicitud mock creada para demostración: requerimiento de Laptop",
   "estado": "Entrante",
-  "observacion": "Cecilia Navarro — Colaboradora Registral · Dirección de Registro / Dirección de Registro · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
+  "observacion": "Cecilia Navarro — Colaboradora Registral · Santa Ana / Santa Ana · prioridad media. El requerimiento declara solo el tipo de equipo: la condición nuevo o usado se define al asignar el equipo.",
   "hito": false,
   "modulo": "Solicitudes",
-  "direccion": "Dirección de Registro",
-  "unidad": "Dirección de Registro"
+  "direccion": "STA",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2026-0162",
@@ -469,7 +469,7 @@
   "inventario": "2201-0788-2022",
   "expedienteTecnico": "EXP-PT-2025-0038",
   "expedienteUnico": "EXP-2025-0025",
-  "usuarioFinal": "R. Campos — Registro de la Propiedad"
+  "usuarioFinal": "R. Campos — Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2025-0210",
@@ -478,13 +478,13 @@
   "usuario": "Mateo Martínez — Técnico de Soporte",
   "accion": "Reserva de IP marcada como No",
   "estado": "Reserva de IP: No",
-  "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-RPRH-D0788). El equipo no requiere reserva de IP: se registra «IP reservada: No aplica» y la justificación del técnico. Validada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
+  "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-Registro de la Propiedad Raíz e Hipotecas-D0788). El equipo no requiere reserva de IP: se registra «IP reservada: No aplica» y la justificación del técnico. Validada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0788-2022",
   "expedienteUnico": "EXP-2025-0025",
   "usuarioFinal": "R. Campos",
-  "nombreEquipo": "CNR-RPRH-D0788",
+  "nombreEquipo": "CNR-Registro de la Propiedad Raíz e Hipotecas-D0788",
   "ipReservada": "No aplica",
   "justificacion": "El equipo utilizará IP dinámica.",
   "estadoSolicitudIP": "No aplica",
@@ -497,13 +497,13 @@
   "usuario": "Mateo Martínez — Técnico de Soporte",
   "accion": "Justificación de no reserva registrada",
   "estado": "Reserva de IP: No",
-  "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-RPRH-D0788) · Justificación: «El equipo utilizará IP dinámica.» · Registrada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
+  "observacion": "Formulario: F0302 · Equipo 2201-0788-2022 (CNR-Registro de la Propiedad Raíz e Hipotecas-D0788) · Justificación: «El equipo utilizará IP dinámica.» · Registrada por Mateo Martínez — Técnico de Soporte el 2025-12-02 09:40.",
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0788-2022",
   "expedienteUnico": "EXP-2025-0025",
   "usuarioFinal": "R. Campos",
-  "nombreEquipo": "CNR-RPRH-D0788",
+  "nombreEquipo": "CNR-Registro de la Propiedad Raíz e Hipotecas-D0788",
   "ipReservada": "No aplica",
   "justificacion": "El equipo utilizará IP dinámica.",
   "estadoSolicitudIP": "No aplica",
@@ -522,7 +522,7 @@
   "estadoAnterior": "Pendiente de aceptación",
   "inventario": "2201-0788-2022",
   "expedienteUnico": "EXP-2025-0025",
-  "usuarioFinal": "R. Campos — Registro de la Propiedad"
+  "usuarioFinal": "R. Campos — Registro de la Propiedad Raíz e Hipotecas"
  },
  {
   "expediente": "SOL-2025-0210",
@@ -623,7 +623,7 @@
   "estadoAnterior": "No asignado",
   "inventario": "2201-1300-2026",
   "expedienteTecnico": "EXP-PT-2026-0093",
-  "usuarioFinal": "J. Ramírez — Dirección de Registro"
+  "usuarioFinal": "J. Ramírez — Santa Ana"
  },
  {
   "expediente": "SOL-2026-0132",
@@ -1543,7 +1543,7 @@
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:30",
   "accion": "Agente DLP seleccionado en F0302",
   "observacion": "Formulario: F0302 · Requiere captura de evidencia obligatoria para finalizar la configuración."
@@ -1557,7 +1557,7 @@
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:34",
   "accion": "Captura de Agente DLP registrada",
   "observacion": "Archivo: captura-dlp-instalado.png · Tipo de evidencia: Agente DLP · Formulario: F0302 · Ítem: Agente DLP · Fecha de carga: 2026-07-05 15:34"
@@ -1571,7 +1571,7 @@
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "16:05",
   "accion": "Validación de evidencia de Agente DLP realizada",
   "observacion": "Formulario: F0302 · Agente DLP: Configurado · Evidencia registrada: captura-dlp-instalado.png · Wendy Carranza · 2026-07-05 15:34"
@@ -1583,7 +1583,7 @@
   "usuario": "Wendy Carranza — Técnico de Soporte",
   "accion": "Configuración F0302 finalizada con software adicional (4); documento F0302 generado y firmado",
   "estado": "En configuración",
-  "observacion": "Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Se define al enviar el formulario de conformidad · IP reservada: Pendiente de registrar · Tiempo total: 58 min · Complejidad: Sin complejidad · Evidencias registradas: Agente DLP: captura-dlp-instalado.png · Software heredado de F0288: Windows Windows 11 Pro · Antivirus institucional 13.0 · OCS Inventory 2.10 · Software agregado en F0302: Microsoft Office Microsoft 365 (Solicitado en requerimiento) · Navegador institucional Edge (Software institucional estándar) · Lector PDF Adobe Reader (Software institucional estándar) · Cliente VPN 5.1 (Requerido por unidad solicitante)",
+  "observacion": "Nombre del equipo: CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954 · Reserva de IP: Se define al enviar el formulario de conformidad · IP reservada: Pendiente de registrar · Tiempo total: 58 min · Complejidad: Sin complejidad · Evidencias registradas: Agente DLP: captura-dlp-instalado.png · Software heredado de F0288: Windows Windows 11 Pro · Antivirus institucional 13.0 · OCS Inventory 2.10 · Software agregado en F0302: Microsoft Office Microsoft 365 (Solicitado en requerimiento) · Navegador institucional Edge (Software institucional estándar) · Lector PDF Adobe Reader (Software institucional estándar) · Cliente VPN 5.1 (Requerido por unidad solicitante)",
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
@@ -1602,7 +1602,7 @@
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "ipReservada": "Pendiente de validación antes de conformidad"
  },
  {
@@ -1616,7 +1616,7 @@
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "ipReservada": "Pendiente de validación antes de conformidad"
  },
  {
@@ -1641,11 +1641,11 @@
   "modulo": "Entrega y aceptación",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:10",
   "accion": "Modal de validación de reserva de IP abierto",
   "usuarioFinal": "J. Portillo",
-  "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sin responder · IP reservada: —",
+  "observacion": "Formulario: F0302 · Nombre del equipo: CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954 · Reserva de IP: Sin responder · IP reservada: —",
   "mac": "00:1A:2B:03:BA:E2",
   "estadoSolicitudIP": "Pendiente de validación antes de conformidad"
  },
@@ -1658,11 +1658,11 @@
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:12",
   "accion": "Reserva de IP marcada como Sí",
   "ipReservada": "192.168.10.45",
-  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954). IP reservada: 192.168.10.45.",
+  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954). IP reservada: 192.168.10.45.",
   "mac": "00:1A:2B:03:BA:E2",
   "estadoSolicitudIP": "Pendiente de envío"
  },
@@ -1675,11 +1675,11 @@
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:12",
   "accion": "IP reservada registrada: 192.168.10.45",
   "ipReservada": "192.168.10.45",
-  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954) para J. Portillo."
+  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954) para J. Portillo."
  },
  {
   "expediente": "SOL-2026-0141",
@@ -1688,12 +1688,12 @@
   "usuario": "Wendy Carranza — Técnico de Soporte",
   "accion": "MAC del equipo registrada: 00:1A:2B:03:BA:E2",
   "estado": "Reserva de IP: Sí",
-  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-IGN-D0954) · Origen del dato: Registro institucional del equipo · Se usará en la solicitud de reserva al Departamento de Servidores.",
+  "observacion": "Formulario: F0302 · Equipo 2201-0954-2023 (CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954) · Origen del dato: Registro institucional del equipo · Se usará en la solicitud de reserva al Departamento de Servidores.",
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "ipReservada": "192.168.10.45",
   "mac": "00:1A:2B:03:BA:E2",
   "estadoSolicitudIP": "Pendiente de envío",
@@ -1706,12 +1706,12 @@
   "usuario": "Wendy Carranza — Técnico de Soporte",
   "accion": "Solicitud simulada de reserva de IP enviada a Servidores",
   "estado": "Completada",
-  "observacion": "Para: Departamento de Servidores · Asunto: Solicitud de reserva de IP para equipo institucional · Equipo 2201-0954-2023 (CNR-IGN-D0954) · MAC: 00:1A:2B:03:BA:E2 · IP solicitada: 192.168.10.45 · Envío simulado: el prototipo no envía correo real.",
+  "observacion": "Para: Departamento de Servidores · Asunto: Solicitud de reserva de IP para equipo institucional · Equipo 2201-0954-2023 (CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954) · MAC: 00:1A:2B:03:BA:E2 · IP solicitada: 192.168.10.45 · Envío simulado: el prototipo no envía correo real.",
   "hito": false,
   "modulo": "Configuración F0302",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "ipReservada": "192.168.10.45",
   "mac": "00:1A:2B:03:BA:E2",
   "estadoSolicitudIP": "Enviada",
@@ -1726,12 +1726,12 @@
   "modulo": "Entrega y aceptación",
   "inventario": "2201-0954-2023",
   "expedienteUnico": "EXP-2026-0002",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "hora": "15:19",
   "accion": "Reserva de IP validada antes de enviar conformidad",
   "usuarioFinal": "J. Portillo",
   "ipReservada": "192.168.10.45",
-  "observacion": "Formulario: F0302 · Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45 · MAC: 00:1A:2B:03:BA:E2 · Solicitud de reserva de IP: Enviada · Agente DLP: Realizado · Evidencia: captura-dlp-instalado.png",
+  "observacion": "Formulario: F0302 · Nombre del equipo: CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45 · MAC: 00:1A:2B:03:BA:E2 · Solicitud de reserva de IP: Enviada · Agente DLP: Realizado · Evidencia: captura-dlp-instalado.png",
   "mac": "00:1A:2B:03:BA:E2",
   "estadoSolicitudIP": "Enviada"
  },
@@ -1742,12 +1742,12 @@
   "usuario": "Wendy Carranza — Técnico de Soporte",
   "accion": "Formulario de conformidad enviado al correo institucional del usuario final",
   "estado": "Pendiente de aceptación",
-  "observacion": "Enlace único CONF-2026-0141-X8F2, vence el 13/07/2026 Nombre del equipo: CNR-IGN-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45.",
+  "observacion": "Enlace único CONF-2026-0141-X8F2, vence el 13/07/2026 Nombre del equipo: CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954 · Reserva de IP: Sí · IP reservada: 192.168.10.45.",
   "hito": true,
   "modulo": "Entrega y aceptación",
   "estadoAnterior": "Listo para entrega",
   "inventario": "2201-0954-2023",
-  "nombreEquipo": "CNR-IGN-D0954",
+  "nombreEquipo": "CNR-Instituto Geográfico y del Catastro Nacional (IGCN)-D0954",
   "ipReservada": "192.168.10.45"
  },
  {
@@ -1762,7 +1762,7 @@
   "modulo": "Descargo",
   "estadoAnterior": "Asignado",
   "inventario": "2201-1300-2026",
-  "usuarioFinal": "J. Ramírez — Dirección de Registro"
+  "usuarioFinal": "J. Ramírez — Santa Ana"
  },
  {
   "expediente": "EXP-PT-2026-0093",

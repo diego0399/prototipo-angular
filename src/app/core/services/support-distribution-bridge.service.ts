@@ -53,8 +53,8 @@ export class SupportDistributionBridgeService {
   }
 
   /**
-   * Técnicos de Soporte **activos** responsables de una Dirección/Unidad, comparando por IDs
-   * estables. Sin distribución para esa Dirección/Unidad devuelve vacío: no hay lista de reserva.
+   * Técnicos de Soporte **activos** responsables de una Dirección/Registro, comparando por IDs
+   * estables. Sin distribución para esa Dirección/Registro devuelve vacío: no hay lista de reserva.
    */
   getSupportTechniciansByDirectionUnit(direccionId: string, unidadId: string): AsignacionSoporteCompartida[] {
     const dir = this.soportes.idDireccion(direccionId);
@@ -63,7 +63,7 @@ export class SupportDistributionBridgeService {
       .filter((a) => a.activo && a.direccionId === dir && a.unidadId === uni);
   }
 
-  /** ¿Este técnico puede atender esa Dirección/Unidad? Por ID, nunca por el nombre visible. */
+  /** ¿Este técnico puede atender esa Dirección/Registro? Por ID, nunca por el nombre visible. */
   canTechnicianSupportUnit(tecnicoId: string, direccionId: string, unidadId: string): boolean {
     const id = this.soportes.idTecnico(tecnicoId);
     return this.getSupportTechniciansByDirectionUnit(direccionId, unidadId).some((a) => a.tecnicoId === id);
@@ -88,8 +88,10 @@ export class SupportDistributionBridgeService {
 
   private async leer(msEspera: number): Promise<boolean> {
     if (typeof window === 'undefined') return false;
-    // 1. Mismo origen: la clave compartida se ve directamente.
-    const propias = this.compartida.leer();
+    // 1. Mismo origen: la clave compartida se ve directamente. Una copia de una versión anterior
+    // del contrato describe la organización previa a la estructura territorial, así que se ignora
+    // y se pregunta al módulo que la edita, que devolverá la vigente.
+    const propias = this.compartida.vigente() ? this.compartida.leer() : [];
     if (propias.length) {
       this.estado.set('local');
       this.actualizadoEl.set(this.compartida.actualizadoEl());

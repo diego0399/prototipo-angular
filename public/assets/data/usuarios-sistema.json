@@ -1,140 +1,210 @@
 [
-  {
-    "usuario": "wcarranza",
-    "nombre": "Wendy Carranza",
-    "rol": "Técnico de Soporte",
-    "clave": "tec-soporte",
-    "iniciales": "WC",
-    "unidad": "Soporte",
-    "estado": "Activo",
-    "direccionAsignada": "Dirección de Registro"
-  },
-  {
-    "usuario": "mmartinez",
-    "nombre": "Mateo Martínez",
-    "rol": "Técnico de Soporte",
-    "clave": "tec-soporte",
-    "iniciales": "MM",
-    "unidad": "Soporte",
-    "estado": "Activo",
-    "direccionAsignada": "Dirección de Tecnologías de la Información"
-  },
-  {
-    "usuario": "bmejia",
-    "nombre": "Balmore Mejía",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "BM",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "jramirez",
-    "nombre": "José Ramírez",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "JR",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "lhernandez",
-    "nombre": "Luis Hernández",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "LH",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "mlopez",
-    "nombre": "Mario López",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "ML",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "evasquez",
-    "nombre": "Erick Vásquez",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "EV",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "rmartinez",
-    "nombre": "Rafael Martínez",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "RM",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "dmorales",
-    "nombre": "Daniel Morales",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "DM",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "oreyes",
-    "nombre": "Óscar Reyes",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "OR",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "fcastro",
-    "nombre": "Fernando Castro",
-    "rol": "Técnico de Hardware",
-    "clave": "tec-hardware",
-    "iniciales": "FC",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "cgonzalez",
-    "nombre": "Carlos González",
-    "rol": "Encargado de Soporte",
-    "clave": "enc-soporte",
-    "iniciales": "CG",
-    "unidad": "Soporte",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "scruz",
-    "nombre": "Samuel Cruz",
-    "rol": "Encargado de Hardware",
-    "clave": "enc-hardware",
-    "iniciales": "SC",
-    "unidad": "Hardware",
-    "estado": "Activo"
-  },
-  {
-    "usuario": "dportillo",
-    "nombre": "Diana Portillo",
-    "rol": "Técnico de Soporte",
-    "clave": "tec-soporte",
-    "iniciales": "DP",
-    "unidad": "Soporte",
-    "estado": "Activo",
-    "direccionAsignada": "Dirección de Registros"
-  },
-  {
-    "usuario": "sadmin",
-    "nombre": "Administrador SISGOST",
-    "rol": "Administrador del sistema",
-    "clave": "admin",
-    "iniciales": "AS",
-    "unidad": "DTI",
-    "estado": "Activo"
-  }
+ {
+  "usuario": "sadmin",
+  "nombre": "Administrador SISGOST",
+  "iniciales": "AS",
+  "roles": [
+   "ADMINISTRADOR"
+  ],
+  "unidad": "DTI",
+  "estado": "Activo",
+  "rol": "Administrador",
+  "clave": "admin"
+ },
+ {
+  "usuario": "demo.admin",
+  "nombre": "Usuario de demostración SISGOST",
+  "iniciales": "DA",
+  "roles": [
+   "ADMINISTRADOR"
+  ],
+  "unidad": "DTI",
+  "estado": "Activo",
+  "rol": "Administrador",
+  "clave": "admin"
+ },
+ {
+  "usuario": "cgonzalez",
+  "nombre": "Carlos González",
+  "iniciales": "CG",
+  "roles": [
+   "ENCARGADO_SOPORTE",
+   "TECNICO_SOPORTE"
+  ],
+  "unidad": "Soporte",
+  "estado": "Activo",
+  "rol": "Encargado de Soporte",
+  "clave": "enc-soporte"
+ },
+ {
+  "usuario": "cduran",
+  "nombre": "Carlos Durán",
+  "iniciales": "CD",
+  "roles": [
+   "COORDINADOR"
+  ],
+  "unidad": "Soporte",
+  "estado": "Activo",
+  "rol": "Coordinador",
+  "clave": "coordinador"
+ },
+ {
+  "usuario": "wcarranza",
+  "nombre": "Wendy Carranza",
+  "iniciales": "WC",
+  "roles": [
+   "TECNICO_SOPORTE"
+  ],
+  "unidad": "Soporte",
+  "estado": "Activo",
+  "direccionAsignada": "San Salvador",
+  "rol": "Técnico de Soporte",
+  "clave": "tec-soporte"
+ },
+ {
+  "usuario": "mmartinez",
+  "nombre": "Mateo Martínez",
+  "iniciales": "MM",
+  "roles": [
+   "TECNICO_SOPORTE"
+  ],
+  "unidad": "Soporte",
+  "estado": "Activo",
+  "direccionAsignada": "San Salvador",
+  "rol": "Técnico de Soporte",
+  "clave": "tec-soporte"
+ },
+ {
+  "usuario": "dportillo",
+  "nombre": "Diana Portillo",
+  "iniciales": "DP",
+  "roles": [
+   "TECNICO_SOPORTE"
+  ],
+  "unidad": "Soporte",
+  "estado": "Activo",
+  "direccionAsignada": "San Miguel",
+  "rol": "Técnico de Soporte",
+  "clave": "tec-soporte"
+ },
+ {
+  "usuario": "scruz",
+  "nombre": "Samuel Cruz",
+  "iniciales": "SC",
+  "roles": [
+   "ENCARGADO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Encargado de Hardware",
+  "clave": "enc-hardware"
+ },
+ {
+  "usuario": "bmejia",
+  "nombre": "Balmore Mejía",
+  "iniciales": "BM",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "jramirez",
+  "nombre": "José Ramírez",
+  "iniciales": "JR",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "lhernandez",
+  "nombre": "Luis Hernández",
+  "iniciales": "LH",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "mlopez",
+  "nombre": "Mario López",
+  "iniciales": "ML",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "evasquez",
+  "nombre": "Erick Vásquez",
+  "iniciales": "EV",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "rmartinez",
+  "nombre": "Rafael Martínez",
+  "iniciales": "RM",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "dmorales",
+  "nombre": "Daniel Morales",
+  "iniciales": "DM",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "oreyes",
+  "nombre": "Óscar Reyes",
+  "iniciales": "OR",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ },
+ {
+  "usuario": "fcastro",
+  "nombre": "Fernando Castro",
+  "iniciales": "FC",
+  "roles": [
+   "TECNICO_HARDWARE"
+  ],
+  "unidad": "Hardware",
+  "estado": "Activo",
+  "rol": "Técnico de Hardware",
+  "clave": "tec-hardware"
+ }
 ]

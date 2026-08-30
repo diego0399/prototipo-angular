@@ -10,7 +10,7 @@ import { SeccionDoc, VisorDocumentoComponent } from './visor-documento';
  * Visor del **Documento de Descargo**. El descargo ya se registraba con todos sus datos —motivo,
  * estado físico del equipo, imagen de respaldo, acción posterior y cierres que provoca—, pero solo
  * se podía leer como una fila de tabla. Aquí se abre como el documento formal que respalda la
- * salida del equipo del inventario activo de la Dirección/Unidad.
+ * salida del equipo del inventario activo de la Dirección/Registro.
  *
  * No registra ni modifica nada: el descargo lo crea `DataService.registrarDescargo` y aquí solo se
  * consulta, se descarga y se deja constancia de quién lo abrió.
@@ -34,7 +34,7 @@ import { SeccionDoc, VisorDocumentoComponent } from './visor-documento';
         [evidencias]="evidencias()"
         tituloEvidencias="Imágenes del estado físico del equipo"
         [firmas]="firmas()"
-        notaPie="El descargo cierra la asignación vigente sin borrar el historial del equipo: el expediente queda como histórico y el equipo sale del inventario activo de la Dirección/Unidad."
+        notaPie="El descargo cierra la asignación vigente sin borrar el historial del equipo: el expediente queda como histórico y el equipo sale del inventario activo de la Dirección/Registro."
         (verEvidencia)="verEvidencia(d.inventario, $event)"
         (descargar)="descargar()"
         (cerrar)="cerrar()" />
@@ -101,7 +101,7 @@ export class DocumentoDescargoComponent {
         documento: 'Documento de Descargo',
         rotulo: 'Usuario final que entrega el equipo',
         nombre: d.usuarioFinalEntrega, rol: '', fecha: '', hora: '', estado: 'No aplica',
-        detalle: 'El descargo lo registra el soporte responsable de la Dirección/Unidad; el prototipo no captura la firma del usuario final en esta etapa.'
+        detalle: 'El descargo lo registra el soporte responsable de la Dirección/Registro; el prototipo no captura la firma del usuario final en esta etapa.'
       }
     ];
   });
@@ -169,7 +169,7 @@ export class DocumentoDescargoComponent {
         ],
         items: [
           { nombre: 'Asignación vigente cerrada (sin borrar el historial)', estado: 'Realizado' },
-          { nombre: 'Salida del inventario activo de la Dirección/Unidad', estado: 'Realizado' },
+          { nombre: 'Salida del inventario activo de la Dirección/Registro', estado: 'Realizado' },
           { nombre: 'Expediente único cerrado como histórico', estado: d.expedienteUnicoAnterior ? 'Realizado' : 'No aplica' },
           { nombre: 'Expediente técnico y preparación F0288 cerrados', estado: 'Realizado' },
           { nombre: 'Garantía del expediente cerrada', estado: 'Realizado' }

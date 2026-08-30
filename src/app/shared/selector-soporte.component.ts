@@ -14,7 +14,7 @@ import { BadgeComponent, ModalComponent } from './ui';
  * viendo el trabajo que cada quien ya tiene encima y no solo su nombre en una lista desplegable.
  *
  * La lista la decide quien lo usa (`tecnicos`): en el Expediente único llegan ya filtrados por la
- * Dirección/Unidad del requerimiento —los que no la atienden **no aparecen**, no se muestran
+ * Dirección/Registro del requerimiento —los que no la atienden **no aparecen**, no se muestran
  * deshabilitados—, y en la distribución llegan todos. La carga alta advierte, nunca bloquea.
  */
 @Component({
@@ -62,7 +62,7 @@ import { BadgeComponent, ModalComponent } from './ui';
       <div class="filtros">
         <input class="control" type="search" placeholder="Buscar por nombre del técnico…" [(ngModel)]="q" />
         <select class="control" [(ngModel)]="fDireccion">
-          <option value="">Dirección/Unidad: todas</option>
+          <option value="">Dirección/Registro: todas</option>
           @for (d of direcciones(); track d) { <option [value]="d">{{ d }}</option> }
         </select>
         <select class="control" [(ngModel)]="fCarga">
@@ -83,7 +83,7 @@ import { BadgeComponent, ModalComponent } from './ui';
           <thead>
             <tr>
               <th class="col-nom">Nombre</th><th class="col-rol">Rol</th>
-              <th class="col-dir">Dirección/Unidad atendida</th>
+              <th class="col-dir">Dirección/Registro atendida</th>
               <th class="col-num">Configuraciones activas</th>
               <th class="col-num">Correcciones pendientes</th>
               <th class="col-num">Inconformidades pendientes</th>
@@ -102,7 +102,7 @@ import { BadgeComponent, ModalComponent } from './ui';
                 <td>
                   <div class="dir-lista">
                     @for (d of direccionesDe(t); track d) { <span>{{ d }}</span> }
-                    @if (!direccionesDe(t).length) { <span class="muted">No atiende ninguna Dirección/Unidad.</span> }
+                    @if (!direccionesDe(t).length) { <span class="muted">No atiende ninguna Dirección/Registro.</span> }
                   </div>
                 </td>
                 <td class="mono n-proc">{{ t.configuraciones }}</td>
@@ -150,7 +150,7 @@ import { BadgeComponent, ModalComponent } from './ui';
                     <div class="datos mb-2">
                       <div><span>Nombre del técnico</span><b>{{ t.usuario.nombre }}</b></div>
                       <div><span>Rol</span><b>{{ t.usuario.rol }}</b></div>
-                      <div><span>Direcciones/Unidades asignadas</span><b>{{ t.direccionUnidad || 'Ninguna' }}</b></div>
+                      <div><span>Direcciones/Registros asignadas</span><b>{{ t.direccionUnidad || 'Ninguna' }}</b></div>
                       <div><span>Estado</span><b>{{ t.usuario.estado }}</b></div>
                       <div><span>Carga laboral actual</span><b>{{ t.carga }}</b></div>
                       <div><span>Total de procesos activos</span><b>{{ t.total }}</b></div>
@@ -170,7 +170,7 @@ import { BadgeComponent, ModalComponent } from './ui';
                         <thead>
                           <tr>
                             <th>Código</th><th>Tipo de proceso</th><th>Equipo</th><th>Inventario</th>
-                            <th>Usuario final</th><th>Dirección/Unidad</th><th>Estado</th>
+                            <th>Usuario final</th><th>Dirección/Registro</th><th>Estado</th>
                             <th>Fecha de asignación</th><th>Prioridad</th>
                           </tr>
                         </thead>
@@ -206,8 +206,9 @@ import { BadgeComponent, ModalComponent } from './ui';
                 } @else {
                   <b>{{ vacio() }}</b>
                   @if (rutaVacio(); as r) {
-                    <div class="mt-1">Debe configurar la Distribución de Soportes en Controles Mensuales
-                      antes de continuar; este módulo la lee automáticamente.</div>
+                    <div class="mt-1">La distribución se administra en Controles Mensuales y este módulo la lee
+                      automáticamente: en cuanto se asigne un responsable —a esta Dirección/Registro en San
+                      Salvador, o al Departamento completo en el resto del país— aparecerá aquí sin recargar.</div>
                     <a class="btn btn-outline btn-sm mt-2" [routerLink]="r" (click)="cerrar.emit()">Ir a Distribución de soportes</a>
                   }
                 }
@@ -243,7 +244,7 @@ export class SelectorSoporteComponent {
     'La lista muestra la carga laboral de cada Técnico de Soporte al día de hoy. Una carga alta no impide seleccionarlo.');
   /** Mensaje cuando no hay ningún técnico elegible. */
   readonly vacio = input('No hay Técnicos de Soporte disponibles.');
-  /** Enlace a la distribución cuando el vacío se debe a que nadie atiende la Dirección/Unidad. */
+  /** Enlace a la distribución cuando el vacío se debe a que nadie atiende la Dirección/Registro. */
   readonly rutaVacio = input('');
   /** «Nombre — Rol» ya seleccionado, para marcarlo en la lista. */
   readonly seleccionado = input('');
@@ -261,7 +262,7 @@ export class SelectorSoporteComponent {
   protected resumenAbierto = signal('');
   protected elegido = signal<TecnicoSoporteConCarga | null>(null);
 
-  /** Direcciones/Unidades presentes en la lista, para el filtro. */
+  /** Direcciones/Registros presentes en la lista, para el filtro. */
   protected readonly direcciones = computed(() =>
     [...new Set(this.tecnicos().flatMap((t) => this.direccionesDe(t)))].sort());
 

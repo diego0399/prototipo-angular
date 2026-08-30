@@ -53,14 +53,14 @@ const ACCIONES: AccionPosteriorDescargo[] = [
           <span class="alert-ico">!</span>
           <span>
             <b>No tiene permisos para registrar descargos.</b> Esta acción corresponde al
-            <b>Técnico de Soporte responsable de la Dirección/Unidad</b> donde el equipo está activo,
+            <b>Técnico de Soporte responsable de la Dirección/Registro</b> donde el equipo está activo,
             al Encargado de Soporte o al Administrador.
             La pantalla se muestra en modo consulta.
           </span>
         </div>
       }
 
-      <!-- El equipo pertenece a una Dirección/Unidad: el descargo lo saca de su inventario activo -->
+      <!-- El equipo pertenece a una Dirección/Registro: el descargo lo saca de su inventario activo -->
       @if (equipoSel(); as inv) {
         @if (bloqueo(); as b) {
           <div class="alert warn mb-2">
@@ -157,7 +157,7 @@ const ACCIONES: AccionPosteriorDescargo[] = [
             <div class="field">
               <label>Técnico de Soporte que registra</label>
               <input class="control" readonly [value]="responsableTxt()" />
-              <!-- El descargo lo registra el soporte responsable de la Dirección/Unidad: no se
+              <!-- El descargo lo registra el soporte responsable de la Dirección/Registro: no se
                    elige a otro. Lo que sí se muestra es con cuánta carga lo está registrando. -->
               @if (cargaResponsable(); as k) {
                 <div class="small muted mt-1">{{ k.carga }} · {{ k.total }} procesos activos · {{ data.resumenCargaSoporte(k) }}.</div>
@@ -288,7 +288,7 @@ export class DescargoComponent {
 
   protected readonly rol = computed(() => this.auth.usuario()?.clave ?? '');
   /**
-   * Registran descargos el Técnico de Soporte responsable de la Dirección/Unidad, el Encargado de
+   * Registran descargos el Técnico de Soporte responsable de la Dirección/Registro, el Encargado de
    * Soporte y el Administrador (§19). El Encargado de Soporte ya no solo supervisa: puede
    * descargar, pero con motivo administrativo obligatorio.
    */
@@ -303,13 +303,13 @@ export class DescargoComponent {
   });
   /**
    * Carga laboral de quien está registrando el descargo, cuando es un Técnico de Soporte. El
-   * descargo no se reparte —lo registra el soporte responsable de la Dirección/Unidad—, así que
+   * descargo no se reparte —lo registra el soporte responsable de la Dirección/Registro—, así que
    * aquí la carga es información, no un criterio de selección.
    */
   protected readonly cargaResponsable = computed(() =>
     this.rol() === 'tec-soporte' ? this.data.cargaSoporteDe(this.responsableTxt()) : null);
 
-  /** Ficha del equipo en Controles: dice a qué Dirección/Unidad pertenece y quién le da soporte. */
+  /** Ficha del equipo en Controles: dice a qué Dirección/Registro pertenece y quién le da soporte. */
   protected readonly control = computed(() =>
     this.equipoSel() ? this.data.controlActivoDe(this.equipoSel()) : undefined);
   protected readonly soporteResponsable = computed(() =>
@@ -335,9 +335,9 @@ export class DescargoComponent {
 
   /**
    * Equipos con asignación vigente: candidatos a descargo. El Técnico de Soporte solo ve los de
-   * las Direcciones/Unidades que atiende —que es exactamente lo que puede descargar—; Encargado de
+   * las Direcciones/Registros que atiende —que es exactamente lo que puede descargar—; Encargado de
    * Soporte y Administrador ven todos. Se conserva la participación en el proceso como alternativa
-   * para los equipos que aún no tienen ficha en Controles ni Dirección/Unidad reconocible.
+   * para los equipos que aún no tienen ficha en Controles ni Dirección/Registro reconocible.
    */
   protected readonly opciones = computed<FilaEquipoAsignado[]>(() => {
     const lista = this.data.equipos()
@@ -404,7 +404,7 @@ export class DescargoComponent {
   protected registrar(): void {
     if (!this.puedeRegistrar()) {
       this.toast.error('Acción no permitida',
-        'No tiene permisos para registrar descargos. Corresponde al Técnico de Soporte responsable de la Dirección/Unidad, al Encargado de Soporte o al Administrador.');
+        'No tiene permisos para registrar descargos. Corresponde al Técnico de Soporte responsable de la Dirección/Registro, al Encargado de Soporte o al Administrador.');
       return;
     }
     if (!this.equipoSel()) {

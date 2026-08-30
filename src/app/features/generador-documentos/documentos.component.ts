@@ -292,7 +292,7 @@ interface FilaDoc {
                 <div>
                   <h2>
                     Documento de Descargo
-                    <ui-help texto="Documento que respalda la salida del equipo del inventario activo de la Dirección/Unidad. Se genera con el registro del descargo y queda disponible para consultarlo después." />
+                    <ui-help texto="Documento que respalda la salida del equipo del inventario activo de la Dirección/Registro. Se genera con el registro del descargo y queda disponible para consultarlo después." />
                   </h2>
                   <p class="sub">Un documento por descargo registrado sobre el equipo de este expediente</p>
                 </div>

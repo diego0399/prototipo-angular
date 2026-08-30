@@ -6,7 +6,7 @@ import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
 
 /**
  * Inventario operativo del proyecto de Controles. No es un módulo de captura: es el reflejo de
- * una regla del proceso — un equipo pertenece a una Dirección/Unidad solo desde que el usuario
+ * una regla del proceso — un equipo pertenece a una Dirección/Registro solo desde que el usuario
  * final firma la conformidad, y deja de pertenecerle cuando se registra su descargo. Nada se
  * teclea aquí; todo llega desde la aceptación y desde el descargo.
  */
@@ -31,15 +31,15 @@ import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
             Inventario operativo de Controles
             <ui-help texto="Solo entran los equipos aceptados por el usuario final. Un equipo pendiente de aceptación, no conforme, en corrección o en reproceso no aparece aquí. El descargo lo retira del inventario activo sin borrar su historial." />
           </h1>
-          <p class="page-sub">Equipos que pertenecen hoy a una Dirección/Unidad, y los que ya salieron por descargo.</p>
+          <p class="page-sub">Equipos que pertenecen hoy a una Dirección/Registro, y los que ya salieron por descargo.</p>
         </div>
       </div>
 
       <div class="grid grid-4 mb-3">
-        <div class="kpi"><div class="k-num">{{ activos().length }}</div><div class="k-lbl">Equipos activos en Dirección/Unidad</div></div>
+        <div class="kpi"><div class="k-num">{{ activos().length }}</div><div class="k-lbl">Equipos activos en Dirección/Registro</div></div>
         <div class="kpi"><div class="k-num">{{ direcciones().length }}</div><div class="k-lbl">Direcciones con equipos activos</div></div>
         <div class="kpi"><div class="k-num">{{ activos().length }}</div><div class="k-lbl">Disponibles para controles mensuales</div></div>
-        <div class="kpi"><div class="k-num">{{ descargados().length }}</div><div class="k-lbl">Descargados de Dirección/Unidad</div></div>
+        <div class="kpi"><div class="k-num">{{ descargados().length }}</div><div class="k-lbl">Descargados de Dirección/Registro</div></div>
       </div>
 
       <div class="card mb-3">
@@ -116,7 +116,7 @@ import { BadgeComponent, HelpTipComponent } from '../../shared/ui';
         <div class="card-head">
           <div>
             <h2>Equipos descargados</h2>
-            <p class="sub">Salieron del inventario activo de su Dirección/Unidad; el historial se conserva</p>
+            <p class="sub">Salieron del inventario activo de su Dirección/Registro; el historial se conserva</p>
           </div>
         </div>
         <div class="card-body table-wrap">
@@ -158,7 +158,7 @@ export class InventarioControlesComponent {
 
   protected readonly activos = computed(() => this.data.controlesActivos());
   protected readonly descargados = computed(() =>
-    this.data.controles().filter((c) => c.estado === 'Descargado de Dirección/Unidad'));
+    this.data.controles().filter((c) => c.estado === 'Descargado de Dirección/Registro'));
 
   /** Direcciones distintas con al menos un equipo activo: el conteo por Dirección del proyecto. */
   protected readonly direcciones = computed(() =>
