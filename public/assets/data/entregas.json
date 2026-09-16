@@ -1,5 +1,23 @@
 [
  {
+  "expediente": "SOL-2026-0150",
+  "solicitudRef": "Requerimiento de CPU",
+  "usuarioFinal": "J. Ramírez",
+  "carne": "05340",
+  "correo": "jramirez@cnr.gob.sv",
+  "unidadDestino": "Registro de la Propiedad Raíz e Hipotecas",
+  "equipo": "Dell OptiPlex 5090 · Desktop usado",
+  "inventario": "2201-1300-2026",
+  "fechaEntrega": "2026-05-12",
+  "tecnicoEntrega": "Wendy Carranza — Técnico de Soporte",
+  "tecnicoConfiguro": "Wendy Carranza — Técnico de Soporte",
+  "preparadoPor": "Balmore Mejía — Técnico de Hardware (F0288)",
+  "f0302Generado": true,
+  "f0302Fecha": "2026-05-11",
+  "conformidadToken": "CONF-2026-0150-D3M9",
+  "estado": "Aceptado"
+ },
+ {
   "expediente": "SOL-2026-0141",
   "solicitudRef": "Requerimiento de CPU",
   "usuarioFinal": "J. Portillo",

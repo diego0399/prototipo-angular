@@ -1,8 +1,28 @@
 import { Injectable, computed, signal } from '@angular/core';
 import {
-  ALCANCE_DEPARTAMENTO, AmbitoTerritorial, CatalogoTerritorial, Departamento, DireccionRegistro,
-  ETIQUETA_TODO_EL_DEPARTAMENTO, TipoAsignacion, Zona
+  ALCANCE_DEPARTAMENTO, AmbitoTerritorial, AreaUnidad, CatalogoArea, CatalogoTerritorial,
+  CatalogoUnidad, Departamento, DireccionRegistro, ETIQUETA_TODO_EL_DEPARTAMENTO, TipoAsignacion,
+  Ubicacion, UsuarioFinal, Zona
 } from '../models/territorio';
+
+/**
+ * Cadena organizativa completa del DER, resuelta de abajo hacia arriba:
+ *
+ *     Usuario final → Área → Dirección → Unidad → Departamento → Zona
+ *
+ * Es lo que devuelve `cadenaDeUsuarioFinal` y lo que se muestra en la ficha organizativa. Cada
+ * eslabón puede faltar (un usuario final heredado sin área, por ejemplo) y por eso todos son
+ * opcionales: la cadena se muestra hasta donde llega, nunca se inventa el resto.
+ */
+export interface CadenaOrganizativa {
+  usuarioFinal?: UsuarioFinal;
+  areaUnidad?: AreaUnidad;
+  areaCatalogo?: CatalogoArea;
+  direccion?: DireccionRegistro;
+  unidad?: CatalogoUnidad;
+  departamento?: Departamento;
+  zona?: Zona;
+}
 
 /**
  * SERVICIO COMPARTIDO DEL ECOSISTEMA SISGOST — catálogo territorial Zona → Departamento →
@@ -22,6 +42,16 @@ export class TerritorioService {
   readonly zonas = signal<Zona[]>([]);
   readonly departamentos = signal<Departamento[]>([]);
   readonly direccionesRegistro = signal<DireccionRegistro[]>([]);
+  /** CATALOGO_UNIDAD: la unidad institucional en abstracto (IGCN, RC…), sin sede. */
+  readonly catalogoUnidades = signal<CatalogoUnidad[]>([]);
+  /** CATALOGO_AREA: el catálogo de áreas de trabajo (Atención al Cliente, Archivo General…). */
+  readonly catalogoAreas = signal<CatalogoArea[]>([]);
+  /** AREA_UNIDAD: el área concreta dentro de una Dirección/Registro. */
+  readonly areasUnidad = signal<AreaUnidad[]>([]);
+  /** USUARIO_FINAL: quien recibe y usa el equipo. No es un rol ni una cuenta del sistema. */
+  readonly usuariosFinales = signal<UsuarioFinal[]>([]);
+  /** UBICACION: lugares **físicos** (bodega, taller, sala técnica). Nunca unidades institucionales. */
+  readonly ubicaciones = signal<Ubicacion[]>([]);
   readonly version = signal('');
   readonly listo = signal(false);
 
@@ -53,6 +83,11 @@ export class TerritorioService {
     this.zonas.set(c.zonas ?? []);
     this.departamentos.set(c.departamentos ?? []);
     this.direccionesRegistro.set(c.direccionesRegistro ?? []);
+    this.catalogoUnidades.set(c.catalogoUnidades ?? []);
+    this.catalogoAreas.set(c.catalogoAreas ?? []);
+    this.areasUnidad.set(c.areasUnidad ?? []);
+    this.usuariosFinales.set(c.usuariosFinales ?? []);
+    this.ubicaciones.set(c.ubicaciones ?? []);
     this.version.set(c.version ?? '');
     this.listo.set(true);
   }
@@ -207,5 +242,123 @@ export class TerritorioService {
     const partes = [this.nombreZona(this.zonaDe(dep)), this.nombreDepartamento(dep)];
     if (reg) partes.push(this.nombreRegistro(reg));
     return partes.filter(Boolean).join(' · ');
+  }
+
+  // ------------------------------------------------------------------ módulo organizacional (DER)
+  // ZONA → DEPARTAMENTO → DIRECCION → AREA_UNIDAD, con CATALOGO_UNIDAD clasificando la DIRECCION
+  // y CATALOGO_AREA clasificando el AREA_UNIDAD. UBICACION queda aparte, para lugares físicos.
+
+  unidadCatalogo(id: string): CatalogoUnidad | undefined {
+    return this.catalogoUnidades().find((u) => u.id === id);
+  }
+  areaCatalogo(id: string): CatalogoArea | undefined {
+    return this.catalogoAreas().find((a) => a.id === id);
+  }
+  areaUnidad(id: string): AreaUnidad | undefined {
+    return this.areasUnidad().find((a) => a.id === id);
+  }
+  usuarioFinal(id: string): UsuarioFinal | undefined {
+    return this.usuariosFinales().find((u) => u.id === id);
+  }
+  ubicacion(id: string): Ubicacion | undefined {
+    return this.ubicaciones().find((u) => u.id === id);
+  }
+
+  /** Unidad institucional (CATALOGO_UNIDAD) que clasifica a una Dirección/Registro. */
+  unidadDeDireccion(direccionId: string): CatalogoUnidad | undefined {
+    const dir = this.registro(direccionId);
+    if (!dir) return undefined;
+    return this.unidadCatalogo(dir.unidadCatalogoId)
+      ?? this.catalogoUnidades().find((u) => u.corta === dir.corta);
+  }
+
+  /** Sedes (DIRECCION) de una unidad institucional, en todo el país. */
+  direccionesDeUnidad(unidadCatalogoId: string): DireccionRegistro[] {
+    return this.direccionesRegistro()
+      .filter((d) => d.unidadCatalogoId === unidadCatalogoId && d.activa)
+      .sort((a, b) => a.departamentoId.localeCompare(b.departamentoId));
+  }
+
+  /** Áreas de una Dirección/Registro, en el orden del catálogo. */
+  areasDeDireccion(direccionId: string): AreaUnidad[] {
+    return this.areasUnidad()
+      .filter((a) => a.direccionId === direccionId && a.activa)
+      .sort((a, b) => a.orden - b.orden);
+  }
+
+  /** Usuarios finales de un área. */
+  usuariosFinalesDeArea(areaUnidadId: string): UsuarioFinal[] {
+    return this.usuariosFinales().filter((u) => u.areaUnidadId === areaUnidadId && u.activo);
+  }
+
+  /** Usuarios finales de toda una Dirección/Registro, recorriendo sus áreas. */
+  usuariosFinalesDeDireccion(direccionId: string): UsuarioFinal[] {
+    const areas = new Set(this.areasDeDireccion(direccionId).map((a) => a.id));
+    return this.usuariosFinales().filter((u) => areas.has(u.areaUnidadId) && u.activo);
+  }
+
+  /** Ubicaciones físicas de una Dirección/Registro; con `null` devuelve las que no tienen sede. */
+  ubicacionesDeDireccion(direccionId: string | null): Ubicacion[] {
+    return this.ubicaciones().filter((u) => u.activa && u.direccionId === direccionId);
+  }
+
+  /** Ubicaciones institucionales (bodegas y talleres) que no pertenecen a ninguna Dirección. */
+  ubicacionesGenerales(): Ubicacion[] { return this.ubicacionesDeDireccion(null); }
+
+  /**
+   * Busca un usuario final por carné o, en su defecto, por nombre. El carné es el identificador
+   * con el que trabajaban las solicitudes antes de que USUARIO_FINAL fuera entidad, así que es lo
+   * primero que se intenta: así un expediente viejo encuentra a su persona sin migrar nada.
+   */
+  buscaUsuarioFinal(carne: string, nombre = ''): UsuarioFinal | undefined {
+    const c = (carne ?? '').trim();
+    if (c) {
+      const porCarne = this.usuariosFinales().find((u) => u.carne === c);
+      if (porCarne) return porCarne;
+    }
+    const n = this.slug(nombre);
+    return n ? this.usuariosFinales().find((u) => this.slug(u.nombre) === n) : undefined;
+  }
+
+  /** La cadena completa del DER a partir del área: Área → Dirección → Unidad → Departamento → Zona. */
+  cadenaDeArea(areaUnidadId: string): CadenaOrganizativa {
+    const areaUnidad = this.areaUnidad(areaUnidadId);
+    const direccion = areaUnidad ? this.registro(areaUnidad.direccionId) : undefined;
+    const departamento = direccion ? this.departamento(direccion.departamentoId) : undefined;
+    return {
+      areaUnidad,
+      areaCatalogo: areaUnidad ? this.areaCatalogo(areaUnidad.areaCatalogoId) : undefined,
+      direccion,
+      unidad: direccion ? this.unidadDeDireccion(direccion.id) : undefined,
+      departamento,
+      zona: departamento ? this.zona(departamento.zonaId) : undefined
+    };
+  }
+
+  /** La misma cadena, arrancando del usuario final: el recorrido completo del DER. */
+  cadenaDeUsuarioFinal(usuarioFinalId: string): CadenaOrganizativa {
+    const usuarioFinal = this.usuarioFinal(usuarioFinalId);
+    if (!usuarioFinal) return {};
+    return { usuarioFinal, ...this.cadenaDeArea(usuarioFinal.areaUnidadId) };
+  }
+
+  /**
+   * «Karla Rivas · Inscripción y Registro · Registro de la Propiedad Raíz e Hipotecas ·
+   * San Salvador · Zona Central», para encabezados, fichas y documentos. Solo escribe los
+   * eslabones que existen.
+   */
+  rutaOrganizativa(cadena: CadenaOrganizativa): string {
+    return [
+      cadena.usuarioFinal?.nombre,
+      cadena.areaCatalogo?.nombre ?? cadena.areaUnidad?.nombreEspecifico,
+      cadena.direccion?.nombre,
+      cadena.departamento?.nombre,
+      cadena.zona?.nombre
+    ].filter(Boolean).join(' · ');
+  }
+
+  /** Área por omisión de una Dirección/Registro, cuando el dato de origen no trae área. */
+  areaPorOmision(direccionId: string): AreaUnidad | undefined {
+    return this.areasDeDireccion(direccionId)[0];
   }
 }

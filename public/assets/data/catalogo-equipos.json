@@ -1,0 +1,950 @@
+{
+ "categorias": [
+  {
+   "id": "CAT-COMP",
+   "nombre": "Equipo de cómputo",
+   "activo": true,
+   "descripcion": "Computadoras de escritorio y portátiles asignables a un usuario final."
+  },
+  {
+   "id": "CAT-PERIF",
+   "nombre": "Periférico",
+   "activo": true,
+   "descripcion": "Monitores, teclados, ratones y demás dispositivos que acompañan al equipo."
+  },
+  {
+   "id": "CAT-RED",
+   "nombre": "Equipo de red",
+   "activo": true,
+   "descripcion": "Switches, access points y equipo de comunicaciones de las sedes."
+  },
+  {
+   "id": "CAT-SRV",
+   "nombre": "Servidor",
+   "activo": true,
+   "descripcion": "Equipo de sala técnica (CSOD); fuera del flujo de asignación a usuario final."
+  }
+ ],
+ "tipos": [
+  {
+   "id": "TIP-LAP",
+   "nombre": "Computadora portátil (laptop)",
+   "corta": "Laptop",
+   "activo": true,
+   "descripcion": "Equipo portátil. Cuando es nueva, el F0288 lo llena el Técnico de Soporte."
+  },
+  {
+   "id": "TIP-CPU",
+   "nombre": "Computadora de escritorio (CPU)",
+   "corta": "Desktop",
+   "activo": true,
+   "descripcion": "Equipo de escritorio. El F0288 lo llena siempre el Técnico de Hardware."
+  }
+ ],
+ "accesorios": [
+  {
+   "id": "ACC-2201-1320-2026-1",
+   "inventario": "2201-1320-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR772477",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1320-2026-2",
+   "inventario": "2201-1320-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL706003",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1320-2026-3",
+   "inventario": "2201-1320-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU835268",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1321-2026-1",
+   "inventario": "2201-1321-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON208624",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1321-2026-2",
+   "inventario": "2201-1321-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC868600",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1321-2026-3",
+   "inventario": "2201-1321-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU316367",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1321-2026-4",
+   "inventario": "2201-1321-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB207659",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1322-2026-1",
+   "inventario": "2201-1322-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR449354",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1322-2026-2",
+   "inventario": "2201-1322-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL854555",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1322-2026-3",
+   "inventario": "2201-1322-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU117844",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1323-2026-1",
+   "inventario": "2201-1323-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR992087",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1323-2026-2",
+   "inventario": "2201-1323-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL523863",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1323-2026-3",
+   "inventario": "2201-1323-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU913801",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1324-2026-1",
+   "inventario": "2201-1324-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON408466",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1324-2026-2",
+   "inventario": "2201-1324-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC237147",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1324-2026-3",
+   "inventario": "2201-1324-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU686514",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1324-2026-4",
+   "inventario": "2201-1324-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB569846",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1325-2026-1",
+   "inventario": "2201-1325-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR849770",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1325-2026-2",
+   "inventario": "2201-1325-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL267058",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1325-2026-3",
+   "inventario": "2201-1325-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU141967",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1330-2026-1",
+   "inventario": "2201-1330-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON165367",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1330-2026-2",
+   "inventario": "2201-1330-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC219595",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1330-2026-3",
+   "inventario": "2201-1330-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU261137",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1330-2026-4",
+   "inventario": "2201-1330-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB304673",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1331-2026-1",
+   "inventario": "2201-1331-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON363478",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1331-2026-2",
+   "inventario": "2201-1331-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC780814",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1331-2026-3",
+   "inventario": "2201-1331-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU113316",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1331-2026-4",
+   "inventario": "2201-1331-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB392503",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0930-2022-1",
+   "inventario": "2201-0930-2022",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON866419",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0930-2022-2",
+   "inventario": "2201-0930-2022",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC619668",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0930-2022-3",
+   "inventario": "2201-0930-2022",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU578915",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0930-2022-4",
+   "inventario": "2201-0930-2022",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB783716",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0941-2023-1",
+   "inventario": "2201-0941-2023",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON855994",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0941-2023-2",
+   "inventario": "2201-0941-2023",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC272819",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0941-2023-3",
+   "inventario": "2201-0941-2023",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU614375",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0941-2023-4",
+   "inventario": "2201-0941-2023",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB225058",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1332-2026-1",
+   "inventario": "2201-1332-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR544458",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1332-2026-2",
+   "inventario": "2201-1332-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL418432",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1332-2026-3",
+   "inventario": "2201-1332-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU981693",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1333-2026-1",
+   "inventario": "2201-1333-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR313778",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1333-2026-2",
+   "inventario": "2201-1333-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL429181",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1333-2026-3",
+   "inventario": "2201-1333-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU683720",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0952-2023-1",
+   "inventario": "2201-0952-2023",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR365597",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0952-2023-2",
+   "inventario": "2201-0952-2023",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL239925",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0952-2023-3",
+   "inventario": "2201-0952-2023",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU411823",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0963-2024-1",
+   "inventario": "2201-0963-2024",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR214971",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0963-2024-2",
+   "inventario": "2201-0963-2024",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL920628",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0963-2024-3",
+   "inventario": "2201-0963-2024",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU947533",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1220-2026-1",
+   "inventario": "2201-1220-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR424296",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1220-2026-2",
+   "inventario": "2201-1220-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL589030",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1220-2026-3",
+   "inventario": "2201-1220-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU255949",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1215-2026-1",
+   "inventario": "2201-1215-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON416549",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1215-2026-2",
+   "inventario": "2201-1215-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC251116",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1215-2026-3",
+   "inventario": "2201-1215-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU268490",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1215-2026-4",
+   "inventario": "2201-1215-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB110594",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1212-2026-1",
+   "inventario": "2201-1212-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR944714",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1212-2026-2",
+   "inventario": "2201-1212-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL448836",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1212-2026-3",
+   "inventario": "2201-1212-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU229206",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1211-2026-1",
+   "inventario": "2201-1211-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON255799",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1211-2026-2",
+   "inventario": "2201-1211-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC992032",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1211-2026-3",
+   "inventario": "2201-1211-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU449644",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1211-2026-4",
+   "inventario": "2201-1211-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB319167",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1210-2026-1",
+   "inventario": "2201-1210-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR871444",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1210-2026-2",
+   "inventario": "2201-1210-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL682507",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1210-2026-3",
+   "inventario": "2201-1210-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU741453",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1300-2026-1",
+   "inventario": "2201-1300-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON775547",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1300-2026-2",
+   "inventario": "2201-1300-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC169388",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1300-2026-3",
+   "inventario": "2201-1300-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU889662",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1300-2026-4",
+   "inventario": "2201-1300-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB663828",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0918-2022-1",
+   "inventario": "2201-0918-2022",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON746919",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0918-2022-2",
+   "inventario": "2201-0918-2022",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC702270",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0918-2022-3",
+   "inventario": "2201-0918-2022",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU352676",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0918-2022-4",
+   "inventario": "2201-0918-2022",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB275044",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0922-2023-1",
+   "inventario": "2201-0922-2023",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR257405",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0922-2023-2",
+   "inventario": "2201-0922-2023",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL635534",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0922-2023-3",
+   "inventario": "2201-0922-2023",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU303359",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1150-2025-1",
+   "inventario": "2201-1150-2025",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON418344",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1150-2025-2",
+   "inventario": "2201-1150-2025",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC617562",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1150-2025-3",
+   "inventario": "2201-1150-2025",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU486719",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1150-2025-4",
+   "inventario": "2201-1150-2025",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB875167",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0899-2023-1",
+   "inventario": "2201-0899-2023",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON526601",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0899-2023-2",
+   "inventario": "2201-0899-2023",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC388106",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0899-2023-3",
+   "inventario": "2201-0899-2023",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU997794",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0899-2023-4",
+   "inventario": "2201-0899-2023",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB129616",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1201-2026-1",
+   "inventario": "2201-1201-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR871831",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1201-2026-2",
+   "inventario": "2201-1201-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL874586",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1201-2026-3",
+   "inventario": "2201-1201-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU900079",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1187-2026-1",
+   "inventario": "2201-1187-2026",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR415949",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1187-2026-2",
+   "inventario": "2201-1187-2026",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL514622",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1187-2026-3",
+   "inventario": "2201-1187-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU796134",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1098-2026-1",
+   "inventario": "2201-1098-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON159649",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1098-2026-2",
+   "inventario": "2201-1098-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC221288",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1098-2026-3",
+   "inventario": "2201-1098-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU680671",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1098-2026-4",
+   "inventario": "2201-1098-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB126671",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0954-2023-1",
+   "inventario": "2201-0954-2023",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON919717",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0954-2023-2",
+   "inventario": "2201-0954-2023",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC321718",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0954-2023-3",
+   "inventario": "2201-0954-2023",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU205538",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0954-2023-4",
+   "inventario": "2201-0954-2023",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB309630",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0871-2024-1",
+   "inventario": "2201-0871-2024",
+   "nombre": "Cargador",
+   "descripcion": "Adaptador de corriente original",
+   "serie": "CAR812997",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0871-2024-2",
+   "inventario": "2201-0871-2024",
+   "nombre": "Maletín",
+   "descripcion": "Maletín de transporte",
+   "serie": "MAL940166",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0871-2024-3",
+   "inventario": "2201-0871-2024",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU904810",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1041-2026-1",
+   "inventario": "2201-1041-2026",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON482739",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1041-2026-2",
+   "inventario": "2201-1041-2026",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC155975",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1041-2026-3",
+   "inventario": "2201-1041-2026",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU285525",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-1041-2026-4",
+   "inventario": "2201-1041-2026",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB571909",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0703-2021-1",
+   "inventario": "2201-0703-2021",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON720809",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0703-2021-2",
+   "inventario": "2201-0703-2021",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC340051",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0703-2021-3",
+   "inventario": "2201-0703-2021",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU798772",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0703-2021-4",
+   "inventario": "2201-0703-2021",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB749310",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0788-2022-1",
+   "inventario": "2201-0788-2022",
+   "nombre": "Monitor",
+   "descripcion": "Monitor LED 23.8\"",
+   "serie": "MON908135",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0788-2022-2",
+   "inventario": "2201-0788-2022",
+   "nombre": "Teclado",
+   "descripcion": "Teclado USB en español",
+   "serie": "TEC909686",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0788-2022-3",
+   "inventario": "2201-0788-2022",
+   "nombre": "Mouse",
+   "descripcion": "Mouse óptico USB",
+   "serie": "MOU699952",
+   "estado": "Activo"
+  },
+  {
+   "id": "ACC-2201-0788-2022-4",
+   "inventario": "2201-0788-2022",
+   "nombre": "Cable de poder",
+   "descripcion": "Cable de alimentación C13",
+   "serie": "CAB390650",
+   "estado": "Activo"
+  }
+ ]
+}

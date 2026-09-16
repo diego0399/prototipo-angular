@@ -67,6 +67,15 @@ export interface Solicitud {
   zonaId: string;
   departamentoId: string;
   direccionRegistroId: string;
+  /**
+   * FK → AREA_UNIDAD. Es el dato que el DER pide en SOLICITUD (`id_area_unidad`): el equipo no se
+   * pide «para la Dirección», se pide para un **área concreta dentro de ella**, y de ahí cuelga el
+   * usuario final. La Dirección y el departamento siguen presentes porque de ellos depende la
+   * distribución de soportes, que es territorial.
+   */
+  areaUnidadId?: string;
+  /** FK → USUARIO_FINAL; `destinatario` y `carne` se conservan para lo ya escrito. */
+  usuarioFinalId?: string;
   correoDestinatario: string;
   estado: string;
   fecha: string;
@@ -131,6 +140,55 @@ export interface Equipo {
   origenDato?: string;
   /** Fecha del dato en el origen (la del registro institucional, o la del ingreso si fue manual). */
   ultimaActualizacion?: string;
+  /** FK → CATEGORIA_EQUIPO. Clasificación institucional del bien (cómputo, periférico…). */
+  categoriaId?: string;
+  /** FK → TIPO_EQUIPO. El tipo concreto (Laptop, CPU de escritorio…); `tipo` es su forma corta. */
+  tipoEquipoId?: string;
+  /**
+   * FK → UBICACION: **dónde está físicamente el equipo ahora**. La escribe el último
+   * MOVIMIENTO_EQUIPO; nunca se confunde con la Dirección, que es una unidad institucional.
+   */
+  ubicacionActualId?: string | null;
+  /** FK → AREA_UNIDAD donde el equipo está en uso; vacía mientras esté en resguardo interno. */
+  areaUnidadId?: string | null;
+  /** Ciclo de vida abierto del equipo (1, 2, 3…). 0 mientras no tenga ningún ET. */
+  cicloActual?: number;
+}
+
+/**
+ * **CATEGORIA_EQUIPO** del DER: la clasificación institucional del bien. Clasifica al EQUIPO
+ * junto con TIPO_EQUIPO, y es catálogo puro: no participa en ninguna regla del proceso.
+ */
+export interface CategoriaEquipo {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  activo: boolean;
+}
+
+/** **TIPO_EQUIPO** del DER: Laptop, CPU de escritorio, etc. `Equipo.tipo` es su forma corta. */
+export interface TipoEquipo {
+  id: string;
+  nombre: string;
+  descripcion: string;
+  /** Forma corta con la que trabaja el resto del prototipo. */
+  corta: 'Laptop' | 'Desktop';
+  activo: boolean;
+}
+
+/**
+ * **ACCESORIO_EQUIPO** del DER: un accesorio que **pertenece al equipo** (mouse, teclado,
+ * cargador, base). No confundir con la verificación de accesorios del F0288, que es la revisión
+ * puntual de una preparación: esto es el inventario permanente de lo que acompaña al equipo.
+ */
+export interface AccesorioEquipo {
+  id: string;
+  /** FK → EQUIPO. */
+  inventario: string;
+  nombre: string;
+  descripcion: string;
+  serie: string;
+  estado: 'Activo' | 'Retirado' | 'Dañado';
 }
 
 /**
@@ -272,10 +330,22 @@ export interface ModificacionAsignacion {
   soloObservacion?: boolean;
 }
 
+/**
+ * **ASIGNACION** del DER: qué equipo se entrega a qué usuario final dentro de un Expediente
+ * único. El DER la cuelga del EU (`id_exp_unico`), del EQUIPO y del USUARIO_FINAL, y esas tres
+ * FK viajan aquí explícitas.
+ */
 export interface Asignacion {
+  /** FK → SOLICITUD (el identificador con el que el prototipo enlaza todo el proceso). */
   expediente: string;
+  /** FK → EXPEDIENTE_UNICO. Vacía hasta que el EU existe; se escribe al crearlo. */
+  expedienteUnico?: string;
+  /** Ciclo de vida del equipo al que pertenece esta asignación. */
+  ciclo?: number;
   equipoInventario: string;
   usuarioFinal: string;
+  /** FK → USUARIO_FINAL (`UF-05712`). El nombre se conserva para lo ya escrito. */
+  usuarioFinalId?: string;
   tipoEquipo: 'Laptop' | 'Desktop';
   condicion: 'Nuevo' | 'Usado';
   responsableAsignacion: string;
@@ -572,19 +642,92 @@ export interface Descargo {
   accionPosterior: AccionPosteriorDescargo;
   /** Encargado al que se dirige el equipo tras el descargo: CPU → Encargado de Hardware, Laptop → Encargado de Soporte. */
   encargadoDestino: 'Encargado de Hardware' | 'Encargado de Soporte';
+  /** Ciclo de vida que esta descarga cierra. */
+  ciclo?: number;
+  /** Expediente técnico del ciclo cerrado; guardado, no deducido. */
+  expedienteTecnicoAnterior?: string;
   estado: 'Registrado' | 'Procesado';
+}
+
+/**
+ * Naturaleza de un MOVIMIENTO_EQUIPO. El DER pide registrar **dónde estuvo el equipo y por qué se
+ * movió**, con un vocabulario cerrado:
+ *
+ * · `ASIGNACION` — sale del área técnica hacia la Dirección del usuario final (lo genera la entrega).
+ * · `DESCARGA` — vuelve del usuario final al resguardo interno (nota 5: la descarga genera uno).
+ * · `REINGRESO_HARDWARE` — entra al taller de Hardware para un ciclo nuevo (nota 6: genera
+ *   movimiento pero **no** crea automáticamente un ET).
+ * · `TRASLADO` — cambio de ubicación o de Dirección sin cerrar ni abrir ciclo.
+ * · `GARANTIA` — sale a revisión técnica por un caso de garantía, y vuelve.
+ * · `REPROCESO` — vuelve al taller por un reproceso, dentro del mismo ciclo.
+ */
+export type TipoMovimiento =
+  | 'ASIGNACION' | 'DESCARGA' | 'REINGRESO_HARDWARE' | 'TRASLADO' | 'GARANTIA' | 'REPROCESO';
+
+/**
+ * **MOVIMIENTO_EQUIPO** del DER: el rastro físico del equipo. Origen y destino pueden ser una
+ * **Dirección** (unidad institucional) o una **UBICACION** (lugar físico: bodega, taller, sala
+ * técnica), y por eso los cuatro campos son opcionales: un movimiento va de una bodega a una
+ * Dirección, o de una Dirección a otra, según el caso.
+ *
+ * Nunca se sobrescribe: cada movimiento es una fila más del historial del equipo.
+ */
+export interface MovimientoEquipo {
+  id: string;
+  /** FK → EQUIPO. */
+  inventario: string;
+  /** FK → DIRECCION de origen, cuando el equipo venía de una unidad institucional. */
+  direccionOrigenId?: string | null;
+  /** FK → DIRECCION de destino. */
+  direccionDestinoId?: string | null;
+  /** FK → UBICACION de origen, cuando venía de un lugar físico (bodega, taller). */
+  ubicacionOrigenId?: string | null;
+  /** FK → UBICACION de destino. */
+  ubicacionDestinoId?: string | null;
+  /** FK → EXPEDIENTE_UNICO del ciclo en el que ocurre el movimiento, cuando hay uno. */
+  expedienteUnico?: string | null;
+  /** FK → DESCARGA que lo originó, en los movimientos de tipo `DESCARGA`. */
+  descargo?: string | null;
+  /** Ciclo de vida del equipo en el que ocurre el movimiento. */
+  ciclo?: number;
+  tipoMovimiento: TipoMovimiento;
+  motivo: string;
+  fecha: string;
+  hora: string;
+  observaciones: string;
+  /** Usuario del sistema que registró el movimiento («Nombre — Rol»). */
+  usuarioRegistra: string;
 }
 
 export type TipoExpedienteTecnico = 'Laptop nueva' | 'Laptop usada' | 'CPU nuevo' | 'CPU usado';
 
 /**
- * Expediente de preparación técnica: pertenece al EQUIPO y a su preparación, sin ninguna
- * relación con solicitudes o requerimientos (esa unión ocurre después, en el Expediente
- * único). Solo lo crean los Encargados (Soporte o Hardware) y alimenta el F0288.
+ * **EXPEDIENTE_TECNICO** del DER. Pertenece al EQUIPO y a su preparación, sin ninguna relación
+ * con solicitudes o requerimientos (esa unión ocurre después, en el Expediente único). Solo lo
+ * crean los Encargados (Soporte o Hardware) y alimenta el F0288.
+ *
+ * **Un equipo acumula varios expedientes técnicos a lo largo de su vida útil** (nota 1 del DER):
+ * cada ciclo nuevo —tras un descargo y un reingreso a Hardware— abre su propio ET, y los
+ * anteriores quedan cerrados como histórico. Por eso el ET lleva su `ciclo` explícito: el
+ * histórico **no se reconstruye buscando «el último ET del equipo»**, se lee del dato.
  */
 export interface ExpedienteTecnico {
+  /** `numero_et` del DER: el código con el que se identifica el ET (`EXP-PT-2026-0095`). */
   codigo: string;
+  /** FK → EQUIPO. */
   inventario: string;
+  /**
+   * **Ciclo de vida del equipo al que pertenece este ET**: 1 el primero, 2 el que abre el
+   * reingreso siguiente, y así. Es dato guardado, nunca deducido del orden de las fechas.
+   */
+  ciclo: number;
+  /** `fecha_apertura` del DER. Coincide con `fecha`, que se conserva por compatibilidad. */
+  fechaApertura: string;
+  /**
+   * `fecha_cierre` del DER. Vacía mientras el ciclo sigue abierto; la escribe el Descargo, que
+   * es lo único que cierra un ciclo. Un ET con `fechaCierre` ya no admite EU nuevo.
+   */
+  fechaCierre: string;
   tipoEquipo: 'Laptop' | 'Desktop';
   condicion: 'Nuevo' | 'Usado';
   marcaModelo: string;
@@ -607,13 +750,37 @@ export interface AnexoExpediente {
   fecha: string;
 }
 
+/**
+ * **EXPEDIENTE_UNICO** del DER: el ciclo de asignación y uso de un equipo concreto. Nace cuando
+ * su EXPEDIENTE_TECNICO queda **PREPARADO** (nota del DER sobre el F0288 completo) y se cierra
+ * con la descarga.
+ *
+ * Guarda **explícitamente su equipo y su expediente técnico**. No se deduce ninguno de los dos:
+ * un equipo tiene varios ET y varios EU a lo largo de su vida, y preguntar por «el último ET del
+ * equipo» devolvería el del ciclo actual aunque se esté consultando un expediente de hace un año.
+ */
 export interface ExpedienteUnico {
+  /** FK → SOLICITUD: el requerimiento que originó este ciclo de asignación. */
   expediente: string;
   /** Código propio del expediente único (p. ej. EXP-2026-0001), distinto del número de solicitud. */
   codigoUnico: string;
+  /** FK → EQUIPO. Explícita: el EU sabe de qué equipo es sin pasar por la asignación. */
+  inventario: string;
+  /**
+   * FK → EXPEDIENTE_TECNICO. **El ET de este ciclo, guardado, no reconstruido.** Es lo que
+   * permite que un expediente histórico siga mostrando la preparación con la que se entregó.
+   */
+  expedienteTecnico: string;
+  /** Ciclo de vida del equipo al que pertenece este EU; el mismo número que el de su ET. */
+  ciclo: number;
+  /** `fecha_apertura` del DER: cuándo se creó el Expediente único. */
+  fechaApertura: string;
+  /** `fecha_cierre` del DER: la escribe la descarga, que cierra el ciclo. Vacía mientras esté abierto. */
+  fechaCierre: string;
   estado: string;
   resumenEstado: string;
   fechaEntrega: string;
+  observaciones?: string;
   anexos: AnexoExpediente[];
 }
 
@@ -826,9 +993,18 @@ export interface SoftwareCatalogo {
   ultimaActualizacion: string;
 }
 
-/** Checklist F0288, identificado por el código del expediente técnico (pertenece al equipo). */
+/**
+ * **F0288** del DER: el checklist de preparación técnica. El DER lo relaciona **a la vez** con el
+ * EXPEDIENTE_TECNICO y con el EQUIPO (`id_exp_tecnico` + `id_equipo`), y las dos FK viajan aquí
+ * explícitas: el inventario ya no vive solo enterrado en `datosGenerales`.
+ */
 export interface PreparacionF0288 {
+  /** FK → EXPEDIENTE_TECNICO. */
   expedienteTecnico: string;
+  /** FK → EQUIPO. Explícita, como pide el DER. */
+  inventario: string;
+  /** Ciclo de vida del equipo al que pertenece esta preparación (el de su ET). */
+  ciclo: number;
   unidad: 'Soporte' | 'Hardware';
   tecnico: string;
   creadoPor: string;
@@ -1220,7 +1396,16 @@ export interface ValidacionGarantia {
  */
 export interface Garantia {
   expediente: string;
+  /**
+   * FK → EXPEDIENTE_UNICO. **Vacía en la garantía de proveedor**, que pertenece al equipo y puede
+   * existir desde la adquisición sin ningún ciclo de por medio (`id_exp_unico (NULL)` en el DER);
+   * llena en la responsabilidad interna, que nace con la conformidad ACEPTADA de ese EU.
+   */
+  expedienteUnico?: string;
+  /** Ciclo de vida al que pertenece la responsabilidad interna; vacío en la de proveedor. */
+  ciclo?: number;
   equipo: string;
+  /** FK → EQUIPO. Siempre presente: hasta la garantía de proveedor es del equipo. */
   inventario: string;
   usuarioFinal: string;
   /** Cuándo el usuario final aceptó. Confirma la recepción conforme; **no** inicia la garantía del proveedor. */
@@ -1852,6 +2037,11 @@ export interface ReprocesoF0288 {
   expediente: string;
   expedienteUnico: string;
   inventario: string;
+  /**
+   * Ciclo de vida del equipo al que pertenece el reproceso. **Un reproceso NO abre un ciclo
+   * nuevo** (nota 4 del DER): corrige el ciclo actual y se queda dentro de él.
+   */
+  ciclo?: number;
   /** Reproceso #1, #2… dentro del mismo Expediente técnico. */
   numero: number;
   /**

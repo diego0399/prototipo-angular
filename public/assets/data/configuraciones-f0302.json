@@ -1,5 +1,174 @@
 [
  {
+  "expediente": "SOL-2026-0150",
+  "tecnico": "Wendy Carranza — Técnico de Soporte",
+  "seleccionadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-05-11",
+  "estado": "Cerrada",
+  "cronometro": {
+   "fechaInicio": "2026-05-11",
+   "horaInicio": "09:15:00",
+   "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+   "fechaFin": "2026-05-11",
+   "horaFin": "10:32:00",
+   "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+   "duracionMinutos": 77
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "No",
+   "detalle": "",
+   "observacion": "Configuración del primer ciclo del equipo; cerrada al registrarse el descargo."
+  },
+  "datos": {
+   "requerimiento": "Requerimiento de CPU",
+   "inventario": "2201-1300-2026",
+   "nombrePC": "CNR-STA-RPRH-D1300",
+   "tipoServicio": "Reasignación de equipo usado",
+   "asignadoA": "J. Ramírez",
+   "carne": "05340",
+   "direccionGerencia": "Santa Ana",
+   "unidad": "Registro de la Propiedad Raíz e Hipotecas",
+   "puesto": "Colaborador Registral",
+   "sistemaOperativo": "Windows 11 Professional",
+   "arquitectura": "64 bits",
+   "requiereReservaIP": "Sí",
+   "ipReservada": "192.168.62.18",
+   "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
+   "ipValidadaEl": "2026-05-11 10:05",
+   "macEquipo": "00:1C:C4:71:A0:3E",
+   "justificacionSinReservaIP": "",
+   "estadoSolicitudIP": "Enviada",
+   "correoReservaEnviado": "Sí",
+   "fechaSolicitudIP": "2026-05-11 10:05"
+  },
+  "software": [
+   {
+    "nombre": "Agente DLP",
+    "version": "Corporativo",
+    "estado": "Realizado",
+    "evidencia": "captura-dlp-instalado.png",
+    "categoria": "Seguridad",
+    "origen": "Configuración",
+    "motivo": "",
+    "observacion": "",
+    "requiereEvidencia": true
+   },
+   {
+    "nombre": "Ingreso a dominio",
+    "version": "Dominio institucional",
+    "estado": "Realizado",
+    "evidencia": "Captura de ingreso al dominio ✓",
+    "categoria": "Red",
+    "origen": "Configuración"
+   },
+   {
+    "nombre": "Credenciales: nombre de equipo · cuenta de red",
+    "version": "Según SISSOR",
+    "estado": "Realizado",
+    "evidencia": null,
+    "categoria": "Red",
+    "origen": "Configuración"
+   },
+   {
+    "nombre": "Microsoft Office",
+    "version": "Microsoft 365",
+    "estado": "Realizado",
+    "evidencia": null,
+    "codigoSoftware": "SOFT-002",
+    "categoria": "Ofimática",
+    "origen": "F0302",
+    "versionVigente": "Microsoft 365",
+    "motivo": "Solicitado en requerimiento",
+    "observacion": "",
+    "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+    "fechaAgregado": "2026-07-05 15:18"
+   },
+   {
+    "nombre": "Navegador institucional",
+    "version": "Edge",
+    "estado": "Realizado",
+    "evidencia": null,
+    "codigoSoftware": "SOFT-005",
+    "categoria": "Navegación",
+    "origen": "F0302",
+    "versionVigente": "Edge",
+    "motivo": "Software institucional estándar",
+    "observacion": "",
+    "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+    "fechaAgregado": "2026-07-05 15:19"
+   },
+   {
+    "nombre": "Lector PDF",
+    "version": "Adobe Reader",
+    "estado": "Realizado",
+    "evidencia": null,
+    "codigoSoftware": "SOFT-006",
+    "categoria": "Utilidad",
+    "origen": "F0302",
+    "versionVigente": "Adobe Reader",
+    "motivo": "Software institucional estándar",
+    "observacion": "",
+    "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+    "fechaAgregado": "2026-07-05 15:20"
+   },
+   {
+    "nombre": "Cliente VPN",
+    "version": "5.1",
+    "estado": "Realizado",
+    "evidencia": null,
+    "codigoSoftware": "SOFT-007",
+    "categoria": "Red",
+    "origen": "F0302",
+    "versionVigente": "5.1",
+    "motivo": "Requerido por unidad solicitante",
+    "observacion": "El puesto realiza levantamientos de campo y requiere acceso remoto autorizado.",
+    "agregadoPor": "Wendy Carranza — Técnico de Soporte",
+    "fechaAgregado": "2026-07-05 15:26"
+   }
+  ],
+  "evidencias": [
+   {
+    "nombre": "Ingreso exitoso al dominio cnr.gob.sv",
+    "estado": "Verificada"
+   },
+   {
+    "nombre": "Captura de instalación/configuración del Agente DLP",
+    "estado": "Cargada",
+    "item": "Agente DLP",
+    "archivo": "captura-dlp-instalado.png",
+    "tipo": "Agente DLP",
+    "cargadaPor": "Wendy Carranza",
+    "fecha": "2026-07-05 15:34",
+    "formulario": "F0302"
+   },
+   {
+    "nombre": "Instalación del software adicional del requerimiento",
+    "estado": "Verificada"
+   },
+   {
+    "nombre": "Configuración final para el usuario",
+    "estado": "Verificada"
+   }
+  ],
+  "firmas": {
+   "preparo": {
+    "quien": "Balmore Mejía · Técnico de Hardware",
+    "detalle": "Firma registrada al cerrar la preparación (F0288)",
+    "estado": "Firmado",
+    "fecha": "2026-06-26",
+    "hora": "14:15"
+   },
+   "configuro": {
+    "quien": "Wendy Carranza · Técnico de Soporte",
+    "detalle": "Firma registrada al cerrar la configuración",
+    "estado": "Firmado",
+    "fecha": "2026-07-05",
+    "hora": "16:05"
+   }
+  }
+ },
+ {
   "expediente": "SOL-2026-0158",
   "tecnico": "Diana Portillo — Técnico de Soporte",
   "seleccionadoPor": "Carlos González — Encargado de Soporte",

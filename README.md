@@ -13,10 +13,59 @@ mes y el reporte final de auditoría.
 
 ---
 
+## Modelo de datos: el DER manda
+
+La fuente de verdad del modelo es **`analisis/derfinal.png`**. Dos reglas suyas atraviesan todo el
+prototipo y conviene tenerlas presentes antes de tocar nada:
+
+1. **Un equipo acumula varios ciclos (ET y EU) a lo largo de su vida útil.** Cada reingreso a
+   Hardware abre un Expediente técnico nuevo y, con él, un Expediente único nuevo; los anteriores
+   quedan cerrados como histórico y **nunca se sobrescriben**.
+2. **Cada eslabón guarda su FK.** `EXPEDIENTE_UNICO` guarda su equipo (`inventario`) y su
+   `expedienteTecnico`; el F0288 guarda su ET y su equipo; la asignación, su EU. **El histórico no
+   se reconstruye buscando «el último ET del equipo»**: con dos ciclos, esa pregunta devuelve el ET
+   de hoy aunque se esté consultando un expediente de hace un año.
+
+En el código eso se traduce en dos consultas con nombres distintos, y usar la equivocada es el
+error fácil:
+
+| Para saber… | Se usa | Nunca |
+|---|---|---|
+| qué se está preparando **ahora** de este equipo | `cicloAbiertoDeEquipo(inventario)` | — |
+| el ET **de un proceso o expediente** | `expTecnicoDeExpedienteUnico(eu)` · `codigoEtDeProceso(expediente)` | buscar por equipo |
+| el histórico completo | `ciclosDeEquipo(inventario)` → `CicloEquipo[]` | ordenar ET por fecha |
+
+El flujo completo del DER es:
+
+```text
+EQUIPO → ET → preparación → F0288 → PREPARADO → EU → ASIGNACION → configuración → F0302
+      → ENTREGA → CONFORMIDAD → GARANTIA → REPROCESOS → DESCARGA → MOVIMIENTO
+      → REINGRESO_HARDWARE → (un Encargado decide) → nuevo ET
+```
+
+con tres matices que el DER anota expresamente: un **reproceso no abre ciclo** (corrige el
+actual), la **descarga cierra** el ciclo y genera un `MOVIMIENTO_EQUIPO` de tipo `DESCARGA`, y el
+**reingreso a Hardware genera movimiento pero no crea el ET**: eso lo decide un Encargado.
+
+La **garantía de proveedor** pertenece al equipo y corre desde la adquisición (existe aunque nadie
+haya recibido el equipo); la **responsabilidad interna** pertenece al ciclo y solo nace con la
+conformidad **aceptada**. Son dos registros distintos, no dos fechas del mismo.
+
+El detalle de la alineación está en `ajuste-prototipo-2026-09-16.md`.
+
 ## Organización territorial y roles
 
-La estructura organizacional es **Zona → Departamento → Dirección/Registro**
-(`public/assets/data/territorio.json`, compartido con Controles Mensuales). El **Técnico de
+La estructura organizacional del DER es
+**Zona → Departamento → Dirección → Área → Usuario final**
+(`public/assets/data/territorio.json`, compartido con Controles Mensuales), con dos catálogos que
+clasifican: `CATALOGO_UNIDAD` dice qué unidad institucional es una Dirección (IGCN, RC, RPRH…) y
+`CATALOGO_AREA`, qué área es un `AREA_UNIDAD` (Atención al Cliente, Archivo General…). El
+**usuario final pertenece a un área**, y de ahí se deducen su Dirección, su unidad, su
+departamento y su zona; se recorre en la pantalla **Estructura organizativa**.
+
+`UBICACION` es cosa aparte y a propósito: son **lugares físicos** (bodega, taller, sala técnica,
+oficina), origen y destino de los movimientos de equipo. Una Dirección/Registro no es una
+ubicación. El **Técnico de
 Configuración** se filtra con la regla territorial: en San Salvador, por Dirección/Registro; en
 los demás departamentos, por Departamento completo —quien responde por Santa Ana atiende sus
 cuatro Direcciones/Registros—. Si no hay responsable, la creación del Expediente Único se bloquea
@@ -113,9 +162,14 @@ src/app/
                    expediente-tecnico · expediente-unico · preparacion-tecnica (F0288)
                    configuracion (F0302) · entrega-aceptacion · formulario-conformidad (vista externa)
                    garantia · generador-documentos · reporte-final · trazabilidad · administracion
+                   estructura-organizativa (módulo organizacional del DER, solo consulta)
   shared/          ui.ts (badges, tooltips de ayuda, modal, pipe marca+modelo) · icon.ts
 public/assets/
-  data/            13 archivos JSON con los datos simulados
+  data/            24 archivos JSON con los datos simulados
+                   territorio.json         zonas, departamentos, direcciones, catálogos,
+                                           áreas, usuarios finales y ubicaciones
+                   catalogo-equipos.json   CATEGORIA_EQUIPO · TIPO_EQUIPO · ACCESORIO_EQUIPO
+                   movimientos-equipo.json MOVIMIENTO_EQUIPO (se reconstruye en el primer arranque)
   logos/ fonts/    recursos institucionales
 ```
 

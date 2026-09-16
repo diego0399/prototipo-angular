@@ -39,7 +39,9 @@
     ]
    }
   ],
-  "nota": "La aceptación del usuario final mediante el formulario externo inició la garantía; queda anexada al expediente único del equipo."
+  "nota": "La aceptación del usuario final mediante el formulario externo inició la garantía; queda anexada al expediente único del equipo.",
+  "expedienteUnico": "EXP-2026-0001",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0132",
@@ -89,7 +91,9 @@
     ]
    }
   ],
-  "nota": "Caso atendido dentro del período de garantía de un mes y anexado al expediente único."
+  "nota": "Caso atendido dentro del período de garantía de un mes y anexado al expediente único.",
+  "expedienteUnico": "",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2025-0210",
@@ -101,6 +105,31 @@
   "fechaVencimiento": "2026-01-02",
   "estado": "Vencida",
   "casos": [],
-  "nota": "Garantía del proceso 2025 vencida sin casos; el expediente sigue consultable como histórico."
+  "nota": "Garantía del proceso 2025 vencida sin casos; el expediente sigue consultable como histórico.",
+  "expedienteUnico": "EXP-2025-0025",
+  "ciclo": 1
+ },
+ {
+  "expediente": "SOL-2026-0150",
+  "expedienteUnico": "EXP-2026-0010",
+  "ciclo": 1,
+  "equipo": "Dell OptiPlex 5090",
+  "inventario": "2201-1300-2026",
+  "usuarioFinal": "J. Ramírez — Santa Ana",
+  "fechaAceptacion": "2026-05-12",
+  "fechaInicio": "2026-05-12",
+  "fechaVencimiento": "2026-06-12",
+  "estado": "Cerrado",
+  "casos": [],
+  "nota": "Responsabilidad interna del ciclo 1, iniciada con la conformidad aceptada del usuario final. Cerrada por el descargo del equipo.",
+  "tipoGarantia": "Responsabilidad interna",
+  "fechaAdquisicion": "2026-04-13",
+  "inicioProveedor": "",
+  "vencimientoProveedor": "",
+  "inicioInterna": "2026-05-12",
+  "vencimientoInterna": "2026-06-12",
+  "proveedor": "Proveedor institucional",
+  "observacionesGarantia": "",
+  "modificaciones": []
  }
 ]

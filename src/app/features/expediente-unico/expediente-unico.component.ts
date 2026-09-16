@@ -485,15 +485,28 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                 <dl class="dl">
                   <dt>Código único</dt><dd>{{ x.codigoUnico }}</dd>
                   <dt>Solicitud</dt><dd>{{ x.expediente }} · {{ solicitudDe(x)?.tipoEquipo | tipoRequerimiento }}</dd>
+                  <!-- El EU guarda su equipo y su expediente técnico: no se deducen del equipo,
+                       porque un equipo acumula varios ciclos y cada uno tiene los suyos. -->
+                  <dt>Ciclo del equipo</dt>
+                  <dd>
+                    Ciclo {{ x.ciclo }}
+                    <span class="chip">{{ x.fechaCierre ? 'Histórico · cerrado ' + x.fechaCierre : 'En curso' }}</span>
+                  </dd>
+                  <dt>Expediente técnico</dt>
+                  <dd class="mono">{{ x.expedienteTecnico || '—' }} <span class="chip">Guardado en el expediente</span></dd>
+                  <dt>Apertura</dt><dd>{{ x.fechaApertura || '—' }}</dd>
                   <dt>Estado</dt><dd>{{ x.resumenEstado }}</dd>
                   @if (x.fechaEntrega) { <dt>Fecha de entrega</dt><dd>{{ x.fechaEntrega }}</dd> }
+                  @if (x.observaciones) { <dt>Observaciones</dt><dd>{{ x.observaciones }}</dd> }
                 </dl>
               </div>
               <div>
                 <div class="sec-title">Equipo y usuario final</div>
                 <dl class="dl">
                   <dt>Equipo</dt><dd>{{ equipoDe(x) }}</dd>
-                  <dt>Inventario</dt><dd>{{ solicitudDe(x)?.equipoInventario }}</dd>
+                  <dt>Inventario</dt><dd class="mono">{{ x.inventario || solicitudDe(x)?.equipoInventario }}</dd>
+                  <dt>Área del usuario final</dt>
+                  <dd>{{ rutaOrganizativa(x) || '—' }}</dd>
                   <dt>Nombre del equipo</dt><dd class="mono">{{ configDe(x)?.datos?.nombrePC || '—' }}</dd>
                   <dt>Reserva de IP</dt><dd>{{ configDe(x)?.datos?.requiereReservaIP || '—' }}</dd>
                   <dt>IP reservada</dt><dd class="mono">{{ data.textoIPReservada(configDe(x)) }}</dd>
@@ -1098,8 +1111,9 @@ export class ExpedienteUnicoComponent {
     const e = this.data.equipoDe(this.inventarioDe(id));
     return e ? `${e.marca} ${e.modelo}` : '—';
   }
+  /** ET de una solicitud: por su EU si ya existe; si no, el ciclo abierto del equipo asignado. */
   protected expTecnicoDeSolicitud(id: string): string {
-    return this.data.expTecnicoDeEquipo(this.inventarioDe(id))?.codigo ?? '—';
+    return this.data.expTecnicoDe(id)?.codigo ?? '—';
   }
   protected tecnicoPreparoDe(id: string): string {
     const t = this.data.expTecnicoDeEquipo(this.inventarioDe(id));
@@ -1184,9 +1198,22 @@ export class ExpedienteUnicoComponent {
   /** Falla del último intento F0302 con falla del proceso, si la hubo. */
   protected fallaDe(x: ExpedienteUnico) { return this.data.fallaVigenteDe(x.expediente); }
   /** Expediente técnico del equipo: no cambia por una falla en F0302. */
+  /**
+   * Expediente técnico de este Expediente único: **el que el EU guarda**, no el que el equipo
+   * tenga hoy. Un equipo con dos ciclos tiene dos ET, y un expediente cerrado debe seguir
+   * mostrando el suyo.
+   */
+  /**
+   * «Karla Rivas · Inscripción y Registro · Registro de la Propiedad Raíz e Hipotecas · San
+   * Salvador · Zona Central»: el lugar del usuario final en la organización, según el DER.
+   */
+  protected rutaOrganizativa(x: ExpedienteUnico): string {
+    return this.data.territorio.rutaOrganizativa(this.data.cadenaOrganizativaDeSolicitud(x.expediente));
+  }
   protected expTecnicoDe(x: ExpedienteUnico): string {
-    const inv = this.solicitudDe(x)?.equipoInventario ?? '';
-    return inv ? (this.data.expTecnicoDeEquipo(inv)?.codigo ?? '') : '';
+    if (x.expedienteTecnico) return x.expedienteTecnico;
+    const inv = x.inventario || (this.solicitudDe(x)?.equipoInventario ?? '');
+    return inv ? (this.data.cicloAbiertoDeEquipo(inv)?.codigo ?? '') : '';
   }
   /** Reproceso cuya constancia se consulta desde el expediente único. */
   protected verConstancia = signal('');

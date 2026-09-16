@@ -18,7 +18,11 @@
   "mac": "00:1A:2B:05:D1:11",
   "fechaAdquisicion": "2026-06-18",
   "fechaRecepcionInstitucional": "2026-06-18",
-  "proveedor": "Soluciones Informáticas del Pacífico"
+  "proveedor": "Soluciones Informáticas del Pacífico",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1321-2026",
@@ -39,7 +43,11 @@
   "mac": "00:1A:2B:05:D1:12",
   "fechaAdquisicion": "2026-06-18",
   "fechaRecepcionInstitucional": "2026-06-18",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1322-2026",
@@ -60,7 +68,11 @@
   "mac": "00:1A:2B:05:D1:13",
   "fechaAdquisicion": "2024-02-20",
   "fechaRecepcionInstitucional": "2024-02-20",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1323-2026",
@@ -81,7 +93,11 @@
   "mac": "00:1A:2B:05:D1:14",
   "fechaAdquisicion": "2026-06-25",
   "fechaRecepcionInstitucional": "2026-06-25",
-  "proveedor": "Soluciones Informáticas del Pacífico"
+  "proveedor": "Soluciones Informáticas del Pacífico",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1324-2026",
@@ -102,7 +118,11 @@
   "mac": "00:1A:2B:05:D1:15",
   "fechaAdquisicion": "2023-04-11",
   "fechaRecepcionInstitucional": "2023-04-11",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1325-2026",
@@ -123,7 +143,11 @@
   "mac": "00:1A:2B:05:D1:16",
   "fechaAdquisicion": "2023-09-05",
   "fechaRecepcionInstitucional": "2023-09-05",
-  "proveedor": "Grupo Tecnológico Centroamericano"
+  "proveedor": "Grupo Tecnológico Centroamericano",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1330-2026",
@@ -144,7 +168,11 @@
   "mac": "00:1A:2B:05:E2:01",
   "fechaAdquisicion": "2026-07-02",
   "fechaRecepcionInstitucional": "2026-07-02",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1331-2026",
@@ -165,7 +193,11 @@
   "mac": "00:1A:2B:05:E2:02",
   "fechaAdquisicion": "2026-07-02",
   "fechaRecepcionInstitucional": "2026-07-02",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0930-2022",
@@ -186,7 +218,11 @@
   "mac": "00:1A:2B:05:E2:03",
   "fechaAdquisicion": "2022-08-19",
   "fechaRecepcionInstitucional": "2022-08-19",
-  "proveedor": "Grupo Tecnológico Centroamericano"
+  "proveedor": "Grupo Tecnológico Centroamericano",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0941-2023",
@@ -207,7 +243,11 @@
   "mac": "00:1A:2B:05:E2:04",
   "fechaAdquisicion": "2023-03-14",
   "fechaRecepcionInstitucional": "2023-03-14",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1332-2026",
@@ -228,7 +268,11 @@
   "mac": "00:1A:2B:05:E2:05",
   "fechaAdquisicion": "2026-07-08",
   "fechaRecepcionInstitucional": "2026-07-08",
-  "proveedor": "Soluciones Informáticas del Pacífico"
+  "proveedor": "Soluciones Informáticas del Pacífico",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1333-2026",
@@ -249,7 +293,11 @@
   "mac": "00:1A:2B:05:E2:06",
   "fechaAdquisicion": "2026-07-08",
   "fechaRecepcionInstitucional": "2026-07-08",
-  "proveedor": "Soluciones Informáticas del Pacífico"
+  "proveedor": "Soluciones Informáticas del Pacífico",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0952-2023",
@@ -270,7 +318,11 @@
   "mac": "00:1A:2B:05:E2:07",
   "fechaAdquisicion": "2023-06-21",
   "fechaRecepcionInstitucional": "2023-06-21",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0963-2024",
@@ -291,7 +343,11 @@
   "mac": "00:1A:2B:05:E2:08",
   "fechaAdquisicion": "2024-01-30",
   "fechaRecepcionInstitucional": "2024-01-30",
-  "proveedor": "Grupo Tecnológico Centroamericano"
+  "proveedor": "Grupo Tecnológico Centroamericano",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1220-2026",
@@ -312,7 +368,11 @@
   "mac": "00:1A:2B:04:C4:05",
   "fechaAdquisicion": "2026-04-22",
   "fechaRecepcionInstitucional": "2026-05-04",
-  "proveedor": "Soluciones Informáticas del Pacífico"
+  "proveedor": "Soluciones Informáticas del Pacífico",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1215-2026",
@@ -333,7 +393,11 @@
   "mac": "00:1A:2B:04:BF:16",
   "fechaAdquisicion": "2026-03-21",
   "fechaRecepcionInstitucional": "2026-04-02",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1212-2026",
@@ -353,7 +417,11 @@
   "ingresadoPor": "Carlos González — Encargado de Soporte",
   "mac": "00:1A:2B:04:BC:27",
   "fechaAdquisicion": "2026-02-11",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1211-2026",
@@ -373,7 +441,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:04:BB:38",
   "fechaAdquisicion": "2026-03-12",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1210-2026",
@@ -394,7 +466,11 @@
   "mac": "00:1A:2B:04:BA:49",
   "fechaAdquisicion": "2026-02-20",
   "fechaRecepcionInstitucional": "2026-03-04",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1300-2026",
@@ -414,7 +490,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:05:14:5A",
   "fechaAdquisicion": "2026-04-13",
-  "proveedor": "Proveedor institucional"
+  "proveedor": "Proveedor institucional",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0918-2022",
@@ -434,7 +514,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:96:6B",
   "fechaAdquisicion": "2022-05-14",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0922-2023",
@@ -454,7 +538,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:9A:7C",
   "fechaAdquisicion": "2023-06-15",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1150-2025",
@@ -475,7 +563,11 @@
   "mac": "00:1A:2B:04:7E:8D",
   "fechaAdquisicion": "2026-05-01",
   "fechaRecepcionInstitucional": "2026-06-01",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0899-2023",
@@ -495,7 +587,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:83:9E",
   "fechaAdquisicion": "2023-07-16",
-  "proveedor": "Proveedor institucional"
+  "proveedor": "Proveedor institucional",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1201-2026",
@@ -516,7 +612,11 @@
   "mac": "00:1A:2B:04:B1:AF",
   "fechaAdquisicion": "2026-04-06",
   "fechaRecepcionInstitucional": "2026-05-06",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1187-2026",
@@ -536,7 +636,11 @@
   "ingresadoPor": "Carlos González — Encargado de Soporte",
   "fechaAdquisicion": "2026-02-27",
   "fechaRecepcionInstitucional": "2026-03-27",
-  "proveedor": "Proveedor institucional"
+  "proveedor": "Proveedor institucional",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1098-2026",
@@ -557,7 +661,11 @@
   "mac": "00:1A:2B:04:4A:D1",
   "fechaAdquisicion": "2026-01-18",
   "fechaRecepcionInstitucional": "2026-02-18",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0954-2023",
@@ -577,7 +685,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:BA:E2",
   "fechaAdquisicion": "2023-08-17",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0871-2024",
@@ -597,7 +709,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:67:F3",
   "fechaAdquisicion": "2024-09-18",
-  "proveedor": "COMTEC El Salvador"
+  "proveedor": "COMTEC El Salvador",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-LAP",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-1041-2026",
@@ -618,7 +734,11 @@
   "mac": "00:1A:2B:04:11:04",
   "fechaAdquisicion": "2026-03-15",
   "fechaRecepcionInstitucional": "2026-03-20",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0703-2021",
@@ -638,7 +758,11 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:02:BF:15",
   "fechaAdquisicion": "2021-01-10",
-  "proveedor": "Proveedor institucional"
+  "proveedor": "Proveedor institucional",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  },
  {
   "inventario": "2201-0788-2022",
@@ -658,6 +782,10 @@
   "ingresadoPor": "Samuel Cruz — Encargado de Hardware",
   "mac": "00:1A:2B:03:14:26",
   "fechaAdquisicion": "2022-02-11",
-  "proveedor": "Distribuidora Tecnológica S.A. de C.V."
+  "proveedor": "Distribuidora Tecnológica S.A. de C.V.",
+  "categoriaId": "CAT-COMP",
+  "tipoEquipoId": "TIP-CPU",
+  "ubicacionActualId": null,
+  "areaUnidadId": null
  }
 ]

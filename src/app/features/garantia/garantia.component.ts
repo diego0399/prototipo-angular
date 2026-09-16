@@ -22,6 +22,12 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, EvidenciasComponent,
     SelectorSoporteComponent],
   styles: `
+    /* Las dos pertenencias del DER, una al lado de la otra: equipo vs. ciclo. */
+    .g-pertenencia { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; }
+    .g-pertenencia .pert { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); padding: 9px 12px; }
+    .g-pertenencia .pert b { display: block; font-size: 12.5px; color: var(--navy-900); }
+    .g-pertenencia .pert span { display: block; font-size: 11.5px; color: var(--tx-2); margin-top: 2px; }
+
     .exp-cod { font-family: var(--font-mono, monospace); font-size: 12.5px; font-weight: 700; color: var(--navy-900); }
     .caso { border: 1px solid var(--line); border-radius: var(--r-md); padding: 12px 14px; margin-top: 10px; }
     .caso .c-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -178,9 +184,35 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
           </div>
           <div class="card-body">
             <!-- Detalle de la vigencia: de qué garantía se trata, desde cuándo y por qué -->
+            <!-- El DER separa dos garantías que no son la misma cosa: la de PROVEEDOR pertenece al
+                 EQUIPO y corre desde la adquisición (existe aunque nadie haya recibido el equipo);
+                 la INTERNA pertenece al CICLO y solo nace con la conformidad ACEPTADA. -->
+            <div class="g-pertenencia mb-2">
+              <div class="pert">
+                <b>Garantía de proveedor</b>
+                <span>Pertenece al equipo {{ g.inventario }} · desde la adquisición</span>
+                @if (proveedorDeEquipo(g); as gp) {
+                  <span class="mono">{{ gp.fechaInicio || '—' }} → {{ gp.fechaVencimiento || '—' }} · {{ gp.estado }}</span>
+                } @else {
+                  <span>Sin fecha de adquisición registrada: no se puede calcular.</span>
+                }
+              </div>
+              <div class="pert">
+                <b>Responsabilidad interna</b>
+                <span>
+                  Pertenece al ciclo {{ g.ciclo || '—' }}
+                  @if (g.expedienteUnico) { · expediente único {{ g.expedienteUnico }} }
+                </span>
+                <span class="mono">
+                  @if (g.inicioInterna) { {{ g.inicioInterna }} → {{ g.vencimientoInterna || '—' }} }
+                  @else { Se inicia con la conformidad aceptada del usuario final }
+                </span>
+              </div>
+            </div>
             <div class="g-detalle">
               <div><span>Tipo de equipo</span><b>{{ condicionDe(g) || '—' }}</b></div>
               <div><span>Tipo de garantía</span><b>{{ g.tipoGarantia || '—' }}</b></div>
+              <div><span>Expediente técnico del ciclo</span><b class="mono">{{ expTecnico(g) || '—' }}</b></div>
               <div><span>Fecha de adquisición</span><b class="mono">{{ g.fechaAdquisicion || 'Sin registrar' }}</b></div>
               <div><span>Proveedor</span><b>{{ g.proveedor || 'No consta' }}</b></div>
               <div><span>Fecha de aceptación del Usuario Final</span><b class="mono">{{ g.fechaAceptacion }}</b></div>
@@ -1046,8 +1078,17 @@ export class GarantiaComponent {
   }
 
   // ---------- Revisión técnica de garantía ----------
+  /** Garantía de proveedor del equipo: existe desde la adquisición y no pertenece a ningún ciclo. */
+  protected proveedorDeEquipo(g: Garantia) {
+    return this.data.garantiaProveedorDeEquipo(g.inventario);
+  }
+
+  /**
+   * Expediente técnico del ciclo al que pertenece la garantía, leído por la FK de su Expediente
+   * único. Una garantía de un ciclo cerrado debe seguir mostrando el ET con el que se entregó.
+   */
   protected expTecnico(g: Garantia): string {
-    return this.data.expTecnicoDeEquipo(g.inventario)?.codigo ?? '';
+    return this.data.codigoEtDeProceso(g.expediente, g.inventario) ?? '';
   }
 
   /** Revisión técnica generada para el caso, si la hay. */

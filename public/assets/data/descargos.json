@@ -11,6 +11,9 @@
   "observaciones": "Usuario final cambió de puesto; el equipo se reingresa a Hardware para una nueva preparación.",
   "accionPosterior": "Reingresar a Hardware",
   "encargadoDestino": "Encargado de Hardware",
-  "estado": "Procesado"
+  "estado": "Procesado",
+  "expedienteTecnicoAnterior": "EXP-PT-2026-0093",
+  "ciclo": 1,
+  "expedienteUnicoAnterior": "EXP-2026-0010"
  }
 ]

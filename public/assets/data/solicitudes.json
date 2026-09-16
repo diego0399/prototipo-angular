@@ -23,7 +23,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RPRH"
+  "direccionRegistroId": "SS-RPRH",
+  "areaUnidadId": "AU-SS-RPRH-INS",
+  "usuarioFinalId": "UF-05712"
  },
  {
   "expediente": "SOL-2026-0160",
@@ -49,7 +51,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RC"
+  "direccionRegistroId": "SS-RC",
+  "areaUnidadId": "AU-SS-RC-INS",
+  "usuarioFinalId": "UF-05718"
  },
  {
   "expediente": "SOL-2026-0161",
@@ -75,7 +79,9 @@
   "nota": "Caso de demostración del bloqueo: el Instituto Geográfico y del Catastro Nacional (IGCN) no tiene Técnico de Soporte asignado, así que este requerimiento no puede crear Expediente único hasta que se le asigne uno en SISGOST — Controles Mensuales.",
   "zonaId": "ZCEN",
   "departamentoId": "CAB",
-  "direccionRegistroId": "CAB-IGCN"
+  "direccionRegistroId": "CAB-IGCN",
+  "areaUnidadId": "AU-CAB-IGCN-ARCH",
+  "usuarioFinalId": "UF-05723"
  },
  {
   "expediente": "SOL-2026-0162",
@@ -101,7 +107,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RGM"
+  "direccionRegistroId": "SS-RGM",
+  "areaUnidadId": "AU-SS-RGM-ADM",
+  "usuarioFinalId": "UF-05729"
  },
  {
   "expediente": "SOL-2026-0163",
@@ -127,7 +135,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "SON",
-  "direccionRegistroId": "SON-RPRH"
+  "direccionRegistroId": "SON-RPRH",
+  "areaUnidadId": "AU-SON-RPRH-ADM",
+  "usuarioFinalId": "UF-05734"
  },
  {
   "expediente": "SOL-2026-0164",
@@ -153,7 +163,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-IGCN"
+  "direccionRegistroId": "SS-IGCN",
+  "areaUnidadId": "AU-SS-IGCN-CAT",
+  "usuarioFinalId": "UF-05740"
  },
  {
   "expediente": "SOL-2026-0165",
@@ -179,7 +191,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-ISPI"
+  "direccionRegistroId": "SS-ISPI",
+  "areaUnidadId": "AU-SS-ISPI-INS",
+  "usuarioFinalId": "UF-05744"
  },
  {
   "expediente": "SOL-2026-0166",
@@ -205,7 +219,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-DIR",
+  "usuarioFinalId": "UF-05750"
  },
  {
   "expediente": "SOL-2026-0167",
@@ -231,7 +247,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RGM"
+  "direccionRegistroId": "SS-RGM",
+  "areaUnidadId": "AU-SS-RGM-INS",
+  "usuarioFinalId": "UF-05755"
  },
  {
   "expediente": "SOL-2026-0168",
@@ -257,7 +275,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RPRH"
+  "direccionRegistroId": "SS-RPRH",
+  "areaUnidadId": "AU-SS-RPRH-INS",
+  "usuarioFinalId": "UF-05761"
  },
  {
   "expediente": "SOL-2026-0169",
@@ -283,7 +303,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-IGCN"
+  "direccionRegistroId": "SS-IGCN",
+  "areaUnidadId": "AU-SS-IGCN-CAT",
+  "usuarioFinalId": "UF-05766"
  },
  {
   "expediente": "SOL-2026-0170",
@@ -309,7 +331,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "SON",
-  "direccionRegistroId": "SON-RPRH"
+  "direccionRegistroId": "SON-RPRH",
+  "areaUnidadId": "AU-SON-RPRH-INS",
+  "usuarioFinalId": "UF-05772"
  },
  {
   "expediente": "SOL-2026-0171",
@@ -335,7 +359,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RC"
+  "direccionRegistroId": "SS-RC",
+  "areaUnidadId": "AU-SS-RC-INS",
+  "usuarioFinalId": "UF-05778"
  },
  {
   "expediente": "SOL-2026-0172",
@@ -361,7 +387,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-ISPI"
+  "direccionRegistroId": "SS-ISPI",
+  "areaUnidadId": "AU-SS-ISPI-ATC",
+  "usuarioFinalId": "UF-05783"
  },
  {
   "expediente": "SOL-2026-0173",
@@ -387,7 +415,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-ATC",
+  "usuarioFinalId": "UF-05789"
  },
  {
   "expediente": "SOL-2026-0158",
@@ -413,7 +443,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "SON",
-  "direccionRegistroId": "SON-RPRH"
+  "direccionRegistroId": "SON-RPRH",
+  "areaUnidadId": "AU-SON-RPRH-INS",
+  "usuarioFinalId": "UF-05634"
  },
  {
   "expediente": "SOL-2026-0157",
@@ -439,7 +471,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-IGCN"
+  "direccionRegistroId": "SS-IGCN",
+  "areaUnidadId": "AU-SS-IGCN-CAT",
+  "usuarioFinalId": "UF-05628"
  },
  {
   "expediente": "SOL-2026-0156",
@@ -465,7 +499,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-ATC",
+  "usuarioFinalId": "UF-05610"
  },
  {
   "expediente": "SOL-2026-0155",
@@ -491,7 +527,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RGM"
+  "direccionRegistroId": "SS-RGM",
+  "areaUnidadId": "AU-SS-RGM-INS",
+  "usuarioFinalId": "UF-05512"
  },
  {
   "expediente": "SOL-2026-0154",
@@ -517,7 +555,9 @@
   "nota": "La Dirección decide la asignación de la laptop; el Encargado de Soporte la registra y ejecuta en SISGOST.",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-ATC",
+  "usuarioFinalId": "UF-05489"
  },
  {
   "expediente": "SOL-2026-0153",
@@ -543,7 +583,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RPRH"
+  "direccionRegistroId": "SS-RPRH",
+  "areaUnidadId": "AU-SS-RPRH-INS",
+  "usuarioFinalId": "UF-05377"
  },
  {
   "expediente": "SOL-2026-0152",
@@ -569,7 +611,9 @@
   "nota": "La Dirección decide la asignación de la laptop; el Encargado de Soporte la registra y ejecuta en SISGOST.",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-IGCN"
+  "direccionRegistroId": "SS-IGCN",
+  "areaUnidadId": "AU-SS-IGCN-CAT",
+  "usuarioFinalId": "UF-05244"
  },
  {
   "expediente": "SOL-2026-0151",
@@ -595,7 +639,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "SON",
-  "direccionRegistroId": "SON-RPRH"
+  "direccionRegistroId": "SON-RPRH",
+  "areaUnidadId": "AU-SON-RPRH-INS",
+  "usuarioFinalId": "UF-05198"
  },
  {
   "expediente": "SOL-2026-0150",
@@ -611,7 +657,7 @@
   "direccionId": "STA",
   "unidadId": "STA::STA-RPRH",
   "correoDestinatario": "jramirez@cnr.gob.sv",
-  "estado": "Asignada",
+  "estado": "Entregado",
   "fecha": "2026-05-05",
   "diasEnFase": 0,
   "pendiente": "Equipo descargado el 14/07/2026 y reingresado a Hardware; disponible para una nueva asignación una vez reparado.",
@@ -621,7 +667,9 @@
   "nota": "Ejemplo de ciclo múltiple: el mismo equipo fue asignado, descargado por cambio de puesto del usuario final y reingresó a Hardware para una nueva preparación (ver Historial técnico del equipo).",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-ATC",
+  "usuarioFinalId": "UF-05340"
  },
  {
   "expediente": "SOL-2026-0147",
@@ -647,7 +695,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RPRH"
+  "direccionRegistroId": "SS-RPRH",
+  "areaUnidadId": "AU-SS-RPRH-INS",
+  "usuarioFinalId": "UF-05230"
  },
  {
   "expediente": "SOL-2026-0146",
@@ -673,7 +723,9 @@
   "nota": "La Dirección decide la asignación de la laptop; el Encargado de Soporte la registra y ejecuta en SISGOST.",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RGM"
+  "direccionRegistroId": "SS-RGM",
+  "areaUnidadId": "AU-SS-RGM-ATC",
+  "usuarioFinalId": "UF-04987"
  },
  {
   "expediente": "SOL-2026-0145",
@@ -699,7 +751,9 @@
   "nota": "La Dirección decide la asignación de la laptop; el Encargado de Soporte registra y ejecuta esa asignación dentro del sistema.",
   "zonaId": "ZOC",
   "departamentoId": "STA",
-  "direccionRegistroId": "STA-RPRH"
+  "direccionRegistroId": "STA-RPRH",
+  "areaUnidadId": "AU-STA-RPRH-DIR",
+  "usuarioFinalId": "UF-04512"
  },
  {
   "expediente": "SOL-2026-0144",
@@ -725,7 +779,9 @@
   "nota": "",
   "zonaId": "ZOC",
   "departamentoId": "SON",
-  "direccionRegistroId": "SON-RPRH"
+  "direccionRegistroId": "SON-RPRH",
+  "areaUnidadId": "AU-SON-RPRH-INS",
+  "usuarioFinalId": "UF-05118"
  },
  {
   "expediente": "SOL-2026-0141",
@@ -751,7 +807,9 @@
   "nota": "",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-IGCN"
+  "direccionRegistroId": "SS-IGCN",
+  "areaUnidadId": "AU-SS-IGCN-INF",
+  "usuarioFinalId": "UF-03287"
  },
  {
   "expediente": "SOL-2026-0139",
@@ -777,7 +835,9 @@
   "nota": "La Dirección decidió la asignación; el Encargado de Soporte la registró y ejecutó.",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RC"
+  "direccionRegistroId": "SS-RC",
+  "areaUnidadId": "AU-SS-RC-ATC",
+  "usuarioFinalId": "UF-02901"
  },
  {
   "expediente": "SOL-2026-0132",
@@ -803,7 +863,9 @@
   "nota": "Asignado por el Encargado de Hardware con autorización; motivo registrado en la observación obligatoria.",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-ISPI"
+  "direccionRegistroId": "SS-ISPI",
+  "areaUnidadId": "AU-SS-ISPI-INS",
+  "usuarioFinalId": "UF-04773"
  },
  {
   "expediente": "SOL-2025-0210",
@@ -829,7 +891,9 @@
   "nota": "Proceso del año 2025 cerrado; se conserva visible y consultable junto a los expedientes del año actual.",
   "zonaId": "ZCEN",
   "departamentoId": "SS",
-  "direccionRegistroId": "SS-RPRH"
+  "direccionRegistroId": "SS-RPRH",
+  "areaUnidadId": "AU-SS-RPRH-INS",
+  "usuarioFinalId": "UF-04102"
  },
  {
   "expediente": "SOL-2026-0181",
@@ -855,7 +919,9 @@
   "equipoInventario": "2201-1401-2026",
   "motivo": "Reposición de equipo con más de siete años de uso.",
   "prioridad": "Media",
-  "nota": "Zona Oriental: el responsable es el soporte asignado a TODO el departamento de San Miguel, no a este Registro en particular."
+  "nota": "Zona Oriental: el responsable es el soporte asignado a TODO el departamento de San Miguel, no a este Registro en particular.",
+  "areaUnidadId": "AU-SM-RPRH-INS",
+  "usuarioFinalId": "UF-05840"
  },
  {
   "expediente": "SOL-2026-0182",
@@ -881,7 +947,9 @@
   "equipoInventario": "2201-1402-2026",
   "motivo": "Puesto de trabajo con desplazamiento a ventanillas externas.",
   "prioridad": "Media",
-  "nota": "Misma responsable que el Registro de la Propiedad Raíz e Hipotecas de San Miguel: la distribución es departamental."
+  "nota": "Misma responsable que el Registro de la Propiedad Raíz e Hipotecas de San Miguel: la distribución es departamental.",
+  "areaUnidadId": "AU-SM-RC-ATC",
+  "usuarioFinalId": "UF-05847"
  },
  {
   "expediente": "SOL-2026-0183",
@@ -907,7 +975,9 @@
   "equipoInventario": "",
   "motivo": "Apertura de una nueva ventanilla de atención.",
   "prioridad": "Alta",
-  "nota": "Caso de demostración del bloqueo: Ahuachapán no tiene Técnico de Soporte asignado, así que Gestión de Equipos no permite crear el Expediente único hasta configurar la distribución."
+  "nota": "Caso de demostración del bloqueo: Ahuachapán no tiene Técnico de Soporte asignado, así que Gestión de Equipos no permite crear el Expediente único hasta configurar la distribución.",
+  "areaUnidadId": "AU-AHU-IGCN-CAT",
+  "usuarioFinalId": "UF-05861"
  },
  {
   "expediente": "SOL-2026-0184",
@@ -933,6 +1003,8 @@
   "equipoInventario": "2201-1403-2026",
   "motivo": "Incorporación de personal al área de catastro.",
   "prioridad": "Media",
-  "nota": "La Libertad la atiende Carlos González, que además de Encargado de Soporte tiene el rol Técnico de Soporte."
+  "nota": "La Libertad la atiende Carlos González, que además de Encargado de Soporte tiene el rol Técnico de Soporte.",
+  "areaUnidadId": "AU-LIB-IGCN-CAT",
+  "usuarioFinalId": "UF-05852"
  }
 ]

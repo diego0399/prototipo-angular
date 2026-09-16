@@ -7,7 +7,7 @@ import {
   ComentarioCaso, Conformidad, ConfiguracionF0302, ConsultaInventario, ContextoEvidencia, CorreccionNoConformidad, Cronometro, Descargo,
   DetalleFallaF0302, DistribucionSoporte, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EquipoControles, EstadoControles, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
   EstadoAsignacionEquipo, EstadoDetalleGarantia, EstadoGarantia, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
-  ModificacionGarantia, TipoGarantia,
+  ModificacionGarantia, TipoGarantia, MovimientoEquipo, TipoMovimiento, AccesorioEquipo, CategoriaEquipo, TipoEquipo,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
@@ -18,6 +18,36 @@ import {
   RolSistema, ROLES, ROL_RESPONSABLE_SOPORTE, claveDeRol, etiquetaRoles, nombreRol, normalizaRoles,
   ordenaRoles, rolPrincipal
 } from '../models/roles';
+import { UsuarioFinal } from '../models/territorio';
+import { CadenaOrganizativa } from './territorio.service';
+
+/**
+ * **Un ciclo de vida completo del equipo**, tal como lo describe el DER: el EXPEDIENTE_TECNICO
+ * que lo abre, su F0288, el EXPEDIENTE_UNICO que ese ET habilitó, y todo lo que colgó de él hasta
+ * la descarga que lo cierra.
+ *
+ * Se arma **siguiendo las FK guardadas**, nunca buscando el registro más reciente del equipo: por
+ * eso el ciclo 1 de un equipo con tres ciclos sigue devolviendo su preparación, su configuración y
+ * su garantía de entonces, y no las de hoy.
+ */
+export interface CicloEquipo {
+  ciclo: number;
+  inventario: string;
+  expedienteTecnico: ExpedienteTecnico;
+  preparacion?: PreparacionF0288;
+  expedienteUnico?: ExpedienteUnico;
+  solicitud?: Solicitud;
+  asignacion?: Asignacion;
+  configuracion?: ConfiguracionF0302;
+  entrega?: Entrega;
+  conformidad?: Conformidad;
+  garantias: Garantia[];
+  reprocesos: ReprocesoF0288[];
+  descargo?: Descargo;
+  movimientos: MovimientoEquipo[];
+  /** `true` mientras ningún descargo lo haya cerrado. Como mucho un ciclo está abierto a la vez. */
+  abierto: boolean;
+}
 import { CatalogoTerritorial, ETIQUETA_TODO_EL_DEPARTAMENTO } from '../models/territorio';
 import { AuthService } from './auth.service';
 import { EvidenciaService } from './evidencia.service';
@@ -84,6 +114,17 @@ export class DataService {
   readonly eventos = signal<EventoTrazabilidad[]>([]);
   readonly ingresosHardware = signal<IngresoHardware[]>([]);
   readonly descargos = signal<Descargo[]>([]);
+  /**
+   * **MOVIMIENTO_EQUIPO**: el rastro físico del equipo. Lo alimentan la entrega (ASIGNACION), el
+   * descargo (DESCARGA), el reingreso a Hardware (REINGRESO_HARDWARE), los reprocesos y las
+   * salidas por garantía. Nunca se sobrescribe: cada movimiento es una fila más del historial.
+   */
+  readonly movimientos = signal<MovimientoEquipo[]>([]);
+  /** **ACCESORIO_EQUIPO**: lo que acompaña permanentemente al equipo (mouse, teclado, cargador). */
+  readonly accesoriosEquipo = signal<AccesorioEquipo[]>([]);
+  /** **CATEGORIA_EQUIPO** y **TIPO_EQUIPO**: los dos catálogos que clasifican un EQUIPO en el DER. */
+  readonly categoriasEquipo = signal<CategoriaEquipo[]>([]);
+  readonly tiposEquipo = signal<TipoEquipo[]>([]);
   /** Historial de intentos de aceptación (uno por cada envío del formulario; nunca se sobrescriben). */
   readonly intentos = signal<IntentoAceptacion[]>([]);
   /** Correcciones de no conformidad registradas por el Técnico de Soporte. */
@@ -187,6 +228,14 @@ export class DataService {
         });
     }
     if (this.hidratarDesdeLocalStorage()) {
+      // Los catálogos CATEGORIA_EQUIPO/TIPO_EQUIPO son de solo lectura: no viajan en la foto y se
+      // siembran siempre desde su JSON, igual que el catálogo institucional de equipos.
+      this.http.get<{ categorias: CategoriaEquipo[]; tipos: TipoEquipo[]; accesorios: AccesorioEquipo[] }>('assets/data/catalogo-equipos.json')
+        .subscribe((c) => {
+          this.categoriasEquipo.set(c.categorias ?? []);
+          this.tiposEquipo.set(c.tipos ?? []);
+          if (this.accesoriosEquipo().length === 0) this.accesoriosEquipo.set(c.accesorios ?? []);
+        });
       // El catálogo de software SÍ viaja dentro de la foto guardada (es administrable); si una
       // foto anterior a esta funcionalidad no lo trae, se siembra aparte desde el JSON original.
       if (this.catalogoSoftware().length === 0) {
@@ -225,6 +274,8 @@ export class DataService {
       ingresos: json<IngresoHardware[]>('ingresos-hardware'),
       descargos: json<Descargo[]>('descargos'),
       reprocesos: json<ReprocesoF0288[]>('reprocesos-f0288'),
+      movimientos: json<MovimientoEquipo[]>('movimientos-equipo'),
+      catalogoEquipos: json<{ categorias: CategoriaEquipo[]; tipos: TipoEquipo[]; accesorios: AccesorioEquipo[] }>('catalogo-equipos'),
       distribuciones: json<DistribucionSoporte[]>('distribucion-soportes'),
       organizacion: json<DireccionOrganizacion[]>('direcciones'),
       catalogoSoftware: json<SoftwareCatalogo[]>('catalogo-software')
@@ -245,6 +296,10 @@ export class DataService {
       this.ingresosHardware.set(r.ingresos);
       this.descargos.set(r.descargos);
       this.reprocesos.set(this.normalizarReprocesos(r.reprocesos ?? []));
+      this.movimientos.set(r.movimientos ?? []);
+      this.categoriasEquipo.set(r.catalogoEquipos?.categorias ?? []);
+      this.tiposEquipo.set(r.catalogoEquipos?.tipos ?? []);
+      this.accesoriosEquipo.set(r.catalogoEquipos?.accesorios ?? []);
       // El catálogo organizacional se carga primero: resuelve nombre → ID estable, y la
       // distribución se normaliza contra él al entrar.
       this.soportes.cargarOrganizacion(r.organizacion ?? []);
@@ -267,6 +322,9 @@ export class DataService {
       // reportó una falla: se muestran con el bloque simulado, sin fotografía inventada.
       this.evid.hidratar(this.evidenciasDeFallasSembradas([]));
       this.asegurarIntentosDeConformidades();
+      // Los ciclos de vida (ET/EU) se dejan explícitos ANTES de abrir la aplicación: de aquí en
+      // adelante ninguna consulta vuelve a deducir «el último ET del equipo».
+      this.normalizarCicloDeVida();
       this.listo.set(true);
     });
   }
@@ -298,6 +356,378 @@ export class DataService {
     }
   }
 
+  // ================================================================================================
+  // CICLO DE VIDA DEL EQUIPO (DER)  ·  EQUIPO → ET → F0288 → EU → ASIGNACION → … → DESCARGA
+  // ================================================================================================
+  // El DER es explícito (nota 1): «un equipo puede tener varios ciclos (ET y EU) a lo largo de su
+  // vida útil». Cada ciclo se identifica con un número guardado —no deducido— y cada eslabón
+  // apunta al anterior con una FK real. Así, consultar un expediente de hace un año devuelve la
+  // preparación con la que se entregó y no la del ciclo que el equipo tenga hoy.
+
+  /**
+   * Deja explícitos el ciclo y las FK del DER sobre datos que nacieron sin ellos: el set de
+   * demostración, y cualquier foto de localStorage anterior a esta versión. Se ejecuta **una sola
+   * vez, al cargar**, y es idempotente: solo escribe lo que falta.
+   *
+   * Es el único lugar del sistema donde se infiere a qué ciclo pertenece un registro antiguo.
+   * De aquí en adelante el vínculo está guardado y nadie vuelve a buscar «el último ET».
+   */
+  private normalizarCicloDeVida(): void {
+    // ---- 1. EXPEDIENTE_TECNICO: numera los ciclos del equipo en orden de apertura.
+    const porEquipo = new Map<string, ExpedienteTecnico[]>();
+    for (const t of this.expedientesTecnicos()) {
+      const lista = porEquipo.get(t.inventario) ?? [];
+      lista.push(t);
+      porEquipo.set(t.inventario, lista);
+    }
+    const cicloDeEt = new Map<string, number>();
+    const inventarioDeEt = new Map<string, string>();
+    const ets: ExpedienteTecnico[] = [];
+    for (const [inventario, lista] of porEquipo) {
+      const orden = [...lista].sort((a, b) =>
+        (a.fechaApertura || a.fecha).localeCompare(b.fechaApertura || b.fecha) || a.codigo.localeCompare(b.codigo));
+      orden.forEach((t, i) => {
+        const ciclo = t.ciclo && t.ciclo > 0 ? t.ciclo : i + 1;
+        // El descargo es lo único que cierra un ciclo: de él sale la fecha de cierre real.
+        const descargo = this.descargos().find(
+          (d) => d.inventario === inventario && (d.expedienteTecnicoAnterior === t.codigo || d.ciclo === ciclo));
+        const fechaCierre = t.fechaCierre
+          ?? (t.estado === 'Cerrado' ? (descargo?.fechaDescargo ?? t.fecha) : '');
+        cicloDeEt.set(t.codigo, ciclo);
+        inventarioDeEt.set(t.codigo, inventario);
+        ets.push({ ...t, ciclo, fechaApertura: t.fechaApertura || t.fecha, fechaCierre });
+      });
+    }
+    if (ets.length) this.expedientesTecnicos.set(ets);
+
+    // ---- 2. EXPEDIENTE_UNICO: guarda su equipo y su ET. Para los EU heredados el ET se resuelve
+    // una única vez —el ET del equipo que estaba abierto cuando el EU se creó— y queda escrito.
+    const etDeEu = new Map<string, string>();
+    this.expedientesUnicos.update((list) => list.map((x) => {
+      const asig = this.asignaciones().find((a) => a.expediente === x.expediente);
+      const inventario = x.inventario || asig?.equipoInventario || '';
+      const apertura = x.fechaApertura
+        || this.eventos().find((e) => e.expedienteUnico === x.codigoUnico)?.fecha
+        || '';
+      // La asignación del set de datos ya guardaba el ET en `responsablesFase`: ese es el dato
+      // real y se prefiere siempre a cualquier deducción por fecha.
+      let codigoEt = x.expedienteTecnico || asig?.responsablesFase?.expedienteTecnico || '';
+      if (!codigoEt && inventario) {
+        const candidatos = (porEquipo.get(inventario) ?? [])
+          .map((t) => ({ t, apertura: t.fechaApertura || t.fecha }))
+          .sort((a, b) => a.apertura.localeCompare(b.apertura));
+        const previo = apertura ? candidatos.filter((c) => c.apertura <= apertura) : candidatos;
+        codigoEt = (previo.length ? previo[previo.length - 1] : candidatos[0])?.t.codigo ?? '';
+      }
+      if (codigoEt) etDeEu.set(x.expediente, codigoEt);
+      const ciclo = x.ciclo && x.ciclo > 0 ? x.ciclo : (cicloDeEt.get(codigoEt) ?? 1);
+      const descargo = this.descargos().find((d) => d.expedienteUnicoAnterior === x.codigoUnico);
+      return {
+        ...x,
+        inventario,
+        expedienteTecnico: codigoEt,
+        ciclo,
+        fechaApertura: apertura,
+        fechaCierre: x.fechaCierre ?? (x.estado === 'Cerrado' ? (descargo?.fechaDescargo ?? '') : '')
+      };
+    }));
+
+    // ---- 3. F0288: FK explícitas a EQUIPO y ciclo (el DER relaciona el F0288 con los dos).
+    this.preparaciones.update((list) => list.map((p) => ({
+      ...p,
+      inventario: p.inventario || p.datosGenerales?.inventario || inventarioDeEt.get(p.expedienteTecnico) || '',
+      ciclo: p.ciclo && p.ciclo > 0 ? p.ciclo : (cicloDeEt.get(p.expedienteTecnico) ?? 1)
+    })));
+
+    // ---- 4. ASIGNACION: FK al EU, al ciclo y al USUARIO_FINAL del módulo organizacional.
+    this.asignaciones.update((list) => list.map((a) => {
+      const eu = this.expedientesUnicos().find((x) => x.expediente === a.expediente);
+      const sol = this.solicitudes().find((x) => x.expediente === a.expediente);
+      return {
+        ...a,
+        expedienteUnico: a.expedienteUnico || eu?.codigoUnico || '',
+        ciclo: a.ciclo && a.ciclo > 0 ? a.ciclo : (eu?.ciclo ?? cicloDeEt.get(etDeEu.get(a.expediente) ?? '') ?? 1),
+        usuarioFinalId: a.usuarioFinalId
+          || this.territorio.buscaUsuarioFinal(sol?.carne ?? '', a.usuarioFinal)?.id
+          || ''
+      };
+    }));
+
+    // ---- 5. GARANTIA: la interna pertenece a su EU; la de proveedor, solo al equipo.
+    this.garantias.update((list) => list.map((g) => {
+      const eu = this.expedientesUnicos().find((x) => x.expediente === g.expediente);
+      return {
+        ...g,
+        expedienteUnico: g.expedienteUnico || eu?.codigoUnico || '',
+        ciclo: g.ciclo && g.ciclo > 0 ? g.ciclo : (eu?.ciclo ?? 1)
+      };
+    }));
+
+    // ---- 6. REPROCESO: vive dentro del ciclo que corrige; nunca abre uno nuevo (nota 4 del DER).
+    this.reprocesos.update((list) => list.map((r) => ({
+      ...r,
+      ciclo: r.ciclo && r.ciclo > 0 ? r.ciclo : (cicloDeEt.get(r.expedienteTecnico) ?? 1)
+    })));
+
+    // ---- 7. DESCARGA: cierra el ciclo, y guarda cuál cerró.
+    this.descargos.update((list) => list.map((d) => {
+      const eu = this.expedientesUnicos().find((x) => x.codigoUnico === d.expedienteUnicoAnterior);
+      const codigoEt = d.expedienteTecnicoAnterior || eu?.expedienteTecnico || '';
+      return {
+        ...d,
+        expedienteTecnicoAnterior: codigoEt,
+        ciclo: d.ciclo && d.ciclo > 0 ? d.ciclo : (eu?.ciclo ?? cicloDeEt.get(codigoEt) ?? 1)
+      };
+    }));
+
+    // ---- 8. EQUIPO: ciclo abierto y dónde está (UBICACION física / AREA_UNIDAD institucional).
+    this.equipos.update((list) => list.map((e) => {
+      const abierto = (porEquipo.get(e.inventario) ?? [])
+        .map((t) => this.expedientesTecnicos().find((x) => x.codigo === t.codigo)!)
+        .filter(Boolean)
+        .sort((a, b) => (b.ciclo ?? 0) - (a.ciclo ?? 0))[0];
+      const asig = this.asignaciones().find((a) => a.equipoInventario === e.inventario && a.vigente);
+      const area = asig ? this.areaUnidadDeAsignacion(asig) : null;
+      return {
+        ...e,
+        cicloActual: e.cicloActual ?? (abierto?.ciclo ?? 0),
+        areaUnidadId: e.areaUnidadId ?? area,
+        ubicacionActualId: e.ubicacionActualId ?? (asig ? null : this.ubicacionSegunEstado(e.inventario))
+      };
+    }));
+
+    // ---- 9. MOVIMIENTO_EQUIPO: el historial físico que el set de datos nunca registró. Se
+    // reconstruye una sola vez a partir de los hechos que sí constan —entregas, descargos y
+    // reingresos— para que la demostración arranque con el rastro completo.
+    if (this.movimientos().length === 0) this.sembrarMovimientosHistoricos();
+
+    // ---- 10. GARANTIA DE PROVEEDOR: **es del equipo, no de un ciclo**, y corre desde la fecha de
+    // adquisición. Existe aunque el equipo nunca se haya entregado a nadie, así que se crea para
+    // todo equipo con fecha de adquisición registrada, sin esperar a ninguna conformidad.
+    this.asegurarGarantiasDeProveedor();
+  }
+
+  /**
+   * Crea la garantía de proveedor de cada equipo que tenga fecha de adquisición y todavía no la
+   * tenga. Es idempotente. Estas filas llevan `expediente` y `expedienteUnico` vacíos —`id_exp_unico
+   * (NULL)` del DER— porque no pertenecen a ningún ciclo: pertenecen al equipo.
+   */
+  private asegurarGarantiasDeProveedor(): void {
+    const nuevas: Garantia[] = [];
+    for (const e of this.equipos()) {
+      if (!e.fechaAdquisicion || this.garantiaProveedorDeEquipo(e.inventario)) continue;
+      const vencimiento = this.sumarAnios(e.fechaAdquisicion, this.ANIOS_GARANTIA_PROVEEDOR);
+      nuevas.push({
+        expediente: '', expedienteUnico: '', equipo: `${e.marca} ${e.modelo}`, inventario: e.inventario,
+        usuarioFinal: '', fechaAceptacion: '',
+        fechaInicio: e.fechaAdquisicion, fechaVencimiento: vencimiento,
+        estado: vencimiento < this.hoy() ? 'Vencida' : 'Vigente',
+        casos: [],
+        nota: `Garantía de proveedor del equipo: ${this.ANIOS_GARANTIA_PROVEEDOR} años desde la adquisición `
+          + `(${e.fechaAdquisicion}). Pertenece al equipo y no depende de ninguna entrega ni conformidad.`,
+        tipoGarantia: 'Garantía de proveedor',
+        fechaAdquisicion: e.fechaAdquisicion,
+        inicioProveedor: e.fechaAdquisicion, vencimientoProveedor: vencimiento,
+        inicioInterna: '', vencimientoInterna: '',
+        proveedor: e.proveedor ?? '', observacionesGarantia: e.observacionGarantia ?? '',
+        modificaciones: []
+      });
+    }
+    if (nuevas.length) this.garantias.update((list) => [...list, ...nuevas]);
+  }
+
+  /** AREA_UNIDAD donde queda el equipo de una asignación, deducida de la solicitud que la originó. */
+  private areaUnidadDeAsignacion(a: Asignacion): string | null {
+    const sol = this.solicitudes().find((x) => x.expediente === a.expediente);
+    if (!sol) return null;
+    const uf = this.territorio.buscaUsuarioFinal(sol.carne, a.usuarioFinal);
+    if (uf) return uf.areaUnidadId;
+    return sol.direccionRegistroId ? (this.territorio.areaPorOmision(sol.direccionRegistroId)?.id ?? null) : null;
+  }
+
+  /** Ubicación física que corresponde a un equipo que NO está con un usuario final. */
+  private ubicacionSegunEstado(inventario: string): string {
+    if (this.ultimoDescargo(inventario) && this.estadoPreparacionEquipo(inventario) === 'Pendiente de preparación') {
+      return 'UBI-BOD-DESCARGO';
+    }
+    switch (this.estadoPreparacionEquipo(inventario)) {
+      case 'En preparación': return 'UBI-TALLER-HW';
+      case 'Preparado': return 'UBI-TALLER-SOP';
+      default: return 'UBI-BOD-CENTRAL';
+    }
+  }
+
+  /**
+   * Reconstruye el historial de MOVIMIENTO_EQUIPO del set de demostración. Solo corre cuando no
+   * hay ningún movimiento registrado: a partir de ahí los movimientos los generan los procesos
+   * (entrega, descargo, reingreso, reproceso y garantía) y esto no vuelve a ejecutarse.
+   */
+  private sembrarMovimientosHistoricos(): void {
+    const salida: MovimientoEquipo[] = [];
+    const nuevo = (m: Omit<MovimientoEquipo, 'id'>): void => {
+      salida.push({ id: `MOV-${String(salida.length + 1).padStart(4, '0')}`, ...m });
+    };
+    for (const e of this.entregas()) {
+      const asig = this.asignaciones().find((a) => a.expediente === e.expediente);
+      const sol = this.solicitudes().find((x) => x.expediente === e.expediente);
+      if (!asig) continue;
+      nuevo({
+        inventario: asig.equipoInventario, ubicacionOrigenId: 'UBI-TALLER-SOP',
+        direccionDestinoId: sol?.direccionRegistroId ?? null,
+        expedienteUnico: asig.expedienteUnico ?? null, ciclo: asig.ciclo ?? 1,
+        tipoMovimiento: 'ASIGNACION', motivo: 'Entrega del equipo al usuario final',
+        fecha: e.fechaEntrega || '', hora: '', usuarioRegistra: e.tecnicoEntrega,
+        observaciones: `Entregado a ${e.usuarioFinal}.`
+      });
+    }
+    for (const d of this.descargos()) {
+      const sol = this.solicitudes().find((x) => x.expediente === d.asignacionRelacionada);
+      nuevo({
+        inventario: d.inventario, direccionOrigenId: sol?.direccionRegistroId ?? null,
+        ubicacionDestinoId: 'UBI-BOD-DESCARGO', descargo: d.idDescargo,
+        expedienteUnico: d.expedienteUnicoAnterior ?? null, ciclo: d.ciclo ?? 1,
+        tipoMovimiento: 'DESCARGA', motivo: d.motivoDescargo,
+        fecha: d.fechaDescargo, hora: '', usuarioRegistra: d.responsableRegistro,
+        observaciones: `Estado físico recibido: ${d.estadoFisico}.`
+      });
+    }
+    for (const i of this.ingresosHardware().filter((x) => x.numeroIngreso > 1)) {
+      nuevo({
+        inventario: i.inventario, ubicacionOrigenId: 'UBI-BOD-DESCARGO', ubicacionDestinoId: 'UBI-TALLER-HW',
+        ciclo: this.expedientesTecnicos().find((t) => t.codigo === i.expedienteTecnicoAsociado)?.ciclo,
+        tipoMovimiento: 'REINGRESO_HARDWARE', motivo: i.motivoIngreso,
+        fecha: i.fechaIngreso, hora: i.horaIngreso, usuarioRegistra: i.ingresadoPor,
+        observaciones: i.observaciones
+      });
+    }
+    salida.sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+    this.movimientos.set(salida.map((m, i) => ({ ...m, id: `MOV-${String(salida.length - i).padStart(4, '0')}` })));
+  }
+
+  // ---------------------------------------------------------------- movimientos y ciclos (consulta)
+
+  /**
+   * Registra un MOVIMIENTO_EQUIPO y actualiza dónde está el equipo. Es el **único** camino por el
+   * que cambia `Equipo.ubicacionActualId` / `Equipo.areaUnidadId`: así la ubicación siempre tiene
+   * un movimiento que la explique, y el historial no puede quedar cojo.
+   */
+  registrarMovimiento(m: Omit<MovimientoEquipo, 'id' | 'fecha' | 'hora'> & { fecha?: string; hora?: string }): MovimientoEquipo {
+    const nuevo: MovimientoEquipo = {
+      id: this.siguienteCodigoPorAnio(`MOV-${this.anioActual()}-`, this.movimientos().map((x) => x.id)),
+      fecha: m.fecha ?? this.hoy(),
+      hora: m.hora ?? this.hora(),
+      ...m
+    };
+    this.movimientos.update((list) => [nuevo, ...list]);
+    this.equipos.update((list) => list.map((e) => (e.inventario === nuevo.inventario
+      ? {
+          ...e,
+          // El destino manda: si el movimiento va a una ubicación física, el equipo deja de estar
+          // en un área institucional, y al revés.
+          ubicacionActualId: nuevo.ubicacionDestinoId ?? (nuevo.direccionDestinoId ? null : e.ubicacionActualId),
+          areaUnidadId: nuevo.direccionDestinoId
+            ? (e.areaUnidadId ?? this.territorio.areaPorOmision(nuevo.direccionDestinoId)?.id ?? null)
+            : (nuevo.ubicacionDestinoId ? null : e.areaUnidadId)
+        }
+      : e)));
+    return nuevo;
+  }
+
+  /** Movimientos del equipo, del más reciente al más antiguo. Nunca se borra ninguno. */
+  movimientosDeEquipo(inventario: string): MovimientoEquipo[] {
+    return this.movimientos()
+      .filter((m) => m.inventario === inventario)
+      .sort((a, b) => (b.fecha + b.hora).localeCompare(a.fecha + a.hora));
+  }
+
+  /** Movimientos ocurridos dentro de un ciclo concreto del equipo. */
+  movimientosDeCiclo(inventario: string, ciclo: number): MovimientoEquipo[] {
+    return this.movimientosDeEquipo(inventario).filter((m) => m.ciclo === ciclo);
+  }
+
+  /** Texto de un extremo de un movimiento: la Dirección institucional o el lugar físico. */
+  extremoMovimiento(direccionId: string | null | undefined, ubicacionId: string | null | undefined): string {
+    if (ubicacionId) return this.territorio.ubicacion(ubicacionId)?.nombre ?? ubicacionId;
+    if (direccionId) return this.territorio.nombreRegistro(direccionId);
+    return '—';
+  }
+
+  /**
+   * Un ciclo completo de vida del equipo, **armado desde las FK guardadas**: el ET, su F0288, el
+   * EU que ese ET habilitó y todo lo que colgó de él. No hay ninguna deducción por fecha.
+   */
+  cicloDeEquipo(inventario: string, ciclo: number): CicloEquipo | undefined {
+    const et = this.expedientesTecnicosDeEquipo(inventario).find((t) => t.ciclo === ciclo);
+    if (!et) return undefined;
+    const eu = this.expedienteUnicoDeExpTecnico(et.codigo);
+    const proceso = eu?.expediente ?? '';
+    return {
+      ciclo,
+      inventario,
+      expedienteTecnico: et,
+      preparacion: this.preparacionPorCodigo(et.codigo),
+      expedienteUnico: eu,
+      solicitud: proceso ? this.solicitud(proceso) : undefined,
+      asignacion: this.asignaciones().find((a) => a.expediente === proceso),
+      configuracion: proceso ? this.configuraciones().find((c) => c.expediente === proceso) : undefined,
+      entrega: proceso ? this.entregas().find((e) => e.expediente === proceso) : undefined,
+      conformidad: proceso ? this.conformidades().find((c) => c.expediente === proceso) : undefined,
+      garantias: this.garantias().filter((g) => g.expedienteUnico === eu?.codigoUnico),
+      reprocesos: this.reprocesos().filter((r) => r.expedienteTecnico === et.codigo),
+      descargo: this.descargos().find((d) => d.expedienteTecnicoAnterior === et.codigo),
+      movimientos: this.movimientosDeCiclo(inventario, ciclo),
+      abierto: et.estado !== 'Cerrado' && !et.fechaCierre
+    };
+  }
+
+  /** Todos los ciclos del equipo, del más reciente al más antiguo. El histórico completo del DER. */
+  ciclosDeEquipo(inventario: string): CicloEquipo[] {
+    return this.expedientesTecnicosDeEquipo(inventario)
+      .map((t) => this.cicloDeEquipo(inventario, t.ciclo))
+      .filter((c): c is CicloEquipo => !!c);
+  }
+
+  /** El ciclo de un Expediente único, leído por sus FK. */
+  cicloDeExpedienteUnico(eu: ExpedienteUnico | undefined): CicloEquipo | undefined {
+    return eu?.inventario ? this.cicloDeEquipo(eu.inventario, eu.ciclo) : undefined;
+  }
+
+  // ---------------------------------------------------------------- módulo organizacional (DER)
+
+  /** USUARIO_FINAL de una solicitud, resuelto por carné (el identificador que ya traía). */
+  usuarioFinalDeSolicitud(id: string): UsuarioFinal | undefined {
+    const s = this.solicitud(id);
+    return s ? this.territorio.buscaUsuarioFinal(s.carne, s.destinatario) : undefined;
+  }
+
+  /**
+   * La cadena organizativa completa de un proceso: **Usuario final → Área → Dirección → Unidad →
+   * Departamento → Zona**. Si la solicitud no encuentra a su usuario final en el catálogo, la
+   * cadena arranca del área por omisión de su Dirección: se muestra hasta donde llega el dato.
+   */
+  cadenaOrganizativaDeSolicitud(id: string): CadenaOrganizativa {
+    const uf = this.usuarioFinalDeSolicitud(id);
+    if (uf) return this.territorio.cadenaDeUsuarioFinal(uf.id);
+    const s = this.solicitud(id);
+    const area = s?.direccionRegistroId ? this.territorio.areaPorOmision(s.direccionRegistroId) : undefined;
+    return area ? this.territorio.cadenaDeArea(area.id) : {};
+  }
+
+  /** Accesorios que pertenecen al equipo (ACCESORIO_EQUIPO del DER). */
+  accesoriosDeEquipo(inventario: string): AccesorioEquipo[] {
+    return this.accesoriosEquipo().filter((a) => a.inventario === inventario);
+  }
+
+  /** Categoría y tipo institucional del equipo, resueltos contra sus catálogos. */
+  categoriaDeEquipo(e: Equipo | undefined): CategoriaEquipo | undefined {
+    return e?.categoriaId ? this.categoriasEquipo().find((c) => c.id === e.categoriaId) : undefined;
+  }
+  tipoInstitucionalDeEquipo(e: Equipo | undefined): TipoEquipo | undefined {
+    if (!e) return undefined;
+    return this.tiposEquipo().find((t) => t.id === e.tipoEquipoId)
+      ?? this.tiposEquipo().find((t) => t.corta === e.tipo);
+  }
+
   /** Restaura el estado completo guardado en localStorage. Devuelve false si no hay nada o está corrupto. */
   private hidratarDesdeLocalStorage(): boolean {
     try {
@@ -325,12 +755,17 @@ export class DataService {
       this.intentos.set(d.intentos ?? []);
       this.correcciones.set(this.normalizarCorrecciones(d.correcciones ?? []));
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
+      this.movimientos.set(d.movimientos ?? []);
+      this.accesoriosEquipo.set(d.accesoriosEquipo ?? []);
       this.soportes.cargar(d.distribuciones ?? []);
       this.controles.set(this.controlesDeAceptacionesPrevias(d.controles ?? []));
       this.evid.hidratar(this.evidenciasDeFallasSembradas(d.evidencias ?? []));
       // Se normaliza al rehidratar: una foto anterior guardó el catálogo con aplicaF0288/aplicaF0302
       // y sin descripción ni licenciamiento; aquí se convierte al modelo por etapa del proceso.
       this.catalogoSoftware.set(this.normalizarCatalogoSoftware(d.catalogoSoftware ?? []));
+      // Una foto guardada antes de esta versión no trae ciclo ni las FK explícitas del DER: se
+      // completan aquí, una sola vez, contra el estado que ya existía.
+      this.normalizarCicloDeVida();
       return true;
     } catch {
       return false;
@@ -350,6 +785,7 @@ export class DataService {
         ingresosHardware: this.ingresosHardware(), descargos: this.descargos(),
         intentos: this.intentos(), correcciones: this.correcciones(),
         reprocesos: this.reprocesos(),
+        movimientos: this.movimientos(), accesoriosEquipo: this.accesoriosEquipo(),
         distribuciones: this.distribuciones(), controles: this.controles(),
         // Las imágenes de evidencia viven en su propio servicio, pero se guardan con el resto del
         // estado: si no, se perderían al recargar y los cierres validados quedarían sin respaldo.
@@ -389,10 +825,40 @@ export class DataService {
   asignacionDe(id: string): Asignacion | undefined {
     return this.asignaciones().find((a) => a.expediente === id);
   }
-  /** Expediente técnico del proceso: se resuelve a través del equipo asignado a la solicitud. */
+  /**
+   * **Expediente técnico de un proceso, leído del dato y no reconstruido.** Si el proceso ya tiene
+   * Expediente único, el ET sale de la FK que el EU guarda (`expedienteTecnico`): eso es lo que
+   * hace que un expediente histórico siga mostrando la preparación con la que se entregó, aunque
+   * el equipo lleve dos ciclos más encima.
+   *
+   * Solo cuando todavía no hay EU —el proceso está en asignación, antes de crearlo— se responde
+   * con el ciclo **abierto** del equipo, que es el único que puede llegar a ser su ET.
+   */
   expTecnicoDe(id: string): ExpedienteTecnico | undefined {
+    const eu = this.expedienteUnicoDe(id);
+    if (eu?.expedienteTecnico) return this.expTecnicoPorCodigo(eu.expedienteTecnico);
     const s = this.solicitud(id);
-    return s?.equipoInventario ? this.expTecnicoDeEquipo(s.equipoInventario) : undefined;
+    return s?.equipoInventario ? this.cicloAbiertoDeEquipo(s.equipoInventario) : undefined;
+  }
+  /** Expediente técnico por su código. Es la consulta base: todo lo demás guarda este código. */
+  expTecnicoPorCodigo(codigo: string): ExpedienteTecnico | undefined {
+    return codigo ? this.expedientesTecnicos().find((x) => x.codigo === codigo) : undefined;
+  }
+  /** Expediente técnico de un Expediente único, por su FK guardada. Nunca se deduce. */
+  expTecnicoDeExpedienteUnico(eu: ExpedienteUnico | undefined): ExpedienteTecnico | undefined {
+    return eu ? this.expTecnicoPorCodigo(eu.expedienteTecnico) : undefined;
+  }
+  /**
+   * **Código del ET de un proceso**, para los eventos, documentos y textos que solo necesitan el
+   * código. Lee la FK del Expediente único y, mientras no exista, el ciclo abierto del equipo.
+   * Es el atajo que usan las decenas de sitios que antes preguntaban por el equipo y recibían el
+   * ET del ciclo de hoy aunque estuvieran describiendo un proceso de hace dos ciclos.
+   */
+  codigoEtDeProceso(expediente: string, inventario = ''): string | undefined {
+    const eu = this.expedienteUnicoDe(expediente);
+    if (eu?.expedienteTecnico) return eu.expedienteTecnico;
+    const inv = inventario || this.solicitud(expediente)?.equipoInventario || '';
+    return inv ? this.cicloAbiertoDeEquipo(inv)?.codigo : undefined;
   }
   expedienteUnicoDe(id: string): ExpedienteUnico | undefined {
     return this.expedientesUnicos().find((x) => x.expediente === id);
@@ -507,8 +973,27 @@ export class DataService {
     const ultimoIngreso = this.ingresosDeEquipo(inventario)[0];
     return !!ultimoIngreso && !ultimoIngreso.expedienteTecnicoAsociado;
   }
+  /**
+   * Garantía **del ciclo**: la responsabilidad que nació con la conformidad ACEPTADA de ese
+   * proceso. Nunca devuelve la garantía de proveedor, que no pertenece a ningún proceso sino al
+   * equipo, y que por eso se consulta con `garantiaProveedorDeEquipo`.
+   */
   garantiaDe(id: string): Garantia | undefined {
-    return this.garantias().find((g) => g.expediente === id);
+    return this.garantias().find((g) => g.expediente === id && g.expediente !== '');
+  }
+  /**
+   * **GARANTIA DE PROVEEDOR**: pertenece al EQUIPO y existe desde la adquisición, sin
+   * Expediente único de por medio (`id_exp_unico (NULL)` en el DER). Un equipo recién comprado, que
+   * todavía no se ha preparado ni entregado a nadie, ya tiene esta garantía.
+   */
+  garantiaProveedorDeEquipo(inventario: string): Garantia | undefined {
+    return this.garantias().find((g) => g.inventario === inventario && !g.expedienteUnico && !g.expediente);
+  }
+  /** Garantías internas de un equipo: una por ciclo entregado. Excluye la del proveedor. */
+  garantiasInternasDeEquipo(inventario: string): Garantia[] {
+    return this.garantias()
+      .filter((g) => g.inventario === inventario && !!g.expediente)
+      .sort((a, b) => (b.ciclo ?? 0) - (a.ciclo ?? 0));
   }
   eventosDe(id: string): EventoTrazabilidad[] {
     return this.eventos().filter((e) => e.expediente === id);
@@ -532,13 +1017,29 @@ export class DataService {
 
   // ---------- Inventario de Hardware (estados derivados) ----------
   /**
-   * Expediente técnico VIGENTE del equipo (el más reciente), identificado por su número de
-   * inventario. Un equipo puede tener varios expedientes técnicos a lo largo de su vida
-   * (reingreso a Hardware); el historial completo se conserva y se consulta con
-   * `expedientesTecnicosDeEquipo`.
+   * **Expediente técnico del ciclo ABIERTO del equipo**: aquel que todavía no cerró ningún
+   * descargo. No es «el más reciente por fecha»: es el único ciclo vivo, y por eso responde a la
+   * pregunta «¿qué se está preparando de este equipo ahora?» y a ninguna otra.
+   *
+   * Para saber el ET de un **expediente histórico** no se pregunta aquí: se lee la FK que guarda
+   * su Expediente único (`expTecnicoDeExpedienteUnico`). Un equipo con tres ciclos tiene tres ET,
+   * y solo uno de ellos —como mucho— está abierto.
+   */
+  cicloAbiertoDeEquipo(inventario: string): ExpedienteTecnico | undefined {
+    return this.expedientesTecnicosDeEquipo(inventario)
+      .find((t) => t.estado !== 'Cerrado' && !t.fechaCierre);
+  }
+  /**
+   * Alias histórico de `cicloAbiertoDeEquipo`, conservado porque lo usan muchas pantallas para
+   * preguntar por el ciclo en curso del equipo. Devuelve el ciclo abierto y, si no hay ninguno,
+   * el último cerrado —que es lo que el Inventario necesita mostrar de un equipo descargado.
    */
   expTecnicoDeEquipo(inventario: string): ExpedienteTecnico | undefined {
-    return this.expedientesTecnicosDeEquipo(inventario)[0];
+    return this.cicloAbiertoDeEquipo(inventario) ?? this.expedientesTecnicosDeEquipo(inventario)[0];
+  }
+  /** Número del ciclo abierto del equipo; 0 si no tiene ninguno en curso. */
+  cicloActualDeEquipo(inventario: string): number {
+    return this.cicloAbiertoDeEquipo(inventario)?.ciclo ?? 0;
   }
   /** Asignación VIGENTE del equipo (si el usuario final todavía lo tiene). Un Descargo la cierra sin borrarla. */
   asignacionDeEquipo(inventario: string): Asignacion | undefined {
@@ -579,9 +1080,12 @@ export class DataService {
       .filter((a) => a.equipoInventario === inventario)
       .sort((a, b) => b.fecha.localeCompare(a.fecha));
   }
-  /** Garantías (con sus casos) asociadas al equipo a través de sus procesos de entrega. */
+  /**
+   * Garantías asociadas al equipo **a través de sus procesos de entrega** (una por ciclo). La del
+   * proveedor queda fuera a propósito: no nace de ninguna entrega.
+   */
   garantiasDeEquipo(inventario: string): Garantia[] {
-    return this.garantias().filter((g) => g.inventario === inventario);
+    return this.garantiasInternasDeEquipo(inventario);
   }
   /** Todos los documentos históricos del equipo: F0288, F0302, constancias y reportes. */
   documentosDeEquipo(inventario: string): DocumentoGenerado[] {
@@ -598,11 +1102,30 @@ export class DataService {
   nombreEquipoActual(inventario: string): string {
     return this.configuracionesDeEquipo(inventario)[0]?.datos.nombrePC ?? '';
   }
-  /** Todos los expedientes técnicos del equipo (un ciclo por reingreso), del más reciente al más antiguo. */
+  /**
+   * Todos los expedientes técnicos del equipo —uno por ciclo de vida—, del ciclo más alto al más
+   * bajo. Se ordena por **`ciclo`**, que es dato guardado: ordenar por fecha empataba dos ciclos
+   * abiertos el mismo día y dejaba el histórico en cualquier orden.
+   */
   expedientesTecnicosDeEquipo(inventario: string): ExpedienteTecnico[] {
     return this.expedientesTecnicos()
       .filter((x) => x.inventario === inventario)
-      .sort((a, b) => b.fecha.localeCompare(a.fecha));
+      .sort((a, b) => (b.ciclo ?? 0) - (a.ciclo ?? 0)
+        || (b.fechaApertura || b.fecha).localeCompare(a.fechaApertura || a.fecha));
+  }
+  /** Todos los Expedientes únicos del equipo, del ciclo más reciente al más antiguo. */
+  expedientesUnicosDeEquipo(inventario: string): ExpedienteUnico[] {
+    return this.expedientesUnicos()
+      .filter((x) => x.inventario === inventario)
+      .sort((a, b) => (b.ciclo ?? 0) - (a.ciclo ?? 0));
+  }
+  /** Expediente único por su código propio (`EXP-2026-0001`). */
+  expedienteUnicoPorCodigo(codigo: string): ExpedienteUnico | undefined {
+    return codigo ? this.expedientesUnicos().find((x) => x.codigoUnico === codigo) : undefined;
+  }
+  /** Expediente único abierto por el ET indicado, leído por su FK. Nunca se deduce. */
+  expedienteUnicoDeExpTecnico(codigoEt: string): ExpedienteUnico | undefined {
+    return codigoEt ? this.expedientesUnicos().find((x) => x.expedienteTecnico === codigoEt) : undefined;
   }
   /** Todos los ingresos del equipo a Hardware (inicial y reingresos), del más reciente al más antiguo. */
   ingresosDeEquipo(inventario: string): IngresoHardware[] {
@@ -720,13 +1243,20 @@ export class DataService {
    */
   equiposParaAsignar(): Equipo[] {
     return this.equiposDisponiblesParaAsignar().filter((e) => {
-      const tec = this.expTecnicoDeEquipo(e.inventario);
+      // El ciclo que puede recibir una asignación es el **abierto**: un ciclo cerrado ya no
+      // asigna nada.
+      const tec = this.cicloAbiertoDeEquipo(e.inventario);
       if (!tec) return false;
       const prep = this.preparacionPorCodigo(tec.codigo);
       if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
       if (this.reprocesoAbiertoDeExpTecnico(tec.codigo)) return false;
-      const proceso = this.equipoDe(e.inventario)?.expediente;
-      if (proceso && (this.expedienteUnicoDe(proceso) || this.fallaVigenteDe(proceso))) return false;
+      // Lo que descalifica al equipo es que **este ciclo** ya tenga Expediente único o una falla
+      // sin resolver. Antes se miraba `Equipo.expediente` —la primera solicitud a la que el equipo
+      // estuvo atado— y eso dejaba fuera para siempre a cualquier equipo que hubiera completado un
+      // ciclo: el EU de un ciclo ya cerrado no puede bloquear el siguiente.
+      if (this.expedienteUnicoDeExpTecnico(tec.codigo)) return false;
+      const proceso = this.asignacionDeEquipo(e.inventario)?.expediente ?? '';
+      if (proceso && this.fallaVigenteDe(proceso)) return false;
       return true;
     });
   }
@@ -807,7 +1337,9 @@ export class DataService {
       const asig = this.asignacionDe(s.expediente);
       const inventario = asig?.vigente ? asig.equipoInventario : '';
       if (!inventario) return false;
-      const tec = this.expTecnicoDeEquipo(inventario);
+      // El EU aún no existe (se acaba de descartar arriba): el ET que puede habilitarlo es el del
+      // **ciclo abierto**, nunca uno cerrado de un ciclo anterior.
+      const tec = this.cicloAbiertoDeEquipo(inventario);
       if (tec?.estado !== 'Preparado') return false;
       const prep = this.preparacionPorCodigo(tec.codigo);
       if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
@@ -2127,9 +2659,16 @@ export class DataService {
   lineaTiempoEquipo(inventario: string): EventoTrazabilidad[] {
     const eq = this.equipoDe(inventario);
     if (!eq) return [];
+    // La línea de tiempo del equipo recorre **todos sus ciclos**, no solo el vigente: si solo se
+    // tomara el ET actual y la asignación vigente, el historial de un equipo con dos ciclos
+    // empezaría a contar desde su reingreso y perdería todo el ciclo anterior.
     const ids = new Set<string>(
-      [inventario, this.expTecnicoDeEquipo(inventario)?.codigo,
-       this.asignacionDeEquipo(inventario)?.expediente, eq.expediente].filter((x): x is string => !!x)
+      [inventario, eq.expediente,
+       ...this.expedientesTecnicosDeEquipo(inventario).map((t) => t.codigo),
+       ...this.expedientesUnicosDeEquipo(inventario).map((x) => x.codigoUnico),
+       ...this.asignacionesDeEquipo(inventario).map((a) => a.expediente),
+       ...this.descargosDeEquipo(inventario).map((d) => d.idDescargo)
+      ].filter((x): x is string => !!x)
     );
     const linea = this.eventos().filter((e) => ids.has(e.expediente) || e.inventario === inventario);
     if (eq.fechaIngreso && !linea.some((e) => e.modulo === 'Inventario de Hardware')) {
@@ -2735,6 +3274,18 @@ export class DataService {
       ingresadoPor: usuario, estadoInicial: 'Pendiente de preparación', estadoFinal: '', observaciones
     };
     this.ingresosHardware.update((list) => [nuevo, ...list]);
+    // Nota 6 del DER: «el reingreso a Hardware genera un movimiento, pero **no crea
+    // automáticamente un nuevo ET**». El equipo entra al taller y ahí se queda hasta que un
+    // Encargado decida abrirle un ciclo nuevo.
+    this.registrarMovimiento({
+      inventario,
+      ubicacionOrigenId: this.equipoDe(inventario)?.ubicacionActualId ?? 'UBI-BOD-DESCARGO',
+      ubicacionDestinoId: 'UBI-TALLER-HW',
+      tipoMovimiento: 'REINGRESO_HARDWARE',
+      motivo,
+      usuarioRegistra: usuario,
+      observaciones: `${observaciones} El reingreso no abre ciclo por sí solo: el nuevo Expediente técnico lo crea un Encargado.`.trim()
+    });
     this.registrarEvento(inventario, usuario, `Reingreso a Hardware registrado para el equipo ${inventario} (${motivo})`,
       'Pendiente de preparación', observaciones, true,
       { modulo: 'Ingreso a Hardware', estadoAnterior: 'Descargado', inventario });
@@ -2850,11 +3401,14 @@ export class DataService {
       datos.responsableRegistro, datos.inventario);
     if (sinImagen) return sinImagen;
 
-    const tec = this.expTecnicoDeEquipo(datos.inventario);
-    const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
+    // **El ciclo que se cierra es el del Expediente único**, no «el último ET del equipo»: el ET
+    // sale de la FK que el EU guarda, y solo si todavía no hay EU se recurre al ciclo abierto.
     const expUnico = this.expedienteUnicoDe(asig.expediente);
+    const tec = this.expTecnicoDeExpedienteUnico(expUnico) ?? this.cicloAbiertoDeEquipo(datos.inventario);
+    const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
     const conf = this.configuracionDe(asig.expediente);
     const gar = this.garantiaDe(asig.expediente);
+    const ciclo = expUnico?.ciclo ?? tec?.ciclo ?? 1;
 
     const codigo = this.siguienteCodigoPorAnio(`DESC-${this.anioActual()}-`, this.descargos().map((d) => d.idDescargo));
     const nuevo: Descargo = {
@@ -2866,6 +3420,10 @@ export class DataService {
         ? `${datos.observaciones} Motivo administrativo: ${motivoAdministrativo}`.trim()
         : datos.observaciones,
       expedienteUnicoAnterior: expUnico?.codigoUnico,
+      // Qué ciclo cierra esta descarga, y con qué ET: guardado, para que el histórico se lea sin
+      // volver a deducir nada.
+      ciclo,
+      expedienteTecnicoAnterior: tec?.codigo ?? '',
       accionPosterior: datos.accionPosterior, encargadoDestino: this.responsableOperativo(eq),
       estado: 'Procesado'
     };
@@ -2891,6 +3449,23 @@ export class DataService {
         soporteResponsable: this.soporteResponsableDeEquipo(datos.inventario) });
     this.registrarCierreConEvidencia('Descargo', datos.inventario, asig.expediente,
       datos.responsableRegistro, datos.inventario);
+    // Nota 5 del DER: «la descarga cierra el ciclo y genera un movimiento de tipo DESCARGA».
+    // El equipo sale del área institucional donde estaba en uso y pasa al resguardo interno.
+    const sol = this.solicitud(asig.expediente);
+    this.registrarMovimiento({
+      inventario: datos.inventario,
+      direccionOrigenId: sol?.direccionRegistroId ?? null,
+      ubicacionDestinoId: 'UBI-BOD-DESCARGO',
+      expedienteUnico: expUnico?.codigoUnico ?? null,
+      descargo: codigo,
+      ciclo,
+      tipoMovimiento: 'DESCARGA',
+      motivo: datos.motivoDescargo,
+      usuarioRegistra: datos.responsableRegistro,
+      observaciones: `Estado físico recibido: ${datos.estadoFisico}. Acción posterior: ${datos.accionPosterior}.`
+    });
+    this.equipos.update((list) => list.map((e) =>
+      (e.inventario === datos.inventario ? { ...e, cicloActual: 0, areaUnidadId: null } : e)));
     // Salida automática del inventario activo de la Dirección/Registro y de Controles: no requiere
     // ninguna acción manual adicional (§26).
     this.retirarDeControles(nuevo, motivoAdministrativo);
@@ -2898,7 +3473,8 @@ export class DataService {
     // Cierra como histórico todo el ciclo anterior: nunca se reutiliza para uno nuevo.
     if (tec && tec.estado !== 'Cerrado') {
       this.expedientesTecnicos.update((list) =>
-        list.map((x) => (x.codigo === tec.codigo ? { ...x, estado: 'Cerrado' } : x)));
+        list.map((x) => (x.codigo === tec.codigo
+          ? { ...x, estado: 'Cerrado', fechaCierre: nuevo.fechaDescargo } : x)));
       this.registrarEvento(tec.codigo, datos.responsableRegistro,
         `Expediente técnico ${tec.codigo} cerrado por el descargo del equipo ${datos.inventario}; queda como histórico`,
         'Cerrado', '', false,
@@ -2914,7 +3490,11 @@ export class DataService {
     if (expUnico && expUnico.estado !== 'Cerrado') {
       this.expedientesUnicos.update((list) =>
         list.map((x) => (x.expediente === asig.expediente
-          ? { ...x, estado: 'Cerrado', resumenEstado: 'Cerrado · Equipo descargado, expediente histórico' } : x)));
+          ? {
+              ...x, estado: 'Cerrado', fechaCierre: nuevo.fechaDescargo,
+              resumenEstado: `Cerrado · Ciclo ${x.ciclo} histórico, equipo descargado`
+            }
+          : x)));
       this.registrarEvento(asig.expediente, datos.responsableRegistro,
         `Expediente único ${expUnico.codigoUnico} cerrado por el descargo del equipo; queda como histórico`,
         'Cerrado', '', false,
@@ -3577,6 +4157,9 @@ export class DataService {
     }
     // Se captura antes de crear el nuevo, para poder referenciarlo en el evento si es un reingreso.
     const anterior = this.expedientesTecnicosDeEquipo(datos.inventario)[0];
+    // **Cada Expediente técnico abre un ciclo nuevo del equipo** (nota 1 del DER): el número se
+    // guarda aquí y ya no se vuelve a calcular. El ciclo anterior queda cerrado como histórico.
+    const ciclo = (anterior?.ciclo ?? 0) + 1;
     const tipo: TipoExpedienteTecnico =
       eq.tipo === 'Laptop'
         ? (eq.condicion === 'Nuevo' ? 'Laptop nueva' : 'Laptop usada')
@@ -3584,6 +4167,9 @@ export class DataService {
     const nuevo: ExpedienteTecnico = {
       codigo: this.siguienteCodigoExpTec(),
       inventario: eq.inventario,
+      ciclo,
+      fechaApertura: this.hoy(),
+      fechaCierre: '',
       tipoEquipo: eq.tipo,
       condicion: eq.condicion,
       marcaModelo: `${eq.marca} ${eq.modelo}`,
@@ -3611,6 +4197,9 @@ export class DataService {
     const plantilla = this.plantillaF0288(datos.unidadResponsable, eq.condicion, eq.tipo);
     const prep: PreparacionF0288 = {
       expedienteTecnico: nuevo.codigo,
+      // El DER relaciona el F0288 con el ET **y** con el EQUIPO: las dos FK se escriben aquí.
+      inventario: eq.inventario,
+      ciclo,
       unidad: datos.unidadResponsable,
       tecnico: datos.tecnicoPreparacion,
       creadoPor: datos.creadoPor,
@@ -3636,6 +4225,22 @@ export class DataService {
       }
     };
     this.preparaciones.update((list) => [prep, ...list]);
+    this.equipos.update((list) => list.map((e) =>
+      (e.inventario === eq.inventario ? { ...e, cicloActual: ciclo } : e)));
+    // El equipo entra físicamente al taller donde se prepara. El movimiento es del DER, no un
+    // adorno: sin él no se sabría dónde estuvo el equipo entre el reingreso y la entrega.
+    this.registrarMovimiento({
+      inventario: eq.inventario,
+      ubicacionOrigenId: this.equipoDe(eq.inventario)?.ubicacionActualId ?? 'UBI-BOD-CENTRAL',
+      ubicacionDestinoId: datos.unidadResponsable === 'Hardware' ? 'UBI-TALLER-HW' : 'UBI-TALLER-SOP',
+      ciclo,
+      tipoMovimiento: anterior ? 'REINGRESO_HARDWARE' : 'TRASLADO',
+      motivo: anterior
+        ? `Nuevo ciclo ${ciclo}: preparación técnica tras reingreso`
+        : 'Inicio de la preparación técnica',
+      usuarioRegistra: datos.creadoPor,
+      observaciones: `Expediente técnico ${nuevo.codigo} (ciclo ${ciclo}).`
+    });
 
     // Carga laboral y pendientes del técnico al momento de asignarle este expediente (se anota en
     // el detalle del evento de creación en vez de generar un evento aparte por cada consulta).
@@ -3714,6 +4319,13 @@ export class DataService {
     const nuevo: ExpedienteUnico = {
       expediente: id,
       codigoUnico: codigo,
+      // **El EU guarda su equipo y su ET.** No se deducen nunca más: es lo que permite que este
+      // expediente siga apuntando a esta preparación cuando el equipo lleve dos ciclos más.
+      inventario: asig.equipoInventario,
+      expedienteTecnico: tec.codigo,
+      ciclo: tec.ciclo,
+      fechaApertura: this.hoy(),
+      fechaCierre: '',
       estado: 'En configuración',
       resumenEstado: 'En configuración',
       fechaEntrega: '',
@@ -3737,7 +4349,14 @@ export class DataService {
     this.expedientesUnicos.update((list) => [nuevo, ...list]);
     this.asignaciones.update((list) =>
       list.map((a) => (a.expediente === id
-        ? { ...a, responsablesFase: { ...a.responsablesFase, tecnicoConfiguracion, estadoConfiguracion: 'En configuración' } }
+        ? {
+            ...a,
+            // La ASIGNACION del DER cuelga del EU: en cuanto el EU existe, la FK se escribe.
+            expedienteUnico: codigo,
+            ciclo: tec.ciclo,
+            usuarioFinalId: a.usuarioFinalId || this.territorio.buscaUsuarioFinal(s.carne, a.usuarioFinal)?.id || '',
+            responsablesFase: { ...a.responsablesFase, tecnicoConfiguracion, estadoConfiguracion: 'En configuración' }
+          }
         : a))
     );
     // El documento F0288 (generado con el código del expediente técnico) se re-asocia al proceso.
@@ -5808,7 +6427,7 @@ export class DataService {
       this.registrarEvento(id, usuario, 'Intento de registrar falla sin evidencia', 'En configuración',
         sinImagen, false,
         { modulo: 'Configuración F0302', inventario: c.datos.inventario,
-          expedienteTecnico: this.expTecnicoDeEquipo(c.datos.inventario)?.codigo,
+          expedienteTecnico: this.codigoEtDeProceso(c.expediente, c.datos.inventario),
           expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, rol: this.rolDeUsuario(usuario),
           tipoFalla: datos.tipo, estadoValidacion: 'Sin evidencia',
           accionTomada: 'Registro de la falla bloqueado por falta de imagen' });
@@ -5824,7 +6443,7 @@ export class DataService {
     // mismo tiempo se pisarían y el historial no diría cuál dejó el equipo como quedó. Un Encargado
     // puede autorizar la excepción, pero deja escrito por qué.
     const justSimultaneo = (datos.justificacionReprocesoSimultaneo ?? '').trim();
-    const codigoTecnico = this.expTecnicoDeEquipo(c.datos.inventario)?.codigo;
+    const codigoTecnico = this.codigoEtDeProceso(c.expediente, c.datos.inventario);
     if (reproceso && codigoTecnico) {
       const abierto = this.reprocesoAbiertoDeExpTecnico(codigoTecnico);
       if (abierto && !this.puedeAsignarReprocesos()) {
@@ -5850,7 +6469,7 @@ export class DataService {
 
     const tiempo = this.formatoDuracion(crono.duracionMinutos);
     const unicoCod = this.expedienteUnicoDe(id)?.codigoUnico;
-    const codigoTec = this.expTecnicoDeEquipo(c.datos.inventario)?.codigo;
+    const codigoTec = this.codigoEtDeProceso(c.expediente, c.datos.inventario);
     const ref = {
       modulo: 'Configuración F0302', inventario: c.datos.inventario, expedienteUnico: unicoCod,
       expedienteTecnico: codigoTec, usuarioFinal: c.datos.asignadoA, tipoFalla: datos.tipo,
@@ -6342,13 +6961,19 @@ export class DataService {
    */
   private abrirReprocesoF0288(c: ConfiguracionF0302, falla: FallaF0302, usuario: string,
     codigoTec?: string, unicoCod?: string, justificacionSimultaneo = ''): ReprocesoF0288 {
-    const tecnico = codigoTec ?? this.expTecnicoDeEquipo(c.datos.inventario)?.codigo ?? c.datos.inventario;
+    // El reproceso corrige **el ciclo en curso**, así que su ET se lee del Expediente único de ese
+    // proceso, no del equipo: un equipo con dos ciclos tiene dos ET y el reproceso pertenece a uno.
+    const euProceso = this.expedienteUnicoDe(c.expediente);
+    const tecnico = codigoTec ?? euProceso?.expedienteTecnico
+      ?? this.cicloAbiertoDeEquipo(c.datos.inventario)?.codigo ?? c.datos.inventario;
     // El correlativo sale del mayor número ya usado, no de la cantidad: si un reproceso se cerró y
     // otro se abrió, contar la lista podría repetir un código que ya existió.
     const numero = Math.max(0, ...this.reprocesosDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
     const reproceso: ReprocesoF0288 = {
       id: `${tecnico}-R${numero}`, expedienteTecnico: tecnico, expediente: c.expediente,
-      expedienteUnico: unicoCod ?? '', inventario: c.datos.inventario, numero,
+      expedienteUnico: unicoCod ?? euProceso?.codigoUnico ?? '', inventario: c.datos.inventario, numero,
+      // Un reproceso **no abre un ciclo nuevo** (nota 4 del DER): se queda en el que corrige.
+      ciclo: euProceso?.ciclo ?? this.expTecnicoPorCodigo(tecnico)?.ciclo,
       tipoFalla: falla.tipo, motivo: `${falla.tipo}: ${falla.descripcion}`,
       // Una falla que exige revisión física deja al equipo detenido en Hardware: se atiende primero.
       prioridad: falla.requiereHardware ? 'Alta' : 'Normal',
@@ -6399,7 +7024,7 @@ export class DataService {
     if (!conFalla.falla.requiereReprocesoF0288) return 'Esta falla no requiere reproceso de Preparación F0288.';
     const existente = conFalla.falla.reprocesoId ? this.reprocesoDe(conFalla.falla.reprocesoId) : undefined;
     if (existente) return existente;
-    const codigoTec = this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo;
+    const codigoTec = this.codigoEtDeProceso(conFalla.expediente, conFalla.datos.inventario);
     const unicoCod = this.expedienteUnicoDe(id)?.codigoUnico;
     const r = this.abrirReprocesoF0288(conFalla, conFalla.falla, conFalla.falla.tecnicoReporta || usuario, codigoTec, unicoCod);
     this.actualizarConfiguracionConFalla(id, (f) => ({
@@ -7144,7 +7769,7 @@ export class DataService {
       codigo: this.siguienteCodigoPorAnio(`CONST-COR-${this.anioActual()}-`,
         this.constanciasCorreccion().map((d) => d.codigo ?? '')),
       expediente: cor.expediente, correccion: cor.id,
-      expedienteTecnico: this.expTecnicoDeEquipo(cor.inventario)?.codigo,
+      expedienteTecnico: this.codigoEtDeProceso(cor.expediente, cor.inventario),
       inventario: cor.inventario, tecnicoSoporte: cor.tecnico, usuarioFinal: cor.usuarioFinal,
       tipoProblema: cor.tipoProblema, resultado: cor.resultado || 'Corregido en F0302',
       estado: 'Disponible para consulta',
@@ -7199,7 +7824,7 @@ export class DataService {
       `Documento: ${doc?.codigo ?? '—'} · Estado: ${doc?.estado ?? 'Generado'}`,
       `Código de corrección: ${cor.id}`,
       `Expediente único: ${unico?.codigoUnico ?? '—'}`,
-      `Expediente técnico: ${this.expTecnicoDeEquipo(cor.inventario)?.codigo ?? '—'}`,
+      `Expediente técnico: ${this.codigoEtDeProceso(cor.expediente, cor.inventario) ?? '—'}`,
       `Equipo: ${eq ? `${eq.marca} ${eq.modelo}` : '—'}`,
       `Tipo de equipo: ${eq ? (eq.tipo === 'Desktop' ? 'CPU' : eq.tipo) : '—'}`,
       `Número de inventario: ${cor.inventario}`,
@@ -7272,7 +7897,7 @@ export class DataService {
     this.registrarEvento(id, usuario, 'Corrección de Soporte registrada', 'Listo para reintento F0302',
       descripcion.trim(), true,
       { modulo: 'Configuración F0302', inventario: conFalla.datos.inventario,
-        expedienteTecnico: this.expTecnicoDeEquipo(conFalla.datos.inventario)?.codigo,
+        expedienteTecnico: this.codigoEtDeProceso(conFalla.expediente, conFalla.datos.inventario),
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, tipoFalla: f.tipo, requiereReproceso: 'No',
         rol: this.rolDeUsuario(usuario), evidencia: archivo.trim(), tipoEvidencia: 'Corrección realizada',
         estadoValidacion: 'Válida', accionTomada: 'Corrección de Soporte en el mismo F0302' });
@@ -7299,7 +7924,7 @@ export class DataService {
     this.registrarEvento(id, usuario, 'Sustitución de equipo solicitada por falla en F0302', 'Pendiente de sustitución de equipo',
       `${motivo.trim()} — El equipo queda marcado como no apto para entrega; el Expediente técnico del equipo sustituto se evalúa aparte.`,
       true, { modulo: 'Configuración F0302', inventario,
-        expedienteTecnico: this.expTecnicoDeEquipo(inventario)?.codigo,
+        expedienteTecnico: this.codigoEtDeProceso(id, inventario),
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, tipoFalla: conFalla.falla.tipo,
         accionTomada: 'Sustitución de equipo' });
     return null;
@@ -7356,10 +7981,10 @@ export class DataService {
     this.actualizarAnexo(id, 'Se anexa configuración del equipo', 'En proceso', 'Nueva configuración F0302 tras la falla anterior');
     const intento = this.configuracionesDeEquipo(inventario).filter((x) => this.configuracionEsIntento(x)).length + 1;
     this.registrarEvento(id, usuario, `Nuevo intento F0302 iniciado (intento #${intento})`, 'En configuración',
-      `El F0302 con falla se conserva como intento en el historial; se trabaja sobre el mismo Expediente técnico ${this.expTecnicoDeEquipo(inventario)?.codigo ?? '—'}.`,
+      `El F0302 con falla se conserva como intento en el historial; se trabaja sobre el mismo Expediente técnico ${this.codigoEtDeProceso(id, inventario) ?? '—'}.`,
       true,
       { modulo: 'Configuración F0302', estadoAnterior: this.textoEstadoIncidencia(falla?.estadoIncidencia ?? 'LISTO_PARA_REINTENTO_F0302'),
-        inventario, expedienteTecnico: this.expTecnicoDeEquipo(inventario)?.codigo,
+        inventario, expedienteTecnico: this.codigoEtDeProceso(id, inventario),
         expedienteUnico: this.expedienteUnicoDe(id)?.codigoUnico, usuarioFinal: conFalla.datos.asignadoA,
         tipoFalla: falla?.tipo, requiereReproceso: falla ? (falla.requiereReprocesoF0288 ? 'Sí' : 'No') : undefined,
         accionTomada: 'Nuevo intento de Configuración F0302', reproceso: falla?.reprocesoId });
@@ -7520,6 +8145,27 @@ export class DataService {
           estado: 'Pendiente de respuesta'
         }
       ]);
+      // El equipo sale del taller de Soporte hacia el área institucional del usuario final: es el
+      // MOVIMIENTO_EQUIPO de tipo ASIGNACION del DER.
+      const euEntrega = this.expedienteUnicoDe(id);
+      this.registrarMovimiento({
+        inventario: s.equipoInventario,
+        ubicacionOrigenId: 'UBI-TALLER-SOP',
+        direccionDestinoId: s.direccionRegistroId || null,
+        expedienteUnico: euEntrega?.codigoUnico ?? null,
+        ciclo: euEntrega?.ciclo ?? this.cicloActualDeEquipo(s.equipoInventario),
+        tipoMovimiento: 'ASIGNACION',
+        motivo: 'Entrega del equipo al usuario final',
+        usuarioRegistra: usuario,
+        observaciones: `Entregado a ${s.destinatario} (${s.cargoDestinatario}).`
+      });
+      // El equipo pasa a estar en uso en el AREA_UNIDAD de su usuario final, no «en la Dirección»:
+      // el área es el nivel del DER al que pertenece la persona.
+      const areaDestino = this.cadenaOrganizativaDeSolicitud(id).areaUnidad?.id ?? null;
+      if (areaDestino) {
+        this.equipos.update((list) => list.map((e) =>
+          (e.inventario === s.equipoInventario ? { ...e, areaUnidadId: areaDestino, ubicacionActualId: null } : e)));
+      }
     } else {
       this.entregas.update((list) =>
         list.map((e) => (e.expediente === id ? { ...e, conformidadToken: nueva.token, estado: 'Pendiente de respuesta' } : e))
@@ -7636,8 +8282,13 @@ export class DataService {
       const fechaAceptacion = this.hoy();
       const p = this.garantiaPropuesta(conf.inventario, fechaAceptacion);
       const eq = this.equipoDe(conf.inventario);
+      const euGarantia = this.expedienteUnicoDe(id);
       const nuevaGarantia = this.sincronizarVigencia({
         expediente: id,
+        // **La responsabilidad interna pertenece al ciclo**, y por eso guarda su EU: un equipo
+        // entregado dos veces tiene dos garantías internas, y ninguna pisa a la otra.
+        expedienteUnico: euGarantia?.codigoUnico ?? '',
+        ciclo: euGarantia?.ciclo ?? this.cicloActualDeEquipo(conf.inventario),
         equipo: conf.marcaModelo,
         inventario: conf.inventario,
         usuarioFinal: `${conf.usuarioFinal} — ${conf.unidad}`,
@@ -7898,7 +8549,7 @@ export class DataService {
     return {
       modulo: 'Entrega y aceptación', inventario: cor.inventario,
       expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico,
-      expedienteTecnico: this.expTecnicoDeEquipo(cor.inventario)?.codigo,
+      expedienteTecnico: this.codigoEtDeProceso(cor.expediente, cor.inventario),
       usuarioFinal: cor.usuarioFinal, correccion: cor.id, intentoConformidad: cor.intentoNumero,
       tipoProblema: cor.tipoProblema, resolucion: cor.resolucion,
       reproceso: cor.reprocesoId, firmaRegistrada: cor.firma ? 'Sí' : 'No'
@@ -7982,7 +8633,7 @@ export class DataService {
     // Un solo reproceso abierto por Expediente técnico: dos correcciones simultáneas sobre la misma
     // preparación se pisarían y el historial no diría cuál dejó el equipo como está.
     if (datos.resolucion === 'Reproceso F0288') {
-      const codigoTec = this.expTecnicoDeEquipo(ultimo.inventario)?.codigo;
+      const codigoTec = this.codigoEtDeProceso(ultimo.expediente, ultimo.inventario);
       const abierto = codigoTec ? this.reprocesoAbiertoDeExpTecnico(codigoTec) : undefined;
       if (abierto) {
         return `Ya existe un reproceso abierto para este expediente (${abierto.id}, ${abierto.estado}). Debe cerrarse antes de generar uno nuevo.`;
@@ -8056,13 +8707,16 @@ export class DataService {
    * que un Encargado lo asigne—: lo único que cambia es de dónde vino el problema.
    */
   private abrirReprocesoPorInconformidad(cor: CorreccionNoConformidad, usuario: string): ReprocesoF0288 {
-    const tecnico = this.expTecnicoDeEquipo(cor.inventario)?.codigo ?? cor.inventario;
+    const euCor = this.expedienteUnicoDe(cor.expediente);
+    const tecnico = euCor?.expedienteTecnico ?? this.cicloAbiertoDeEquipo(cor.inventario)?.codigo ?? cor.inventario;
     const numero = Math.max(0, ...this.reprocesosDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
     const tipoFalla = this.tipoFallaEquivalente(cor.tipoProblema);
     const reproceso: ReprocesoF0288 = {
       id: `${tecnico}-R${numero}`, expedienteTecnico: tecnico, expediente: cor.expediente,
-      expedienteUnico: this.expedienteUnicoDe(cor.expediente)?.codigoUnico ?? '',
+      expedienteUnico: euCor?.codigoUnico ?? '',
       inventario: cor.inventario, numero,
+      // La inconformidad corrige el ciclo actual; nunca lo cierra ni abre otro.
+      ciclo: euCor?.ciclo ?? this.expTecnicoPorCodigo(tecnico)?.ciclo,
       origen: 'Inconformidad del usuario final', correccionRelacionada: cor.id,
       intentoConformidad: cor.intentoNumero, usuarioFinal: cor.usuarioFinal,
       observacionUsuarioFinal: cor.observacionUsuario,
@@ -8150,7 +8804,7 @@ export class DataService {
     if (!cor) return 'No se encontró la corrección indicada.';
     if (cor.estado !== 'Iniciada') return 'Solo una corrección en curso puede derivarse a reproceso F0288.';
     if (!motivo.trim()) return 'Indique por qué la corrección requiere intervención de Hardware.';
-    const codigoTec = this.expTecnicoDeEquipo(cor.inventario)?.codigo;
+    const codigoTec = this.codigoEtDeProceso(cor.expediente, cor.inventario);
     const abierto = codigoTec ? this.reprocesoAbiertoDeExpTecnico(codigoTec) : undefined;
     if (abierto) {
       return `Ya existe un reproceso abierto para este expediente (${abierto.id}, ${abierto.estado}). Debe cerrarse antes de generar uno nuevo.`;
@@ -8958,7 +9612,7 @@ export class DataService {
     return {
       modulo: 'Servicio de garantía', inventario: g.inventario, usuarioFinal: g.usuarioFinal,
       expedienteUnico: this.expedienteUnicoDe(g.expediente)?.codigoUnico,
-      expedienteTecnico: this.expTecnicoDeEquipo(g.inventario)?.codigo,
+      expedienteTecnico: this.codigoEtDeProceso(g.expediente, g.inventario),
       tipoProblema: c.tipoProblema, garantia: c.codigo
     };
   }
@@ -9016,14 +9670,19 @@ export class DataService {
       return `«${caso.tipoProblema}» se resuelve en Soporte: no requiere revisión técnica de Hardware.`;
     }
     if (caso.revisionId) return `Este caso ya tiene la revisión técnica ${caso.revisionId}.`;
-    const tecnico = this.expTecnicoDeEquipo(g.inventario)?.codigo ?? g.inventario;
+    // La garantía pertenece a un ciclo: su ET sale del Expediente único que la garantía guarda.
+    const euGar = this.expedienteUnicoPorCodigo(g.expedienteUnico ?? '') ?? this.expedienteUnicoDe(g.expediente);
+    const tecnico = euGar?.expedienteTecnico ?? this.cicloAbiertoDeEquipo(g.inventario)?.codigo ?? g.inventario;
     const numero = Math.max(0, ...this.revisionesGarantiaDeExpTecnico(tecnico).map((r) => r.numero)) + 1;
     const problema = this.problemasGarantia.find((p) => p.nombre === caso.tipoProblema)!;
     const sugerido = this.tecnicoSugeridoGarantia(g.inventario);
     const revision: ReprocesoF0288 = {
       id: `${tecnico}-G${numero}`, expedienteTecnico: tecnico, expediente: g.expediente,
-      expedienteUnico: this.expedienteUnicoDe(g.expediente)?.codigoUnico ?? '',
+      expedienteUnico: euGar?.codigoUnico ?? '',
       inventario: g.inventario, numero,
+      // Un CASO_GARANTIA puede originar un REPROCESO (nota 3 del DER), y ese reproceso se queda
+      // dentro del ciclo del equipo: no abre uno nuevo.
+      ciclo: euGar?.ciclo ?? g.ciclo,
       origen: 'Garantía', casoGarantia: caso.codigo,
       tecnicoSugerido: sugerido?.tecnico, motivoSugerencia: sugerido?.motivo,
       usuarioFinal: g.usuarioFinal,

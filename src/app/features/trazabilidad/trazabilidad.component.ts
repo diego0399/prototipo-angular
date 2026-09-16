@@ -41,6 +41,21 @@ interface FilaTraza {
   imports: [FormsModule, RouterLink, BadgeComponent, HelpTipComponent, ModalComponent, ConstanciaReprocesoComponent,
     ConstanciaCorreccionComponent, LineaTiempoComponent, EvidenciasComponent],
   styles: `
+    /* Ciclos de vida del equipo: cada ciclo es una tarjeta cerrada sobre sí misma. */
+    .ciclo { border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); margin-bottom: 12px; overflow: hidden; }
+    .ciclo.abierto { border-color: var(--navy-900); }
+    .ciclo > header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px;
+      padding: 9px 13px; background: var(--surface-2); border-bottom: 1px solid var(--line); }
+    .ciclo > header .n { font-size: 13px; font-weight: 800; color: var(--navy-900); }
+    .ciclo > header .fechas { margin-left: auto; font-size: 11.5px; color: var(--tx-2); }
+    .ciclo .cuerpo { padding: 11px 13px; }
+    .ciclo .fk { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 9px 16px; margin-bottom: 10px; }
+    .ciclo .fk > div { font-size: 12.5px; }
+    .ciclo .fk span { display: block; color: var(--tx-2); font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em; }
+    .ciclo .etapas { display: flex; flex-wrap: wrap; gap: 5px; }
+    .ciclo .etapa { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 11.5px; background: var(--surface); }
+    .ciclo .etapa.no { color: var(--tx-3); border-style: dashed; }
+    .mov-tipo { font-size: 11px; font-weight: 700; letter-spacing: .03em; }
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
     .tl-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
@@ -148,6 +163,7 @@ interface FilaTraza {
               <tr>
                 <th>Inventario</th>
                 <th>Equipo</th>
+                <th>Ciclo</th>
                 <th>Exp. técnico</th>
                 <th>Exp. único</th>
                 <th>Última fase</th>
@@ -163,6 +179,16 @@ interface FilaTraza {
                   <td>
                     <div class="main-cell">{{ f.equipo.marca }} {{ f.equipo.modelo }}</div>
                     <div class="sub-cell">{{ f.equipo.tipo === 'Desktop' ? 'CPU / Desktop' : 'Laptop' }} · {{ f.equipo.condicion.toLowerCase() }}</div>
+                  </td>
+                  <!-- Ciclo de vida: cuántos ha tenido el equipo y en cuál está. Un equipo con
+                       más de uno arrastra todo su histórico, que se lee en «Ciclos de vida». -->
+                  <td class="mono">
+                    @if (f.tec) {
+                      {{ f.tec.ciclo }}
+                      @if (ciclosDe(f.equipo.inventario) > 1) {
+                        <div class="sub-cell">de {{ ciclosDe(f.equipo.inventario) }}</div>
+                      }
+                    } @else { — }
                   </td>
                   <td class="mono">{{ f.tec?.codigo || '—' }}</td>
                   <td class="mono">{{ f.unico?.codigoUnico || '—' }}</td>
@@ -180,7 +206,7 @@ interface FilaTraza {
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="8" class="muted" style="text-align:center; padding: 26px;">
+                  <td colspan="9" class="muted" style="text-align:center; padding: 26px;">
                     Ningún equipo coincide con la búsqueda o los filtros aplicados.
                   </td>
                 </tr>
@@ -331,6 +357,107 @@ interface FilaTraza {
                   <div class="d-k">Último descargo</div>
                   <div class="d-v">@if (descargosEq()[0]; as ds) { {{ ds.fechaDescargo }} · {{ ds.motivoDescargo }} } @else { — }</div>
                 </div>
+              </div>
+            }
+
+            <!-- ── Ciclos de vida (DER) ── -->
+            @case ('ciclos') {
+              <p class="hint mb-2">
+                Un equipo acumula <b>varios ciclos</b> a lo largo de su vida útil: cada reingreso a Hardware
+                abre un Expediente técnico nuevo y, con él, un Expediente único nuevo. Los anteriores quedan
+                cerrados como histórico y <b>nunca se sobrescriben</b>. Cada ciclo muestra el ET y el EU que
+                tiene <b>guardados</b>, no el más reciente del equipo.
+              </p>
+              @if (garantiaProveedorEq(); as gp) {
+                <div class="ciclo">
+                  <header>
+                    <span class="n">Garantía de proveedor</span>
+                    <ui-badge [estado]="gp.estado" />
+                    <span class="fechas">{{ gp.fechaInicio || '—' }} → {{ gp.fechaVencimiento || '—' }}</span>
+                  </header>
+                  <div class="cuerpo">
+                    <p class="hint" style="margin:0;">
+                      Pertenece al <b>equipo</b>, no a un ciclo: corre desde la fecha de adquisición
+                      ({{ gp.fechaAdquisicion || 'sin registrar' }}) y existe aunque el equipo nunca se haya entregado.
+                      @if (gp.proveedor) { Proveedor: {{ gp.proveedor }}. }
+                    </p>
+                  </div>
+                </div>
+              }
+              @for (c of ciclosEq(); track c.ciclo) {
+                <div class="ciclo" [class.abierto]="c.abierto">
+                  <header>
+                    <span class="n">Ciclo {{ c.ciclo }}</span>
+                    <ui-badge [estado]="c.abierto ? 'En curso' : 'Histórico'" />
+                    @if (c.descargo) { <ui-badge estado="Cerrado por descargo" /> }
+                    <span class="fechas">
+                      Apertura {{ c.expedienteTecnico.fechaApertura || c.expedienteTecnico.fecha }}
+                      @if (c.expedienteTecnico.fechaCierre) { · Cierre {{ c.expedienteTecnico.fechaCierre }} }
+                    </span>
+                  </header>
+                  <div class="cuerpo">
+                    <div class="fk">
+                      <div><span>Expediente técnico</span><b class="mono">{{ c.expedienteTecnico.codigo }}</b></div>
+                      <div><span>Expediente único</span><b class="mono">{{ c.expedienteUnico?.codigoUnico || 'No llegó a crearse' }}</b></div>
+                      <div><span>Solicitud</span><b class="mono">{{ c.solicitud?.expediente || '—' }}</b></div>
+                      <div><span>Usuario final</span><b>{{ c.asignacion?.usuarioFinal || '—' }}</b></div>
+                      <div><span>Técnico de preparación</span><b>{{ c.expedienteTecnico.tecnicoPreparacion.split('—')[0].trim() }}</b></div>
+                      <div><span>Descargo</span><b class="mono">{{ c.descargo?.idDescargo || '—' }}</b></div>
+                    </div>
+                    <div class="etapas">
+                      <span class="etapa" [class.no]="!c.preparacion">F0288 {{ c.preparacion?.estado || 'sin registrar' }}</span>
+                      <span class="etapa" [class.no]="!c.expedienteUnico">EU {{ c.expedienteUnico?.estado || 'no creado' }}</span>
+                      <span class="etapa" [class.no]="!c.configuracion">F0302 {{ c.configuracion?.estado || 'sin registrar' }}</span>
+                      <span class="etapa" [class.no]="!c.entrega">Entrega {{ c.entrega?.estado || 'sin registrar' }}</span>
+                      <span class="etapa" [class.no]="!c.conformidad">Conformidad {{ c.conformidad?.estado || 'sin registrar' }}</span>
+                      <span class="etapa" [class.no]="!c.garantias.length">Garantía interna: {{ c.garantias.length || 'ninguna' }}</span>
+                      <span class="etapa" [class.no]="!c.reprocesos.length">Reprocesos: {{ c.reprocesos.length }}</span>
+                      <span class="etapa" [class.no]="!c.movimientos.length">Movimientos: {{ c.movimientos.length }}</span>
+                    </div>
+                    @if (c.reprocesos.length) {
+                      <p class="hint" style="margin:9px 0 0;">
+                        Los {{ c.reprocesos.length }} reproceso(s) de este ciclo corrigen <b>este mismo</b> Expediente
+                        técnico: un reproceso nunca abre un ciclo nuevo.
+                      </p>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <p class="muted">Este equipo todavía no tiene ningún Expediente técnico: no ha iniciado su primer ciclo.</p>
+              }
+            }
+
+            <!-- ── Movimientos físicos del equipo ── -->
+            @case ('mov') {
+              <p class="hint mb-2">
+                Dónde ha estado el equipo y por qué se movió. La <b>descarga</b> genera un movimiento de tipo
+                DESCARGA y el <b>reingreso a Hardware</b> genera uno de tipo REINGRESO_HARDWARE, que
+                <b>no</b> abre por sí solo un Expediente técnico nuevo.
+              </p>
+              <div class="table-wrap">
+                <table class="tbl">
+                  <thead>
+                    <tr><th>Fecha</th><th>Tipo</th><th>Origen</th><th>Destino</th><th>Ciclo</th><th>Motivo</th><th>Registró</th></tr>
+                  </thead>
+                  <tbody>
+                    @for (m of movimientosEq(); track m.id) {
+                      <tr>
+                        <td class="mono main-cell">{{ m.fecha }}@if (m.hora) { <div class="sub-cell">{{ m.hora }}</div> }</td>
+                        <td><span class="mov-tipo">{{ m.tipoMovimiento }}</span></td>
+                        <td>{{ data.extremoMovimiento(m.direccionOrigenId, m.ubicacionOrigenId) }}</td>
+                        <td>{{ data.extremoMovimiento(m.direccionDestinoId, m.ubicacionDestinoId) }}</td>
+                        <td class="mono">{{ m.ciclo || '—' }}</td>
+                        <td>
+                          {{ m.motivo }}
+                          @if (m.observaciones) { <div class="sub-cell">{{ m.observaciones }}</div> }
+                        </td>
+                        <td class="sub-cell">{{ m.usuarioRegistra.split('—')[0].trim() }}</td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="7" class="muted">Sin movimientos registrados para este equipo.</td></tr>
+                    }
+                  </tbody>
+                </table>
               </div>
             }
 
@@ -1097,6 +1224,10 @@ export class TrazabilidadComponent {
   // ---------- Historial técnico del equipo (modal con pestañas) ----------
   protected readonly pestanas = [
     { id: 'resumen', nombre: 'Resumen' },
+    // Ciclos de vida: la vista central del DER. Un equipo acumula ET y EU a lo largo de su vida,
+    // y cada ciclo se lee por sus FK guardadas, nunca buscando el registro más reciente.
+    { id: 'ciclos', nombre: 'Ciclos de vida' },
+    { id: 'mov', nombre: 'Movimientos' },
     { id: 'ingresos', nombre: 'Ingresos a Hardware' },
     { id: 'f0288', nombre: 'Preparaciones F0288' },
     { id: 'f0302', nombre: 'Configuraciones F0302' },
@@ -1109,6 +1240,11 @@ export class TrazabilidadComponent {
   ] as const;
   protected tab = signal<(typeof this.pestanas)[number]['id']>('resumen');
 
+  /** Cuántos ciclos de vida acumula el equipo. Más de uno significa histórico que conservar. */
+  protected ciclosDe(inventario: string): number {
+    return this.data.expedientesTecnicosDeEquipo(inventario).length;
+  }
+
   protected abrirTraza(inventario: string): void {
     const fila = this.filas().find((f) => f.equipo.inventario === inventario);
     if (fila) {
@@ -1117,6 +1253,26 @@ export class TrazabilidadComponent {
       this.detalle.set(fila);
     }
   }
+
+  /**
+   * **Los ciclos de vida del equipo**, armados desde las FK del DER: cada ciclo trae su ET, su
+   * F0288, el EU que ese ET habilitó y todo lo que colgó de él hasta la descarga que lo cerró.
+   * Ninguno se deduce por fecha, así que el ciclo 1 sigue mostrando su preparación de entonces.
+   */
+  protected readonly ciclosEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.ciclosDeEquipo(d.equipo.inventario) : [];
+  });
+  /** Movimientos físicos del equipo (MOVIMIENTO_EQUIPO), del más reciente al más antiguo. */
+  protected readonly movimientosEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.movimientosDeEquipo(d.equipo.inventario) : [];
+  });
+  /** Garantía de proveedor del equipo: existe desde la adquisición y no pertenece a ningún ciclo. */
+  protected readonly garantiaProveedorEq = computed(() => {
+    const d = this.detalle();
+    return d ? this.data.garantiaProveedorDeEquipo(d.equipo.inventario) : undefined;
+  });
 
   // Consultas del historial del equipo abierto: nunca sobrescriben registros anteriores.
   protected readonly preparacionesEq = computed(() => {

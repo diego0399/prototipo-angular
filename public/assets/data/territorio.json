@@ -1,5 +1,5 @@
 {
- "version": "2026-08-30-territorio-zona-departamento-registro",
+ "version": "2026-09-15-der-organizacional",
  "zonas": [
   {
    "id": "ZOC",
@@ -148,6 +148,48 @@
    "activo": true
   }
  ],
+ "catalogoUnidades": [
+  {
+   "id": "UNI-IGCN",
+   "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
+   "corta": "IGCN",
+   "descripcion": "Cartografía, catastro y geodesia nacional.",
+   "orden": 1,
+   "activo": true
+  },
+  {
+   "id": "UNI-RPRH",
+   "nombre": "Registro de la Propiedad Raíz e Hipotecas",
+   "corta": "RPRH",
+   "descripcion": "Inscripción de inmuebles, hipotecas y derechos reales.",
+   "orden": 2,
+   "activo": true
+  },
+  {
+   "id": "UNI-RC",
+   "nombre": "Registro de Comercio",
+   "corta": "RC",
+   "descripcion": "Matrículas de empresa, balances y documentos mercantiles.",
+   "orden": 3,
+   "activo": true
+  },
+  {
+   "id": "UNI-ISPI",
+   "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
+   "corta": "ISPI",
+   "descripcion": "Marcas, patentes y derechos de autor.",
+   "orden": 4,
+   "activo": true
+  },
+  {
+   "id": "UNI-RGM",
+   "nombre": "Registro de Garantías Mobiliarias",
+   "corta": "RGM",
+   "descripcion": "Garantías sobre bienes muebles.",
+   "orden": 5,
+   "activo": true
+  }
+ ],
  "direccionesRegistro": [
   {
    "id": "AHU-IGCN",
@@ -155,7 +197,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Ahuachapán",
+   "direccionFisica": "Oficinas del CNR, Ahuachapán, El Salvador"
   },
   {
    "id": "AHU-RPRH",
@@ -163,7 +208,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Ahuachapán",
+   "direccionFisica": "Oficinas del CNR, Ahuachapán, El Salvador"
   },
   {
    "id": "STA-IGCN",
@@ -171,7 +219,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Santa Ana",
+   "direccionFisica": "Oficinas del CNR, Santa Ana, El Salvador"
   },
   {
    "id": "STA-RPRH",
@@ -179,7 +230,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Santa Ana",
+   "direccionFisica": "Oficinas del CNR, Santa Ana, El Salvador"
   },
   {
    "id": "STA-RC",
@@ -187,7 +241,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede Santa Ana",
+   "direccionFisica": "Oficinas del CNR, Santa Ana, El Salvador"
   },
   {
    "id": "STA-ISPI",
@@ -195,7 +252,10 @@
    "corta": "ISPI",
    "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
    "orden": 4,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-ISPI",
+   "nombreSede": "ISPI — Sede Santa Ana",
+   "direccionFisica": "Oficinas del CNR, Santa Ana, El Salvador"
   },
   {
    "id": "SON-IGCN",
@@ -203,7 +263,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Sonsonate",
+   "direccionFisica": "Oficinas del CNR, Sonsonate, El Salvador"
   },
   {
    "id": "SON-RPRH",
@@ -211,7 +274,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Sonsonate",
+   "direccionFisica": "Oficinas del CNR, Sonsonate, El Salvador"
   },
   {
    "id": "SON-RC",
@@ -219,7 +285,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede Sonsonate",
+   "direccionFisica": "Oficinas del CNR, Sonsonate, El Salvador"
   },
   {
    "id": "SON-ISPI",
@@ -227,7 +296,10 @@
    "corta": "ISPI",
    "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
    "orden": 4,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-ISPI",
+   "nombreSede": "ISPI — Sede Sonsonate",
+   "direccionFisica": "Oficinas del CNR, Sonsonate, El Salvador"
   },
   {
    "id": "CAB-IGCN",
@@ -235,7 +307,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Cabañas",
+   "direccionFisica": "Oficinas del CNR, Cabañas, El Salvador"
   },
   {
    "id": "CAB-RPRH",
@@ -243,7 +318,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Cabañas",
+   "direccionFisica": "Oficinas del CNR, Cabañas, El Salvador"
   },
   {
    "id": "CHA-IGCN",
@@ -251,7 +329,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Chalatenango",
+   "direccionFisica": "Oficinas del CNR, Chalatenango, El Salvador"
   },
   {
    "id": "CHA-RC",
@@ -259,7 +340,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede Chalatenango",
+   "direccionFisica": "Oficinas del CNR, Chalatenango, El Salvador"
   },
   {
    "id": "CHA-RPRH",
@@ -267,7 +351,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Chalatenango",
+   "direccionFisica": "Oficinas del CNR, Chalatenango, El Salvador"
   },
   {
    "id": "CUS-IGCN",
@@ -275,7 +362,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Cuscatlán",
+   "direccionFisica": "Oficinas del CNR, Cuscatlán, El Salvador"
   },
   {
    "id": "CUS-RPRH",
@@ -283,7 +373,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Cuscatlán",
+   "direccionFisica": "Oficinas del CNR, Cuscatlán, El Salvador"
   },
   {
    "id": "LIB-IGCN",
@@ -291,7 +384,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede La Libertad",
+   "direccionFisica": "Oficinas del CNR, La Libertad, El Salvador"
   },
   {
    "id": "LIB-RPRH",
@@ -299,7 +395,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede La Libertad",
+   "direccionFisica": "Oficinas del CNR, La Libertad, El Salvador"
   },
   {
    "id": "PAZ-IGCN",
@@ -307,7 +406,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede La Paz",
+   "direccionFisica": "Oficinas del CNR, La Paz, El Salvador"
   },
   {
    "id": "PAZ-RPRH",
@@ -315,7 +417,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede La Paz",
+   "direccionFisica": "Oficinas del CNR, La Paz, El Salvador"
   },
   {
    "id": "PAZ-RC",
@@ -323,7 +428,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede La Paz",
+   "direccionFisica": "Oficinas del CNR, La Paz, El Salvador"
   },
   {
    "id": "PAZ-ISPI",
@@ -331,7 +439,10 @@
    "corta": "ISPI",
    "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
    "orden": 4,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-ISPI",
+   "nombreSede": "ISPI — Sede La Paz",
+   "direccionFisica": "Oficinas del CNR, La Paz, El Salvador"
   },
   {
    "id": "SS-RPRH",
@@ -339,7 +450,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede San Salvador",
+   "direccionFisica": "Oficinas del CNR, San Salvador, El Salvador"
   },
   {
    "id": "SS-IGCN",
@@ -347,7 +461,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede San Salvador",
+   "direccionFisica": "Oficinas del CNR, San Salvador, El Salvador"
   },
   {
    "id": "SS-RGM",
@@ -355,7 +472,10 @@
    "corta": "RGM",
    "nombre": "Registro de Garantías Mobiliarias",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RGM",
+   "nombreSede": "RGM — Sede San Salvador",
+   "direccionFisica": "Oficinas del CNR, San Salvador, El Salvador"
   },
   {
    "id": "SS-RC",
@@ -363,7 +483,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 4,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede San Salvador",
+   "direccionFisica": "Oficinas del CNR, San Salvador, El Salvador"
   },
   {
    "id": "SS-ISPI",
@@ -371,7 +494,10 @@
    "corta": "ISPI",
    "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
    "orden": 5,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-ISPI",
+   "nombreSede": "ISPI — Sede San Salvador",
+   "direccionFisica": "Oficinas del CNR, San Salvador, El Salvador"
   },
   {
    "id": "SV-IGCN",
@@ -379,7 +505,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede San Vicente",
+   "direccionFisica": "Oficinas del CNR, San Vicente, El Salvador"
   },
   {
    "id": "SV-RPRH",
@@ -387,7 +516,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede San Vicente",
+   "direccionFisica": "Oficinas del CNR, San Vicente, El Salvador"
   },
   {
    "id": "UNI-IGCN",
@@ -395,7 +527,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede La Unión",
+   "direccionFisica": "Oficinas del CNR, La Unión, El Salvador"
   },
   {
    "id": "UNI-RPRH",
@@ -403,7 +538,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede La Unión",
+   "direccionFisica": "Oficinas del CNR, La Unión, El Salvador"
   },
   {
    "id": "MOR-IGCN",
@@ -411,7 +549,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Morazán",
+   "direccionFisica": "Oficinas del CNR, Morazán, El Salvador"
   },
   {
    "id": "MOR-RPRH",
@@ -419,7 +560,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Morazán",
+   "direccionFisica": "Oficinas del CNR, Morazán, El Salvador"
   },
   {
    "id": "SM-IGCN",
@@ -427,7 +571,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede San Miguel",
+   "direccionFisica": "Oficinas del CNR, San Miguel, El Salvador"
   },
   {
    "id": "SM-RPRH",
@@ -435,7 +582,10 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede San Miguel",
+   "direccionFisica": "Oficinas del CNR, San Miguel, El Salvador"
   },
   {
    "id": "SM-RC",
@@ -443,7 +593,10 @@
    "corta": "RC",
    "nombre": "Registro de Comercio",
    "orden": 3,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-RC",
+   "nombreSede": "RC — Sede San Miguel",
+   "direccionFisica": "Oficinas del CNR, San Miguel, El Salvador"
   },
   {
    "id": "SM-ISPI",
@@ -451,7 +604,10 @@
    "corta": "ISPI",
    "nombre": "Instituto Salvadoreño de la Propiedad Intelectual (ISPI)",
    "orden": 4,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-ISPI",
+   "nombreSede": "ISPI — Sede San Miguel",
+   "direccionFisica": "Oficinas del CNR, San Miguel, El Salvador"
   },
   {
    "id": "USU-IGCN",
@@ -459,7 +615,10 @@
    "corta": "IGCN",
    "nombre": "Instituto Geográfico y del Catastro Nacional (IGCN)",
    "orden": 1,
-   "activa": true
+   "activa": true,
+   "unidadCatalogoId": "UNI-IGCN",
+   "nombreSede": "IGCN — Sede Usulután",
+   "direccionFisica": "Oficinas del CNR, Usulután, El Salvador"
   },
   {
    "id": "USU-RPRH",
@@ -467,6 +626,2641 @@
    "corta": "RPRH",
    "nombre": "Registro de la Propiedad Raíz e Hipotecas",
    "orden": 2,
+   "activa": true,
+   "unidadCatalogoId": "UNI-RPRH",
+   "nombreSede": "RPRH — Sede Usulután",
+   "direccionFisica": "Oficinas del CNR, Usulután, El Salvador"
+  }
+ ],
+ "catalogoAreas": [
+  {
+   "id": "ARC-ATC",
+   "nombre": "Atención al Cliente",
+   "descripcion": "Ventanillas y recepción de trámites del público.",
+   "orden": 1,
+   "activo": true
+  },
+  {
+   "id": "ARC-ARCH",
+   "nombre": "Archivo General",
+   "descripcion": "Resguardo y consulta del acervo documental.",
+   "orden": 2,
+   "activo": true
+  },
+  {
+   "id": "ARC-INS",
+   "nombre": "Inscripción y Registro",
+   "descripcion": "Calificación e inscripción de documentos.",
+   "orden": 3,
+   "activo": true
+  },
+  {
+   "id": "ARC-JUR",
+   "nombre": "Jurídico",
+   "descripcion": "Asesoría legal y resolución de observaciones.",
+   "orden": 4,
+   "activo": true
+  },
+  {
+   "id": "ARC-CAT",
+   "nombre": "Catastro y Geodesia",
+   "descripcion": "Levantamiento catastral, cartografía y mediciones.",
+   "orden": 5,
+   "activo": true
+  },
+  {
+   "id": "ARC-INF",
+   "nombre": "Informática",
+   "descripcion": "Soporte informático local y equipamiento del centro.",
+   "orden": 6,
+   "activo": true
+  },
+  {
+   "id": "ARC-ADM",
+   "nombre": "Administración",
+   "descripcion": "Compras, activo fijo, RRHH y servicios generales.",
+   "orden": 7,
+   "activo": true
+  },
+  {
+   "id": "ARC-DIR",
+   "nombre": "Jefatura de la sede",
+   "descripcion": "Dirección y coordinación de la sede.",
+   "orden": 8,
+   "activo": true
+  }
+ ],
+ "areasUnidad": [
+  {
+   "id": "AU-AHU-IGCN-ATC",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN AHU",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-IGCN-ARCH",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN AHU",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-IGCN-CAT",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN AHU",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-IGCN-INF",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN AHU",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-IGCN-ADM",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN AHU",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-IGCN-DIR",
+   "direccionId": "AHU-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN AHU",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-ATC",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH AHU",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-ARCH",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH AHU",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-INS",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH AHU",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-JUR",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH AHU",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-ADM",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH AHU",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-AHU-RPRH-DIR",
+   "direccionId": "AHU-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH AHU",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-ATC",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN CAB",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-ARCH",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN CAB",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-CAT",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN CAB",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-INF",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN CAB",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-ADM",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN CAB",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-IGCN-DIR",
+   "direccionId": "CAB-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN CAB",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-ATC",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH CAB",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-ARCH",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH CAB",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-INS",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH CAB",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-JUR",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH CAB",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-ADM",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH CAB",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CAB-RPRH-DIR",
+   "direccionId": "CAB-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH CAB",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-ATC",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN CHA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-ARCH",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN CHA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-CAT",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN CHA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-INF",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN CHA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-ADM",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN CHA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-IGCN-DIR",
+   "direccionId": "CHA-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN CHA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-ATC",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC CHA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-ARCH",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC CHA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-INS",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC CHA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-JUR",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC CHA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-INF",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC CHA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-ADM",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC CHA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RC-DIR",
+   "direccionId": "CHA-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC CHA",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-ATC",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH CHA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-ARCH",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH CHA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-INS",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH CHA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-JUR",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH CHA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-ADM",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH CHA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CHA-RPRH-DIR",
+   "direccionId": "CHA-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH CHA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-ATC",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN CUS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-ARCH",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN CUS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-CAT",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN CUS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-INF",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN CUS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-ADM",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN CUS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-IGCN-DIR",
+   "direccionId": "CUS-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN CUS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-ATC",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH CUS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-ARCH",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH CUS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-INS",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH CUS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-JUR",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH CUS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-ADM",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH CUS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-CUS-RPRH-DIR",
+   "direccionId": "CUS-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH CUS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-ATC",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN LIB",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-ARCH",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN LIB",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-CAT",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN LIB",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-INF",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN LIB",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-ADM",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN LIB",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-IGCN-DIR",
+   "direccionId": "LIB-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN LIB",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-ATC",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH LIB",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-ARCH",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH LIB",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-INS",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH LIB",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-JUR",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH LIB",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-ADM",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH LIB",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-LIB-RPRH-DIR",
+   "direccionId": "LIB-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH LIB",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-ATC",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN MOR",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-ARCH",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN MOR",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-CAT",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN MOR",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-INF",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN MOR",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-ADM",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN MOR",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-IGCN-DIR",
+   "direccionId": "MOR-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN MOR",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-ATC",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH MOR",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-ARCH",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH MOR",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-INS",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH MOR",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-JUR",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH MOR",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-ADM",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH MOR",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-MOR-RPRH-DIR",
+   "direccionId": "MOR-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH MOR",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-ATC",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN PAZ",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-ARCH",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN PAZ",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-CAT",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN PAZ",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-INF",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN PAZ",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-ADM",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN PAZ",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-IGCN-DIR",
+   "direccionId": "PAZ-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN PAZ",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-ATC",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH PAZ",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-ARCH",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH PAZ",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-INS",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH PAZ",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-JUR",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH PAZ",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-ADM",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH PAZ",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RPRH-DIR",
+   "direccionId": "PAZ-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH PAZ",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-ATC",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC PAZ",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-ARCH",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC PAZ",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-INS",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC PAZ",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-JUR",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC PAZ",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-INF",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC PAZ",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-ADM",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC PAZ",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-RC-DIR",
+   "direccionId": "PAZ-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC PAZ",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-ATC",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — ISPI PAZ",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-ARCH",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — ISPI PAZ",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-INS",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — ISPI PAZ",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-JUR",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — ISPI PAZ",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-ADM",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — ISPI PAZ",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-PAZ-ISPI-DIR",
+   "direccionId": "PAZ-ISPI",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — ISPI PAZ",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-ATC",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN SM",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-ARCH",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN SM",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-CAT",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN SM",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-INF",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN SM",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-ADM",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN SM",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-IGCN-DIR",
+   "direccionId": "SM-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN SM",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-ATC",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH SM",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-ARCH",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH SM",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-INS",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH SM",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-JUR",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH SM",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-ADM",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH SM",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RPRH-DIR",
+   "direccionId": "SM-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH SM",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-ATC",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC SM",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-ARCH",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC SM",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-INS",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC SM",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-JUR",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC SM",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-INF",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC SM",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-ADM",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC SM",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-RC-DIR",
+   "direccionId": "SM-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC SM",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-ATC",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — ISPI SM",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-ARCH",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — ISPI SM",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-INS",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — ISPI SM",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-JUR",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — ISPI SM",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-ADM",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — ISPI SM",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SM-ISPI-DIR",
+   "direccionId": "SM-ISPI",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — ISPI SM",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-ATC",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN SON",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-ARCH",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN SON",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-CAT",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN SON",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-INF",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN SON",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-ADM",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN SON",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-IGCN-DIR",
+   "direccionId": "SON-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN SON",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-ATC",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH SON",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-ARCH",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH SON",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-INS",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH SON",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-JUR",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH SON",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-ADM",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH SON",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RPRH-DIR",
+   "direccionId": "SON-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH SON",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-ATC",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC SON",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-ARCH",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC SON",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-INS",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC SON",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-JUR",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC SON",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-INF",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC SON",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-ADM",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC SON",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-RC-DIR",
+   "direccionId": "SON-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC SON",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-ATC",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — ISPI SON",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-ARCH",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — ISPI SON",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-INS",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — ISPI SON",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-JUR",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — ISPI SON",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-ADM",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — ISPI SON",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SON-ISPI-DIR",
+   "direccionId": "SON-ISPI",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — ISPI SON",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-ATC",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH SS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-ARCH",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH SS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-INS",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH SS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-JUR",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH SS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-ADM",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH SS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RPRH-DIR",
+   "direccionId": "SS-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH SS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-ATC",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN SS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-ARCH",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN SS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-CAT",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN SS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-INF",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN SS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-ADM",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN SS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-IGCN-DIR",
+   "direccionId": "SS-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN SS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RGM-ATC",
+   "direccionId": "SS-RGM",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RGM SS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RGM-ARCH",
+   "direccionId": "SS-RGM",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RGM SS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RGM-INS",
+   "direccionId": "SS-RGM",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RGM SS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RGM-ADM",
+   "direccionId": "SS-RGM",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RGM SS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RGM-DIR",
+   "direccionId": "SS-RGM",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RGM SS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-ATC",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC SS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-ARCH",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC SS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-INS",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC SS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-JUR",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC SS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-INF",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC SS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-ADM",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC SS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-RC-DIR",
+   "direccionId": "SS-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC SS",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-ATC",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — ISPI SS",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-ARCH",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — ISPI SS",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-INS",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — ISPI SS",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-JUR",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — ISPI SS",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-ADM",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — ISPI SS",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SS-ISPI-DIR",
+   "direccionId": "SS-ISPI",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — ISPI SS",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-ATC",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN STA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-ARCH",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN STA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-CAT",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN STA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-INF",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN STA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-ADM",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN STA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-IGCN-DIR",
+   "direccionId": "STA-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN STA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-ATC",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH STA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-ARCH",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH STA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-INS",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH STA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-JUR",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH STA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-ADM",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH STA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RPRH-DIR",
+   "direccionId": "STA-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH STA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-ATC",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RC STA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-ARCH",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RC STA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-INS",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RC STA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-JUR",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RC STA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-INF",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — RC STA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-ADM",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RC STA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-RC-DIR",
+   "direccionId": "STA-RC",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RC STA",
+   "orden": 7,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-ATC",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — ISPI STA",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-ARCH",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — ISPI STA",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-INS",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — ISPI STA",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-JUR",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — ISPI STA",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-ADM",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — ISPI STA",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-STA-ISPI-DIR",
+   "direccionId": "STA-ISPI",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — ISPI STA",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-ATC",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN SV",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-ARCH",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN SV",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-CAT",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN SV",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-INF",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN SV",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-ADM",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN SV",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-IGCN-DIR",
+   "direccionId": "SV-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN SV",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-ATC",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH SV",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-ARCH",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH SV",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-INS",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH SV",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-JUR",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH SV",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-ADM",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH SV",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-SV-RPRH-DIR",
+   "direccionId": "SV-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH SV",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-ATC",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN UNI",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-ARCH",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN UNI",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-CAT",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN UNI",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-INF",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN UNI",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-ADM",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN UNI",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-IGCN-DIR",
+   "direccionId": "UNI-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN UNI",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-ATC",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH UNI",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-ARCH",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH UNI",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-INS",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH UNI",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-JUR",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH UNI",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-ADM",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH UNI",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-UNI-RPRH-DIR",
+   "direccionId": "UNI-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH UNI",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-ATC",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — IGCN USU",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-ARCH",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — IGCN USU",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-CAT",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-CAT",
+   "nombreEspecifico": "Catastro y Geodesia — IGCN USU",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-INF",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-INF",
+   "nombreEspecifico": "Informática — IGCN USU",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-ADM",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — IGCN USU",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-IGCN-DIR",
+   "direccionId": "USU-IGCN",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — IGCN USU",
+   "orden": 6,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-ATC",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-ATC",
+   "nombreEspecifico": "Atención al Cliente — RPRH USU",
+   "orden": 1,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-ARCH",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-ARCH",
+   "nombreEspecifico": "Archivo General — RPRH USU",
+   "orden": 2,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-INS",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-INS",
+   "nombreEspecifico": "Inscripción y Registro — RPRH USU",
+   "orden": 3,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-JUR",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-JUR",
+   "nombreEspecifico": "Jurídico — RPRH USU",
+   "orden": 4,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-ADM",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-ADM",
+   "nombreEspecifico": "Administración — RPRH USU",
+   "orden": 5,
+   "activa": true
+  },
+  {
+   "id": "AU-USU-RPRH-DIR",
+   "direccionId": "USU-RPRH",
+   "areaCatalogoId": "ARC-DIR",
+   "nombreEspecifico": "Jefatura de la sede — RPRH USU",
+   "orden": 6,
+   "activa": true
+  }
+ ],
+ "usuariosFinales": [
+  {
+   "id": "UF-05712",
+   "areaUnidadId": "AU-SS-RPRH-INS",
+   "nombre": "Karla Rivas",
+   "carne": "05712",
+   "email": "krivas@cnr.gob.sv",
+   "telefono": "2593-4001",
+   "puesto": "Analista de Propiedad Raíz",
+   "activo": true
+  },
+  {
+   "id": "UF-05718",
+   "areaUnidadId": "AU-SS-RC-INS",
+   "nombre": "Óscar Menjívar",
+   "carne": "05718",
+   "email": "omenjivar@cnr.gob.sv",
+   "telefono": "2593-4002",
+   "puesto": "Analista de Registro de Comercio",
+   "activo": true
+  },
+  {
+   "id": "UF-05723",
+   "areaUnidadId": "AU-CAB-IGCN-ARCH",
+   "nombre": "Nancy Portillo",
+   "carne": "05723",
+   "email": "nportillo@cnr.gob.sv",
+   "telefono": "2593-4003",
+   "puesto": "Encargada de Archivo",
+   "activo": true
+  },
+  {
+   "id": "UF-05729",
+   "areaUnidadId": "AU-SS-RGM-ADM",
+   "nombre": "Iván Alvarenga",
+   "carne": "05729",
+   "email": "ialvarenga@cnr.gob.sv",
+   "telefono": "2593-4004",
+   "puesto": "Administrador de Base de Datos",
+   "activo": true
+  },
+  {
+   "id": "UF-05734",
+   "areaUnidadId": "AU-SON-RPRH-ADM",
+   "nombre": "Silvia Cornejo",
+   "carne": "05734",
+   "email": "scornejo@cnr.gob.sv",
+   "telefono": "2593-4005",
+   "puesto": "Analista de Recursos Humanos",
+   "activo": true
+  },
+  {
+   "id": "UF-05740",
+   "areaUnidadId": "AU-SS-IGCN-CAT",
+   "nombre": "Ricardo Bonilla",
+   "carne": "05740",
+   "email": "rbonilla@cnr.gob.sv",
+   "telefono": "2593-4006",
+   "puesto": "Técnico en Geodesia",
+   "activo": true
+  },
+  {
+   "id": "UF-05744",
+   "areaUnidadId": "AU-SS-ISPI-INS",
+   "nombre": "Gabriela Escobar",
+   "carne": "05744",
+   "email": "gescobar@cnr.gob.sv",
+   "telefono": "2593-4007",
+   "puesto": "Analista de Propiedad Intelectual",
+   "activo": true
+  },
+  {
+   "id": "UF-05750",
+   "areaUnidadId": "AU-STA-RPRH-DIR",
+   "nombre": "Héctor Zelaya",
+   "carne": "05750",
+   "email": "hzelaya@cnr.gob.sv",
+   "telefono": "2593-4008",
+   "puesto": "Jefe de Unidad",
+   "activo": true
+  },
+  {
+   "id": "UF-05755",
+   "areaUnidadId": "AU-SS-RGM-INS",
+   "nombre": "Marta Guzmán",
+   "carne": "05755",
+   "email": "mguzman@cnr.gob.sv",
+   "telefono": "2593-4009",
+   "puesto": "Analista de Soporte Técnico",
+   "activo": true
+  },
+  {
+   "id": "UF-05761",
+   "areaUnidadId": "AU-SS-RPRH-INS",
+   "nombre": "Julio Interiano",
+   "carne": "05761",
+   "email": "jinteriano@cnr.gob.sv",
+   "telefono": "2593-4010",
+   "puesto": "Registrador Auxiliar",
+   "activo": true
+  },
+  {
+   "id": "UF-05766",
+   "areaUnidadId": "AU-SS-IGCN-CAT",
+   "nombre": "Andrea Hernández",
+   "carne": "05766",
+   "email": "ahernandez@cnr.gob.sv",
+   "telefono": "2593-4011",
+   "puesto": "Asistente Cartográfica",
+   "activo": true
+  },
+  {
+   "id": "UF-05772",
+   "areaUnidadId": "AU-SON-RPRH-INS",
+   "nombre": "Fernando Ayala",
+   "carne": "05772",
+   "email": "fayala@cnr.gob.sv",
+   "telefono": "2593-4012",
+   "puesto": "Analista de Planillas",
+   "activo": true
+  },
+  {
+   "id": "UF-05778",
+   "areaUnidadId": "AU-SS-RC-INS",
+   "nombre": "Lorena Cáceres",
+   "carne": "05778",
+   "email": "lcaceres@cnr.gob.sv",
+   "telefono": "2593-4013",
+   "puesto": "Analista de Registro de Comercio",
+   "activo": true
+  },
+  {
+   "id": "UF-05783",
+   "areaUnidadId": "AU-SS-ISPI-ATC",
+   "nombre": "Mauricio Flores",
+   "carne": "05783",
+   "email": "mflores@cnr.gob.sv",
+   "telefono": "2593-4014",
+   "puesto": "Especialista en Marcas",
+   "activo": true
+  },
+  {
+   "id": "UF-05789",
+   "areaUnidadId": "AU-STA-RPRH-ATC",
+   "nombre": "Cecilia Navarro",
+   "carne": "05789",
+   "email": "cnavarro@cnr.gob.sv",
+   "telefono": "2593-4015",
+   "puesto": "Colaboradora Registral",
+   "activo": true
+  },
+  {
+   "id": "UF-05634",
+   "areaUnidadId": "AU-SON-RPRH-INS",
+   "nombre": "T. Guevara",
+   "carne": "05634",
+   "email": "tguevara@cnr.gob.sv",
+   "telefono": "2593-4016",
+   "puesto": "Analista de Registro",
+   "activo": true
+  },
+  {
+   "id": "UF-05628",
+   "areaUnidadId": "AU-SS-IGCN-CAT",
+   "nombre": "S. Melgar",
+   "carne": "05628",
+   "email": "smelgar@cnr.gob.sv",
+   "telefono": "2593-4017",
+   "puesto": "Técnico Cartógrafo",
+   "activo": true
+  },
+  {
+   "id": "UF-05610",
+   "areaUnidadId": "AU-STA-RPRH-ATC",
+   "nombre": "B. Alfaro",
+   "carne": "05610",
+   "email": "balfaro@cnr.gob.sv",
+   "telefono": "2593-4018",
+   "puesto": "Colaborador de Registro",
+   "activo": true
+  },
+  {
+   "id": "UF-05512",
+   "areaUnidadId": "AU-SS-RGM-INS",
+   "nombre": "K. Rivas",
+   "carne": "05512",
+   "email": "krivas@cnr.gob.sv",
+   "telefono": "2593-4019",
+   "puesto": "Analista de Infraestructura",
+   "activo": true
+  },
+  {
+   "id": "UF-05489",
+   "areaUnidadId": "AU-STA-RPRH-ATC",
+   "nombre": "D. Sánchez",
+   "carne": "05489",
+   "email": "dsanchez@cnr.gob.sv",
+   "telefono": "2593-4020",
+   "puesto": "Asistente Registral",
+   "activo": true
+  },
+  {
+   "id": "UF-05377",
+   "areaUnidadId": "AU-SS-RPRH-INS",
+   "nombre": "F. Alvarado",
+   "carne": "05377",
+   "email": "falvarado@cnr.gob.sv",
+   "telefono": "2593-4021",
+   "puesto": "Registrador Auxiliar",
+   "activo": true
+  },
+  {
+   "id": "UF-05244",
+   "areaUnidadId": "AU-SS-IGCN-CAT",
+   "nombre": "N. Hernández",
+   "carne": "05244",
+   "email": "nhernandez@cnr.gob.sv",
+   "telefono": "2593-4022",
+   "puesto": "Técnico en Geodesia",
+   "activo": true
+  },
+  {
+   "id": "UF-05198",
+   "areaUnidadId": "AU-SON-RPRH-INS",
+   "nombre": "O. Beltrán",
+   "carne": "05198",
+   "email": "obeltran@cnr.gob.sv",
+   "telefono": "2593-4023",
+   "puesto": "Analista de Propiedad Raíz",
+   "activo": true
+  },
+  {
+   "id": "UF-05340",
+   "areaUnidadId": "AU-STA-RPRH-ATC",
+   "nombre": "J. Ramírez",
+   "carne": "05340",
+   "email": "jramirez@cnr.gob.sv",
+   "telefono": "2593-4024",
+   "puesto": "Colaborador Registral",
+   "activo": true
+  },
+  {
+   "id": "UF-05230",
+   "areaUnidadId": "AU-SS-RPRH-INS",
+   "nombre": "A. Guzmán",
+   "carne": "05230",
+   "email": "aguzman@cnr.gob.sv",
+   "telefono": "2593-4025",
+   "puesto": "Analista de Registro",
+   "activo": true
+  },
+  {
+   "id": "UF-04987",
+   "areaUnidadId": "AU-SS-RGM-ATC",
+   "nombre": "P. Ortiz",
+   "carne": "04987",
+   "email": "portiz@cnr.gob.sv",
+   "telefono": "2593-4026",
+   "puesto": "Especialista en Redes",
+   "activo": true
+  },
+  {
+   "id": "UF-04512",
+   "areaUnidadId": "AU-STA-RPRH-DIR",
+   "nombre": "M. Aguilar",
+   "carne": "04512",
+   "email": "maguilar@cnr.gob.sv",
+   "telefono": "2593-4027",
+   "puesto": "Jefa de Unidad",
+   "activo": true
+  },
+  {
+   "id": "UF-05118",
+   "areaUnidadId": "AU-SON-RPRH-INS",
+   "nombre": "R. Menjívar",
+   "carne": "05118",
+   "email": "rmenjivar@cnr.gob.sv",
+   "telefono": "2593-4028",
+   "puesto": "Analista de Propiedad Raíz",
+   "activo": true
+  },
+  {
+   "id": "UF-03287",
+   "areaUnidadId": "AU-SS-IGCN-INF",
+   "nombre": "J. Portillo",
+   "carne": "03287",
+   "email": "jportillo@cnr.gob.sv",
+   "telefono": "2593-4029",
+   "puesto": "Técnico en Sistemas de Información Geográfica",
+   "activo": true
+  },
+  {
+   "id": "UF-02901",
+   "areaUnidadId": "AU-SS-RC-ATC",
+   "nombre": "C. Escobar",
+   "carne": "02901",
+   "email": "cescobar@cnr.gob.sv",
+   "telefono": "2593-4030",
+   "puesto": "Colaborador de Registro de Comercio",
+   "activo": true
+  },
+  {
+   "id": "UF-04773",
+   "areaUnidadId": "AU-SS-ISPI-INS",
+   "nombre": "L. Chacón",
+   "carne": "04773",
+   "email": "lchacon@cnr.gob.sv",
+   "telefono": "2593-4031",
+   "puesto": "Analista de Propiedad Intelectual",
+   "activo": true
+  },
+  {
+   "id": "UF-04102",
+   "areaUnidadId": "AU-SS-RPRH-INS",
+   "nombre": "R. Campos",
+   "carne": "04102",
+   "email": "rcampos@cnr.gob.sv",
+   "telefono": "2593-4032",
+   "puesto": "Registradora Auxiliar",
+   "activo": true
+  },
+  {
+   "id": "UF-05840",
+   "areaUnidadId": "AU-SM-RPRH-INS",
+   "nombre": "Rodrigo Sorto",
+   "carne": "05840",
+   "email": "rsorto@cnr.gob.sv",
+   "telefono": "2593-4033",
+   "puesto": "Analista Registral",
+   "activo": true
+  },
+  {
+   "id": "UF-05847",
+   "areaUnidadId": "AU-SM-RC-ATC",
+   "nombre": "Marcela Bonilla",
+   "carne": "05847",
+   "email": "mbonilla@cnr.gob.sv",
+   "telefono": "2593-4034",
+   "puesto": "Colaboradora de Registro de Comercio",
+   "activo": true
+  },
+  {
+   "id": "UF-05861",
+   "areaUnidadId": "AU-AHU-IGCN-CAT",
+   "nombre": "Nelson Cruz",
+   "carne": "05861",
+   "email": "ncruz@cnr.gob.sv",
+   "telefono": "2593-4035",
+   "puesto": "Técnico Catastral",
+   "activo": true
+  },
+  {
+   "id": "UF-05852",
+   "areaUnidadId": "AU-LIB-IGCN-CAT",
+   "nombre": "Andrea Mena",
+   "carne": "05852",
+   "email": "amena@cnr.gob.sv",
+   "telefono": "2593-4036",
+   "puesto": "Analista de Catastro",
+   "activo": true
+  }
+ ],
+ "ubicaciones": [
+  {
+   "id": "UBI-BOD-CENTRAL",
+   "direccionId": null,
+   "nombre": "Bodega central de equipos",
+   "tipo": "Bodega",
+   "descripcion": "Resguardo de equipo nuevo antes de su preparación técnica.",
+   "activa": true
+  },
+  {
+   "id": "UBI-TALLER-HW",
+   "direccionId": null,
+   "nombre": "Taller de Hardware",
+   "tipo": "Taller",
+   "descripcion": "Mesa de trabajo donde se ejecuta la preparación técnica (F0288).",
+   "activa": true
+  },
+  {
+   "id": "UBI-TALLER-SOP",
+   "direccionId": null,
+   "nombre": "Taller de Soporte Técnico",
+   "tipo": "Taller",
+   "descripcion": "Configuración de equipo (F0302) antes de la entrega.",
+   "activa": true
+  },
+  {
+   "id": "UBI-BOD-DESCARGO",
+   "direccionId": null,
+   "nombre": "Bodega de equipo descargado",
+   "tipo": "Bodega",
+   "descripcion": "Equipo retirado del usuario final, a la espera de destino.",
+   "activa": true
+  },
+  {
+   "id": "UBI-BOD-BAJA",
+   "direccionId": null,
+   "nombre": "Bodega de equipo no disponible",
+   "tipo": "Bodega",
+   "descripcion": "Equipo fuera de servicio o pendiente de descarte institucional.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-IGCN-CSOD",
+   "direccionId": "STA-IGCN",
+   "nombre": "Sala técnica CSOD — IGCN STA",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-IGCN-OFI",
+   "direccionId": "STA-IGCN",
+   "nombre": "Oficinas — IGCN STA",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-RPRH-CSOD",
+   "direccionId": "STA-RPRH",
+   "nombre": "Sala técnica CSOD — RPRH STA",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-RPRH-OFI",
+   "direccionId": "STA-RPRH",
+   "nombre": "Oficinas — RPRH STA",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-RC-CSOD",
+   "direccionId": "STA-RC",
+   "nombre": "Sala técnica CSOD — RC STA",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-RC-OFI",
+   "direccionId": "STA-RC",
+   "nombre": "Oficinas — RC STA",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-ISPI-CSOD",
+   "direccionId": "STA-ISPI",
+   "nombre": "Sala técnica CSOD — ISPI STA",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-STA-ISPI-OFI",
+   "direccionId": "STA-ISPI",
+   "nombre": "Oficinas — ISPI STA",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RPRH-CSOD",
+   "direccionId": "SS-RPRH",
+   "nombre": "Sala técnica CSOD — RPRH SS",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RPRH-OFI",
+   "direccionId": "SS-RPRH",
+   "nombre": "Oficinas — RPRH SS",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-IGCN-CSOD",
+   "direccionId": "SS-IGCN",
+   "nombre": "Sala técnica CSOD — IGCN SS",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-IGCN-OFI",
+   "direccionId": "SS-IGCN",
+   "nombre": "Oficinas — IGCN SS",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RGM-CSOD",
+   "direccionId": "SS-RGM",
+   "nombre": "Sala técnica CSOD — RGM SS",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RGM-OFI",
+   "direccionId": "SS-RGM",
+   "nombre": "Oficinas — RGM SS",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RC-CSOD",
+   "direccionId": "SS-RC",
+   "nombre": "Sala técnica CSOD — RC SS",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-RC-OFI",
+   "direccionId": "SS-RC",
+   "nombre": "Oficinas — RC SS",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-ISPI-CSOD",
+   "direccionId": "SS-ISPI",
+   "nombre": "Sala técnica CSOD — ISPI SS",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SS-ISPI-OFI",
+   "direccionId": "SS-ISPI",
+   "nombre": "Oficinas — ISPI SS",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-IGCN-CSOD",
+   "direccionId": "SM-IGCN",
+   "nombre": "Sala técnica CSOD — IGCN SM",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-IGCN-OFI",
+   "direccionId": "SM-IGCN",
+   "nombre": "Oficinas — IGCN SM",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-RPRH-CSOD",
+   "direccionId": "SM-RPRH",
+   "nombre": "Sala técnica CSOD — RPRH SM",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-RPRH-OFI",
+   "direccionId": "SM-RPRH",
+   "nombre": "Oficinas — RPRH SM",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-RC-CSOD",
+   "direccionId": "SM-RC",
+   "nombre": "Sala técnica CSOD — RC SM",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-RC-OFI",
+   "direccionId": "SM-RC",
+   "nombre": "Oficinas — RC SM",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-ISPI-CSOD",
+   "direccionId": "SM-ISPI",
+   "nombre": "Sala técnica CSOD — ISPI SM",
+   "tipo": "Sala técnica",
+   "descripcion": "Centro de servidores y equipo de comunicaciones de la sede.",
+   "activa": true
+  },
+  {
+   "id": "UBI-SM-ISPI-OFI",
+   "direccionId": "SM-ISPI",
+   "nombre": "Oficinas — ISPI SM",
+   "tipo": "Oficina",
+   "descripcion": "Puestos de trabajo del personal de la sede.",
    "activa": true
   }
  ]

@@ -11,7 +11,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0101",
@@ -25,7 +28,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0102",
@@ -39,7 +45,10 @@
   "tipoExpediente": "Laptop usada",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0103",
@@ -53,7 +62,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0104",
@@ -67,7 +79,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0105",
@@ -81,7 +96,10 @@
   "tipoExpediente": "Laptop usada",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-07-27"
+  "fecha": "2026-07-27",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-27",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0106",
@@ -95,7 +113,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0107",
@@ -109,7 +130,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0108",
@@ -123,7 +147,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0109",
@@ -137,7 +164,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0110",
@@ -151,7 +181,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0111",
@@ -165,7 +198,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0112",
@@ -179,7 +215,10 @@
   "tipoExpediente": "Laptop usada",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0113",
@@ -193,7 +232,10 @@
   "tipoExpediente": "Laptop usada",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-08-04"
+  "fecha": "2026-08-04",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-04",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0098",
@@ -207,7 +249,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "CPU preparado por Hardware; listo para configuración.",
   "estado": "Preparado",
-  "fecha": "2026-07-24"
+  "fecha": "2026-07-24",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-24",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0097",
@@ -221,7 +266,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "Laptop preparado por Hardware; listo para configuración.",
   "estado": "Preparado",
-  "fecha": "2026-07-23"
+  "fecha": "2026-07-23",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-23",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0096",
@@ -235,7 +283,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "Laptop preparado por Hardware; listo para configuración.",
   "estado": "Preparado",
-  "fecha": "2026-07-23"
+  "fecha": "2026-07-23",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-23",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0094",
@@ -249,7 +300,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Segundo ciclo de preparación tras el reingreso a Hardware (descargo DESC-2026-0001).",
   "estado": "Preparado",
-  "fecha": "2026-07-16"
+  "fecha": "2026-07-16",
+  "ciclo": 2,
+  "fechaApertura": "2026-07-16",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0093",
@@ -263,7 +317,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Primer ciclo de preparación; cerrado por el descargo DESC-2026-0001 (ya no reutilizable).",
   "estado": "Cerrado",
-  "fecha": "2026-05-05"
+  "fecha": "2026-05-05",
+  "ciclo": 1,
+  "fechaApertura": "2026-05-05",
+  "fechaCierre": "2026-07-14"
  },
  {
   "codigo": "EXP-PT-2026-0092",
@@ -277,7 +334,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "Laptop nueva preparada por Soporte; lista para asignación.",
   "estado": "Preparado",
-  "fecha": "2026-07-12"
+  "fecha": "2026-07-12",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-12",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0091",
@@ -291,7 +351,10 @@
   "tipoExpediente": "Laptop nueva",
   "observaciones": "Laptop nueva: Soporte completó el F0288.",
   "estado": "Preparado",
-  "fecha": "2026-07-02"
+  "fecha": "2026-07-02",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-02",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0089",
@@ -305,7 +368,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-06-29"
+  "fecha": "2026-06-29",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-29",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0088",
@@ -319,7 +385,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "Preparación en curso; faltan ítems del F0288.",
   "estado": "En preparación",
-  "fecha": "2026-07-10"
+  "fecha": "2026-07-10",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-10",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0087",
@@ -333,7 +402,10 @@
   "tipoExpediente": "Laptop usada",
   "observaciones": "",
   "estado": "Preparado",
-  "fecha": "2026-06-18"
+  "fecha": "2026-06-18",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-18",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0086",
@@ -347,7 +419,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Verificación de falla y reemplazo de accesorios incluidos en la preparación.",
   "estado": "Preparado",
-  "fecha": "2026-06-24"
+  "fecha": "2026-06-24",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-24",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0084",
@@ -361,7 +436,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Equipo reacondicionado y preparado; disponible para asignación.",
   "estado": "Preparado",
-  "fecha": "2026-07-01"
+  "fecha": "2026-07-01",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-01",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2026-0081",
@@ -375,7 +453,10 @@
   "tipoExpediente": "CPU nuevo",
   "observaciones": "CPU nuevo autorizado al Encargado de Hardware (autorización DTI-2026-114).",
   "estado": "Preparado",
-  "fecha": "2026-05-20"
+  "fecha": "2026-05-20",
+  "ciclo": 1,
+  "fechaApertura": "2026-05-20",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2025-0041",
@@ -389,7 +470,10 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Expediente del año 2025: el correlativo por año no se mezcla con los del año actual.",
   "estado": "Preparado",
-  "fecha": "2025-12-09"
+  "fecha": "2025-12-09",
+  "ciclo": 1,
+  "fechaApertura": "2025-12-09",
+  "fechaCierre": ""
  },
  {
   "codigo": "EXP-PT-2025-0038",
@@ -403,6 +487,9 @@
   "tipoExpediente": "CPU usado",
   "observaciones": "Proceso 2025 cerrado (Expediente único EXP-2025-0025).",
   "estado": "Preparado",
-  "fecha": "2025-11-24"
+  "fecha": "2025-11-24",
+  "ciclo": 1,
+  "fechaApertura": "2025-11-24",
+  "fechaCierre": ""
  }
 ]

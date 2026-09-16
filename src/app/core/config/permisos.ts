@@ -76,6 +76,9 @@ export const NAVEGACION: NavGrupo[] = [
       // Distribución de soportes: la gestionan Encargado de Soporte y Administrador (§6); el
       // Técnico de Soporte la consulta para saber qué Direcciones/Registros atiende.
       { ruta: '/distribucion-soportes', icono: 'users', titulo: 'Distribución de soportes', roles: ['enc-soporte', 'tec-soporte', 'admin'] },
+      // Estructura organizativa: consulta abierta a todos los roles. Es el mapa institucional
+      // —Zona → Departamento → Dirección → Área → Usuario final—, no un módulo de captura.
+      { ruta: '/estructura-organizativa', icono: 'map', titulo: 'Estructura organizativa' },
       // Administración: únicamente el rol Administrador. Se oculta por completo para el resto (no se muestra deshabilitada).
       { ruta: '/administracion', icono: 'users', titulo: 'Administración', roles: ['admin'] }
     ]

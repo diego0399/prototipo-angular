@@ -1,5 +1,92 @@
 [
  {
+  "expediente": "SOL-2026-0150",
+  "codigoUnico": "EXP-2026-0010",
+  "inventario": "2201-1300-2026",
+  "expedienteTecnico": "EXP-PT-2026-0093",
+  "ciclo": 1,
+  "fechaApertura": "2026-05-07",
+  "fechaCierre": "2026-07-14",
+  "estado": "Cerrado",
+  "resumenEstado": "Cerrado · Ciclo 1 histórico, equipo descargado",
+  "fechaEntrega": "2026-05-12",
+  "observaciones": "Primer ciclo del equipo. Se cerró con el descargo DESC-2026-0001; se conserva completo como histórico.",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-05-05"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Samuel Cruz — Encargado de Hardware",
+    "estado": "Anexado",
+    "fecha": "2026-05-06"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0093 · CPU usado",
+    "estado": "Anexado",
+    "fecha": "2026-05-07"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Wendy Carranza — Técnico de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-05-11"
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-05-07"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Generado al cerrar la configuración",
+    "estado": "Generado",
+    "fecha": "2026-05-11"
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Capturas de antivirus, OCS y dominio",
+    "estado": "Anexado",
+    "fecha": "2026-05-11"
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "F0288, F0302 y conformidad del usuario final firmados",
+    "estado": "3 de 3",
+    "fecha": "2026-05-12"
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Respondido desde el correo institucional",
+    "estado": "Aceptado",
+    "fecha": "2026-05-12"
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Conformidad registrada mediante formulario externo",
+    "estado": "Completada",
+    "fecha": "2026-05-12"
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Responsabilidad interna cerrada por el descargo del equipo",
+    "estado": "Cerrado",
+    "fecha": "2026-07-14"
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo del ciclo 1",
+    "estado": "Generado",
+    "fecha": "2026-07-14"
+   }
+  ]
+ },
+ {
   "expediente": "SOL-2026-0158",
   "codigoUnico": "EXP-2026-0009",
   "estado": "En configuración",
@@ -78,7 +165,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-1215-2026",
+  "expedienteTecnico": "EXP-PT-2026-0098",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-24",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0157",
@@ -159,7 +252,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-1210-2026",
+  "expedienteTecnico": "EXP-PT-2026-0097",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-23",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0156",
@@ -240,7 +339,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-1220-2026",
+  "expedienteTecnico": "EXP-PT-2026-0096",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-23",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0147",
@@ -321,7 +426,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-0703-2021",
+  "expedienteTecnico": "EXP-PT-2025-0041",
+  "ciclo": 1,
+  "fechaApertura": "2025-12-09",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0153",
@@ -402,7 +513,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-0899-2023",
+  "expedienteTecnico": "EXP-PT-2026-0084",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-01",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0155",
@@ -483,7 +600,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-1201-2026",
+  "expedienteTecnico": "EXP-PT-2026-0092",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-12",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0139",
@@ -564,7 +687,13 @@
     "estado": "Por generar",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-0871-2024",
+  "expedienteTecnico": "EXP-PT-2026-0087",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-18",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0145",
@@ -645,7 +774,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-1187-2026",
+  "expedienteTecnico": "EXP-PT-2026-0091",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-02",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0141",
@@ -726,7 +861,13 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  ]
+  ],
+  "inventario": "2201-0954-2023",
+  "expedienteTecnico": "EXP-PT-2026-0086",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-24",
+  "fechaCierre": "",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2025-0210",
@@ -807,6 +948,12 @@
     "estado": "Generado",
     "fecha": "2025-12-04"
    }
-  ]
+  ],
+  "inventario": "2201-0788-2022",
+  "expedienteTecnico": "EXP-PT-2025-0038",
+  "ciclo": 1,
+  "fechaApertura": "2025-11-24",
+  "fechaCierre": "",
+  "observaciones": ""
  }
 ]

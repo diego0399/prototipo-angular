@@ -44,6 +44,9 @@ export const routes: Routes = [
       { path: 'trazabilidad', loadComponent: () => import('./features/trazabilidad/trazabilidad.component').then((m) => m.TrazabilidadComponent) },
       { path: 'inventario-controles', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/inventario-controles.component').then((m) => m.InventarioControlesComponent) },
       { path: 'distribucion-soportes', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/distribucion-soportes.component').then((m) => m.DistribucionSoportesComponent) },
+      // Estructura organizativa: el módulo organizacional del DER (Zona → Departamento → Dirección
+      // → Área → Usuario final) y las ubicaciones físicas. Es de consulta: no se captura aquí.
+      { path: 'estructura-organizativa', loadComponent: () => import('./features/estructura-organizativa/estructura.component').then((m) => m.EstructuraOrganizativaComponent) },
       { path: 'administracion', canActivate: [roleGuard], loadComponent: () => import('./features/administracion/admin.component').then((m) => m.AdminComponent) }
     ]
   },

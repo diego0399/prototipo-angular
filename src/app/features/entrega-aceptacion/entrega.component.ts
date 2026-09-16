@@ -555,10 +555,14 @@ export class EntregaComponent {
     const e = this.entrega();
     return e ? (this.data.expedienteUnicoDe(e.expediente)?.codigoUnico ?? e.expediente) : '';
   });
-  /** Expediente técnico original del equipo: el mismo sobre el que se abre el reproceso. */
+  /**
+   * Expediente técnico **de este proceso**: el que su Expediente único guarda, y el mismo sobre el
+   * que se abre el reproceso. No se busca «el último ET del equipo»: si el equipo ya arrancó otro
+   * ciclo, ese ET no es el de esta entrega.
+   */
   protected readonly expTecnico = computed(() => {
     const e = this.entrega();
-    return e ? (this.data.expTecnicoDeEquipo(e.inventario)?.codigo ?? '') : '';
+    return e ? (this.data.codigoEtDeProceso(e.expediente, e.inventario) ?? '') : '';
   });
   protected readonly estadoIncidencia = computed(() => {
     const e = this.entrega();
