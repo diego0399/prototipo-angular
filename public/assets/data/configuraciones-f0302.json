@@ -166,7 +166,9 @@
     "fecha": "2026-07-05",
     "hora": "16:05"
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0010",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0158",
@@ -235,7 +237,9 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0009",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0157",
@@ -313,7 +317,9 @@
    "horaFin": "",
    "finalizadoPor": "",
    "duracionMinutos": null
-  }
+  },
+  "expedienteUnico": "EXP-2026-0008",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0156",
@@ -382,7 +388,9 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0007",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0147",
@@ -451,7 +459,9 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0006",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0153",
@@ -529,7 +539,9 @@
    "horaFin": "",
    "finalizadoPor": "",
    "duracionMinutos": null
-  }
+  },
+  "expedienteUnico": "EXP-2026-0005",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0155",
@@ -607,7 +619,9 @@
    "horaFin": "",
    "finalizadoPor": "",
    "duracionMinutos": null
-  }
+  },
+  "expedienteUnico": "EXP-2026-0004",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0141",
@@ -776,7 +790,9 @@
     "fecha": "2026-07-05",
     "hora": "16:05"
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0002",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0141",
@@ -961,7 +977,9 @@
    "fecha": "2026-06-29",
    "hora": "09:47",
    "tiempoMinutos": 37
-  }
+  },
+  "expedienteUnico": "EXP-2026-0002",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2026-0145",
@@ -1046,7 +1064,9 @@
     "estado": "Pendiente",
     "fecha": ""
    }
-  }
+  },
+  "expedienteUnico": "EXP-2026-0003",
+  "ciclo": 1
  },
  {
   "expediente": "SOL-2025-0210",
@@ -1215,6 +1235,8 @@
     "fecha": "2025-12-01",
     "hora": "15:10"
    }
-  }
+  },
+  "expedienteUnico": "EXP-2025-0025",
+  "ciclo": 1
  }
 ]

@@ -26,7 +26,10 @@
       "usuario": "Carlos González — Encargado de Soporte",
       "tipo": "Seguimiento",
       "texto": "Se recibe el reporte del usuario final y se asigna la revisión a Soporte; se solicita apoyo de Hardware por tratarse de batería.",
-      "estadoCaso": "Abierto"
+      "estadoCaso": "Abierto",
+      "id": "CASO-2026-0002-C01",
+      "casoGarantiaId": "CASO-2026-0002",
+      "usuarioId": "cgonzalez"
      },
      {
       "fecha": "2026-07-16",
@@ -34,14 +37,21 @@
       "usuario": "Balmore Mejía — Técnico de Hardware",
       "tipo": "Revisión técnica",
       "texto": "Como técnico que preparó el equipo (F0288), se revisa el ciclo de carga: la batería reporta 87 % de salud; se programa calibración antes de decidir reemplazo.",
-      "estadoCaso": "Abierto"
+      "estadoCaso": "Abierto",
+      "id": "CASO-2026-0002-C02",
+      "casoGarantiaId": "CASO-2026-0002",
+      "usuarioId": "bmejia"
      }
-    ]
+    ],
+    "garantiaId": "GAR-0001",
+    "expedienteUnico": "EXP-2026-0001",
+    "responsableId": "wcarranza"
    }
   ],
   "nota": "La aceptación del usuario final mediante el formulario externo inició la garantía; queda anexada al expediente único del equipo.",
   "expedienteUnico": "EXP-2026-0001",
-  "ciclo": 1
+  "ciclo": 1,
+  "idGarantia": "GAR-0001"
  },
  {
   "expediente": "SOL-2026-0132",
@@ -70,7 +80,10 @@
       "usuario": "Carlos González — Encargado de Soporte",
       "tipo": "Seguimiento",
       "texto": "Se recibe el reporte del usuario y se programa la revisión del equipo para esta semana.",
-      "estadoCaso": "Abierto"
+      "estadoCaso": "Abierto",
+      "id": "CASO-2026-0001-C01",
+      "casoGarantiaId": "CASO-2026-0001",
+      "usuarioId": "cgonzalez"
      },
      {
       "fecha": "2026-06-04",
@@ -78,7 +91,10 @@
       "usuario": "Mateo Martínez — Técnico de Soporte",
       "tipo": "Revisión técnica",
       "texto": "Se realiza diagnóstico de arranque: se identifican servicios de inicio innecesarios; no hay falla de hardware.",
-      "estadoCaso": "Abierto"
+      "estadoCaso": "Abierto",
+      "id": "CASO-2026-0001-C02",
+      "casoGarantiaId": "CASO-2026-0001",
+      "usuarioId": "mmartinez"
      },
      {
       "fecha": "2026-06-05",
@@ -86,14 +102,21 @@
       "usuario": "Mateo Martínez — Técnico de Soporte",
       "tipo": "Resolución",
       "texto": "Se ajusta el inicio de servicios y se verifica el funcionamiento con el usuario. Se recomienda cerrar el caso.",
-      "estadoCaso": "Abierto"
+      "estadoCaso": "Abierto",
+      "id": "CASO-2026-0001-C03",
+      "casoGarantiaId": "CASO-2026-0001",
+      "usuarioId": "mmartinez"
      }
-    ]
+    ],
+    "garantiaId": "GAR-0002",
+    "expedienteUnico": "",
+    "responsableId": "mmartinez"
    }
   ],
   "nota": "Caso atendido dentro del período de garantía de un mes y anexado al expediente único.",
   "expedienteUnico": "",
-  "ciclo": 1
+  "ciclo": 1,
+  "idGarantia": "GAR-0002"
  },
  {
   "expediente": "SOL-2025-0210",
@@ -107,7 +130,8 @@
   "casos": [],
   "nota": "Garantía del proceso 2025 vencida sin casos; el expediente sigue consultable como histórico.",
   "expedienteUnico": "EXP-2025-0025",
-  "ciclo": 1
+  "ciclo": 1,
+  "idGarantia": "GAR-0003"
  },
  {
   "expediente": "SOL-2026-0150",
@@ -130,6 +154,7 @@
   "vencimientoInterna": "2026-06-12",
   "proveedor": "Proveedor institucional",
   "observacionesGarantia": "",
-  "modificaciones": []
+  "modificaciones": [],
+  "idGarantia": "GAR-0004"
  }
 ]

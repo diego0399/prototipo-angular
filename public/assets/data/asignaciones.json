@@ -253,7 +253,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "CPU nuevo: Hardware preparó y completó el F0288; Soporte configura y entrega."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0011",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -265,7 +265,7 @@
   "condicion": "Usado",
   "responsableAsignacion": "Samuel Cruz — Encargado de Hardware",
   "decideDireccion": false,
-  "fecha": "2026-06-23",
+  "fecha": "2026-06-25",
   "estado": "Vigente",
   "observacion": "",
   "vigente": true,
@@ -293,7 +293,7 @@
   "condicion": "Usado",
   "responsableAsignacion": "Carlos González — Encargado de Soporte",
   "decideDireccion": true,
-  "fecha": "2026-06-16",
+  "fecha": "2026-06-19",
   "estado": "Vigente",
   "observacion": "Laptop usada: la Dirección decidió el destinatario; Soporte ejecutó la asignación.",
   "vigente": true,
@@ -321,7 +321,7 @@
   "condicion": "Nuevo",
   "responsableAsignacion": "Samuel Cruz — Encargado de Hardware",
   "decideDireccion": false,
-  "fecha": "2026-05-19",
+  "fecha": "2026-05-21",
   "estado": "Vigente",
   "observacion": "Motivo de autorización: reposición urgente por falla de equipo anterior; autorización DTI-2026-114 emitida al Encargado de Hardware.",
   "vigente": true,
@@ -337,7 +337,7 @@
    "estadoEntrega": "Completada",
    "observaciones": "CPU nuevo autorizado al Encargado de Hardware; observación obligatoria registrada."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0012",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -393,7 +393,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Laptop nueva: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0013",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -421,7 +421,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "CPU nuevo: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0014",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -449,7 +449,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Laptop usada: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0015",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -477,7 +477,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Laptop nueva: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0016",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -505,7 +505,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "CPU usado: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0017",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -533,7 +533,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Laptop usada: equipo preparado; falta crear el Expediente único y configurarlo."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0018",
   "ciclo": 1,
   "usuarioFinalId": ""
  },
@@ -561,7 +561,7 @@
    "estadoEntrega": "Pendiente",
    "observaciones": "Bloqueado: el Instituto Geográfico y del Catastro Nacional (IGCN) no tiene Técnico de Soporte asignado en la distribución."
   },
-  "expedienteUnico": "",
+  "expedienteUnico": "EXP-2026-0019",
   "ciclo": 1,
   "usuarioFinalId": ""
  }

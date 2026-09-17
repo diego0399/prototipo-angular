@@ -140,10 +140,7 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
               <section class="paso">
                 <h3 class="paso-t"><span class="n">1</span> Solicitud</h3>
                 @if (proceso(); as p) {
-                  <p class="chk" [class.ok]="!!asigProceso()" [class.pend]="!asigProceso()">
-                    <ui-icon [name]="asigProceso() ? 'check' : 'clock'" [size]="14" />
-                    {{ asigProceso() ? 'Solicitud con equipo asignado' : 'Solicitud sin equipo asignado' }}
-                  </p>
+                  <p class="chk ok"><ui-icon name="check" [size]="14" /> Solicitud seleccionada</p>
                   <div class="datos">
                     <div><span>Solicitud</span><b class="mono">{{ p.expediente }}</b></div>
                     <div><span>Tipo</span><b>{{ p.tipoEquipo | tipoRequerimiento }}</b></div>
@@ -151,25 +148,34 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                     <div><span>Correo institucional</span><b>{{ p.correoDestinatario }}</b></div>
                     <div><span>Estado</span><b>{{ p.estado }}</b></div>
                   </div>
-                  @if (!asigProceso()) {
-                    <div class="alert warn mt-2">
-                      <span class="alert-ico">!</span>
-                      <span>Esta solicitud aún no tiene equipo asignado y no puede crear Expediente único.</span>
-                    </div>
-                    <a class="btn btn-outline btn-sm mt-1" routerLink="/asignacion">Ir a Asignación de equipo</a>
-                  }
                   <button class="btn btn-ghost btn-sm mt-1" (click)="abrirBusquedaSol()">Cambiar solicitud</button>
                 } @else {
                   <button class="btn btn-primary" (click)="abrirBusquedaSol()">Buscar solicitud / requerimiento</button>
-                  <span class="hint">Solo aparecen solicitudes con un equipo preparado y asignado al usuario final.</span>
+                  <span class="hint">
+                    El requerimiento que origina el ciclo. El equipo se elige en el paso 2 y la
+                    <b>asignación al usuario final se registra después</b>, ya con el expediente creado.
+                  </span>
                 }
               </section>
 
-              <!-- ── Paso 2: el equipo llega de la asignación; aquí solo se revisa ── -->
+              <!-- ── Paso 2: el equipo preparado con el que se abre el ciclo ──
+                   El DER encadena ET PREPARADO → EXPEDIENTE_UNICO → ASIGNACION: el equipo se
+                   elige aquí por su Expediente técnico, y la asignación al usuario final viene
+                   después. Antes se tomaba de la asignación, que era justo el orden inverso. -->
+              @if (!equipoProceso() && proceso()) {
+                <section class="paso">
+                  <h3 class="paso-t"><span class="n">2</span> Equipo preparado</h3>
+                  <button class="btn btn-primary" (click)="buscarEquipoAbierto.set(true)">Buscar equipo preparado</button>
+                  <span class="hint">
+                    Solo equipos con su ciclo abierto, Expediente técnico <b>PREPARADO</b> y F0288
+                    finalizado y firmado. Son los {{ equiposDisponibles().length }} que hoy pueden abrir un ciclo.
+                  </span>
+                </section>
+              }
               @if (equipoProceso(); as e) {
                 <section class="paso">
-                  <h3 class="paso-t"><span class="n">2</span> Equipo asignado</h3>
-                  <p class="chk ok"><ui-icon name="check" [size]="14" /> Equipo preparado y asignado al usuario final</p>
+                  <h3 class="paso-t"><span class="n">2</span> Equipo preparado</h3>
+                  <p class="chk ok"><ui-icon name="check" [size]="14" /> Equipo preparado, listo para abrir el ciclo</p>
                   <div class="datos">
                     <div><span>Inventario</span><b class="mono">{{ e.inventario }}</b></div>
                     <div><span>Tipo</span><b>{{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }}</b></div>
@@ -192,7 +198,11 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                   } @else {
                     <p class="chk pend"><ui-icon name="clock" [size]="14" /> Este equipo aún no tiene expediente técnico</p>
                   }
-                  <span class="hint">El equipo viene de la asignación al usuario final; se cambia desde <a routerLink="/asignacion">Asignación de equipo</a>.</span>
+                  <span class="hint">
+                    El equipo abre el ciclo con su Expediente técnico. La asignación al usuario final
+                    se registra después, en <a routerLink="/asignacion">Asignación de equipo</a>.
+                  </span>
+                  <button class="btn btn-ghost btn-sm mt-1" (click)="buscarEquipoAbierto.set(true)">Cambiar equipo</button>
                 </section>
               }
 
@@ -484,7 +494,17 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                 <div class="sec-title">Datos generales</div>
                 <dl class="dl">
                   <dt>Código único</dt><dd>{{ x.codigoUnico }}</dd>
-                  <dt>Solicitud</dt><dd>{{ x.expediente }} · {{ solicitudDe(x)?.tipoEquipo | tipoRequerimiento }}</dd>
+                  <!-- El DER permite un ciclo sin requerimiento externo: se dice de dónde nació. -->
+                  <dt>Origen del ciclo</dt>
+                  <dd>
+                    {{ x.origenCiclo || (x.expediente ? 'Solicitud' : 'Reingreso interno') }}
+                    @if (!x.expediente) {
+                      <span class="chip">Abierto internamente tras el reingreso, sin requerimiento externo</span>
+                    }
+                  </dd>
+                  @if (x.expediente) {
+                    <dt>Solicitud</dt><dd>{{ x.expediente }} · {{ solicitudDe(x)?.tipoEquipo | tipoRequerimiento }}</dd>
+                  }
                   <!-- El EU guarda su equipo y su expediente técnico: no se deducen del equipo,
                        porque un equipo acumula varios ciclos y cada uno tiene los suyos. -->
                   <dt>Ciclo del equipo</dt>
@@ -701,7 +721,39 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
         }
       }
 
-      <!-- Paso 1 · Búsqueda de solicitudes: solo las que ya tienen equipo asignado -->
+      <!-- Paso 2 · Equipos preparados: los que pueden abrir un ciclo (ET PREPARADO + F0288 firmado) -->
+      @if (buscarEquipoAbierto()) {
+        <ui-modal titulo="Buscar equipo preparado" sub="Ciclo abierto, Expediente técnico PREPARADO y F0288 finalizado y firmado" (cerrar)="buscarEquipoAbierto.set(false)">
+          <div class="table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>Inventario</th><th>Equipo</th><th>Ciclo</th><th>Expediente técnico</th><th>Técnico que preparó</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (e of equiposDisponibles(); track e.inventario) {
+                  <tr>
+                    <td class="mono main-cell">{{ e.inventario }}</td>
+                    <td>{{ e | marcaModelo }}<div class="sub-cell">{{ e.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} · {{ e.condicion.toLowerCase() }}</div></td>
+                    <td class="mono">{{ data.cicloAbiertoDeEquipo(e.inventario)?.ciclo }}</td>
+                    <td class="mono">{{ data.cicloAbiertoDeEquipo(e.inventario)?.codigo }}</td>
+                    <td class="sub-cell">{{ data.cicloAbiertoDeEquipo(e.inventario)?.tecnicoPreparacion?.split('—')?.[0]?.trim() }}</td>
+                    <td style="text-align:right;">
+                      <button class="btn btn-primary btn-sm" (click)="elegirEquipo(e.inventario)">Seleccionar</button>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr><td colspan="6" class="muted">
+                    Ningún equipo está listo para abrir un ciclo. Hace falta un Expediente técnico
+                    PREPARADO con su F0288 finalizado y firmado.
+                  </td></tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </ui-modal>
+      }
+
+      <!-- Paso 1 · Búsqueda de solicitudes -->
       @if (buscarSolAbierto()) {
         <ui-modal titulo="Buscar solicitud / requerimiento" sub="Solo solicitudes con equipo preparado y asignado al usuario final" (cerrar)="buscarSolAbierto.set(false)">
           <div class="field mb-2">
@@ -964,18 +1016,32 @@ export class ExpedienteUnicoComponent {
     this.procesoSel() ? this.data.asignacionDe(this.procesoSel()) : undefined
   );
   /**
-   * Equipo del proceso: siempre el de la asignación al usuario final. Ya no se busca a mano aquí
-   * —el equipo del Expediente único es el que se asignó antes—, así que si la solicitud no tiene
-   * asignación tampoco hay equipo que consolidar.
+   * Equipo elegido para abrir el ciclo. **Ya no viene de la asignación**: en el DER la ASIGNACION
+   * cuelga del Expediente único (`EU → ASIGNACION`), así que exigir una asignación previa invertía
+   * el orden. Aquí se elige un equipo **preparado** —su ET PREPARADO y su F0288 firmado— y la
+   * asignación al usuario final se registra después, ya con el EU creado.
    */
+  protected equipoSel = signal('');
   protected readonly equipoProceso = computed(() => {
-    const asig = this.asigProceso();
-    return asig ? this.data.equipoDe(asig.equipoInventario) : undefined;
+    const inv = this.equipoSel()
+      || this.proceso()?.equipoInventario
+      || this.asigProceso()?.equipoInventario
+      || '';
+    return inv ? this.data.equipoDe(inv) : undefined;
   });
+  /** El ET del ciclo **abierto** del equipo: es el único que puede habilitar un EU. */
   protected readonly expTecProceso = computed(() => {
     const e = this.equipoProceso();
-    return e ? this.data.expTecnicoDeEquipo(e.inventario) : undefined;
+    return e ? this.data.cicloAbiertoDeEquipo(e.inventario) : undefined;
   });
+  /** Equipos preparados sin Expediente único: la lista del paso 2. */
+  protected readonly equiposDisponibles = computed(() => {
+    const tipo = this.proceso()?.tipoEquipo;
+    const lista = this.data.equiposParaExpedienteUnico();
+    // Un requerimiento de CPU no se abre con una laptop: se ofrece solo lo compatible.
+    return tipo ? lista.filter((e) => e.tipo === tipo) : lista;
+  });
+  protected buscarEquipoAbierto = signal(false);
   protected readonly prepProceso = computed(() => {
     const t = this.expTecProceso();
     return t ? this.data.preparacionPorCodigo(t.codigo) : undefined;
@@ -987,7 +1053,7 @@ export class ExpedienteUnicoComponent {
    */
   protected readonly pasos = computed(() => [
     { lbl: 'Solicitud', done: !!this.proceso() },
-    { lbl: 'Equipo asignado', done: !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' },
+    { lbl: 'Equipo preparado', done: !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' },
     { lbl: 'Confirmación', done: this.puedeCrear() }
   ]);
 
@@ -997,11 +1063,13 @@ export class ExpedienteUnicoComponent {
    */
   protected readonly puedeCrear = computed(() =>
     this.esEncSoporte() && !!this.proceso() && !!this.proceso()?.correoDestinatario &&
-    !!this.asigProceso() && !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' &&
+    // La asignación **ya no es requisito**: viene después del EU. Lo que sí es requisito es el
+    // equipo con su ciclo abierto PREPARADO y su F0288 firmado.
+    !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' && this.f0288Listo() &&
     !this.data.expedienteUnicoDe(this.procesoSel()) && !!this.tecnicoConfig() &&
     // El técnico elegido debe atender la Dirección/Registro del requerimiento: es la regla nueva y
     // la aplica el servicio, aquí solo se refleja para no ofrecer un botón que va a fallar.
-    !this.data.bloqueoExpedienteUnico(this.procesoSel(), this.tecnicoConfig())
+    !this.data.bloqueoExpedienteUnico(this.procesoSel(), this.tecnicoConfig(), this.equipoProceso()?.inventario ?? '')
   );
 
   /** ¿El F0288 del equipo elegido está finalizado y firmado? */
@@ -1021,8 +1089,8 @@ export class ExpedienteUnicoComponent {
    * repetía la regla completa aunque solo faltara un dato.
    */
   protected readonly validaciones = computed(() => [
-    { lbl: 'Solicitud con equipo asignado', falta: 'seleccionar una solicitud con equipo asignado', ok: !!this.proceso() && !!this.asigProceso() },
-    { lbl: 'Equipo preparado', falta: 'que el equipo esté preparado', ok: !!this.equipoProceso() },
+    { lbl: 'Solicitud seleccionada', falta: 'seleccionar la solicitud', ok: !!this.proceso() },
+    { lbl: 'Equipo preparado seleccionado', falta: 'elegir un equipo preparado', ok: !!this.equipoProceso() },
     { lbl: 'Expediente técnico completado', falta: 'un expediente técnico completado', ok: this.expTecProceso()?.estado === 'Preparado' },
     { lbl: 'F0288 firmado', falta: 'finalizar y firmar el F0288 del equipo', ok: this.f0288Listo() },
     { lbl: 'Técnico de configuración asignado', falta: 'asignar técnico de configuración', ok: !!this.tecnicoConfig() },
@@ -1040,12 +1108,19 @@ export class ExpedienteUnicoComponent {
     if (!this.esEncSoporte()) return 'Solo el Encargado de Soporte puede crear el Expediente único.';
     if (!this.proceso()) return 'Seleccione la solicitud.';
     if (this.data.expedienteUnicoDe(this.procesoSel())) return 'Esta solicitud ya tiene un Expediente único.';
-    if (!this.asigProceso() || !this.equipoProceso()) {
-      return 'Esta solicitud aún no tiene equipo asignado y no puede crear Expediente único.';
+    if (!this.equipoProceso()) {
+      return 'Elija el equipo preparado con el que se abre este ciclo.';
     }
+    if (!this.f0288Listo()) return 'El F0288 del equipo debe estar finalizado y firmado.';
     if (!this.proceso()?.correoDestinatario) return 'La solicitud no tiene correo institucional del usuario final.';
     if (this.expTecProceso()?.estado !== 'Preparado') return 'El expediente técnico del equipo aún no está completado (F0288).';
     return 'Asigne al técnico de configuración.';
+  }
+
+  /** Elige el equipo preparado con el que se abrirá el ciclo. */
+  protected elegirEquipo(inventario: string): void {
+    this.equipoSel.set(inventario);
+    this.buscarEquipoAbierto.set(false);
   }
 
   /** Estado de preparación del equipo, para mostrarlo junto a los datos autocompletados. */
@@ -1180,7 +1255,9 @@ export class ExpedienteUnicoComponent {
     const u = this.auth.usuario();
     const quien = `${u?.nombre} — ${u?.rol}`;
     // El equipo ya viene de la asignación al usuario final: esta pantalla ya no la registra.
-    const creado = this.data.crearExpedienteUnico(p.expediente, this.tecnicoConfig(), quien);
+    // El equipo va explícito: el EU nace del ET del equipo, no de una asignación previa.
+    const creado = this.data.crearExpedienteUnico(
+      p.expediente, this.tecnicoConfig(), quien, this.equipoProceso()?.inventario ?? '');
     if (creado) {
       this.toast.ok(`${creado.codigoUnico} creado`, 'Configuración F0302 habilitada.');
       this.detalle.set(creado);
@@ -1188,6 +1265,7 @@ export class ExpedienteUnicoComponent {
       this.creado.set(creado);
       this.verDetalle.set(false);
       this.procesoSel.set('');
+      this.equipoSel.set('');
       this.tecnicoConfig.set('');
     } else {
       this.toast.error('No fue posible crear el Expediente único', 'Verifique el equipo preparado y los datos del proceso.');

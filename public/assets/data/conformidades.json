@@ -26,7 +26,11 @@
   "justificacionSinReservaIP": "",
   "estadoSolicitudIP": "Enviada",
   "ipValidadaPor": "Wendy Carranza — Técnico de Soporte",
-  "ipValidadaEl": "2026-05-11 10:05"
+  "ipValidadaEl": "2026-05-11 10:05",
+  "idConformidad": "CFM-2026-0001",
+  "entregaId": "ENT-2026-0001",
+  "expedienteUnico": "EXP-2026-0010",
+  "ciclo": 1
  },
  {
   "token": "CONF-2026-0141-X8F2",
@@ -54,7 +58,11 @@
   "ipValidadaEl": "2026-07-06 15:12",
   "macEquipo": "00:1A:2B:03:BA:E2",
   "justificacionSinReservaIP": "",
-  "estadoSolicitudIP": "Enviada"
+  "estadoSolicitudIP": "Enviada",
+  "idConformidad": "CFM-2026-0002",
+  "entregaId": "ENT-2026-0002",
+  "expedienteUnico": "EXP-2026-0002",
+  "ciclo": 1
  },
  {
   "token": "CONF-2026-0139-B7K1",
@@ -81,7 +89,11 @@
   "ipReservada": "",
   "macEquipo": "",
   "justificacionSinReservaIP": "El requerimiento no solicita reserva de IP.",
-  "estadoSolicitudIP": "No aplica"
+  "estadoSolicitudIP": "No aplica",
+  "idConformidad": "CFM-2026-0003",
+  "entregaId": "ENT-2026-0003",
+  "expedienteUnico": "EXP-2026-0001",
+  "ciclo": 1
  },
  {
   "token": "CONF-2025-0210-J4M9",
@@ -110,6 +122,10 @@
   "ipValidadaEl": "2025-12-02 09:40",
   "macEquipo": "",
   "justificacionSinReservaIP": "El equipo utilizará IP dinámica.",
-  "estadoSolicitudIP": "No aplica"
+  "estadoSolicitudIP": "No aplica",
+  "idConformidad": "CFM-2025-0004",
+  "entregaId": "ENT-2025-0004",
+  "expedienteUnico": "EXP-2025-0025",
+  "ciclo": 1
  }
 ]

@@ -955,5 +955,797 @@
   "fechaApertura": "2025-11-24",
   "fechaCierre": "",
   "observaciones": ""
+ },
+ {
+  "expediente": "SOL-2026-0144",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0011",
+  "inventario": "2201-1098-2026",
+  "expedienteTecnico": "EXP-PT-2026-0089",
+  "ciclo": 1,
+  "fechaApertura": "2026-06-29",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-06-28"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-06-29"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0089 · CPU nuevo",
+    "estado": "Anexado",
+    "fecha": "2026-06-29"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Mateo Martínez — Técnico de Soporte",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-06-29"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0132",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0012",
+  "inventario": "2201-1041-2026",
+  "expedienteTecnico": "EXP-PT-2026-0081",
+  "ciclo": 1,
+  "fechaApertura": "2026-05-21",
+  "fechaCierre": "",
+  "estado": "Cerrado",
+  "resumenEstado": "Cerrado · ciclo histórico",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-05-18"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Samuel Cruz — Encargado de Hardware",
+    "estado": "Anexado",
+    "fecha": "2026-05-21"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0081 · CPU nuevo",
+    "estado": "Anexado",
+    "fecha": "2026-05-20"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Mateo Martínez — Técnico de Soporte",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-05-20"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0162",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0013",
+  "inventario": "2201-1320-2026",
+  "expedienteTecnico": "EXP-PT-2026-0100",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de Laptop",
+    "estado": "Anexado",
+    "fecha": "2026-07-31"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0100 · Laptop nueva",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0163",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0014",
+  "inventario": "2201-1321-2026",
+  "expedienteTecnico": "EXP-PT-2026-0101",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-08-03"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0101 · CPU nuevo",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0164",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0015",
+  "inventario": "2201-1322-2026",
+  "expedienteTecnico": "EXP-PT-2026-0102",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de Laptop",
+    "estado": "Anexado",
+    "fecha": "2026-08-04"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0102 · Laptop usada",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0166",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0016",
+  "inventario": "2201-1323-2026",
+  "expedienteTecnico": "EXP-PT-2026-0103",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de Laptop",
+    "estado": "Anexado",
+    "fecha": "2026-08-06"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0103 · Laptop nueva",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0167",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0017",
+  "inventario": "2201-1324-2026",
+  "expedienteTecnico": "EXP-PT-2026-0104",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-08-07"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0104 · CPU usado",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0168",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0018",
+  "inventario": "2201-1325-2026",
+  "expedienteTecnico": "EXP-PT-2026-0105",
+  "ciclo": 1,
+  "fechaApertura": "2026-07-28",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de Laptop",
+    "estado": "Anexado",
+    "fecha": "2026-08-10"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-07-28"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0105 · Laptop usada",
+    "estado": "Anexado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-07-27"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
+ },
+ {
+  "expediente": "SOL-2026-0161",
+  "origenCiclo": "Solicitud",
+  "codigoUnico": "EXP-2026-0019",
+  "inventario": "2201-1330-2026",
+  "expedienteTecnico": "EXP-PT-2026-0106",
+  "ciclo": 1,
+  "fechaApertura": "2026-08-05",
+  "fechaCierre": "",
+  "estado": "En configuración",
+  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "fechaEntrega": "",
+  "observaciones": "",
+  "anexos": [
+   {
+    "nombre": "Solicitud / requerimiento",
+    "detalle": "Requerimiento de CPU",
+    "estado": "Anexado",
+    "fecha": "2026-07-30"
+   },
+   {
+    "nombre": "Asignación del equipo",
+    "detalle": "Asignado por Carlos González — Encargado de Soporte",
+    "estado": "Anexado",
+    "fecha": "2026-08-05"
+   },
+   {
+    "nombre": "Se anexa expediente de preparación técnica",
+    "detalle": "EXP-PT-2026-0106 · CPU nuevo",
+    "estado": "Anexado",
+    "fecha": "2026-08-04"
+   },
+   {
+    "nombre": "Se anexa configuración del equipo",
+    "detalle": "Técnico de configuración: Por asignar",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "F0288 generado",
+    "detalle": "Generado al finalizar la preparación técnica",
+    "estado": "Generado",
+    "fecha": "2026-08-04"
+   },
+   {
+    "nombre": "F0302 generado",
+    "detalle": "Se genera al cerrar la configuración",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Evidencias técnicas complementarias",
+    "detalle": "Se cargan durante las fases técnicas",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Firmas registradas",
+    "detalle": "Se registran al cierre de cada fase",
+    "estado": "1 de 3",
+    "fecha": ""
+   },
+   {
+    "nombre": "Formulario de conformidad",
+    "detalle": "Se envía al correo institucional al finalizar la configuración",
+    "estado": "No enviado",
+    "fecha": ""
+   },
+   {
+    "nombre": "Entrega y aceptación",
+    "detalle": "Pendiente",
+    "estado": "Pendiente",
+    "fecha": ""
+   },
+   {
+    "nombre": "Servicio de garantía",
+    "detalle": "Se habilita con la aceptación del usuario final",
+    "estado": "No iniciada",
+    "fecha": ""
+   },
+   {
+    "nombre": "Reporte final de auditoría",
+    "detalle": "Consolida el expediente completo",
+    "estado": "Pendiente",
+    "fecha": ""
+   }
+  ]
  }
 ]

@@ -1963,5 +1963,3107 @@
   },
   "inventario": "2201-1215-2026",
   "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0100",
+  "unidad": "Soporte",
+  "tecnico": "Wendy Carranza — Técnico de Soporte",
+  "creadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "09:27:00",
+   "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+   "fechaFin": "2026-07-27",
+   "horaFin": "10:35:00",
+   "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+   "duracionMinutos": 68
+  },
+  "cierre": {
+   "nivel": "Sin complejidad",
+   "hubo": "No",
+   "detalle": "",
+   "observacion": "Preparación estándar sin incidencias."
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1320-2026",
+   "inventario": "2201-1320-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · HX81L2M7"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Verificación de falla",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   },
+   {
+    "nombre": "Verificación de accesorios",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   }
+  ],
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     },
+     {
+      "nombre": "Office / Chrome / Acrobat",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Wendy Carranza · Técnico de Soporte",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1320-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0101",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "07:55:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-07-27",
+   "horaFin": "09:20:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 85
+  },
+  "cierre": {
+   "nivel": "Media",
+   "hubo": "Sí",
+   "detalle": "Se requirió revisión adicional de disco y actualización de sistema.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1321-2026",
+   "inventario": "2201-1321-2026",
+   "ram": "16 GB DDR4",
+   "disco": "512 GB NVMe · PL33K8Q1"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "Sí",
+   "fallaEncontrada": "Disco mecánico con sectores dañados y arranque muy lento",
+   "diagnostico": "HDD al final de su vida útil; el resto del hardware en buen estado",
+   "accionRealizada": "Reemplazo del disco mecánico por SSD de 256 GB",
+   "observaciones": "Se verificó el arranque y el funcionamiento general tras el reemplazo."
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "E2216H",
+     "serie": "MON-CPU-0005-02",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "KB216",
+     "serie": "TEC-CPU-0005-03",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "MS116",
+     "serie": "MOU-CPU-0005-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    }
+   ],
+   "observaciones": "Accesorios completos; no se requirió reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1321-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0102",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-07-27",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1322-2026",
+   "inventario": "2201-1322-2026",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · T7M2K9X4"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1322-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0103",
+  "unidad": "Soporte",
+  "tecnico": "Wendy Carranza — Técnico de Soporte",
+  "creadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "09:27:00",
+   "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+   "fechaFin": "2026-07-27",
+   "horaFin": "10:35:00",
+   "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+   "duracionMinutos": 68
+  },
+  "cierre": {
+   "nivel": "Sin complejidad",
+   "hubo": "No",
+   "detalle": "",
+   "observacion": "Preparación estándar sin incidencias."
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1323-2026",
+   "inventario": "2201-1323-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · DR91N4V8"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Verificación de falla",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   },
+   {
+    "nombre": "Verificación de accesorios",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   }
+  ],
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     },
+     {
+      "nombre": "Office / Chrome / Acrobat",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Wendy Carranza · Técnico de Soporte",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1323-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0104",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-07-27",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1324-2026",
+   "inventario": "2201-1324-2026",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · R2W8Y41K"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1324-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0105",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-07-27",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-07-27",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-07-27",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1325-2026",
+   "inventario": "2201-1325-2026",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · K4J7P2N9"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-07-27",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1325-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0106",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "07:55:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:20:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 85
+  },
+  "cierre": {
+   "nivel": "Media",
+   "hubo": "Sí",
+   "detalle": "Se requirió revisión adicional de disco y actualización de sistema.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1330-2026",
+   "inventario": "2201-1330-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · VN52M8T3"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "Sí",
+   "fallaEncontrada": "Disco mecánico con sectores dañados y arranque muy lento",
+   "diagnostico": "HDD al final de su vida útil; el resto del hardware en buen estado",
+   "accionRealizada": "Reemplazo del disco mecánico por SSD de 256 GB",
+   "observaciones": "Se verificó el arranque y el funcionamiento general tras el reemplazo."
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "E2216H",
+     "serie": "MON-CPU-0005-02",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "KB216",
+     "serie": "TEC-CPU-0005-03",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "MS116",
+     "serie": "MOU-CPU-0005-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    }
+   ],
+   "observaciones": "Accesorios completos; no se requirió reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1330-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0107",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "07:55:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:20:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 85
+  },
+  "cierre": {
+   "nivel": "Media",
+   "hubo": "Sí",
+   "detalle": "Se requirió revisión adicional de disco y actualización de sistema.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1331-2026",
+   "inventario": "2201-1331-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · BQ73X1L6"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "Sí",
+   "fallaEncontrada": "Disco mecánico con sectores dañados y arranque muy lento",
+   "diagnostico": "HDD al final de su vida útil; el resto del hardware en buen estado",
+   "accionRealizada": "Reemplazo del disco mecánico por SSD de 256 GB",
+   "observaciones": "Se verificó el arranque y el funcionamiento general tras el reemplazo."
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "E2216H",
+     "serie": "MON-CPU-0005-02",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "KB216",
+     "serie": "TEC-CPU-0005-03",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "MS116",
+     "serie": "MOU-CPU-0005-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    }
+   ],
+   "observaciones": "Accesorios completos; no se requirió reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1331-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0108",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0930-2022",
+   "inventario": "2201-0930-2022",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · WK18J5R2"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0930-2022",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0109",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0941-2023",
+   "inventario": "2201-0941-2023",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · ZC64H9M1"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0941-2023",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0110",
+  "unidad": "Soporte",
+  "tecnico": "Wendy Carranza — Técnico de Soporte",
+  "creadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:27:00",
+   "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+   "fechaFin": "2026-08-04",
+   "horaFin": "10:35:00",
+   "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+   "duracionMinutos": 68
+  },
+  "cierre": {
+   "nivel": "Sin complejidad",
+   "hubo": "No",
+   "detalle": "",
+   "observacion": "Preparación estándar sin incidencias."
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1332-2026",
+   "inventario": "2201-1332-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · LM29K7B4"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Verificación de falla",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   },
+   {
+    "nombre": "Verificación de accesorios",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   }
+  ],
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     },
+     {
+      "nombre": "Office / Chrome / Acrobat",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Wendy Carranza · Técnico de Soporte",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1332-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0111",
+  "unidad": "Soporte",
+  "tecnico": "Wendy Carranza — Técnico de Soporte",
+  "creadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:27:00",
+   "iniciadoPor": "Wendy Carranza — Técnico de Soporte",
+   "fechaFin": "2026-08-04",
+   "horaFin": "10:35:00",
+   "finalizadoPor": "Wendy Carranza — Técnico de Soporte",
+   "duracionMinutos": 68
+  },
+  "cierre": {
+   "nivel": "Sin complejidad",
+   "hubo": "No",
+   "detalle": "",
+   "observacion": "Preparación estándar sin incidencias."
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1333-2026",
+   "inventario": "2201-1333-2026",
+   "ram": "16 GB DDR5",
+   "disco": "512 GB NVMe · QX47D2S8"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Verificación de falla",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   },
+   {
+    "nombre": "Verificación de accesorios",
+    "motivo": "No aplica a un equipo nuevo; el checklist dinámico la oculta."
+   }
+  ],
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     },
+     {
+      "nombre": "Office / Chrome / Acrobat",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Wendy Carranza · Técnico de Soporte",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1333-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0112",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0952-2023",
+   "inventario": "2201-0952-2023",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · NH83V6C2"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0952-2023",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0113",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-08-04",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-08-04",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-08-04",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0963-2024",
+   "inventario": "2201-0963-2024",
+   "ram": "8 GB DDR4",
+   "disco": "256 GB SSD · FT19R5W7"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-08-04",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0963-2024",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0089",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-06-29",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-06-29",
+   "horaInicio": "07:55:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-06-29",
+   "horaFin": "09:20:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 85
+  },
+  "cierre": {
+   "nivel": "Media",
+   "hubo": "Sí",
+   "detalle": "Se requirió revisión adicional de disco y actualización de sistema.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1098-2026",
+   "inventario": "2201-1098-2026",
+   "ram": "16 GB DDR4",
+   "disco": "512 GB NVMe · SN730A21"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "Sí",
+   "fallaEncontrada": "Disco mecánico con sectores dañados y arranque muy lento",
+   "diagnostico": "HDD al final de su vida útil; el resto del hardware en buen estado",
+   "accionRealizada": "Reemplazo del disco mecánico por SSD de 256 GB",
+   "observaciones": "Se verificó el arranque y el funcionamiento general tras el reemplazo."
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "E2216H",
+     "serie": "MON-CPU-0005-02",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "KB216",
+     "serie": "TEC-CPU-0005-03",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "MS116",
+     "serie": "MOU-CPU-0005-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    }
+   ],
+   "observaciones": "Accesorios completos; no se requirió reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-06-29",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1098-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0087",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-06-18",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-06-18",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-06-18",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0871-2024",
+   "inventario": "2201-0871-2024",
+   "ram": "16 GB DDR4",
+   "disco": "512 GB NVMe · S6WNJ0R8"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-06-18",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0871-2024",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2026-0081",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2026-05-20",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2026-05-20",
+   "horaInicio": "07:55:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2026-05-20",
+   "horaFin": "09:20:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 85
+  },
+  "cierre": {
+   "nivel": "Media",
+   "hubo": "Sí",
+   "detalle": "Se requirió revisión adicional de disco y actualización de sistema.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-1041-2026",
+   "inventario": "2201-1041-2026",
+   "ram": "16 GB DDR4",
+   "disco": "512 GB NVMe · BX99Q1T7"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "Sí",
+   "fallaEncontrada": "Disco mecánico con sectores dañados y arranque muy lento",
+   "diagnostico": "HDD al final de su vida útil; el resto del hardware en buen estado",
+   "accionRealizada": "Reemplazo del disco mecánico por SSD de 256 GB",
+   "observaciones": "Se verificó el arranque y el funcionamiento general tras el reemplazo."
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "E2216H",
+     "serie": "MON-CPU-0005-02",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "KB216",
+     "serie": "TEC-CPU-0005-03",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0005-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Dell",
+     "modelo": "MS116",
+     "serie": "MOU-CPU-0005-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-01 09:20"
+    }
+   ],
+   "observaciones": "Accesorios completos; no se requirió reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2026-05-20",
+   "hora": "16:40"
+  },
+  "inventario": "2201-1041-2026",
+  "ciclo": 1
+ },
+ {
+  "expedienteTecnico": "EXP-PT-2025-0038",
+  "unidad": "Hardware",
+  "tecnico": "Balmore Mejía — Técnico de Hardware",
+  "creadoPor": "Samuel Cruz — Encargado de Hardware",
+  "fecha": "2025-11-24",
+  "estado": "Completada",
+  "cronometro": {
+   "fechaInicio": "2025-11-24",
+   "horaInicio": "09:05:00",
+   "iniciadoPor": "Balmore Mejía — Técnico de Hardware",
+   "fechaFin": "2025-11-24",
+   "horaFin": "09:50:00",
+   "finalizadoPor": "Balmore Mejía — Técnico de Hardware",
+   "duracionMinutos": 45
+  },
+  "cierre": {
+   "nivel": "Baja",
+   "hubo": "Sí",
+   "detalle": "Se realizó limpieza y verificación general antes de dejarlo disponible nuevamente.",
+   "observacion": ""
+  },
+  "datosGenerales": {
+   "provieneDe": "Inventario de Hardware",
+   "referencia": "Preparación del equipo 2201-0788-2022",
+   "inventario": "2201-0788-2022",
+   "ram": "8 GB DDR4",
+   "disco": "512 GB SSD · P9K2QM55"
+  },
+  "seccionesOcultas": [
+   {
+    "nombre": "Office / Chrome / Acrobat",
+    "motivo": "Lo instala Soporte durante la configuración; el checklist dinámico lo oculta cuando prepara Hardware."
+   }
+  ],
+  "verificacionFalla": {
+   "respuesta": "No",
+   "fallaEncontrada": "",
+   "diagnostico": "",
+   "accionRealizada": "",
+   "observaciones": ""
+  },
+  "verificacionAccesorios": {
+   "respuesta": "Sí",
+   "accesorios": [
+    {
+     "nombre": "Monitor",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "02",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-02",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "V226HQL",
+     "serie": "MON-CPU-0004-02",
+     "estadoFisico": "Regular",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Teclado",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "03",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-03",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "KBAC-201",
+     "serie": "TEC-CPU-0004-03",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    },
+    {
+     "nombre": "Mouse",
+     "familiaEsperada": "2201-00-101",
+     "sufijoEsperado": "04",
+     "seleccionado": true,
+     "numeroInventario": "2201-00-101-0004-04",
+     "resultadoBusqueda": "Encontrado",
+     "marca": "Acer",
+     "modelo": "AMR-910",
+     "serie": "MOU-CPU-0004-04",
+     "estadoFisico": "Bueno",
+     "observacion": "",
+     "verificadoPor": "Balmore Mejía — Técnico de Hardware",
+     "fechaVerificacion": "2026-07-16 09:20"
+    }
+   ],
+   "observaciones": "Accesorios en buen estado, sin necesidad de reemplazo."
+  },
+  "secciones": [
+   {
+    "titulo": "Sistema operativo, componentes de Windows y cuenta administrador",
+    "items": [
+     {
+      "nombre": "Instalación de Windows 11",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "",
+      "codigoSoftware": "SOFT-001",
+      "versionSeleccionada": "Windows 11 Pro"
+     },
+     {
+      "nombre": "Instalar actualizaciones",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Controladores",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Habilitar cuenta Administrador",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Asignar contraseña Admin",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": "Se registra la acción; la contraseña nunca se almacena."
+     }
+    ]
+   },
+   {
+    "titulo": "Configuración básica",
+    "items": [
+     {
+      "nombre": "Servicios (proced. remoto, registro, ubicador, update)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     },
+     {
+      "nombre": "Perfiles de Firewall (dominio, privado, público)",
+      "estado": "Realizado",
+      "evidencia": null,
+      "nota": ""
+     }
+    ]
+   },
+   {
+    "titulo": "Instalación de software institucional",
+    "items": [
+     {
+      "nombre": "Instalación de Antivirus",
+      "estado": "Realizado",
+      "evidencia": "Captura de instalación ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-003",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "13.0"
+     },
+     {
+      "nombre": "Instalación de OCS Inventory",
+      "estado": "Realizado",
+      "evidencia": "Captura de registro ✓",
+      "nota": "",
+      "codigoSoftware": "SOFT-004",
+      "requiereEvidencia": true,
+      "versionSeleccionada": "2.10"
+     }
+    ]
+   }
+  ],
+  "evidencias": [],
+  "firma": {
+   "quien": "Balmore Mejía · Técnico de Hardware",
+   "detalle": "Firma registrada al cerrar la preparación técnica",
+   "estado": "Firmado",
+   "fecha": "2025-11-24",
+   "hora": "16:40"
+  },
+  "inventario": "2201-0788-2022",
+  "ciclo": 1
  }
 ]

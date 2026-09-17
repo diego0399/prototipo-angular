@@ -8,6 +8,7 @@ import {
   DetalleFallaF0302, DistribucionSoporte, DocumentoGenerado, Entrega, Equipo, EquipoCatalogoInstitucional, EquipoControles, EstadoControles, EvidenciaCorreccion, EvidenciaReproceso, EvidenciaTecnica, FilaValidacionLote, ModuloConEvidenciaObligatoria, ModuloEvidencia,
   EstadoAsignacionEquipo, EstadoDetalleGarantia, EstadoGarantia, EstadoIncidenciaConformidad, EstadoIncidenciaF0302, EstadoPreparacionEquipo, EstadoRevisionGarantia, EstadoSolicitudReservaIP, EtapaSoftware, EventoTrazabilidad, ExpedienteTecnico, ExpedienteUnico, FallaF0302,
   ModificacionGarantia, TipoGarantia, MovimientoEquipo, TipoMovimiento, AccesorioEquipo, CategoriaEquipo, TipoEquipo,
+  AsignacionPreparacion, FormPreparacion, AsignacionConfiguracion, FormConfiguracion,
   FirmaCorreccion, FirmaProceso, FirmaReproceso, Garantia, IngresoHardware, IntentoAceptacion, ItemCorreccion, ItemReproceso, ModificacionAsignacion, MotivoDescargo, MotivoIngreso, MotivoSoftwareF0302, PreparacionF0288,
   ReprocesoF0288, ResolucionInconformidad, ResultadoConsultaAccesorio, RespuestaSiNo, ResultadoIntento, ResultadoReproceso, RolClave, SeccionOculta, SeccionReproceso, Solicitud, SoftwareCatalogo, TipoEvidenciaReproceso,
   SoftwareF0302, SoftwareHeredadoF0288, SolicitudReservaIP, SugerenciaReproceso,
@@ -44,6 +45,11 @@ export interface CicloEquipo {
   garantias: Garantia[];
   reprocesos: ReprocesoF0288[];
   descargo?: Descargo;
+  /** Los encargos y ejecuciones del DER, por si hubo reasignaciones dentro del ciclo. */
+  asignacionesPreparacion: AsignacionPreparacion[];
+  formsPreparacion: FormPreparacion[];
+  asignacionesConfiguracion: AsignacionConfiguracion[];
+  formsConfiguracion: FormConfiguracion[];
   movimientos: MovimientoEquipo[];
   /** `true` mientras ningún descargo lo haya cerrado. Como mucho un ciclo está abierto a la vez. */
   abierto: boolean;
@@ -125,6 +131,20 @@ export class DataService {
   /** **CATEGORIA_EQUIPO** y **TIPO_EQUIPO**: los dos catálogos que clasifican un EQUIPO en el DER. */
   readonly categoriasEquipo = signal<CategoriaEquipo[]>([]);
   readonly tiposEquipo = signal<TipoEquipo[]>([]);
+  /**
+   * Las cuatro entidades con las que el DER separa **encargo**, **ejecución** y **documento** en
+   * las dos fases técnicas:
+   *
+   *     ET → ASIGNACION_PREPARACION   → FORM_PREPARACION   → F0288
+   *     EU → ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302
+   *
+   * Reasignar el trabajo cancela el encargo anterior y abre uno nuevo; **nunca lo sobrescribe**,
+   * que es justo lo que se perdía cuando el técnico era un campo del expediente.
+   */
+  readonly asignacionesPreparacion = signal<AsignacionPreparacion[]>([]);
+  readonly formsPreparacion = signal<FormPreparacion[]>([]);
+  readonly asignacionesConfiguracion = signal<AsignacionConfiguracion[]>([]);
+  readonly formsConfiguracion = signal<FormConfiguracion[]>([]);
   /** Historial de intentos de aceptación (uno por cada envío del formulario; nunca se sobrescriben). */
   readonly intentos = signal<IntentoAceptacion[]>([]);
   /** Correcciones de no conformidad registradas por el Técnico de Soporte. */
@@ -505,6 +525,175 @@ export class DataService {
     // adquisición. Existe aunque el equipo nunca se haya entregado a nadie, así que se crea para
     // todo equipo con fecha de adquisición registrada, sin esperar a ninguna conformidad.
     this.asegurarGarantiasDeProveedor();
+
+    // ---- 11. ENTREGA → su Expediente único; CONFORMIDAD → su entrega. Sin esto la cadena
+    // `CONFORMIDAD → ENTREGA → EU → ET → EQUIPO` se cortaba en el primer eslabón y había que
+    // adivinarla por el número de solicitud.
+    let nEnt = 0;
+    this.entregas.update((list) => list.map((e) => {
+      const eu = this.expedientesUnicos().find((x) => x.expediente === e.expediente);
+      return {
+        ...e,
+        idEntrega: e.idEntrega || `ENT-${(e.fechaEntrega || this.hoy()).slice(0, 4)}-${String(++nEnt).padStart(4, '0')}`,
+        expedienteUnico: e.expedienteUnico || eu?.codigoUnico || '',
+        ciclo: e.ciclo ?? eu?.ciclo,
+        usuarioFinalId: e.usuarioFinalId
+          || this.territorio.buscaUsuarioFinal(e.carne, e.usuarioFinal)?.id || '',
+        observaciones: e.observaciones ?? ''
+      };
+    }));
+    let nCfm = 0;
+    this.conformidades.update((list) => list.map((c) => {
+      const ent = this.entregas().find((e) => e.expediente === c.expediente);
+      const eu = this.expedientesUnicos().find((x) => x.expediente === c.expediente);
+      return {
+        ...c,
+        idConformidad: c.idConformidad || `CFM-${(c.fechaEntrega || this.hoy()).slice(0, 4)}-${String(++nCfm).padStart(4, '0')}`,
+        entregaId: c.entregaId || ent?.idEntrega || '',
+        expedienteUnico: c.expedienteUnico || eu?.codigoUnico || '',
+        ciclo: c.ciclo ?? eu?.ciclo
+      };
+    }));
+
+    // ---- 12. GARANTIA → CASO_GARANTIA → COMENTARIO_CASO: los casos y comentarios siguen viajando
+    // anidados (así los leen las pantallas), pero con sus FK escritas, que es lo que el DER pide.
+    let nGar = 0;
+    this.garantias.update((list) => list.map((g) => {
+      const idGarantia = g.idGarantia || `GAR-${String(++nGar).padStart(4, '0')}`;
+      return {
+        ...g,
+        idGarantia,
+        casos: (g.casos ?? []).map((c) => ({
+          ...c,
+          garantiaId: c.garantiaId || idGarantia,
+          expedienteUnico: c.expedienteUnico || g.expedienteUnico || '',
+          responsableId: c.responsableId || this.idUsuarioPorNombre(c.responsableAtencion),
+          comentarios: (c.comentarios ?? []).map((m, i) => ({
+            ...m,
+            id: m.id || `${c.codigo}-C${String(i + 1).padStart(2, '0')}`,
+            casoGarantiaId: m.casoGarantiaId || c.codigo,
+            usuarioId: m.usuarioId || this.idUsuarioPorNombre(m.usuario)
+          }))
+        }))
+      };
+    }));
+
+    // ---- 13. ASIGNACION_PREPARACION / FORM_PREPARACION y sus equivalentes de configuración.
+    // El set de datos guardaba el técnico dentro del ET y del F0302; aquí se reconstruye el encargo
+    // y su ejecución, una sola vez, para que de ahora en adelante reasignar no borre a nadie.
+    this.reconstruirEncargosTecnicos();
+
+    // ---- 14. MOVIMIENTO de INGRESO_INICIAL: el primer ingreso del equipo al inventario también es
+    // un movimiento físico, y el DER quiere MOVIMIENTO_EQUIPO como bitácora transversal.
+    this.asegurarMovimientosDeIngreso();
+  }
+
+  /** Id del usuario del sistema a partir del texto «Nombre — Rol» con el que se guardó. */
+  private idUsuarioPorNombre(texto: string): string {
+    const n = (texto ?? '').split('—')[0].trim().toLowerCase();
+    if (!n) return '';
+    return this.usuarios().find((u) => u.nombre.toLowerCase() === n)?.usuario ?? '';
+  }
+
+  /**
+   * Reconstruye, una sola vez, los encargos y ejecuciones de preparación y configuración a partir
+   * del técnico que el set de datos ya guardaba en el ET y en el F0302. Es idempotente.
+   */
+  private reconstruirEncargosTecnicos(): void {
+    if (this.asignacionesPreparacion().length === 0) {
+      const aps: AsignacionPreparacion[] = [];
+      const fps: FormPreparacion[] = [];
+      for (const t of [...this.expedientesTecnicos()].sort((a, b) => a.codigo.localeCompare(b.codigo))) {
+        const prep = this.preparacionPorCodigo(t.codigo);
+        const cerrado = t.estado === 'Preparado' || t.estado === 'Cerrado';
+        const ap: AsignacionPreparacion = {
+          id: `AP-${t.codigo.slice(-4)}-01`,
+          expedienteTecnico: t.codigo,
+          tecnico: t.tecnicoPreparacion,
+          unidad: t.unidadResponsable,
+          asignadoPor: t.creadoPor,
+          fechaInicio: t.fechaApertura || t.fecha,
+          fechaCierre: cerrado ? (t.fechaCierre || prep?.firma?.fecha || '') : '',
+          estado: cerrado ? 'Completada' : 'Vigente',
+          motivo: ''
+        };
+        aps.push(ap);
+        fps.push({
+          id: `FP-${t.codigo.slice(-4)}-01`,
+          asignacionPreparacion: ap.id, expedienteTecnico: t.codigo, version: 1,
+          fechaInicio: prep?.fecha || ap.fechaInicio,
+          fechaFin: prep?.firma?.fecha || ap.fechaCierre,
+          estado: prep?.estado === 'Completada' || prep?.estado === 'Cerrada' ? 'Finalizada' : 'En proceso'
+        });
+      }
+      this.asignacionesPreparacion.set(aps);
+      this.formsPreparacion.set(fps);
+      // El F0288 queda apuntando a la ejecución que lo generó.
+      this.preparaciones.update((list) => list.map((prep) => {
+        const fp = fps.find((f) => f.expedienteTecnico === prep.expedienteTecnico);
+        return { ...prep, formPreparacion: prep.formPreparacion || fp?.id, asignacionPreparacion: prep.asignacionPreparacion || fp?.asignacionPreparacion };
+      }));
+    }
+    if (this.asignacionesConfiguracion().length === 0) {
+      const acs: AsignacionConfiguracion[] = [];
+      const fcs: FormConfiguracion[] = [];
+      for (const eu of [...this.expedientesUnicos()].sort((a, b) => a.codigoUnico.localeCompare(b.codigoUnico))) {
+        const conf = this.configuraciones().find((c) => c.expediente === eu.expediente);
+        if (!conf) continue;
+        const cerrada = conf.estado === 'Completada' || conf.estado === 'Cerrada';
+        const ac: AsignacionConfiguracion = {
+          id: `AC-${eu.codigoUnico.slice(-4)}-01`,
+          expedienteUnico: eu.codigoUnico, expediente: eu.expediente,
+          tecnico: conf.tecnico, asignadoPor: conf.seleccionadoPor,
+          fechaInicio: eu.fechaApertura || conf.fecha, fechaCierre: cerrada ? conf.fecha : '',
+          estado: cerrada ? 'Completada' : 'Vigente', motivo: ''
+        };
+        acs.push(ac);
+        fcs.push({
+          id: `FC-${eu.codigoUnico.slice(-4)}-01`,
+          asignacionConfiguracion: ac.id, expedienteUnico: eu.codigoUnico, expediente: eu.expediente,
+          version: 1, fechaInicio: ac.fechaInicio, fechaFin: cerrada ? conf.fecha : '',
+          estado: conf.estado === 'Con falla' ? 'Con falla' : cerrada ? 'Finalizada' : 'En proceso'
+        });
+      }
+      this.asignacionesConfiguracion.set(acs);
+      this.formsConfiguracion.set(fcs);
+      this.configuraciones.update((list) => list.map((c) => {
+        const eu = this.expedientesUnicos().find((x) => x.expediente === c.expediente);
+        const fc = fcs.find((f) => f.expediente === c.expediente);
+        return {
+          ...c,
+          formConfiguracion: c.formConfiguracion || fc?.id,
+          asignacionConfiguracion: c.asignacionConfiguracion || fc?.asignacionConfiguracion,
+          expedienteUnico: c.expedienteUnico || eu?.codigoUnico || '',
+          ciclo: c.ciclo ?? eu?.ciclo
+        };
+      }));
+    }
+  }
+
+  /**
+   * Un `INGRESO_INICIAL` por equipo, con la fecha en que entró al inventario. El DER quiere
+   * MOVIMIENTO_EQUIPO como bitácora física transversal, y el primer ingreso también es un hecho
+   * físico. Idempotente.
+   */
+  private asegurarMovimientosDeIngreso(): void {
+    const yaTiene = new Set(this.movimientos().filter((m) => m.tipoMovimiento === 'INGRESO_INICIAL').map((m) => m.inventario));
+    const nuevos: MovimientoEquipo[] = [];
+    for (const e of this.equipos()) {
+      if (yaTiene.has(e.inventario) || !e.fechaIngreso) continue;
+      nuevos.push({
+        id: `MOV-INI-${e.inventario}`,
+        inventario: e.inventario,
+        ubicacionOrigenId: null, ubicacionDestinoId: 'UBI-BOD-CENTRAL',
+        tipoMovimiento: 'INGRESO_INICIAL',
+        motivo: 'Ingreso inicial al Inventario de Hardware',
+        fecha: e.fechaIngreso, hora: e.horaIngreso ?? '',
+        usuarioRegistra: e.ingresadoPor ?? 'Sistema',
+        observaciones: `Origen del dato: ${e.origenDato ?? 'registro institucional'}.`
+      });
+    }
+    if (nuevos.length) this.movimientos.update((list) => [...list, ...nuevos]);
   }
 
   /**
@@ -668,13 +857,24 @@ export class DataService {
       preparacion: this.preparacionPorCodigo(et.codigo),
       expedienteUnico: eu,
       solicitud: proceso ? this.solicitud(proceso) : undefined,
-      asignacion: this.asignaciones().find((a) => a.expediente === proceso),
-      configuracion: proceso ? this.configuraciones().find((c) => c.expediente === proceso) : undefined,
-      entrega: proceso ? this.entregas().find((e) => e.expediente === proceso) : undefined,
-      conformidad: proceso ? this.conformidades().find((c) => c.expediente === proceso) : undefined,
+      // Todo lo que cuelga del ciclo se resuelve **por la FK al Expediente único**, y solo se cae
+      // al número de solicitud cuando el registro es anterior a estas FK. Si se resolviera por
+      // proceso, dos ciclos de la misma solicitud se mezclarían.
+      asignacion: this.asignaciones().find((a) => a.expedienteUnico === eu?.codigoUnico)
+        ?? (proceso ? this.asignaciones().find((a) => a.expediente === proceso) : undefined),
+      configuracion: this.configuraciones().find((c) => c.expedienteUnico === eu?.codigoUnico)
+        ?? (proceso ? this.configuraciones().find((c) => c.expediente === proceso) : undefined),
+      entrega: this.entregaDeExpedienteUnico(eu?.codigoUnico ?? '')
+        ?? (proceso ? this.entregas().find((e) => e.expediente === proceso) : undefined),
+      conformidad: this.conformidadDeExpedienteUnico(eu?.codigoUnico ?? '')
+        ?? (proceso ? this.conformidades().find((c) => c.expediente === proceso) : undefined),
       garantias: this.garantias().filter((g) => g.expedienteUnico === eu?.codigoUnico),
       reprocesos: this.reprocesos().filter((r) => r.expedienteTecnico === et.codigo),
       descargo: this.descargos().find((d) => d.expedienteTecnicoAnterior === et.codigo),
+      asignacionesPreparacion: this.asignacionesPreparacionDe(et.codigo),
+      formsPreparacion: this.formsPreparacionDe(et.codigo),
+      asignacionesConfiguracion: eu ? this.asignacionesConfiguracionDe(eu.codigoUnico) : [],
+      formsConfiguracion: eu ? this.formsConfiguracionDe(eu.codigoUnico) : [],
       movimientos: this.movimientosDeCiclo(inventario, ciclo),
       abierto: et.estado !== 'Cerrado' && !et.fechaCierre
     };
@@ -728,6 +928,144 @@ export class DataService {
       ?? this.tiposEquipo().find((t) => t.corta === e.tipo);
   }
 
+  // ================================================================================================
+  // ENCARGO → EJECUCIÓN → DOCUMENTO  (ASIGNACION_* · FORM_* · F0288/F0302)
+  // ================================================================================================
+  // El DER no trata «quién prepara», «la preparación» y «el F0288» como una sola cosa, y con razón:
+  // el encargo puede cambiar de manos. Si el técnico A empieza y el trabajo pasa al técnico B,
+  // sobrescribir un campo `tecnico` borraría que A estuvo asignado. Aquí el encargo anterior queda
+  // **Cancelada** y el nuevo nace aparte, con su propia ejecución.
+
+  /** Encargos de preparación de un Expediente técnico, del más reciente al más antiguo. */
+  asignacionesPreparacionDe(codigoEt: string): AsignacionPreparacion[] {
+    return this.asignacionesPreparacion()
+      .filter((a) => a.expedienteTecnico === codigoEt)
+      .sort((a, b) => b.id.localeCompare(a.id));
+  }
+  /** El encargo de preparación en pie; `undefined` si todos están cancelados o completados. */
+  asignacionPreparacionVigente(codigoEt: string): AsignacionPreparacion | undefined {
+    return this.asignacionesPreparacionDe(codigoEt).find((a) => a.estado === 'Vigente');
+  }
+  formsPreparacionDe(codigoEt: string): FormPreparacion[] {
+    return this.formsPreparacion()
+      .filter((f) => f.expedienteTecnico === codigoEt)
+      .sort((a, b) => b.version - a.version);
+  }
+  /** Encargos de configuración de un Expediente único, del más reciente al más antiguo. */
+  asignacionesConfiguracionDe(codigoEu: string): AsignacionConfiguracion[] {
+    return this.asignacionesConfiguracion()
+      .filter((a) => a.expedienteUnico === codigoEu)
+      .sort((a, b) => b.id.localeCompare(a.id));
+  }
+  asignacionConfiguracionVigente(codigoEu: string): AsignacionConfiguracion | undefined {
+    return this.asignacionesConfiguracionDe(codigoEu).find((a) => a.estado === 'Vigente');
+  }
+  formsConfiguracionDe(codigoEu: string): FormConfiguracion[] {
+    return this.formsConfiguracion()
+      .filter((f) => f.expedienteUnico === codigoEu)
+      .sort((a, b) => b.version - a.version);
+  }
+
+  /**
+   * Encarga la preparación de un ET a un técnico. Si ya había un encargo vigente para otro
+   * técnico, lo deja **Cancelada** con su motivo —no lo borra— y abre el nuevo: así consta que el
+   * trabajo estuvo primero en otras manos.
+   */
+  designarTecnicoPreparacion(codigoEt: string, tecnico: string, unidad: 'Soporte' | 'Hardware',
+    asignadoPor: string, motivo = ''): AsignacionPreparacion {
+    const previa = this.asignacionPreparacionVigente(codigoEt);
+    if (previa && previa.tecnico !== tecnico) {
+      this.asignacionesPreparacion.update((list) => list.map((a) => (a.id === previa.id
+        ? { ...a, estado: 'Cancelada' as const, fechaCierre: this.hoy(),
+            motivo: motivo || `Trabajo reasignado a ${tecnico.split('—')[0].trim()}` }
+        : a)));
+      // La ejecución que colgaba del encargo cancelado se cancela con él.
+      this.formsPreparacion.update((list) => list.map((f) => (f.asignacionPreparacion === previa.id && f.estado === 'En proceso'
+        ? { ...f, estado: 'Cancelada' as const, fechaFin: this.hoy() } : f)));
+      this.registrarEvento(codigoEt, asignadoPor,
+        `Preparación reasignada: de ${previa.tecnico.split('—')[0].trim()} a ${tecnico.split('—')[0].trim()}`,
+        'En preparación', motivo, false,
+        { modulo: 'Expediente técnico', expedienteTecnico: codigoEt });
+    } else if (previa) {
+      return previa;
+    }
+    const nueva: AsignacionPreparacion = {
+      id: this.siguienteCodigoPorAnio(`AP-${this.anioActual()}-`, this.asignacionesPreparacion().map((a) => a.id)),
+      expedienteTecnico: codigoEt, tecnico, unidad, asignadoPor,
+      fechaInicio: this.hoy(), fechaCierre: '', estado: 'Vigente', motivo: ''
+    };
+    this.asignacionesPreparacion.update((list) => [nueva, ...list]);
+    return nueva;
+  }
+
+  /** Abre la ejecución (FORM_PREPARACION) de un encargo. Su versión crece con cada reintento. */
+  abrirFormPreparacion(asig: AsignacionPreparacion): FormPreparacion {
+    const version = this.formsPreparacionDe(asig.expedienteTecnico).length + 1;
+    const nueva: FormPreparacion = {
+      id: this.siguienteCodigoPorAnio(`FP-${this.anioActual()}-`, this.formsPreparacion().map((f) => f.id)),
+      asignacionPreparacion: asig.id, expedienteTecnico: asig.expedienteTecnico,
+      version, fechaInicio: this.hoy(), fechaFin: '', estado: 'En proceso'
+    };
+    this.formsPreparacion.update((list) => [nueva, ...list]);
+    return nueva;
+  }
+
+  /** Designa al Técnico de Configuración de un EU; misma regla de reasignación que en preparación. */
+  designarTecnicoConfiguracion(codigoEu: string, expediente: string, tecnico: string,
+    asignadoPor: string, motivo = ''): AsignacionConfiguracion {
+    const previa = this.asignacionConfiguracionVigente(codigoEu);
+    if (previa && previa.tecnico !== tecnico) {
+      this.asignacionesConfiguracion.update((list) => list.map((a) => (a.id === previa.id
+        ? { ...a, estado: 'Cancelada' as const, fechaCierre: this.hoy(),
+            motivo: motivo || `Trabajo reasignado a ${tecnico.split('—')[0].trim()}` }
+        : a)));
+      this.formsConfiguracion.update((list) => list.map((f) => (f.asignacionConfiguracion === previa.id && f.estado === 'En proceso'
+        ? { ...f, estado: 'Cancelada' as const, fechaFin: this.hoy() } : f)));
+    } else if (previa) {
+      return previa;
+    }
+    const nueva: AsignacionConfiguracion = {
+      id: this.siguienteCodigoPorAnio(`AC-${this.anioActual()}-`, this.asignacionesConfiguracion().map((a) => a.id)),
+      expedienteUnico: codigoEu, expediente, tecnico, asignadoPor,
+      fechaInicio: this.hoy(), fechaCierre: '', estado: 'Vigente', motivo
+    };
+    this.asignacionesConfiguracion.update((list) => [nueva, ...list]);
+    return nueva;
+  }
+
+  /** Abre la ejecución (FORM_CONFIGURACION) de una designación. */
+  abrirFormConfiguracion(asig: AsignacionConfiguracion, _usuario: string): FormConfiguracion {
+    const version = this.formsConfiguracionDe(asig.expedienteUnico).length + 1;
+    const nueva: FormConfiguracion = {
+      id: this.siguienteCodigoPorAnio(`FC-${this.anioActual()}-`, this.formsConfiguracion().map((f) => f.id)),
+      asignacionConfiguracion: asig.id, expedienteUnico: asig.expedienteUnico, expediente: asig.expediente,
+      version, fechaInicio: this.hoy(), fechaFin: '', estado: 'En proceso'
+    };
+    this.formsConfiguracion.update((list) => [nueva, ...list]);
+    return nueva;
+  }
+
+  /** Cierra encargo y ejecución de preparación cuando el F0288 queda firmado. */
+  cerrarPreparacionNormalizada(codigoEt: string): void {
+    this.formsPreparacion.update((list) => list.map((f) =>
+      (f.expedienteTecnico === codigoEt && f.estado === 'En proceso'
+        ? { ...f, estado: 'Finalizada' as const, fechaFin: this.hoy() } : f)));
+    this.asignacionesPreparacion.update((list) => list.map((a) =>
+      (a.expedienteTecnico === codigoEt && a.estado === 'Vigente'
+        ? { ...a, estado: 'Completada' as const, fechaCierre: this.hoy() } : a)));
+  }
+
+  /** Cierra encargo y ejecución de configuración cuando el F0302 queda cerrado. */
+  cerrarConfiguracionNormalizada(codigoEu: string, conFalla = false): void {
+    this.formsConfiguracion.update((list) => list.map((f) =>
+      (f.expedienteUnico === codigoEu && f.estado === 'En proceso'
+        ? { ...f, estado: conFalla ? ('Con falla' as const) : ('Finalizada' as const), fechaFin: this.hoy() } : f)));
+    if (conFalla) return;
+    this.asignacionesConfiguracion.update((list) => list.map((a) =>
+      (a.expedienteUnico === codigoEu && a.estado === 'Vigente'
+        ? { ...a, estado: 'Completada' as const, fechaCierre: this.hoy() } : a)));
+  }
+
   /** Restaura el estado completo guardado en localStorage. Devuelve false si no hay nada o está corrupto. */
   private hidratarDesdeLocalStorage(): boolean {
     try {
@@ -757,6 +1095,10 @@ export class DataService {
       this.reprocesos.set(this.normalizarReprocesos(d.reprocesos ?? []));
       this.movimientos.set(d.movimientos ?? []);
       this.accesoriosEquipo.set(d.accesoriosEquipo ?? []);
+      this.asignacionesPreparacion.set(d.asignacionesPreparacion ?? []);
+      this.formsPreparacion.set(d.formsPreparacion ?? []);
+      this.asignacionesConfiguracion.set(d.asignacionesConfiguracion ?? []);
+      this.formsConfiguracion.set(d.formsConfiguracion ?? []);
       this.soportes.cargar(d.distribuciones ?? []);
       this.controles.set(this.controlesDeAceptacionesPrevias(d.controles ?? []));
       this.evid.hidratar(this.evidenciasDeFallasSembradas(d.evidencias ?? []));
@@ -786,6 +1128,8 @@ export class DataService {
         intentos: this.intentos(), correcciones: this.correcciones(),
         reprocesos: this.reprocesos(),
         movimientos: this.movimientos(), accesoriosEquipo: this.accesoriosEquipo(),
+        asignacionesPreparacion: this.asignacionesPreparacion(), formsPreparacion: this.formsPreparacion(),
+        asignacionesConfiguracion: this.asignacionesConfiguracion(), formsConfiguracion: this.formsConfiguracion(),
         distribuciones: this.distribuciones(), controles: this.controles(),
         // Las imágenes de evidencia viven en su propio servicio, pero se guardan con el resto del
         // estado: si no, se perderían al recargar y los cierres validados quedarían sin respaldo.
@@ -879,6 +1223,43 @@ export class DataService {
   }
   entregaDe(id: string): Entrega | undefined {
     return this.entregas().find((e) => e.expediente === id);
+  }
+  /**
+   * **Entrega de un ciclo, por la FK del DER.** Es la consulta que debe usarse para un expediente
+   * histórico: buscar por número de solicitud devuelve la entrega del proceso, pero un equipo con
+   * dos ciclos tiene dos entregas y solo el Expediente único distingue cuál es cuál.
+   */
+  entregaDeExpedienteUnico(codigoEu: string): Entrega | undefined {
+    return codigoEu ? this.entregas().find((e) => e.expedienteUnico === codigoEu) : undefined;
+  }
+  /** Entrega por su identificador propio. */
+  entregaPorId(idEntrega: string): Entrega | undefined {
+    return idEntrega ? this.entregas().find((e) => e.idEntrega === idEntrega) : undefined;
+  }
+  /** Conformidad de una entrega, por la FK del DER (`CONFORMIDAD → ENTREGA`). */
+  conformidadDeEntrega(idEntrega: string): Conformidad | undefined {
+    return idEntrega ? this.conformidades().find((c) => c.entregaId === idEntrega) : undefined;
+  }
+  /** Conformidad de un ciclo completo, resuelta por su Expediente único. */
+  conformidadDeExpedienteUnico(codigoEu: string): Conformidad | undefined {
+    return codigoEu ? this.conformidades().find((c) => c.expedienteUnico === codigoEu) : undefined;
+  }
+  /**
+   * La cadena del DER recorrida entera desde una conformidad, **sin adivinar nada**:
+   * `CONFORMIDAD → ENTREGA → EXPEDIENTE_UNICO → EXPEDIENTE_TECNICO → EQUIPO`.
+   */
+  cadenaDeConformidad(c: Conformidad | undefined): {
+    conformidad?: Conformidad; entrega?: Entrega; expedienteUnico?: ExpedienteUnico;
+    expedienteTecnico?: ExpedienteTecnico; equipo?: Equipo;
+  } {
+    if (!c) return {};
+    const entrega = this.entregaPorId(c.entregaId) ?? this.entregaDe(c.expediente);
+    const eu = this.expedienteUnicoPorCodigo(c.expedienteUnico || entrega?.expedienteUnico || '');
+    const et = this.expTecnicoDeExpedienteUnico(eu);
+    return {
+      conformidad: c, entrega, expedienteUnico: eu, expedienteTecnico: et,
+      equipo: this.equipoDe(et?.inventario ?? eu?.inventario ?? c.inventario)
+    };
   }
   conformidadPorToken(token: string): Conformidad | undefined {
     return this.conformidades().find((c) => c.token === token);
@@ -1250,15 +1631,49 @@ export class DataService {
       const prep = this.preparacionPorCodigo(tec.codigo);
       if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
       if (this.reprocesoAbiertoDeExpTecnico(tec.codigo)) return false;
-      // Lo que descalifica al equipo es que **este ciclo** ya tenga Expediente único o una falla
-      // sin resolver. Antes se miraba `Equipo.expediente` —la primera solicitud a la que el equipo
-      // estuvo atado— y eso dejaba fuera para siempre a cualquier equipo que hubiera completado un
-      // ciclo: el EU de un ciclo ya cerrado no puede bloquear el siguiente.
-      if (this.expedienteUnicoDeExpTecnico(tec.codigo)) return false;
-      const proceso = this.asignacionDeEquipo(e.inventario)?.expediente ?? '';
+      // **El Expediente único es requisito, no impedimento.** El DER ordena `EU → ASIGNACION`: solo
+      // se asigna a un usuario final el equipo cuyo ciclo ya tiene expediente abierto. (Antes esto
+      // miraba `Equipo.expediente` —la primera solicitud a la que el equipo estuvo atado— y dejaba
+      // fuera para siempre a cualquier equipo que hubiera completado un ciclo.)
+      const euCiclo = this.expedienteUnicoDeExpTecnico(tec.codigo);
+      if (!euCiclo) return false;
+      // Si el expediente único nació de un requerimiento, su equipo solo puede asignarse a ese
+      // requerimiento: el ciclo ya eligió a quién sirve.
+      if (euCiclo.expediente && this.asignacionDe(euCiclo.expediente)) return false;
+      // Un EU cerrado pertenece a un ciclo que ya terminó: no admite asignaciones nuevas.
+      if (euCiclo.fechaCierre || euCiclo.estado === 'Cerrado') return false;
+      const proceso = euCiclo.expediente || this.asignacionDeEquipo(e.inventario)?.expediente || '';
       if (proceso && this.fallaVigenteDe(proceso)) return false;
       return true;
     });
+  }
+
+  /**
+   * Equipos con Expediente único abierto que **todavía esperan su asignación** al usuario final.
+   * Es el paso siguiente del DER después de crear el EU, y lo que la pantalla de Asignación ofrece.
+   */
+  equiposPendientesDeAsignar(): Equipo[] {
+    return this.equiposParaAsignar();
+  }
+
+  /**
+   * Por qué un equipo preparado todavía no puede asignarse. Devuelve '' cuando sí puede. Existe
+   * para que la pantalla explique el bloqueo en vez de limitarse a no mostrar el equipo.
+   */
+  motivoNoAsignable(inventario: string): string {
+    const tec = this.cicloAbiertoDeEquipo(inventario);
+    if (!tec) return 'El equipo no tiene un ciclo abierto: primero debe crearse su Expediente técnico.';
+    if (tec.estado !== 'Preparado') return `Su Expediente técnico ${tec.codigo} está «${tec.estado}»: falta terminar la preparación.`;
+    const prep = this.preparacionPorCodigo(tec.codigo);
+    if (!prep || prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado') {
+      return 'El F0288 del equipo no está finalizado y firmado.';
+    }
+    if (!this.expedienteUnicoDeExpTecnico(tec.codigo)) {
+      return `Falta crear el Expediente único del ciclo ${tec.ciclo} (${tec.codigo}). `
+        + 'En el DER la asignación cuelga del Expediente único: primero el expediente, después la asignación.';
+    }
+    if (this.asignacionDeEquipo(inventario)) return 'El equipo ya está asignado a un usuario final.';
+    return '';
   }
 
   /**
@@ -1272,13 +1687,15 @@ export class DataService {
    * tuvieran equipo.
    */
   solicitudesParaAsignar(): Solicitud[] {
-    const yaAsignada = ['Asignada', 'En configuración', 'Pendiente de aceptación', 'No conforme',
-      'Entregado', 'Cerrado', 'Cancelado'];
+    // Estados en los que el requerimiento ya pasó de largo la asignación. **«En configuración» ya
+    // no está en la lista**: con el orden del DER (`EU → ASIGNACION`) el expediente único se crea
+    // *antes* de asignar, y deja el requerimiento justamente en ese estado. Excluirlo aquí dejaba
+    // al requerimiento sin poder asignarse nunca — el expediente recién creado lo bloqueaba.
+    const yaAsignada = ['Pendiente de aceptación', 'No conforme', 'Entregado', 'Cerrado', 'Cancelado'];
     return this.solicitudes().filter((s) =>
       !yaAsignada.includes(s.estado) &&
-      !s.equipoInventario &&
+      // Lo que descalifica es tener **asignación**, no tener expediente único.
       !this.asignacionDe(s.expediente) &&
-      !this.expedienteUnicoDe(s.expediente) &&
       !this.conformidadDeProceso(s.expediente) &&
       !this.garantiaDe(s.expediente)
     );
@@ -1334,18 +1751,20 @@ export class DataService {
     return this.solicitudes().filter((s) => {
       if (s.estado === 'Entregado' || s.estado === 'Cerrado') return false;
       if (this.expedienteUnicoDe(s.expediente)) return false;
-      const asig = this.asignacionDe(s.expediente);
-      const inventario = asig?.vigente ? asig.equipoInventario : '';
-      if (!inventario) return false;
-      // El EU aún no existe (se acaba de descartar arriba): el ET que puede habilitarlo es el del
-      // **ciclo abierto**, nunca uno cerrado de un ciclo anterior.
-      const tec = this.cicloAbiertoDeEquipo(inventario);
-      if (tec?.estado !== 'Preparado') return false;
-      const prep = this.preparacionPorCodigo(tec.codigo);
-      if (prep && (prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado')) return false;
-      if (this.reprocesoAbiertoDeExpTecnico(tec.codigo)) return false;
       if (this.fallaVigenteDe(s.expediente)) return false;
-      return true;
+      // **Ya no se exige asignación previa**: en el DER la ASIGNACION cuelga del Expediente único,
+      // así que pedirla antes invertía el orden. El equipo se elige en el paso siguiente, entre los
+      // que tienen su ciclo abierto PREPARADO (ver `equiposParaExpedienteUnico`).
+      //
+      // Si la solicitud arrastra un equipo de un flujo anterior, ese equipo debe seguir estando en
+      // condiciones: un requerimiento no puede abrir un ciclo sobre un equipo a medio preparar.
+      const inventario = this.asignacionDe(s.expediente)?.equipoInventario || s.equipoInventario || '';
+      if (!inventario) return true;
+      const tec = this.cicloAbiertoDeEquipo(inventario);
+      if (!tec || tec.estado !== 'Preparado') return false;
+      const prep = this.preparacionPorCodigo(tec.codigo);
+      if (!prep || prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado') return false;
+      return !this.reprocesoAbiertoDeExpTecnico(tec.codigo);
     });
   }
 
@@ -1740,6 +2159,22 @@ export class DataService {
     // que es exactamente lo que exige la condición de abajo: reingreso pendiente y sin asignación.
     return hayReingresoPendiente && !this.asignacionDeEquipo(inventario);
   }
+  /**
+   * **Equipos listos para abrir un Expediente único**: su ciclo abierto tiene el ET PREPARADO, el
+   * F0288 finalizado y firmado, y ese ET todavía no tiene EU. Es la lista del paso 2 del DER —
+   * `ET PREPARADO → EU`—, y no pide asignación previa: la asignación viene después.
+   */
+  equiposParaExpedienteUnico(): Equipo[] {
+    return this.equipos().filter((e) => {
+      const tec = this.cicloAbiertoDeEquipo(e.inventario);
+      if (!tec || tec.estado !== 'Preparado' || tec.fechaCierre) return false;
+      const prep = this.preparacionPorCodigo(tec.codigo);
+      if (!prep || prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado') return false;
+      if (this.expedienteUnicoDeExpTecnico(tec.codigo)) return false;
+      return !this.reprocesoAbiertoDeExpTecnico(tec.codigo);
+    });
+  }
+
   /**
    * Equipos que aún pueden recibir un expediente técnico: sin expediente, o reingresados y
    * elegibles para una nueva preparación (ver `puedeCrearNuevoExpedienteTecnico`).
@@ -3053,12 +3488,23 @@ export class DataService {
     const s = this.solicitud(id);
     const eq = this.equipoDe(inventario);
     if (!s || !eq) return 'Verifique la solicitud y el equipo seleccionados.';
-    const tec = this.expTecnicoDeEquipo(inventario);
+    const tec = this.cicloAbiertoDeEquipo(inventario);
     if (!tec) return 'No se puede asignar este equipo porque no cuenta con Expediente técnico completado.';
     if (this.estadoPreparacionEquipo(inventario) !== 'Preparado') {
       return 'No se puede asignar este equipo porque aún no ha finalizado la Preparación técnica F0288.';
     }
     if (this.asignacionDeEquipo(inventario)) return 'Este equipo ya está asignado a otro usuario final.';
+    // **El Expediente único va antes que la asignación** (`EU → ASIGNACION` en el DER). Sin él no
+    // hay ciclo al que colgar la asignación, así que la operación se rechaza aquí y no solo en la
+    // pantalla: una regla que solo vive en la interfaz no es una regla.
+    const eu = this.expedienteUnicoDeExpTecnico(tec.codigo);
+    if (!eu) {
+      return 'Primero debe crearse el Expediente único de este ciclo: la asignación al usuario final '
+        + `cuelga del Expediente único, no al revés. Cree el Expediente único del ${tec.codigo} y vuelva aquí.`;
+    }
+    if (eu.expediente && eu.expediente !== id) {
+      return `El Expediente único ${eu.codigoUnico} de este equipo pertenece a la solicitud ${eu.expediente}.`;
+    }
 
     // El equipo preparado queda vinculado a la solicitud.
     this.solicitudes.update((list) =>
@@ -3070,6 +3516,10 @@ export class DataService {
 
     const nueva: Asignacion = {
       expediente: id,
+      // FK obligatoria del DER: la asignación pertenece al ciclo que abrió el Expediente único.
+      expedienteUnico: eu.codigoUnico,
+      ciclo: eu.ciclo,
+      usuarioFinalId: this.territorio.buscaUsuarioFinal(s.carne, s.destinatario)?.id ?? '',
       equipoInventario: inventario,
       usuarioFinal: `${s.destinatario} — ${s.unidadDestino}`,
       tipoEquipo: eq.tipo,
@@ -3094,9 +3544,11 @@ export class DataService {
       }
     };
     this.asignaciones.update((list) => [nueva, ...list]);
-    this.setEstadoSolicitud(id, 'Asignada', 'Crear Expediente único y continuar a configuración');
+    this.actualizarAnexo(id, 'Asignación del equipo', 'Anexado', `Asignado por ${responsable}`);
+    this.setEstadoSolicitud(id, 'En configuración', 'Checklist F0302');
     this.registrarEvento(id, responsable, `Equipo ${inventario} (preparado) asignado al usuario final`, 'Asignada', observacion, true,
-      { modulo: 'Asignación de equipo', estadoAnterior: 'No asignado', inventario, expedienteTecnico: tec.codigo, usuarioFinal: nueva.usuarioFinal });
+      { modulo: 'Asignación de equipo', estadoAnterior: 'No asignado', inventario,
+        expedienteTecnico: tec.codigo, expedienteUnico: eu.codigoUnico, usuarioFinal: nueva.usuarioFinal });
     return null;
   }
 
@@ -3277,7 +3729,12 @@ export class DataService {
     // Nota 6 del DER: «el reingreso a Hardware genera un movimiento, pero **no crea
     // automáticamente un nuevo ET**». El equipo entra al taller y ahí se queda hasta que un
     // Encargado decida abrirle un ciclo nuevo.
-    this.registrarMovimiento({
+    //
+    // MOVIMIENTO_EQUIPO es la bitácora física **principal**; `IngresoHardware` se conserva porque
+    // de él dependen reglas del prototipo que el movimiento no cubre (qué ingreso originó qué
+    // Expediente técnico, y por tanto si hay un reingreso pendiente). Para que no sean dos
+    // verdades, el ingreso guarda el id del movimiento que lo representa.
+    const mov = this.registrarMovimiento({
       inventario,
       ubicacionOrigenId: this.equipoDe(inventario)?.ubicacionActualId ?? 'UBI-BOD-DESCARGO',
       ubicacionDestinoId: 'UBI-TALLER-HW',
@@ -3286,6 +3743,8 @@ export class DataService {
       usuarioRegistra: usuario,
       observaciones: `${observaciones} El reingreso no abre ciclo por sí solo: el nuevo Expediente técnico lo crea un Encargado.`.trim()
     });
+    this.ingresosHardware.update((list) => list.map((i) =>
+      (i.idIngresoHardware === nuevo.idIngresoHardware ? { ...i, movimiento: mov.id } : i)));
     this.registrarEvento(inventario, usuario, `Reingreso a Hardware registrado para el equipo ${inventario} (${motivo})`,
       'Pendiente de preparación', observaciones, true,
       { modulo: 'Ingreso a Hardware', estadoAnterior: 'Descargado', inventario });
@@ -3675,23 +4134,39 @@ export class DataService {
    * devuelven todas con su estado —no solo la primera que falla— para que la pantalla muestre
    * qué falta sin obligar a descubrirlo de a una.
    */
-  validacionesExpedienteUnico(id: string, tecnicoConfiguracion: string): { texto: string; ok: boolean }[] {
+  /**
+   * Las condiciones que el DER exige para abrir un Expediente único. Parten del **EQUIPO y su
+   * Expediente técnico** —`EU → ET → EQUIPO`—, no de una asignación previa: en el DER la
+   * ASIGNACION viene *después* del EU, así que no puede ser un requisito para crearlo.
+   *
+   * `inventario` es el equipo elegido; si no se pasa, se resuelve desde la solicitud (compatibilidad).
+   */
+  validacionesExpedienteUnico(id: string, tecnicoConfiguracion: string, inventario = ''): { texto: string; ok: boolean }[] {
     const s = this.solicitud(id);
-    const asig = this.asignacionDe(id);
-    const inventario = asig?.equipoInventario ?? '';
-    const tec = inventario ? this.expTecnicoDeEquipo(inventario) : undefined;
+    const inv = inventario || s?.equipoInventario || '';
+    const tec = inv ? this.cicloAbiertoDeEquipo(inv) : undefined;
     const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
     const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
     return [
-      { texto: 'Solicitud seleccionada', ok: !!s },
-      { texto: 'Solicitud tiene equipo asignado', ok: !!inventario },
-      { texto: 'Equipo asignado tiene F0288 finalizado y firmado',
-        ok: !!tec && tec.estado === 'Preparado' && (!prep || (prep.estado === 'Completada' && prep.firma?.estado === 'Firmado')) },
-      { texto: 'Expediente técnico está completado', ok: tec?.estado === 'Preparado' },
+      // La solicitud es opcional (un ciclo puede nacer de un reingreso interno); lo que no puede
+      // faltar es el equipo con su ciclo abierto y preparado.
+      { texto: 'Equipo seleccionado', ok: !!inv },
+      { texto: 'El equipo tiene un ciclo abierto con Expediente técnico', ok: !!tec },
+      { texto: 'El ciclo no está cerrado', ok: !!tec && tec.estado !== 'Cerrado' && !tec.fechaCierre },
+      { texto: 'El Expediente técnico está PREPARADO', ok: tec?.estado === 'Preparado' },
+      { texto: 'El F0288 está finalizado y firmado',
+        ok: !!prep && prep.estado === 'Completada' && prep.firma?.estado === 'Firmado' },
+      { texto: 'El Expediente técnico pertenece a ese equipo', ok: !!tec && tec.inventario === inv },
+      // El equipo debe ser del tipo que pide el requerimiento. Antes lo filtraba la pantalla de
+      // Asignación; ahora el equipo se elige al abrir el ciclo, así que la regla vive aquí.
+      { texto: 'El equipo es del tipo que pide el requerimiento',
+        ok: !s || this.equipoDe(inv)?.tipo === s.tipoEquipo },
+      { texto: 'Ese Expediente técnico no tiene ya un Expediente único',
+        ok: !!tec && !this.expedienteUnicoDeExpTecnico(tec.codigo) },
       { texto: 'Técnico de configuración seleccionado', ok: !!tecnicoConfiguracion },
       { texto: 'Técnico de configuración responde por el Departamento o la Dirección/Registro del requerimiento',
         ok: !!tecnicoConfiguracion && this.atiendeDireccionUnidad(tecnicoConfiguracion, direccion, unidad) },
-      { texto: 'No existe Expediente único previo para esa solicitud', ok: !this.expedienteUnicoDe(id) }
+      { texto: 'No existe Expediente único previo para esa solicitud', ok: !id || !this.expedienteUnicoDe(id) }
     ];
   }
 
@@ -3699,13 +4174,13 @@ export class DataService {
    * Motivo por el que NO se puede crear el Expediente único, o '' si se puede. Es la puerta que
    * consulta `crearExpedienteUnico`: la pantalla muestra el mismo texto que aplica el servicio.
    */
-  bloqueoExpedienteUnico(id: string, tecnicoConfiguracion: string): string {
+  bloqueoExpedienteUnico(id: string, tecnicoConfiguracion: string, inventario = ''): string {
     const { direccion, unidad } = this.dirUnidadDeSolicitud(id);
     if (!direccion) return 'El requerimiento no tiene Departamento ni Dirección/Registro solicitante registrados.';
     if (!this.tecnicosDeDireccionUnidad(direccion, unidad).length) return this.MSG_SIN_DISTRIBUCION;
     if (!tecnicoConfiguracion) return 'Debe seleccionar el Técnico de Configuración.';
     if (!this.atiendeDireccionUnidad(tecnicoConfiguracion, direccion, unidad)) return this.MSG_TECNICO_FUERA_DIRECCION;
-    const pendientes = this.validacionesExpedienteUnico(id, tecnicoConfiguracion).filter((v) => !v.ok);
+    const pendientes = this.validacionesExpedienteUnico(id, tecnicoConfiguracion, inventario).filter((v) => !v.ok);
     if (pendientes.length) return `Falta: ${pendientes.map((v) => v.texto.toLowerCase()).join('; ')}.`;
     return '';
   }
@@ -4225,22 +4700,33 @@ export class DataService {
       }
     };
     this.preparaciones.update((list) => [prep, ...list]);
+    // El DER separa el encargo del trabajo (ASIGNACION_PREPARACION) de su ejecución
+    // (FORM_PREPARACION) y del documento (F0288). Se crean aquí las tres, en ese orden.
+    const encargo = this.designarTecnicoPreparacion(nuevo.codigo, datos.tecnicoPreparacion,
+      datos.unidadResponsable, datos.creadoPor, 'Encargo inicial de la preparación');
+    const ejecucion = this.abrirFormPreparacion(encargo);
+    this.preparaciones.update((list) => list.map((x) => (x.expedienteTecnico === nuevo.codigo
+      ? { ...x, asignacionPreparacion: encargo.id, formPreparacion: ejecucion.id } : x)));
     this.equipos.update((list) => list.map((e) =>
       (e.inventario === eq.inventario ? { ...e, cicloActual: ciclo } : e)));
-    // El equipo entra físicamente al taller donde se prepara. El movimiento es del DER, no un
-    // adorno: sin él no se sabría dónde estuvo el equipo entre el reingreso y la entrega.
-    this.registrarMovimiento({
-      inventario: eq.inventario,
-      ubicacionOrigenId: this.equipoDe(eq.inventario)?.ubicacionActualId ?? 'UBI-BOD-CENTRAL',
-      ubicacionDestinoId: datos.unidadResponsable === 'Hardware' ? 'UBI-TALLER-HW' : 'UBI-TALLER-SOP',
-      ciclo,
-      tipoMovimiento: anterior ? 'REINGRESO_HARDWARE' : 'TRASLADO',
-      motivo: anterior
-        ? `Nuevo ciclo ${ciclo}: preparación técnica tras reingreso`
-        : 'Inicio de la preparación técnica',
-      usuarioRegistra: datos.creadoPor,
-      observaciones: `Expediente técnico ${nuevo.codigo} (ciclo ${ciclo}).`
-    });
+    // El equipo pasa al taller donde se prepara — pero **solo se registra el movimiento si de
+    // verdad cambia de sitio**. Tras un reingreso el equipo ya está en el taller de Hardware y su
+    // movimiento quedó anotado entonces: repetirlo aquí escribiría un traslado que nunca ocurrió.
+    const dondeEsta = this.equipoDe(eq.inventario)?.ubicacionActualId ?? 'UBI-BOD-CENTRAL';
+    const taller = datos.unidadResponsable === 'Hardware' ? 'UBI-TALLER-HW' : 'UBI-TALLER-SOP';
+    if (dondeEsta !== taller) {
+      this.registrarMovimiento({
+        inventario: eq.inventario,
+        ubicacionOrigenId: dondeEsta,
+        ubicacionDestinoId: taller,
+        ciclo,
+        // El reingreso ya se registró como tal cuando ocurrió; esto es un traslado interno.
+        tipoMovimiento: 'TRASLADO',
+        motivo: `Traslado al taller para la preparación técnica del ciclo ${ciclo}`,
+        usuarioRegistra: datos.creadoPor,
+        observaciones: `Expediente técnico ${nuevo.codigo} (ciclo ${ciclo}).`
+      });
+    }
 
     // Carga laboral y pendientes del técnico al momento de asignarle este expediente (se anota en
     // el detalle del evento de creación en vez de generar un evento aparte por cada consulta).
@@ -4285,29 +4771,42 @@ export class DataService {
 
   // ---------- Expediente único ----------
   /**
-   * El Expediente único une solicitud, usuario final, equipo preparado, expediente técnico,
-   * F0288, técnico de configuración y las fases posteriores (F0302, entrega, garantía).
-   * Requiere solicitud, equipo asignado, expediente técnico completado y F0288 finalizado.
+   * Crea el **EXPEDIENTE_UNICO**, que en el DER abre el ciclo de asignación y uso:
+   *
+   *     ET PREPARADO → EXPEDIENTE_UNICO → ASIGNACION → configuración → …
+   *
+   * Nace del **equipo y su Expediente técnico**, no de una asignación: en el DER la ASIGNACION
+   * cuelga del EU (`id_exp_unico`), así que exigir una asignación previa invertía el orden. La
+   * solicitud es opcional —un ciclo puede nacer de un reingreso interno—, y el equipo se toma del
+   * parámetro `inventario` o, si no viene, del que la solicitud ya tuviera.
    */
-  crearExpedienteUnico(id: string, tecnicoConfiguracion: string, usuario: string): ExpedienteUnico | null {
+  crearExpedienteUnico(id: string, tecnicoConfiguracion: string, usuario: string, inventario = ''): ExpedienteUnico | null {
     const s = this.solicitud(id);
-    const asig = this.asignacionDe(id);
-    const tec = this.expTecnicoDe(id);
+    const inv = inventario || s?.equipoInventario || this.asignacionDe(id)?.equipoInventario || '';
+    const tec = this.cicloAbiertoDeEquipo(inv);
     const prep = tec ? this.preparacionPorCodigo(tec.codigo) : undefined;
-    if (!s || !asig || !tec || tec.estado !== 'Preparado' || (prep && prep.estado !== 'Completada')) return null;
+    // Las condiciones del DER, aplicadas en el servicio y no solo en la pantalla: ocultar un botón
+    // no es una regla, es una comodidad.
+    if (!inv || !tec) return null;
+    if (tec.inventario !== inv) return null;                    // el ET debe ser de ESE equipo
+    if (tec.estado !== 'Preparado' || tec.fechaCierre) return null; // PREPARADO y ciclo abierto
+    if (!prep || prep.estado !== 'Completada' || prep.firma?.estado !== 'Firmado') return null; // F0288 firmado
+    if (this.expedienteUnicoDeExpTecnico(tec.codigo)) return null;  // un EU por ET/ciclo
+    // El equipo tiene que ser del tipo que pide el requerimiento (CPU vs. Laptop).
+    if (s && this.equipoDe(inv)?.tipo !== s.tipoEquipo) return null;
     // Una solicitud pertenece a un solo Expediente único: si ya lo tiene, no se crea otro.
-    if (this.expedienteUnicoDe(id)) return null;
+    if (id && this.expedienteUnicoDe(id)) return null;
     // El Técnico de Configuración debe pertenecer a la distribución de soporte de la
     // Dirección/Registro solicitante (§7/§11). La pantalla ya filtra el listado, pero la puerta
     // vive aquí: filtrar es una comodidad, la regla no puede depender de qué se mostró.
-    if (this.bloqueoExpedienteUnico(id, tecnicoConfiguracion)) return null;
+    if (this.bloqueoExpedienteUnico(id, tecnicoConfiguracion, inv)) return null;
 
     // La carga laboral del Técnico de Configuración se deja registrada ANTES de crear nada: es la
     // que tenía al momento de asignarle este proceso, no la que tendrá ya con él encima (§12).
     const dirUniSel = this.dirUnidadDeSolicitud(id);
     this.registrarSeleccionSoporte(tecnicoConfiguracion, usuario, {
       expediente: id, modulo: 'Expediente único', direccion: dirUniSel.direccion,
-      unidad: dirUniSel.unidad, inventario: asig.equipoInventario
+      unidad: dirUniSel.unidad, inventario: inv
     });
 
     // EXP-AÑO-CORRELATIVO: el correlativo del Expediente único también se reinicia por año.
@@ -4316,12 +4815,17 @@ export class DataService {
       this.expedientesUnicos().map((x) => x.codigoUnico)
     );
 
+    const asigPrevia = id ? this.asignacionDe(id) : undefined;
     const nuevo: ExpedienteUnico = {
       expediente: id,
+      // Un ciclo sin requerimiento externo nace de una decisión interna tras el reingreso; el DER
+      // no obliga a inventar una solicitud para poder abrirlo.
+      origenCiclo: id ? 'Solicitud' : 'Reingreso interno',
       codigoUnico: codigo,
       // **El EU guarda su equipo y su ET.** No se deducen nunca más: es lo que permite que este
       // expediente siga apuntando a esta preparación cuando el equipo lleve dos ciclos más.
-      inventario: asig.equipoInventario,
+      // El equipo sale del ET —`EU → ET → EQUIPO`—, que es la ruta del DER.
+      inventario: tec.inventario,
       expedienteTecnico: tec.codigo,
       ciclo: tec.ciclo,
       fechaApertura: this.hoy(),
@@ -4330,8 +4834,10 @@ export class DataService {
       resumenEstado: 'En configuración',
       fechaEntrega: '',
       anexos: [
-        { nombre: 'Solicitud / requerimiento', detalle: this.tipoRequerimientoTexto(s), estado: 'Anexado', fecha: s.fecha },
-        { nombre: 'Asignación del equipo', detalle: `Asignado por ${asig.responsableAsignacion}`, estado: 'Anexado', fecha: asig.fecha },
+        s
+          ? { nombre: 'Solicitud / requerimiento', detalle: this.tipoRequerimientoTexto(s), estado: 'Anexado', fecha: s.fecha }
+          : { nombre: 'Solicitud / requerimiento', detalle: 'Ciclo abierto internamente tras el reingreso del equipo', estado: 'No aplica', fecha: this.hoy() },
+        { nombre: 'Asignación del equipo', detalle: 'Se registra al asignar el equipo al usuario final', estado: 'Pendiente', fecha: '' },
         { nombre: 'Se anexa expediente de preparación técnica', detalle: `${tec.codigo} · ${tec.tipoExpediente}`, estado: 'Anexado', fecha: this.hoy() },
         { nombre: 'Se anexa configuración del equipo', detalle: `Técnico de configuración: ${tecnicoConfiguracion}`, estado: 'Pendiente', fecha: '' },
         prep?.estado === 'Completada'
@@ -4347,25 +4853,34 @@ export class DataService {
       ]
     };
     this.expedientesUnicos.update((list) => [nuevo, ...list]);
-    this.asignaciones.update((list) =>
-      list.map((a) => (a.expediente === id
-        ? {
-            ...a,
-            // La ASIGNACION del DER cuelga del EU: en cuanto el EU existe, la FK se escribe.
-            expedienteUnico: codigo,
-            ciclo: tec.ciclo,
-            usuarioFinalId: a.usuarioFinalId || this.territorio.buscaUsuarioFinal(s.carne, a.usuarioFinal)?.id || '',
-            responsablesFase: { ...a.responsablesFase, tecnicoConfiguracion, estadoConfiguracion: 'En configuración' }
-          }
-        : a))
-    );
+    // El DER designa al técnico de configuración como una entidad propia —ASIGNACION_CONFIGURACION—
+    // y separa la ejecución (FORM_CONFIGURACION) del documento (F0302). Se crean las tres aquí, en
+    // ese orden, para que reasignar el trabajo más tarde no borre a quién se le encargó primero.
+    const asigConf = this.designarTecnicoConfiguracion(codigo, id, tecnicoConfiguracion, usuario,
+      'Designación inicial al crear el Expediente único');
+    const formConf = this.abrirFormConfiguracion(asigConf, usuario);
+    // Si ya existía una asignación de equipo de un flujo anterior, se enlaza al EU recién creado
+    // en vez de dejarla huérfana: la FK del DER es obligatoria.
+    if (asigPrevia) {
+      this.asignaciones.update((list) =>
+        list.map((a) => (a.expediente === id
+          ? {
+              ...a,
+              expedienteUnico: codigo,
+              ciclo: tec.ciclo,
+              usuarioFinalId: a.usuarioFinalId || this.territorio.buscaUsuarioFinal(s?.carne ?? '', a.usuarioFinal)?.id || '',
+              responsablesFase: { ...a.responsablesFase, tecnicoConfiguracion, estadoConfiguracion: 'En configuración' }
+            }
+          : a))
+      );
+    }
     // El documento F0288 (generado con el código del expediente técnico) se re-asocia al proceso.
     this.documentos.update((list) =>
       list.map((d) => (d.expediente === tec.codigo ? { ...d, expediente: id } : d))
     );
     // Se habilita de inmediato la Configuración F0302 con su checklist pendiente.
     if (!this.configuracionDe(id)) {
-      const eq = this.equipoDe(asig.equipoInventario);
+      const eq = this.equipoDe(tec.inventario);
       // El checklist F0302 arranca SIN software: no hay una lista fija obligatoria para todos los
       // casos. El software depende del requerimiento del usuario final y el Técnico de Soporte lo
       // agrega desde el Catálogo de Software permitido durante la configuración; lo que ya instaló
@@ -4385,22 +4900,27 @@ export class DataService {
       ];
       const nuevaConf: ConfiguracionF0302 = {
         expediente: id,
+        // FK del DER: el F0302 sabe de qué ejecución salió, bajo qué designación y de qué ciclo es.
+        formConfiguracion: formConf.id,
+        asignacionConfiguracion: asigConf.id,
+        expedienteUnico: codigo,
+        ciclo: tec.ciclo,
         tecnico: tecnicoConfiguracion,
         seleccionadoPor: usuario,
         fecha: '',
         estado: 'En curso',
         datos: {
-          requerimiento: this.tipoRequerimientoTexto(s),
-          inventario: asig.equipoInventario,
+          requerimiento: s ? this.tipoRequerimientoTexto(s) : 'Ciclo interno (sin requerimiento externo)',
+          inventario: tec.inventario,
           // El nombre del equipo lo digita el Técnico de Soporte dentro del checklist F0302: no se
           // propone uno automático, porque es dato del expediente y responde a la convención de la
           // unidad (p. ej. `DT-KRIVAS-045`), no al número de inventario.
           nombrePC: '',
           tipoServicio: 'Asignación de equipo',
-          asignadoA: s.destinatario,
-          carne: s.carne,
-          direccionGerencia: s.direccionGerencia,
-          unidad: s.unidadDestino,
+          asignadoA: s?.destinatario ?? '',
+          carne: s?.carne ?? '',
+          direccionGerencia: s?.direccionGerencia ?? '',
+          unidad: s?.unidadDestino ?? '',
           puesto: 'Según registro de RRHH',
           sistemaOperativo: eq?.sistemaOperativo || 'Windows 11 Pro',
           arquitectura: 'x64',
@@ -4409,7 +4929,7 @@ export class DataService {
           requiereReservaIP: '',
           ipReservada: '',
           // La MAC se autocompleta desde el registro institucional del equipo cuando lo trae.
-          macEquipo: this.equipoDe(asig.equipoInventario)?.mac ?? '',
+          macEquipo: eq?.mac ?? '',
           justificacionSinReservaIP: '',
           estadoSolicitudIP: '',
           correoReservaEnviado: '',
@@ -4450,13 +4970,14 @@ export class DataService {
       `Pertenece a la distribución de soporte de ${dirUni.direccion === dirUni.unidad ? dirUni.direccion : `${dirUni.direccion} / ${dirUni.unidad}`}. `
         + `Asignación realizada por ${usuario}.`,
       false,
-      { modulo: 'Expediente único', inventario: asig.equipoInventario, expedienteUnico: codigo,
+      { modulo: 'Expediente único', inventario: tec.inventario, expedienteUnico: codigo,
         direccion: dirUni.direccion, unidad: dirUni.unidad, tecnicoConfiguracion,
         tecnicoSoporte: tecnicoConfiguracion, rol: this.rolConectado() });
-    this.registrarEvento(id, usuario, `Expediente único ${codigo} creado; continúa la Configuración F0302`, 'En configuración',
-      `Técnico de configuración: ${tecnicoConfiguracion}.`, true,
-      { modulo: 'Expediente único', estadoAnterior: 'Asignada', inventario: asig.equipoInventario,
-        expedienteTecnico: tec.codigo, expedienteUnico: codigo, usuarioFinal: asig.usuarioFinal });
+    this.registrarEvento(id || codigo, usuario, `Expediente único ${codigo} creado; continúa la Configuración F0302`, 'En configuración',
+      `Ciclo ${tec.ciclo} del equipo ${tec.inventario}. Origen: ${nuevo.origenCiclo}. `
+        + `Técnico de configuración: ${tecnicoConfiguracion}.`, true,
+      { modulo: 'Expediente único', estadoAnterior: 'Preparado', inventario: tec.inventario,
+        expedienteTecnico: tec.codigo, expedienteUnico: codigo, usuarioFinal: asigPrevia?.usuarioFinal });
     return nuevo;
   }
 
@@ -5107,6 +5628,9 @@ export class DataService {
     this.expedientesTecnicos.update((list) =>
       list.map((x) => (x.codigo === codigoTec ? { ...x, estado: 'Preparado' as const } : x))
     );
+    // El encargo (ASIGNACION_PREPARACION) y su ejecución (FORM_PREPARACION) se cierran con el
+    // documento: las tres entidades del DER terminan a la vez, cada una con su propia fecha.
+    this.cerrarPreparacionNormalizada(codigoTec);
     const tiempo = this.formatoDuracion(crono.duracionMinutos);
     // El evento de cierre deja constancia del software de catálogo instalado y su versión, para
     // que la trazabilidad diga con qué quedó preparado el equipo sin abrir el checklist.
@@ -5948,6 +6472,9 @@ export class DataService {
       tipo: 'F0302', expediente: id, generadoPor: usuario, fecha: this.hoy(), hash: this.hash(),
       inventario: c.datos.inventario, evidencias: this.evidenciasDelDocumento('Configuración F0302', id)
     }]);
+    // Igual que en preparación: el encargo de configuración y su ejecución se cierran con el F0302.
+    const euCierre = this.expedienteUnicoDe(id);
+    if (euCierre) this.cerrarConfiguracionNormalizada(euCierre.codigoUnico);
     this.actualizarAnexo(id, 'F0302 generado', 'Generado', 'Documento generado automáticamente');
     this.actualizarAnexo(id, 'Firmas registradas', '2 de 3', 'F0288 y F0302 firmados; falta la conformidad del usuario final');
     this.actualizarAnexo(id, 'Se anexa configuración del equipo', 'Anexado', 'Checklist digital F0302 completado');
@@ -8089,7 +8616,18 @@ export class DataService {
     }
 
     const eq = this.equipoDe(s.equipoInventario);
+    const euProceso = this.expedienteUnicoDe(id);
+    // La entrega se crea (o se recupera) ANTES que la conformidad: el DER encadena
+    // `EXPEDIENTE_UNICO → ENTREGA → CONFORMIDAD`, y la conformidad necesita a quién colgarse.
+    const entregaPrevia = this.entregaDe(id);
+    const idEntrega = entregaPrevia?.idEntrega
+      || this.siguienteCodigoPorAnio(`ENT-${this.anioActual()}-`, this.entregas().map((e) => e.idEntrega).filter(Boolean));
     const nueva: Conformidad = {
+      idConformidad: this.siguienteCodigoPorAnio(`CFM-${this.anioActual()}-`, this.conformidades().map((c) => c.idConformidad).filter(Boolean)),
+      // FK principal: la conformidad pertenece a SU entrega, no al token.
+      entregaId: idEntrega,
+      expedienteUnico: euProceso?.codigoUnico ?? '',
+      ciclo: euProceso?.ciclo,
       token: `CONF-${this.anioActual()}-${id.slice(-4)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`,
       expediente: id,
       usuarioFinal: s.destinatario,
@@ -8127,6 +8665,12 @@ export class DataService {
       this.entregas.update((list) => [
         ...list,
         {
+          idEntrega,
+          // FK del DER: la entrega pertenece al Expediente único del ciclo.
+          expedienteUnico: euProceso?.codigoUnico ?? '',
+          ciclo: euProceso?.ciclo,
+          usuarioFinalId: this.territorio.buscaUsuarioFinal(s.carne, s.destinatario)?.id ?? '',
+          observaciones: '',
           expediente: id,
           solicitudRef: this.tipoRequerimientoTexto(s),
           usuarioFinal: s.destinatario,
@@ -9446,6 +9990,10 @@ export class DataService {
         `CASO-${this.anioActual()}-`,
         this.garantias().flatMap((x) => x.casos.map((c) => c.codigo))
       ),
+      // FK del DER: el caso cuelga de SU garantía, y su responsable es un usuario del sistema.
+      garantiaId: g.idGarantia,
+      expedienteUnico: g.expedienteUnico ?? '',
+      responsableId: this.idUsuarioPorNombre(responsable),
       fechaApertura: this.hoy(),
       motivo,
       descripcion,
@@ -9477,6 +10025,10 @@ export class DataService {
     if (caso.estado === 'Cerrado' || caso.estado === 'Resuelto') return 'Este caso de garantía está cerrado. No se pueden agregar nuevos comentarios.';
     if (!texto.trim()) return 'Escriba el comentario antes de guardarlo.';
     const comentario: ComentarioCaso = {
+      // FK del DER: el comentario pertenece a su caso y a quien lo escribió.
+      id: `${codigoCaso}-C${String((caso.comentarios?.length ?? 0) + 1).padStart(2, '0')}`,
+      casoGarantiaId: codigoCaso,
+      usuarioId: this.idUsuarioPorNombre(usuario),
       fecha: this.hoy(), hora: this.hora(), usuario, tipo, texto: texto.trim(), estadoCaso: caso.estado
     };
     this.garantias.update((list) =>

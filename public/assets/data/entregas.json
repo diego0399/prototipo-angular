@@ -15,7 +15,12 @@
   "f0302Generado": true,
   "f0302Fecha": "2026-05-11",
   "conformidadToken": "CONF-2026-0150-D3M9",
-  "estado": "Aceptado"
+  "estado": "Aceptado",
+  "idEntrega": "ENT-2026-0001",
+  "expedienteUnico": "EXP-2026-0010",
+  "ciclo": 1,
+  "usuarioFinalId": "UF-05340",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0141",
@@ -33,7 +38,12 @@
   "f0302Generado": true,
   "f0302Fecha": "2026-07-06",
   "conformidadToken": "CONF-2026-0141-X8F2",
-  "estado": "Pendiente de respuesta"
+  "estado": "Pendiente de respuesta",
+  "idEntrega": "ENT-2026-0002",
+  "expedienteUnico": "EXP-2026-0002",
+  "ciclo": 1,
+  "usuarioFinalId": "UF-03287",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0139",
@@ -51,7 +61,12 @@
   "f0302Generado": true,
   "f0302Fecha": "2026-06-30",
   "conformidadToken": "CONF-2026-0139-B7K1",
-  "estado": "Aceptado"
+  "estado": "Aceptado",
+  "idEntrega": "ENT-2026-0003",
+  "expedienteUnico": "EXP-2026-0001",
+  "ciclo": 1,
+  "usuarioFinalId": "UF-02901",
+  "observaciones": ""
  },
  {
   "expediente": "SOL-2025-0210",
@@ -69,6 +84,11 @@
   "f0302Generado": true,
   "f0302Fecha": "2025-12-01",
   "conformidadToken": "CONF-2025-0210-J4M9",
-  "estado": "Aceptado"
+  "estado": "Aceptado",
+  "idEntrega": "ENT-2025-0004",
+  "expedienteUnico": "EXP-2025-0025",
+  "ciclo": 1,
+  "usuarioFinalId": "UF-04102",
+  "observaciones": ""
  }
 ]

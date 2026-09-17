@@ -134,7 +134,7 @@ import { IconComponent } from '../../shared/icon';
               <div class="field full">
                 <label>
                   Equipo preparado <span class="req">*</span>
-                  <ui-help texto="Solo se muestran equipos del tipo que pide el requerimiento: preparados, con F0288 finalizado y firmado, sin asignación activa y sin reproceso ni falla abierta." />
+                  <ui-help texto="Solo equipos del tipo que pide el requerimiento que YA tienen su Expediente único abierto: en el DER la asignación cuelga del Expediente único, así que primero se crea el expediente y después se asigna el equipo al usuario final. Además: preparados, con F0288 finalizado y firmado, sin asignación activa y sin reproceso ni falla abierta." />
                 </label>
                 @if (equipo(); as e) {
                   <div class="resumen-eq">
@@ -162,7 +162,11 @@ import { IconComponent } from '../../shared/icon';
                     <button class="btn btn-primary" (click)="abrirBusqueda()" [disabled]="!esEncargado()">
                       <ui-icon name="search" [size]="15" /> Buscar equipo preparado
                     </button>
-                    <span class="hint">Solo {{ s.tipoEquipo === 'Desktop' ? 'CPU' : 'laptops' }} con F0288 firmado y sin asignación.</span>
+                    <span class="hint">
+                      Solo {{ s.tipoEquipo === 'Desktop' ? 'CPU' : 'laptops' }} con F0288 firmado, sin asignación
+                      y <b>con su Expediente único ya creado</b>. Si el equipo que busca no aparece, lo que falta
+                      es su Expediente único: créelo en <a routerLink="/expediente-unico">Expediente único</a>.
+                    </span>
                   </div>
                 }
               </div>
@@ -319,7 +323,7 @@ import { IconComponent } from '../../shared/icon';
                       <button class="btn btn-primary" (click)="abrirBusquedaEquipoMod()">
                         <ui-icon name="search" [size]="15" /> Buscar equipo preparado
                       </button>
-                      <span class="hint">Mismas reglas que una asignación nueva: preparado, F0288 firmado, libre y del tipo del requerimiento.</span>
+                      <span class="hint">Mismas reglas que una asignación nueva: Expediente único abierto, preparado, F0288 firmado, libre y del tipo del requerimiento.</span>
                     }
                   </div>
 
@@ -931,8 +935,15 @@ export class AsignacionComponent {
     const q = this.q().toLowerCase().trim();
     // El tipo sale del requerimiento en juego: el de la asignación nueva o el de la que se corrige.
     const tipo = this.paraModificacion() ? this.solAsig()?.tipoEquipo : this.sol()?.tipoEquipo;
+    // El requerimiento en juego: su Expediente único es el que decide qué equipo puede asignársele.
+    const solId = this.paraModificacion() ? (this.solAsig()?.expediente ?? '') : (this.sol()?.expediente ?? '');
     return this.data.equiposParaAsignar().filter((e) => {
       if (tipo && e.tipo !== tipo) return false;
+      // Con el orden del DER el equipo llega **ya con su Expediente único abierto**. Si ese
+      // expediente nació de otro requerimiento, este equipo no es para esta asignación.
+      const et = this.data.cicloAbiertoDeEquipo(e.inventario);
+      const eu = et ? this.data.expedienteUnicoDeExpTecnico(et.codigo) : undefined;
+      if (solId && eu?.expediente && eu.expediente !== solId) return false;
       if (this.fCond() && e.condicion !== this.fCond()) return false;
       if (!q) return true;
       const tec = this.data.expTecnicoDeEquipo(e.inventario);

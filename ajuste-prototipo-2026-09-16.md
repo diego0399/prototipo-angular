@@ -175,3 +175,115 @@ que es lo esperado. El segundo ciclo se condujo de punta a punta desde la interf
 equipo del ciclo 2 → creación del EU `EXP-2026-0011`, que quedó guardado con
 `inventario: 2201-1300-2026`, `expedienteTecnico: EXP-PT-2026-0094` y `ciclo: 2`, sin tocar el
 ciclo 1.
+
+---
+
+# Segunda pasada de alineación con el DER — 16 de septiembre de 2026
+
+La primera pasada dejó el ciclo de vida y el módulo organizacional en su sitio. Esta segunda
+corrige el **orden de las entidades** y termina de normalizar lo que seguía viajando como un solo
+objeto.
+
+## 1. El orden estaba invertido: ASIGNACION iba antes que EXPEDIENTE_UNICO
+
+El DER es inequívoco — `ASIGNACION {PK id_asignacion, FK id_exp_unico, id_equipo, id_usuario_final}`:
+la asignación **cuelga** del Expediente único. El prototipo hacía lo contrario: `crearExpedienteUnico`
+exigía una asignación previa y sacaba de ella el equipo.
+
+No era un detalle de nomenclatura. Con ese orden, el equipo del ciclo lo decidía la asignación, y el
+EU quedaba como un documento que se emitía después sobre algo ya hecho. En el DER el ciclo lo abre
+el **Expediente técnico preparado**, y la asignación es un paso *dentro* de ese ciclo.
+
+Lo que cambió:
+
+- `Asignacion.expedienteUnico` pasó de `?: string` a **`: string` obligatorio**.
+- `crearExpedienteUnico` ya no pide asignación. Recibe el **equipo** y valida, en el servicio y no
+  solo en la pantalla: que el ET exista, que sea de **ese** equipo, que esté `PREPARADO`, que su
+  F0288 esté finalizado y firmado, que el ciclo no esté cerrado, que ese ET no tenga ya un EU, y
+  que el equipo sea del tipo que pide el requerimiento.
+- `asignarEquipo` **rechaza** la operación si el ciclo no tiene EU, con un mensaje que dice qué
+  hacer. Ocultar el botón no era suficiente: la regla vive en el servicio.
+- La pantalla de Expediente único elige ahora un **equipo preparado** (paso 2) en lugar de heredarlo
+  de una asignación; la de Asignación solo ofrece equipos **con** su EU abierto.
+
+Dos filtros heredados del orden anterior hacían justo lo contrario de lo que ahora toca, y los dos
+habrían bloqueado el flujo entero:
+
+- `equiposParaAsignar()` descartaba el equipo **si** su ciclo tenía EU. Ahora lo exige.
+- `solicitudesParaAsignar()` excluía el estado «En configuración» —que es precisamente en el que
+  queda el requerimiento al crearse su EU—, de modo que el expediente recién creado impedía asignar.
+
+## 2. ENTREGA y CONFORMIDAD dejaron de depender del número de solicitud
+
+- `Entrega` gana `idEntrega`, **`expedienteUnico`**, `ciclo`, `usuarioFinalId` y `observaciones`.
+- `Conformidad` gana `idConformidad`, **`entregaId`**, `expedienteUnico` y `ciclo`. El `token`
+  sigue existiendo —es el enlace del formulario externo— pero **ya no es la relación** entre
+  entidades.
+- `cadenaDeConformidad()` recorre entera la cadena del DER sin adivinar nada:
+  `CONFORMIDAD → ENTREGA → EXPEDIENTE_UNICO → EXPEDIENTE_TECNICO → EQUIPO`.
+
+## 3. Encargo, ejecución y documento son tres cosas
+
+El DER separa `ASIGNACION_PREPARACION → FORM_PREPARACION → F0288` y lo mismo del lado de
+configuración. El prototipo los tenía colapsados en un campo `tecnico` del expediente, y eso tenía
+una consecuencia concreta: **reasignar el trabajo borraba a quién se le había encargado antes**.
+
+Modelos nuevos: `AsignacionPreparacion`, `FormPreparacion`, `AsignacionConfiguracion`,
+`FormConfiguracion`. Al reasignar, el encargo anterior queda `Cancelada` con su motivo y el nuevo
+nace aparte — el caso `AP-001 (Técnico A, cancelada) → AP-002 (Técnico B, completada) →
+FORM_PREP → F0288` se representa sin perder a nadie. El F0288 y el F0302 guardan su FK a la
+ejecución y al encargo que los originaron.
+
+## 4. GARANTIA → CASO_GARANTIA → COMENTARIO_CASO
+
+Los casos y comentarios siguen viajando anidados —así los leen las pantallas y no había razón para
+romperlas— pero ahora llevan **sus FK escritas**: `garantiaId`, `expedienteUnico`, `responsableId`
+en el caso; `id`, `casoGarantiaId`, `usuarioId` en el comentario. La garantía gana `idGarantia`.
+
+## 5. MOVIMIENTO_EQUIPO
+
+- `TipoMovimiento` completa el vocabulario: `INGRESO_INICIAL`, `ASIGNACION`, `DESCARGA`,
+  `REINGRESO_HARDWARE`, `TRASLADO`, `BAJA`, más `GARANTIA` y `REPROCESO`.
+- Se corrigió un **movimiento falso**: al crear el ET tras un reingreso se registraba un segundo
+  `REINGRESO_HARDWARE` hacia el taller donde el equipo ya estaba. Ahora solo se registra si el
+  destino difiere del sitio actual, y como `TRASLADO`.
+- Abrir un caso de garantía o un reproceso **no** genera movimiento: muchos se resuelven sin que el
+  equipo se mueva, y una línea en la bitácora física que nadie caminó es una línea falsa.
+- `IngresoHardware` se conserva —de él dependen reglas que el movimiento no cubre, como qué ingreso
+  originó qué ET— pero ahora **apunta a su movimiento** (`movimiento`), y MOVIMIENTO_EQUIPO queda
+  como la bitácora histórica principal, con un `INGRESO_INICIAL` por equipo.
+
+## 6. EU sin solicitud, y EU ↔ ET coherentes
+
+- `ExpedienteUnico.origenCiclo` (`Solicitud` | `Reingreso interno`): el DER no obliga a inventar un
+  requerimiento falso para abrir un ciclo tras un reingreso. La pantalla muestra el origen.
+- El equipo del EU se toma **del ET** (`EU → ET → EQUIPO`), y las validaciones comprueban que
+  `EU.inventario === ET.inventario`: nunca puede quedar un EU apuntando a un equipo y su ET a otro.
+
+## 7. Datos de demostración corregidos
+
+La auditoría encontró tres clases de incoherencia con el flujo del DER, todas arregladas:
+
+| Problema | Registros | Corrección |
+|---|---|---|
+| ET `PREPARADO` **sin ningún F0288** | 18 | F0288 generado, completado y firmado, por tipo de expediente |
+| ASIGNACION **sin Expediente único** | 9 | EU creado para cada una, con su ET, ciclo y anexos |
+| ASIGNACION con fecha **anterior** a la apertura de su ET | 3 | fecha corregida al día siguiente de la preparación |
+
+Además se escribieron en los JSON todas las FK nuevas (entrega, conformidad, garantía, casos,
+comentarios, F0302). Reauditado: **0 problemas**.
+
+## Verificación
+
+`ng build` en verde tras cada bloque. Las **20 rutas** recorridas en navegador headless: 20/20
+sin errores de consola. Integridad comprobada sobre el estado en ejecución: 0 asignaciones sin EU,
+0 entregas sin EU, 0 conformidades sin entrega, 0 garantías sin id, 0 casos y 0 comentarios sin FK;
+29 encargos y 29 ejecuciones de preparación, 10 y 10 de configuración.
+
+Escenario A conducido de punta a punta con el orden nuevo: se creó el EU `EXP-2026-0020`
+(equipo `2201-1332-2026`, ET `EXP-PT-2026-0110`) **con cero asignaciones**, y solo entonces la
+pantalla de Asignación ofreció ese equipo —y nada más— y registró la asignación con
+`expedienteUnico: EXP-2026-0020`, `ciclo: 1`, `usuarioFinalId: UF-05718`.
+
+Cadena completa resuelta por FK, sin ninguna deducción:
+`CFM-2026-0001 → ENT-2026-0001 → EXP-2026-0010 → EXP-PT-2026-0093 → 2201-1300-2026 (ciclo 1)`.

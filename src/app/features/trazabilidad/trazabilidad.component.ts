@@ -56,6 +56,13 @@ interface FilaTraza {
     .ciclo .etapa { border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; font-size: 11.5px; background: var(--surface); }
     .ciclo .etapa.no { color: var(--tx-3); border-style: dashed; }
     .mov-tipo { font-size: 11px; font-weight: 700; letter-spacing: .03em; }
+    /* Encargo → ejecución → documento: las tres entidades del DER, una bajo otra. */
+    .encargos { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; margin-top: 10px; }
+    .encargos .e-t { display: block; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--tx-2); font-weight: 700; margin-bottom: 4px; }
+    .encargos .e-l { font-size: 12px; padding: 2px 0; }
+    .encargos .e-l.sub { color: var(--tx-2); font-size: 11.5px; }
+    .encargos .e-l.cancel { text-decoration: line-through; color: var(--tx-3); }
+    .encargos .e-m { display: block; font-size: 11px; color: var(--tx-2); }
     .tl-estado { margin-left: 10px; }
     .tl-ico { margin-right: 6px; }
     .tl-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 5px; }
@@ -414,6 +421,42 @@ interface FilaTraza {
                       <span class="etapa" [class.no]="!c.reprocesos.length">Reprocesos: {{ c.reprocesos.length }}</span>
                       <span class="etapa" [class.no]="!c.movimientos.length">Movimientos: {{ c.movimientos.length }}</span>
                     </div>
+                    <!-- El DER separa el encargo del trabajo, su ejecución y el documento. Se muestran
+                         los tres para que una reasignación quede visible en vez de desaparecer. -->
+                    @if (c.asignacionesPreparacion.length || c.asignacionesConfiguracion.length) {
+                      <div class="encargos">
+                        @if (c.asignacionesPreparacion.length) {
+                          <div>
+                            <span class="e-t">Preparación · encargos</span>
+                            @for (a of c.asignacionesPreparacion; track a.id) {
+                              <div class="e-l" [class.cancel]="a.estado === 'Cancelada'">
+                                <b class="mono">{{ a.id }}</b> {{ a.tecnico.split('—')[0].trim() }}
+                                <ui-badge [estado]="a.estado" />
+                                @if (a.motivo) { <span class="e-m">{{ a.motivo }}</span> }
+                              </div>
+                            }
+                            @for (f of c.formsPreparacion; track f.id) {
+                              <div class="e-l sub"><b class="mono">{{ f.id }}</b> ejecución v{{ f.version }} · {{ f.estado }}</div>
+                            }
+                          </div>
+                        }
+                        @if (c.asignacionesConfiguracion.length) {
+                          <div>
+                            <span class="e-t">Configuración · encargos</span>
+                            @for (a of c.asignacionesConfiguracion; track a.id) {
+                              <div class="e-l" [class.cancel]="a.estado === 'Cancelada'">
+                                <b class="mono">{{ a.id }}</b> {{ a.tecnico.split('—')[0].trim() }}
+                                <ui-badge [estado]="a.estado" />
+                                @if (a.motivo) { <span class="e-m">{{ a.motivo }}</span> }
+                              </div>
+                            }
+                            @for (f of c.formsConfiguracion; track f.id) {
+                              <div class="e-l sub"><b class="mono">{{ f.id }}</b> ejecución v{{ f.version }} · {{ f.estado }}</div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
                     @if (c.reprocesos.length) {
                       <p class="hint" style="margin:9px 0 0;">
                         Los {{ c.reprocesos.length }} reproceso(s) de este ciclo corrigen <b>este mismo</b> Expediente

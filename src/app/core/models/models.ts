@@ -292,6 +292,13 @@ export interface IngresoHardware {
   estadoFinal: string;
   /** Código del Expediente técnico creado a partir de este ingreso, una vez que existe. */
   expedienteTecnicoAsociado?: string;
+  /**
+   * FK → MOVIMIENTO_EQUIPO que representa físicamente este ingreso. **MOVIMIENTO_EQUIPO es la
+   * bitácora principal**; este registro se conserva porque guarda algo que el movimiento no dice
+   * —qué ingreso originó qué Expediente técnico, y por tanto si queda un reingreso pendiente— y
+   * apunta al movimiento para que no sean dos verdades sobre el mismo hecho.
+   */
+  movimiento?: string;
   observaciones: string;
 }
 
@@ -336,10 +343,18 @@ export interface ModificacionAsignacion {
  * FK viajan aquí explícitas.
  */
 export interface Asignacion {
-  /** FK → SOLICITUD (el identificador con el que el prototipo enlaza todo el proceso). */
+  /**
+   * FK → SOLICITUD. Es el identificador con el que el prototipo enlaza el proceso y por eso sigue
+   * siendo la clave de las consultas; **puede venir vacío** cuando el ciclo nació internamente,
+   * sin requerimiento externo (ver `ExpedienteUnico.origenCiclo`).
+   */
   expediente: string;
-  /** FK → EXPEDIENTE_UNICO. Vacía hasta que el EU existe; se escribe al crearlo. */
-  expedienteUnico?: string;
+  /**
+   * FK → EXPEDIENTE_UNICO. **Obligatoria.** El DER ordena `EU → ASIGNACION`: no se asigna un
+   * equipo a un usuario final mientras no exista el Expediente único del ciclo, porque es el EU
+   * —a través de su ET— el que dice qué equipo está listo para entregarse.
+   */
+  expedienteUnico: string;
   /** Ciclo de vida del equipo al que pertenece esta asignación. */
   ciclo?: number;
   equipoInventario: string;
@@ -653,16 +668,23 @@ export interface Descargo {
  * Naturaleza de un MOVIMIENTO_EQUIPO. El DER pide registrar **dónde estuvo el equipo y por qué se
  * movió**, con un vocabulario cerrado:
  *
+ * · `INGRESO_INICIAL` — la primera entrada del equipo al inventario institucional.
  * · `ASIGNACION` — sale del área técnica hacia la Dirección del usuario final (lo genera la entrega).
  * · `DESCARGA` — vuelve del usuario final al resguardo interno (nota 5: la descarga genera uno).
- * · `REINGRESO_HARDWARE` — entra al taller de Hardware para un ciclo nuevo (nota 6: genera
+ * · `REINGRESO_HARDWARE` — entra al taller de Hardware tras un descargo (nota 6: genera
  *   movimiento pero **no** crea automáticamente un ET).
  * · `TRASLADO` — cambio de ubicación o de Dirección sin cerrar ni abrir ciclo.
- * · `GARANTIA` — sale a revisión técnica por un caso de garantía, y vuelve.
- * · `REPROCESO` — vuelve al taller por un reproceso, dentro del mismo ciclo.
+ * · `BAJA` — salida definitiva del equipo (descarte institucional).
+ * · `GARANTIA` / `REPROCESO` — el equipo **sale físicamente** a revisión y vuelve.
+ *
+ * Los dos últimos se registran **solo cuando el equipo se movió de verdad**. Abrir un caso de
+ * garantía, o crear un reproceso, no es por sí mismo un movimiento: muchos se resuelven en
+ * remoto, con el equipo donde estaba. Un movimiento sin cambio de Dirección o de ubicación sería
+ * una línea falsa en la bitácora física.
  */
 export type TipoMovimiento =
-  | 'ASIGNACION' | 'DESCARGA' | 'REINGRESO_HARDWARE' | 'TRASLADO' | 'GARANTIA' | 'REPROCESO';
+  | 'INGRESO_INICIAL' | 'ASIGNACION' | 'DESCARGA' | 'REINGRESO_HARDWARE' | 'TRASLADO' | 'BAJA'
+  | 'GARANTIA' | 'REPROCESO';
 
 /**
  * **MOVIMIENTO_EQUIPO** del DER: el rastro físico del equipo. Origen y destino pueden ser una
@@ -759,9 +781,19 @@ export interface AnexoExpediente {
  * un equipo tiene varios ET y varios EU a lo largo de su vida, y preguntar por «el último ET del
  * equipo» devolvería el del ciclo actual aunque se esté consultando un expediente de hace un año.
  */
+/** De dónde nació un ciclo: de un requerimiento externo, o de una decisión interna. */
+export type OrigenCiclo = 'Solicitud' | 'Reingreso interno';
+
 export interface ExpedienteUnico {
-  /** FK → SOLICITUD: el requerimiento que originó este ciclo de asignación. */
+  /**
+   * FK → SOLICITUD: el requerimiento que originó este ciclo. **Puede venir vacío**: tras un
+   * reingreso a Hardware, un Encargado puede abrir un ciclo nuevo sin que exista un requerimiento
+   * externo, y el DER no obliga a inventar una solicitud falsa solo para poder crearlo
+   * (`id_solicitud` opcional). Cuando está vacío, `origenCiclo` es `Reingreso interno`.
+   */
   expediente: string;
+  /** Por qué existe este ciclo. Se muestra en el expediente para que el origen no quede implícito. */
+  origenCiclo?: OrigenCiclo;
   /** Código propio del expediente único (p. ej. EXP-2026-0001), distinto del número de solicitud. */
   codigoUnico: string;
   /** FK → EQUIPO. Explícita: el EU sabe de qué equipo es sin pasar por la asignación. */
@@ -994,6 +1026,53 @@ export interface SoftwareCatalogo {
 }
 
 /**
+ * **ASIGNACION_PREPARACION** del DER: *a qué técnico se le encargó preparar este Expediente
+ * técnico*. Es una entidad propia y no un campo del ET, porque **el encargo puede cambiar**: si el
+ * técnico A se enferma y el trabajo pasa al técnico B, el DER quiere que consten los dos —el
+ * primero cancelado, el segundo completado— y no que el nombre del primero se pierda al
+ * sobrescribirlo.
+ *
+ *     EXPEDIENTE_TECNICO → ASIGNACION_PREPARACION → FORM_PREPARACION → F0288
+ */
+export interface AsignacionPreparacion {
+  id: string;
+  /** FK → EXPEDIENTE_TECNICO. */
+  expedienteTecnico: string;
+  /** Técnico al que se le encargó el trabajo («Nombre — Rol»). */
+  tecnico: string;
+  /** Unidad que atiende la preparación. */
+  unidad: 'Soporte' | 'Hardware';
+  /** Quién hizo el encargo: solo un Encargado o el Administrador asignan trabajo. */
+  asignadoPor: string;
+  fechaInicio: string;
+  fechaCierre: string;
+  /**
+   * `Vigente` mientras es el encargo en pie; `Completada` cuando su preparación terminó;
+   * `Cancelada` cuando el trabajo se reasignó a otro técnico. **Una cancelada nunca se borra.**
+   */
+  estado: 'Vigente' | 'Completada' | 'Cancelada';
+  /** Por qué se canceló o reasignó; obligatorio al cancelar. */
+  motivo: string;
+}
+
+/**
+ * **FORM_PREPARACION** del DER: *la ejecución real* de la preparación encargada — cuándo arrancó,
+ * cuándo terminó y en qué versión va. Es el paso intermedio entre el encargo
+ * (ASIGNACION_PREPARACION) y el documento que resulta (F0288).
+ */
+export interface FormPreparacion {
+  id: string;
+  /** FK → ASIGNACION_PREPARACION: qué encargo se está ejecutando. */
+  asignacionPreparacion: string;
+  /** FK → EXPEDIENTE_TECNICO, desnormalizada para consultar por ciclo sin dar el rodeo. */
+  expedienteTecnico: string;
+  version: number;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: 'En proceso' | 'Finalizada' | 'Cancelada';
+}
+
+/**
  * **F0288** del DER: el checklist de preparación técnica. El DER lo relaciona **a la vez** con el
  * EXPEDIENTE_TECNICO y con el EQUIPO (`id_exp_tecnico` + `id_equipo`), y las dos FK viajan aquí
  * explícitas: el inventario ya no vive solo enterrado en `datosGenerales`.
@@ -1003,6 +1082,10 @@ export interface PreparacionF0288 {
   expedienteTecnico: string;
   /** FK → EQUIPO. Explícita, como pide el DER. */
   inventario: string;
+  /** FK → FORM_PREPARACION: qué ejecución concreta generó este documento. */
+  formPreparacion?: string;
+  /** FK → ASIGNACION_PREPARACION: bajo qué encargo se ejecutó. */
+  asignacionPreparacion?: string;
   /** Ciclo de vida del equipo al que pertenece esta preparación (el de su ET). */
   ciclo: number;
   unidad: 'Soporte' | 'Hardware';
@@ -1152,8 +1235,57 @@ export interface SolicitudReservaIP {
   cuerpo: string;
 }
 
+/**
+ * **ASIGNACION_CONFIGURACION**: *qué Técnico de Soporte fue designado* para configurar este
+ * Expediente único. Mismo razonamiento que en preparación — el encargo es una cosa y la ejecución
+ * otra—, y por la misma razón: reasignar el trabajo no puede borrar a quién se le encargó antes.
+ *
+ *     EXPEDIENTE_UNICO → ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302
+ */
+export interface AsignacionConfiguracion {
+  id: string;
+  /** FK → EXPEDIENTE_UNICO. */
+  expedienteUnico: string;
+  /** FK → SOLICITUD; se conserva porque es la clave con la que navegan las pantallas. */
+  expediente: string;
+  /** Técnico de Soporte designado («Nombre — Rol»). */
+  tecnico: string;
+  /** Encargado que lo designó; un técnico nunca se autoasigna un proceso ajeno. */
+  asignadoPor: string;
+  fechaInicio: string;
+  fechaCierre: string;
+  estado: 'Vigente' | 'Completada' | 'Cancelada';
+  motivo: string;
+}
+
+/**
+ * **FORM_CONFIGURACION** del DER: la ejecución de la configuración. Sabe **qué Expediente único
+ * está configurando** y bajo qué designación; de él sale el F0302.
+ */
+export interface FormConfiguracion {
+  id: string;
+  /** FK → ASIGNACION_CONFIGURACION. */
+  asignacionConfiguracion: string;
+  /** FK → EXPEDIENTE_UNICO: qué ciclo se está configurando. */
+  expedienteUnico: string;
+  /** FK → SOLICITUD, para las consultas que siguen navegando por proceso. */
+  expediente: string;
+  version: number;
+  fechaInicio: string;
+  fechaFin: string;
+  estado: 'En proceso' | 'Finalizada' | 'Con falla' | 'Cancelada';
+}
+
 export interface ConfiguracionF0302 {
   expediente: string;
+  /** FK → FORM_CONFIGURACION: la ejecución que originó este F0302. */
+  formConfiguracion?: string;
+  /** FK → ASIGNACION_CONFIGURACION: bajo qué designación se ejecutó. */
+  asignacionConfiguracion?: string;
+  /** FK → EXPEDIENTE_UNICO, para resolver el ciclo sin pasar por la solicitud. */
+  expedienteUnico?: string;
+  /** Ciclo de vida del equipo al que pertenece esta configuración. */
+  ciclo?: number;
   tecnico: string;
   seleccionadoPor: string;
   fecha: string;
@@ -1217,7 +1349,22 @@ export interface ConfiguracionF0302 {
 
 export type EstadoConformidad = 'No enviado' | 'Enviado' | 'Pendiente de respuesta' | 'Aceptado' | 'No conforme' | 'Vencido';
 
+/**
+ * **ENTREGA** del DER: cuelga del EXPEDIENTE_UNICO (`id_entrega`, FK `id_exp_unico`). La entrega
+ * de un ciclo pertenece a ese ciclo y a ningún otro: un equipo entregado dos veces tiene dos
+ * entregas, y consultar la histórica **no** puede resolverse buscando el proceso más reciente.
+ */
 export interface Entrega {
+  /** Identificador propio de la entrega (`ENT-2026-0001`). */
+  idEntrega: string;
+  /** FK → EXPEDIENTE_UNICO. **Es la relación verdadera**, la que amarra la entrega a su ciclo. */
+  expedienteUnico: string;
+  /** Ciclo de vida del equipo al que pertenece la entrega. */
+  ciclo?: number;
+  /** FK → USUARIO_FINAL. El nombre se conserva aparte para lo ya escrito. */
+  usuarioFinalId?: string;
+  observaciones?: string;
+  /** FK → SOLICITUD. Se conserva porque es la clave con la que navegan las pantallas. */
   expediente: string;
   solicitudRef: string;
   usuarioFinal: string;
@@ -1236,7 +1383,25 @@ export interface Entrega {
   estado: string;
 }
 
+/**
+ * **CONFORMIDAD** del DER: cuelga de la ENTREGA (`id_conformidad`, FK `id_entrega`). Con eso la
+ * cadena se recorre entera sin adivinar nada:
+ *
+ *     CONFORMIDAD → ENTREGA → EXPEDIENTE_UNICO → EXPEDIENTE_TECNICO → EQUIPO
+ *
+ * El `token` sigue existiendo —es el enlace del formulario externo que recibe el usuario final por
+ * correo— pero **ya no es la relación entre entidades**, solo la llave de ese formulario.
+ */
 export interface Conformidad {
+  /** Identificador propio (`CONF-2026-0001`). */
+  idConformidad: string;
+  /** FK → ENTREGA. La relación principal. */
+  entregaId: string;
+  /** FK → EXPEDIENTE_UNICO, desnormalizada para las consultas por ciclo. */
+  expedienteUnico: string;
+  /** Ciclo de vida del equipo al que pertenece la conformidad. */
+  ciclo?: number;
+  /** Llave del formulario externo enviado por correo. No es la relación entre entidades. */
   token: string;
   expediente: string;
   usuarioFinal: string;
@@ -1348,7 +1513,17 @@ export type TipoComentarioCaso = 'Seguimiento' | 'Revisión técnica' | 'Observa
  * es el historial de seguimiento dentro del caso, con usuario (incluye su rol),
  * fecha, hora y el estado que tenía el caso al momento de comentar.
  */
+/**
+ * **COMENTARIO_CASO** del DER: `CASO_GARANTIA 1:N COMENTARIO_CASO`. Igual que el caso, se presenta
+ * anidado y se relaciona por FK.
+ */
 export interface ComentarioCaso {
+  /** Identificador propio del comentario. */
+  id?: string;
+  /** FK → CASO_GARANTIA. */
+  casoGarantiaId?: string;
+  /** FK → USUARIO que lo escribió. */
+  usuarioId?: string;
   fecha: string;
   hora: string;
   usuario: string;
@@ -1357,9 +1532,20 @@ export interface ComentarioCaso {
   estadoCaso: string;
 }
 
-/** Caso del servicio de garantía. Un Expediente único puede tener varios casos asociados. */
+/**
+ * **CASO_GARANTIA** del DER: `GARANTIA 1:N CASO_GARANTIA`. Sigue viajando anidado dentro de
+ * `Garantia.casos` —así lo leen las pantallas y no hay razón para romperlas—, pero **lleva sus FK
+ * explícitas**: quién es su garantía y quién su responsable. Anidar es una comodidad de
+ * presentación; la relación es la FK.
+ */
 export interface CasoGarantia {
   codigo: string;
+  /** FK → GARANTIA. El identificador de su garantía (`GAR-…`). */
+  garantiaId?: string;
+  /** FK → EXPEDIENTE_UNICO del ciclo al que pertenece el caso. */
+  expedienteUnico?: string;
+  /** FK → USUARIO del sistema responsable de atenderlo. */
+  responsableId?: string;
   fechaApertura: string;
   motivo: string; // Falla del equipo · Inconformidad posterior · Revisión técnica · Otro
   descripcion: string;
@@ -1395,6 +1581,8 @@ export interface ValidacionGarantia {
  * Expediente único aparece automáticamente en el módulo Servicio de garantía.
  */
 export interface Garantia {
+  /** Identificador propio de la garantía (`GAR-…`). Es a quien apuntan sus casos. */
+  idGarantia?: string;
   expediente: string;
   /**
    * FK → EXPEDIENTE_UNICO. **Vacía en la garantía de proveedor**, que pertenece al equipo y puede
@@ -2035,11 +2223,16 @@ export interface ReprocesoF0288 {
   expedienteTecnico: string;
   /** Expediente (solicitud) del proceso donde se detectó la falla. */
   expediente: string;
+  /**
+   * FK → EXPEDIENTE_UNICO. **Obligatoria**: un reproceso siempre corrige un ciclo concreto. Lo
+   * opcional es `casoGarantia`, porque un reproceso puede nacer de una falla de F0302 o de una
+   * inconformidad sin que haya ningún caso de garantía de por medio.
+   */
   expedienteUnico: string;
   inventario: string;
   /**
    * Ciclo de vida del equipo al que pertenece el reproceso. **Un reproceso NO abre un ciclo
-   * nuevo** (nota 4 del DER): corrige el ciclo actual y se queda dentro de él.
+   * nuevo** (nota 4 del DER): corrige el ciclo actual y se queda dentro de él. Tampoco abre un ET.
    */
   ciclo?: number;
   /** Reproceso #1, #2… dentro del mismo Expediente técnico. */
