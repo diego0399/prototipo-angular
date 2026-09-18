@@ -287,3 +287,103 @@ pantalla de Asignación ofreció ese equipo —y nada más— y registró la asi
 
 Cadena completa resuelta por FK, sin ninguna deducción:
 `CFM-2026-0001 → ENT-2026-0001 → EXP-2026-0010 → EXP-PT-2026-0093 → 2201-1300-2026 (ciclo 1)`.
+
+---
+
+# Tercera pasada — 17 de septiembre de 2026
+
+## Por qué ASIGNACION seguía apareciendo antes del EU
+
+La segunda pasada hizo obligatoria la FK `Asignacion.expedienteUnico` y cambió el orden de las dos
+pantallas. Eso arregló la **estructura**, pero no el **comportamiento**, por dos motivos que solo se
+ven ejecutando:
+
+1. **`crearExpedienteUnico` seguía creando la configuración.** Al abrir el expediente creaba de
+   golpe `ASIGNACION_CONFIGURACION`, `FORM_CONFIGURACION` y el `F0302`, y dejaba el EU «En
+   configuración». Es decir: el ciclo saltaba desde el expediente único hasta la configuración
+   **sin pasar por la asignación**, que es justo el eslabón intermedio del DER. La FK existía, pero
+   el flujo la esquivaba.
+2. **Exigía Técnico de Configuración para crear el EU.** Y el técnico se valida contra la
+   Dirección/Registro, que sale de la solicitud. Resultado: un ciclo interno —sin solicitud— no
+   podía abrirse, y para los demás se obligaba a decidir quién configuraría el equipo antes de
+   saber siquiera a quién se le iba a entregar.
+
+Y en los **datos** quedaban 17 registros heredados que contaban una historia imposible: mi
+auditoría anterior comprobaba FK y dos reglas de fecha, no la cadena cronológica completa.
+
+## Lo que se cambió
+
+### Orden del ciclo
+
+- `crearExpedienteUnico(id, usuario, inventario)` — perdió el parámetro del técnico. Crea el EU y
+  **nada más**: estado `Pendiente de asignación`, sin configuración de ningún tipo.
+- `designarConfiguracion(codigoEu, tecnico, usuario)` — **nueva**. Es la que crea, en orden,
+  `ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302`, y solo corre si el EU ya tiene
+  asignación (`bloqueoConfiguracion` lo comprueba en el servicio).
+- `asignarEquipo` mueve el EU a `Asignado · pendiente de configuración`, un paso, no dos.
+- `bloqueoExpedienteUnico` dejó de exigir técnico y Dirección; ahora solo mira el ciclo (equipo, ET
+  PREPARADO, F0288 firmado, ciclo abierto, un EU por ET, tipo compatible). La validación
+  territorial se mudó a `bloqueoConfiguracion`, que es donde ya se sabe a qué Dirección va el equipo.
+- `dirUnidadDeExpedienteUnico` resuelve la Dirección del ciclo desde la solicitud **o**, si el ciclo
+  es interno, desde la asignación y el área de su usuario final.
+
+Estados del EU, en el orden del DER:
+`Pendiente de asignación` → `Asignado · pendiente de configuración` → `En configuración` →
+`Entregado` → `Cerrado` (solo por descarga).
+
+### El ET del ciclo, en la sincronización con Controles
+
+`syncAcceptedEquipmentToOperationalInventory` hacía
+`expedientesTecnicos().find(x => x.inventario === ficha.inventario)`: el **primero** del arreglo con
+ese inventario, que en un equipo de tres ciclos no tiene por qué ser el de esta aceptación. Ahora
+se lee por la FK: `ficha.expedienteUnico → EU → EU.expedienteTecnico`.
+
+### Entrega
+
+`enviarConformidad` rechaza la entrega si el EU no tiene asignación o no tiene Técnico de
+Configuración designado. Antes solo lo impedía la pantalla.
+
+### Ciclo interno sin solicitud
+
+La pantalla ofrece «Ciclo interno (sin requerimiento)». El EU se abre con `origenCiclo:
+'Reingreso interno'` y `expediente: ''`, sin fabricar una solicitud falsa.
+
+## Datos corregidos
+
+`tools/auditar-ciclos.py` comprueba la cadena de FK, el orden cronológico completo
+(ET → F0288 → EU → ASIGNACION → F0302 → ENTREGA → CONFORMIDAD → DESCARGA) y la coherencia de
+estados. Con `--fix` corrige lo que puede.
+
+| Clase de inconsistencia | Registros |
+|---|---|
+| `ASIGNACION.fecha` anterior a `EU.fechaApertura` | 1 |
+| `EU.fechaApertura` anterior al cierre del F0288 | 3 |
+| Estado del EU que no correspondía a su avance real | 11 |
+| EU «Cerrado» sin descarga y con asignación vigente | 2 |
+| **Total** | **17** |
+
+Reauditado: **0 problemas**.
+
+## Verificación en ejecución
+
+**Escenario nuevo desde cero** (punto 26), con `localStorage` limpio:
+
+| Momento | EU | ASIGNACION | ASIGNACION_CONFIGURACION | FORM_CONFIGURACION | F0302 |
+|---|---|---|---|---|---|
+| EU recién creado | `EXP-2026-0020` · *Pendiente de asignación* | **0** | **0** | **0** | **0** |
+| Tras asignar | *Asignado · pendiente de configuración* | 1 | **0** | **0** | **0** |
+| Tras designar técnico | *En configuración* | 1 | 1 | 1 | 1 |
+
+**Ciclo interno** (punto 27): EU `EXP-2026-0020` sobre `EXP-PT-2026-0094` (ciclo 2 del equipo
+`2201-1300-2026`), **sin solicitud**, `origenCiclo: Reingreso interno`, estado *Pendiente de
+asignación*, y 0/0/0/0 en las cuatro entidades posteriores.
+
+**Multiciclo** (punto 23), sin un solo registro mezclado:
+
+| Ciclo | ET | Estado | EU | Asignaciones | Descargas |
+|---|---|---|---|---|---|
+| 1 | `EXP-PT-2026-0093` | Cerrado | `EXP-2026-0010` (Cerrado) | 1 | 1 |
+| 2 | `EXP-PT-2026-0094` | Preparado | — (espera su EU) | 0 | 0 |
+
+`ng build` en verde tras cada bloque. 20/20 rutas sin errores de consola. Auditoría sobre el estado
+en ejecución —no sobre los JSON— : 0 problemas.

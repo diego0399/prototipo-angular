@@ -517,7 +517,7 @@
   "inventario": "2201-0899-2023",
   "expedienteTecnico": "EXP-PT-2026-0084",
   "ciclo": 1,
-  "fechaApertura": "2026-07-01",
+  "fechaApertura": "2026-07-02",
   "fechaCierre": "",
   "observaciones": ""
  },
@@ -698,8 +698,8 @@
  {
   "expediente": "SOL-2026-0145",
   "codigoUnico": "EXP-2026-0003",
-  "estado": "En preparación",
-  "resumenEstado": "En preparación",
+  "estado": "En configuración",
+  "resumenEstado": "En configuración",
   "fechaEntrega": "",
   "anexos": [
    {
@@ -778,15 +778,15 @@
   "inventario": "2201-1187-2026",
   "expedienteTecnico": "EXP-PT-2026-0091",
   "ciclo": 1,
-  "fechaApertura": "2026-07-02",
+  "fechaApertura": "2026-07-05",
   "fechaCierre": "",
   "observaciones": ""
  },
  {
   "expediente": "SOL-2026-0141",
   "codigoUnico": "EXP-2026-0002",
-  "estado": "Pendiente de aceptación",
-  "resumenEstado": "Pendiente de respuesta del usuario final",
+  "estado": "En configuración",
+  "resumenEstado": "En configuración",
   "fechaEntrega": "2026-07-06",
   "anexos": [
    {
@@ -865,15 +865,15 @@
   "inventario": "2201-0954-2023",
   "expedienteTecnico": "EXP-PT-2026-0086",
   "ciclo": 1,
-  "fechaApertura": "2026-06-24",
+  "fechaApertura": "2026-06-26",
   "fechaCierre": "",
   "observaciones": ""
  },
  {
   "expediente": "SOL-2025-0210",
   "codigoUnico": "EXP-2025-0025",
-  "estado": "Cerrado",
-  "resumenEstado": "Cerrado · Auditoría completa (proceso 2025)",
+  "estado": "Entregado",
+  "resumenEstado": "Entregado y aceptado por el usuario final",
   "fechaEntrega": "2025-12-02",
   "anexos": [
    {
@@ -965,8 +965,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-06-29",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1053,8 +1053,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-05-21",
   "fechaCierre": "",
-  "estado": "Cerrado",
-  "resumenEstado": "Cerrado · ciclo histórico",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Equipo en uso; el ciclo sigue abierto",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1141,8 +1141,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1229,8 +1229,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1317,8 +1317,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1405,8 +1405,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1493,8 +1493,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1581,8 +1581,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-07-28",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
@@ -1669,8 +1669,8 @@
   "ciclo": 1,
   "fechaApertura": "2026-08-05",
   "fechaCierre": "",
-  "estado": "En configuración",
-  "resumenEstado": "Pendiente de iniciar la Configuración F0302",
+  "estado": "Asignado · pendiente de configuración",
+  "resumenEstado": "Asignado; pendiente de designar Técnico de Configuración",
   "fechaEntrega": "",
   "observaciones": "",
   "anexos": [
