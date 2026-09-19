@@ -2,7 +2,7 @@ import { Component, DestroyRef, computed, effect, inject, signal } from '@angula
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import {
-  AccionRequeridaFalla, CargaSoporte, ConfiguracionF0302, Cronometro, DetalleFallaF0302, MotivoSoftwareF0302,
+  AccionRequeridaFalla, CargaSoporte, ConfiguracionF0302, Cronometro, DetalleFallaF0302, ExpedienteUnico, MotivoSoftwareF0302,
   NivelComplejidad, ReprocesoF0288, RespuestaSiNo,
   SoftwareCatalogo, SoftwareF0302, SolicitudReservaIP, TipoFallaF0302
 } from '../../core/models/models';
@@ -73,6 +73,43 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
           <p class="page-sub">Checklist digital de configuración e instalación.</p>
         </div>
       </div>
+
+      <!-- ── Pendientes de iniciar ──
+           El DER separa la designación (ASIGNACION_CONFIGURACION: el técnico queda responsable) de
+           la ejecución (FORM_CONFIGURACION: el técnico ya está trabajando). Estos expedientes ya
+           tienen técnico; el F0302 no existe hasta que él lo abre desde aquí. -->
+      @if (pendientesDeIniciar().length) {
+        <div class="card mb-3">
+          <div class="card-head">
+            <div>
+              <h2>Expedientes asignados, pendientes de iniciar</h2>
+              <p class="sub">Tienen Técnico de Configuración designado; el checklist F0302 nace al iniciar</p>
+            </div>
+            <ui-help texto="Que un expediente le esté asignado no significa que el trabajo haya empezado. Al pulsar «Iniciar configuración» se abre la ejecución (FORM_CONFIGURACION) y con ella el checklist F0302." />
+          </div>
+          <div class="card-body table-wrap">
+            <table class="tbl">
+              <thead>
+                <tr><th>Expediente único</th><th>Solicitud</th><th>Equipo</th><th>Usuario final</th><th>Técnico designado</th><th></th></tr>
+              </thead>
+              <tbody>
+                @for (x of pendientesDeIniciar(); track x.codigoUnico) {
+                  <tr>
+                    <td class="mono main-cell">{{ x.codigoUnico }}</td>
+                    <td class="mono">{{ x.expediente }}</td>
+                    <td class="mono">{{ x.inventario }}</td>
+                    <td>{{ usuarioFinalDe(x) }}</td>
+                    <td>{{ tecnicoDesignadoDe(x) }}</td>
+                    <td style="text-align:right;">
+                      <button class="btn btn-gold btn-sm" (click)="iniciarTrabajo(x.codigoUnico)">Iniciar configuración</button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      }
 
       <div class="card card-pad mb-3">
         <div class="row-between" style="flex-wrap: wrap; gap: 16px;">
@@ -1562,6 +1599,39 @@ export class ConfiguracionComponent {
     const seg = isNaN(inicio) ? 0 : Math.max(0, Math.floor((Date.now() - inicio) / 1000));
     const pad = (n: number) => String(n).padStart(2, '0');
     return `${pad(Math.floor(seg / 3600))}:${pad(Math.floor((seg % 3600) / 60))}:${pad(seg % 60)}`;
+  }
+
+  /**
+   * Expedientes con Técnico de Configuración designado cuya ejecución todavía no ha empezado. Un
+   * Técnico de Soporte solo ve los suyos; los Encargados y el Administrador, todos.
+   */
+  protected readonly pendientesDeIniciar = computed(() => {
+    const yo = this.auth.usuario()?.nombre ?? '';
+    return this.data.expedientesUnicos().filter((x) => {
+      if (x.fechaCierre || x.estado === 'Cerrado') return false;
+      const ac = this.data.asignacionConfiguracionVigente(x.codigoUnico);
+      if (!ac) return false;
+      if (this.data.formsConfiguracionDe(x.codigoUnico).some((f) => f.estado === 'En proceso')) return false;
+      return this.auth.esTecnico() ? ac.tecnico.includes(yo) : true;
+    });
+  });
+
+  protected usuarioFinalDe(x: ExpedienteUnico): string {
+    return this.data.asignaciones().find((a) => a.expedienteUnico === x.codigoUnico)?.usuarioFinal ?? '—';
+  }
+  protected tecnicoDesignadoDe(x: ExpedienteUnico): string {
+    return this.data.asignacionConfiguracionVigente(x.codigoUnico)?.tecnico.split('—')[0].trim() ?? '—';
+  }
+
+  /** Abre la ejecución (FORM_CONFIGURACION) y con ella el checklist F0302. */
+  protected iniciarTrabajo(codigoEu: string): void {
+    const u = this.auth.usuario();
+    const error = this.data.iniciarTrabajoConfiguracion(codigoEu, `${u?.nombre} — ${u?.rol}`);
+    if (error) {
+      this.toast.error('No se puede iniciar la configuración', error);
+      return;
+    }
+    this.toast.ok('Configuración iniciada', `${codigoEu}: checklist F0302 disponible.`);
   }
 
   protected iniciar(c: ConfiguracionF0302): void {

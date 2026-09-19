@@ -44,7 +44,9 @@ export const NAVEGACION: NavGrupo[] = [
   {
     titulo: 'Asignación y configuración',
     items: [
-      { ruta: '/asignacion', icono: 'assign', titulo: 'Asignación de equipo', roles: ['enc-soporte', 'enc-hardware', 'admin'] },
+      // «Asignación de equipo» dejó de ser un módulo propio: la asignación se registra —como
+      // entidad del DER— dentro de la creación del Expediente único, donde el usuario final ya se
+      // conoce por la solicitud. La pantalla suelta obligaba a teclear dos veces lo mismo.
       // Expediente único: exclusivo de Soporte. Hardware (Encargado y Técnico) no lo gestiona ni lo visualiza.
       // Incluye el resumen y la generación del Reporte final de auditoría.
       { ruta: '/expediente-unico', icono: 'archive', titulo: 'Expediente único', roles: ['enc-soporte', 'tec-soporte', 'admin'] },

@@ -1391,7 +1391,7 @@ export class TrazabilidadComponent {
     }
 
     if (tec?.estado === 'Preparado' && !asigVigente) {
-      acciones.push({ texto: 'Asignar equipo', ruta: '/asignacion' });
+      acciones.push({ texto: 'Crear Expediente único', ruta: '/expediente-unico' });
     }
 
     if (asigVigente && !unico) {

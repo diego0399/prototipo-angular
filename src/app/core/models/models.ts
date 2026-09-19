@@ -344,9 +344,8 @@ export interface ModificacionAsignacion {
  */
 export interface Asignacion {
   /**
-   * FK → SOLICITUD. Es el identificador con el que el prototipo enlaza el proceso y por eso sigue
-   * siendo la clave de las consultas; **puede venir vacío** cuando el ciclo nació internamente,
-   * sin requerimiento externo (ver `ExpedienteUnico.origenCiclo`).
+   * FK → SOLICITUD. Siempre presente: la asignación cuelga de un Expediente único, y **todo
+   * Expediente único pertenece a una solicitud**.
    */
   expediente: string;
   /**
@@ -781,19 +780,17 @@ export interface AnexoExpediente {
  * un equipo tiene varios ET y varios EU a lo largo de su vida, y preguntar por «el último ET del
  * equipo» devolvería el del ciclo actual aunque se esté consultando un expediente de hace un año.
  */
-/** De dónde nació un ciclo: de un requerimiento externo, o de una decisión interna. */
-export type OrigenCiclo = 'Solicitud' | 'Reingreso interno';
-
 export interface ExpedienteUnico {
   /**
-   * FK → SOLICITUD: el requerimiento que originó este ciclo. **Puede venir vacío**: tras un
-   * reingreso a Hardware, un Encargado puede abrir un ciclo nuevo sin que exista un requerimiento
-   * externo, y el DER no obliga a inventar una solicitud falsa solo para poder crearlo
-   * (`id_solicitud` opcional). Cuando está vacío, `origenCiclo` es `Reingreso interno`.
+   * FK → SOLICITUD: el requerimiento que **origina** este ciclo. Es **obligatorio y nunca vacío**.
+   *
+   *     SOLICITUD (0,1) ── origina ── (1,1) EXPEDIENTE_UNICO
+   *
+   * Una solicitud puede estar todavía sin expediente; un expediente sin solicitud no existe. Un
+   * reingreso a Hardware **no sustituye a la solicitud**: es historia física del equipo, y el
+   * ciclo siguiente necesita su propio requerimiento para abrirse.
    */
   expediente: string;
-  /** Por qué existe este ciclo. Se muestra en el expediente para que el origen no quede implícito. */
-  origenCiclo?: OrigenCiclo;
   /** Código propio del expediente único (p. ej. EXP-2026-0001), distinto del número de solicitud. */
   codigoUnico: string;
   /** FK → EQUIPO. Explícita: el EU sabe de qué equipo es sin pasar por la asignación. */

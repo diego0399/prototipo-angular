@@ -1,5 +1,5 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DataService } from '../../core/services/data.service';
@@ -119,13 +119,19 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                 <span class="listo-ico"><ui-icon name="check" [size]="18" /></span>
                 <div>
                   Expediente único <b class="mono">{{ nuevo.codigoUnico }}</b> creado correctamente.
+                  <div class="datos mt-1">
+                    <div><span>Equipo</span><b class="mono">{{ nuevo.inventario }}</b></div>
+                    <div><span>Asignado a</span><b>{{ asignacionDeEu(nuevo)?.usuarioFinal || '—' }}</b></div>
+                    <div><span>Técnico de Configuración</span><b>{{ tecnicoVigente(nuevo) || '—' }}</b></div>
+                    <div><span>Estado</span><b>{{ nuevo.estado }}</b></div>
+                  </div>
                   <p class="small muted">
-                    Estado: <b>{{ nuevo.estado }}</b>. Siguiente paso: asignar el equipo al usuario final.
+                    Siguiente paso: el Técnico de Configuración inicia el F0302 desde su módulo.
                   </p>
                 </div>
               </div>
               <div class="row mt-2">
-                <a class="btn btn-gold" routerLink="/asignacion">Continuar a Asignación de equipo</a>
+                <a class="btn btn-gold" routerLink="/configuracion">Ir a Configuración F0302</a>
                 <button class="btn btn-ghost" (click)="creado.set(null)">Crear otro expediente único</button>
               </div>
             } @else {
@@ -151,24 +157,13 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                     <div><span>Estado</span><b>{{ p.estado }}</b></div>
                   </div>
                   <button class="btn btn-ghost btn-sm mt-1" (click)="abrirBusquedaSol()">Cambiar solicitud</button>
-                } @else if (cicloInterno()) {
-                  <p class="chk ok"><ui-icon name="check" [size]="14" /> Ciclo interno, sin requerimiento externo</p>
-                  <p class="hint">
-                    El equipo vuelve al flujo tras un reingreso a Hardware y el ciclo lo abre la
-                    institución, no un requerimiento. El DER lo permite: <b>no se inventa una
-                    solicitud</b> solo para poder crear el expediente. La Dirección y el usuario
-                    final se fijarán en la asignación.
-                  </p>
-                  <button class="btn btn-ghost btn-sm mt-1" (click)="cicloInterno.set(false)">Usar un requerimiento</button>
                 } @else {
-                  <div class="row">
-                    <button class="btn btn-primary" (click)="abrirBusquedaSol()">Buscar solicitud / requerimiento</button>
-                    <button class="btn btn-outline" (click)="cicloInterno.set(true)">Ciclo interno (sin requerimiento)</button>
-                  </div>
+                  <button class="btn btn-primary" (click)="abrirBusquedaSol()">Buscar solicitud / requerimiento</button>
                   <span class="hint">
-                    El requerimiento que origina el ciclo. El equipo se elige en el paso 2 y la
-                    <b>asignación al usuario final se registra después</b>, ya con el expediente creado.
-                    Si el ciclo nace de un reingreso a Hardware, ábralo como ciclo interno.
+                    <b>Todo Expediente único nace de una solicitud</b>: sin requerimiento no se abre
+                    el ciclo, tampoco después de un reingreso a Hardware. El equipo se elige en el
+                    paso 2 y la asignación al usuario final se registra después, ya con el
+                    expediente creado.
                   </span>
                 }
               </section>
@@ -177,7 +172,7 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                    El DER encadena ET PREPARADO → EXPEDIENTE_UNICO → ASIGNACION: el equipo se
                    elige aquí por su Expediente técnico, y la asignación al usuario final viene
                    después. Antes se tomaba de la asignación, que era justo el orden inverso. -->
-              @if (!equipoProceso() && (proceso() || cicloInterno())) {
+              @if (!equipoProceso() && proceso()) {
                 <section class="paso">
                   <h3 class="paso-t"><span class="n">2</span> Equipo preparado</h3>
                   <button class="btn btn-primary" (click)="buscarEquipoAbierto.set(true)">Buscar equipo preparado</button>
@@ -215,22 +210,85 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                   }
                   <span class="hint">
                     El equipo abre el ciclo con su Expediente técnico. La asignación al usuario final
-                    se registra después, en <a routerLink="/asignacion">Asignación de equipo</a>.
+                    y la designación del técnico se registran junto con el expediente, en este mismo paso.
                   </span>
                   <button class="btn btn-ghost btn-sm mt-1" (click)="buscarEquipoAbierto.set(true)">Cambiar equipo</button>
                 </section>
               }
 
-              <!-- ── Paso 3: confirmación ──
-                   **Ya no se elige aquí al Técnico de Configuración.** El DER pone la configuración
-                   detrás de la ASIGNACION, y la asignación detrás del Expediente único: pedir el
-                   técnico para abrir el expediente adelantaba dos pasos, y en un ciclo interno
-                   —sin solicitud— ni siquiera se sabe todavía a qué Dirección irá el equipo. -->
-              @if (equipoProceso()) {
+              <!-- ── Paso 3: asignación ──
+                   No se vuelve a preguntar quién recibe el equipo: el usuario final, su Dirección y
+                   su área **salen de la solicitud**. Esto es lo que hacía innecesaria la pantalla
+                   aparte de Asignación de equipo. -->
+              @if (equipoProceso() && proceso(); as _) {
                 <section class="paso">
-                  <h3 class="paso-t"><span class="n">3</span> Confirmación</h3>
+                  <h3 class="paso-t"><span class="n">3</span> Asignación</h3>
+                  <p class="chk ok"><ui-icon name="check" [size]="14" /> El usuario final sale de la solicitud; no se elige aparte</p>
+                  <div class="datos">
+                    <div><span>Usuario final</span><b>{{ proceso()?.destinatario }}</b></div>
+                    <div><span>Correo institucional</span><b>{{ proceso()?.correoDestinatario }}</b></div>
+                    <div><span>Equipo</span><b class="mono">{{ equipoProceso()?.inventario }}</b></div>
+                    <div><span>Dirección / Registro</span><b>{{ dirUnidad().unidad || dirUnidad().direccion || '—' }}</b></div>
+                    <div><span>Área</span><b>{{ areaTexto() }}</b></div>
+                  </div>
+                  <span class="hint">
+                    La asignación se registra como entidad propia junto con el expediente, en el
+                    orden del DER: primero el Expediente único, después la asignación.
+                  </span>
+                </section>
+              }
 
-                  <!-- Validaciones como checklist, no como párrafo -->
+              <!-- ── Paso 4: técnico de configuración ── -->
+              @if (equipoProceso() && proceso()) {
+                <section class="paso">
+                  <h3 class="paso-t"><span class="n">4</span> Técnico de Configuración</h3>
+                  @if (tecnicoConfig(); as t) {
+                    <p class="chk ok"><ui-icon name="check" [size]="14" /> Técnico de configuración seleccionado</p>
+                    <div class="datos">
+                      <div><span>Técnico</span><b>{{ t.split('—')[0].trim() }}</b></div>
+                      @if (cargaDe(t); as c) {
+                        <div><span>Carga laboral</span><b>{{ c.carga }} · {{ c.total }} procesos activos</b></div>
+                        <div><span>Direcciones/Registros atendidas</span><b>{{ c.direccionUnidad || '—' }}</b></div>
+                        <div><span>Disponibilidad</span><b>{{ c.disponibilidad }}</b></div>
+                      }
+                    </div>
+                    @if (cargaDe(t); as c) {
+                      @if (c.nivel === 'Alta') {
+                        <div class="alert warn mt-1"><span class="alert-ico">!</span><span>{{ data.MSG_CARGA_ALTA }}</span></div>
+                      } @else {
+                        <p class="small mt-1">{{ data.avisoCarga(c.nivel) }}</p>
+                      }
+                    }
+                    <button class="btn btn-ghost btn-sm mt-1" (click)="abrirBusquedaTecnico()">Cambiar técnico</button>
+                  } @else {
+                    <button class="btn btn-primary" (click)="abrirBusquedaTecnico()">Seleccionar Técnico de Configuración</button>
+                    <span class="hint">
+                      Solo los Técnicos de Soporte responsables de {{ dirUnidadTexto() }}, según la
+                      distribución vigente. Queda responsable del expediente; <b>el trabajo lo inicia
+                      él</b> desde Configuración F0302.
+                    </span>
+                  }
+                  @if (!tecnicosSoporte().length) {
+                    <div class="alert warn mt-2">
+                      <span class="alert-ico">!</span>
+                      <span>
+                        <b>{{ data.MSG_SIN_DISTRIBUCION }}</b>
+                        <div>La distribución se edita en SISGOST — Controles Mensuales y este módulo la lee
+                          automáticamente.</div>
+                        @if (esEncSoporte()) {
+                          <a class="btn btn-outline btn-sm mt-2" routerLink="/distribucion-soportes">Ir a Distribución de soportes</a>
+                        }
+                      </span>
+                    </div>
+                  }
+                </section>
+              }
+
+              <!-- ── Paso 5: confirmación ── -->
+              @if (equipoProceso() && proceso()) {
+                <section class="paso">
+                  <h3 class="paso-t"><span class="n">5</span> Confirmación</h3>
+
                   <div class="valida">
                     @for (v of validaciones(); track v.lbl) {
                       <p class="chk" [class.ok]="v.ok" [class.pend]="!v.ok">
@@ -243,16 +301,12 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                   <div class="resumen">
                     <div class="r-t">Resumen para crear Expediente único</div>
                     <div class="datos">
-                      @if (proceso(); as pr) {
-                        <div><span>Solicitud</span><b class="mono">{{ pr.expediente }}</b><b>{{ pr.tipoEquipo | tipoRequerimiento }}</b></div>
-                        <div><span>Usuario final</span><b>{{ pr.destinatario }}</b><b>{{ pr.correoDestinatario }}</b></div>
-                      } @else {
-                        <div><span>Origen del ciclo</span><b>Reingreso interno</b><b>Sin requerimiento externo</b></div>
-                        <div><span>Usuario final</span><b>Se define en la asignación</b></div>
-                      }
+                      <div><span>Solicitud</span><b class="mono">{{ proceso()?.expediente }}</b><b>{{ proceso()?.tipoEquipo | tipoRequerimiento }}</b></div>
+                      <div><span>Usuario final</span><b>{{ proceso()?.destinatario }}</b><b>{{ proceso()?.correoDestinatario }}</b></div>
                       <div><span>Equipo</span><b class="mono">{{ equipoProceso()?.inventario }}</b><b>{{ equipoProceso()?.tipo === 'Desktop' ? 'CPU' : 'Laptop' }} · {{ equipoProceso()?.marca }} {{ equipoProceso()?.modelo }}</b></div>
                       <div><span>Expediente técnico</span><b class="mono">{{ expTecProceso()?.codigo || '—' }}</b><b>F0288 {{ textoF0288() }}</b></div>
                       <div><span>Técnico de preparación</span><b>{{ expTecProceso()?.tecnicoPreparacion?.split('—')?.[0]?.trim() || '—' }}</b></div>
+                      <div><span>Técnico de configuración</span><b>{{ tecnicoConfig().split('—')[0].trim() || 'Pendiente' }}</b></div>
                       <div><span>Ciclo del equipo</span><b class="mono">{{ expTecProceso()?.ciclo || '—' }}</b></div>
                     </div>
                   </div>
@@ -260,10 +314,10 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                   <div class="alert mt-2">
                     <span class="alert-ico">i</span>
                     <span>
-                      <b>El expediente nace «Pendiente de asignación».</b>
-                      <div>Después se asigna el equipo al usuario final y, solo entonces, se designa al
-                        Técnico de Configuración. Ese es el orden del DER:
-                        Expediente único → asignación → configuración.</div>
+                      <b>Un solo clic, tres hechos del DER.</b>
+                      <div>Se crean, en este orden, el <b>Expediente único</b>, la <b>asignación</b> del
+                        equipo al usuario final y la <b>designación</b> del Técnico de Configuración.
+                        El checklist F0302 <b>no</b> se abre todavía: lo inicia el técnico desde su módulo.</div>
                     </span>
                   </div>
 
@@ -439,6 +493,11 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
             @if (garantiaDe(x)) {
               <a class="btn btn-outline btn-sm" routerLink="/garantia">Ver garantía</a>
             }
+            @if (esEncSoporte()) {
+              <button class="btn btn-ghost btn-sm" (click)="abrirEdicion(x)">
+                <ui-icon name="edit" [size]="14" /> Editar Expediente único
+              </button>
+            }
           </div>
         </div>
       }
@@ -465,17 +524,9 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                 <div class="sec-title">Datos generales</div>
                 <dl class="dl">
                   <dt>Código único</dt><dd>{{ x.codigoUnico }}</dd>
-                  <!-- El DER permite un ciclo sin requerimiento externo: se dice de dónde nació. -->
-                  <dt>Origen del ciclo</dt>
-                  <dd>
-                    {{ x.origenCiclo || (x.expediente ? 'Solicitud' : 'Reingreso interno') }}
-                    @if (!x.expediente) {
-                      <span class="chip">Abierto internamente tras el reingreso, sin requerimiento externo</span>
-                    }
-                  </dd>
-                  @if (x.expediente) {
-                    <dt>Solicitud</dt><dd>{{ x.expediente }} · {{ solicitudDe(x)?.tipoEquipo | tipoRequerimiento }}</dd>
-                  }
+                  <!-- La solicitud origina el expediente, y nunca falta. -->
+                  <dt>Solicitud que lo origina</dt>
+                  <dd class="mono">{{ x.expediente }} <span class="chip">{{ solicitudDe(x)?.tipoEquipo | tipoRequerimiento }}</span></dd>
                   <!-- El EU guarda su equipo y su expediente técnico: no se deducen del equipo,
                        porque un equipo acumula varios ciclos y cada uno tiene los suyos. -->
                   <dt>Ciclo del equipo</dt>
@@ -692,43 +743,105 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
         }
       }
 
-      <!-- ── Designar Técnico de Configuración ──
-           El paso que el DER coloca DESPUÉS de la asignación: EU → ASIGNACION →
-           ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302. Solo aparecen los expedientes
-           que ya tienen su equipo asignado a un usuario final y todavía no tienen técnico. -->
-      @if (pendientesConfiguracion().length) {
-        <div class="card mb-3">
-          <div class="card-head">
-            <div>
-              <h2>Designar Técnico de Configuración</h2>
-              <p class="sub">Expedientes ya asignados que esperan técnico · la configuración va después de la asignación</p>
+      <!-- ── Editar Expediente único ──
+           Corregir no es reescribir: cada cambio deja el valor anterior, el nuevo, quién y por qué.
+           Lo que se puede tocar depende de cuánto proceso hay encima, no del permiso. -->
+      @if (editando(); as x) {
+        <ui-modal titulo="Editar Expediente único" [sub]="x.codigoUnico + ' · ' + x.estado" (cerrar)="editando.set(null)">
+          @if (permisos(); as perm) {
+            @if (perm.motivo) {
+              <div class="alert warn mb-2"><span class="alert-ico">!</span><span>{{ perm.motivo }}</span></div>
+            }
+
+            <h3 class="mb-2">Técnico de Configuración</h3>
+            <p class="small muted">
+              Vigente: <b>{{ tecnicoVigente(x) || 'sin designar' }}</b>.
+              Reasignar <b>no borra</b> la designación anterior: queda cancelada en el histórico.
+            </p>
+            <div class="field mb-2">
+              <label>Motivo de la reasignación <span class="req">*</span></label>
+              <input class="control" [(ngModel)]="motivoEdicion" placeholder="Por qué cambia el técnico…" />
             </div>
-            <ui-help texto="La configuración (ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302) nace aquí, cuando el equipo ya tiene usuario final. Antes se creaba junto con el Expediente único, es decir antes de que existiera la asignación de la que depende." />
-          </div>
-          <div class="card-body table-wrap">
-            <table class="tbl">
-              <thead>
-                <tr><th>Expediente único</th><th>Equipo</th><th>Usuario final</th><th>Ciclo</th><th>Estado</th><th></th></tr>
-              </thead>
-              <tbody>
-                @for (x of pendientesConfiguracion(); track x.codigoUnico) {
-                  <tr>
-                    <td class="mono main-cell">{{ x.codigoUnico }}</td>
-                    <td class="mono">{{ x.inventario }}</td>
-                    <td>{{ asignacionDeEu(x)?.usuarioFinal || '—' }}</td>
-                    <td class="mono">{{ x.ciclo }}</td>
-                    <td><ui-badge [estado]="x.estado" /></td>
-                    <td style="text-align:right;">
-                      <button class="btn btn-primary btn-sm" [disabled]="!esEncSoporte()" (click)="abrirDesignacion(x)">
-                        Designar técnico
-                      </button>
-                    </td>
-                  </tr>
-                }
-              </tbody>
-            </table>
-          </div>
-        </div>
+            <button class="btn btn-primary btn-sm mb-3" [disabled]="!perm.tecnico || !motivoEdicion().trim()"
+              (click)="abrirReasignacion(x)">Reasignar Técnico de Configuración</button>
+
+            @if (historialTecnicos(x).length) {
+              <div class="table-wrap mb-3">
+                <table class="tbl">
+                  <thead><tr><th>Designación</th><th>Técnico</th><th>Desde</th><th>Hasta</th><th>Estado</th><th>Motivo</th></tr></thead>
+                  <tbody>
+                    @for (a of historialTecnicos(x); track a.id) {
+                      <tr>
+                        <td class="mono main-cell">{{ a.id }}</td>
+                        <td>{{ a.tecnico.split('—')[0].trim() }}</td>
+                        <td class="mono">{{ a.fechaInicio }}</td>
+                        <td class="mono">{{ a.fechaCierre || '—' }}</td>
+                        <td><ui-badge [estado]="a.estado" /></td>
+                        <td class="sub-cell">{{ a.motivo || '—' }}</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            }
+
+            <h3 class="mb-2">Equipo asignado</h3>
+            <p class="small muted">
+              Actual: <b class="mono">{{ x.inventario }}</b> · expediente técnico
+              <b class="mono">{{ x.expedienteTecnico }}</b>.
+              @if (!perm.equipo) { Ya no puede sustituirse: la configuración está en marcha. }
+            </p>
+            @if (perm.equipo) {
+              <div class="field mb-2">
+                <label>Equipo de sustitución</label>
+                <select class="control" [(ngModel)]="equipoCorreccion">
+                  <option value="">Seleccione…</option>
+                  @for (e of equiposDisponibles(); track e.inventario) {
+                    <option [value]="e.inventario">{{ e.inventario }} — {{ e | marcaModelo }}</option>
+                  }
+                </select>
+              </div>
+              <button class="btn btn-outline btn-sm mb-3"
+                [disabled]="!equipoCorreccion() || !motivoEdicion().trim()"
+                (click)="corregirEquipo(x)">Sustituir equipo</button>
+            }
+
+            @if (asignacionDeEu(x); as a) {
+              @if (a.modificaciones?.length) {
+                <div class="table-wrap mb-3">
+                  <table class="tbl">
+                    <thead><tr><th>Fecha</th><th>Equipo anterior</th><th>Equipo nuevo</th><th>Motivo</th><th>Registró</th></tr></thead>
+                    <tbody>
+                      @for (m of a.modificaciones; track m.fecha + m.hora) {
+                        <tr>
+                          <td class="mono main-cell">{{ m.fecha }} {{ m.hora }}</td>
+                          <td class="mono">{{ m.equipoAnterior }}</td>
+                          <td class="mono">{{ m.equipoNuevo }}</td>
+                          <td class="sub-cell">{{ m.motivo }}<div class="sub-cell">{{ m.observacion }}</div></td>
+                          <td class="sub-cell">{{ m.encargado.split('—')[0].trim() }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            }
+
+            <h3 class="mb-2">Observación administrativa</h3>
+            <div class="field mb-2">
+              <textarea class="control" rows="2" [(ngModel)]="observacionEdicion"
+                placeholder="Queda anotada en el expediente y en la trazabilidad…"></textarea>
+            </div>
+            <button class="btn btn-ghost btn-sm" [disabled]="!observacionEdicion().trim()"
+              (click)="guardarObservacion(x)">Registrar observación</button>
+
+            <p class="hint mt-3">
+              La <b>solicitud</b> que origina el expediente no se cambia desde aquí: es su origen.
+              Si se eligió la equivocada y no hay actividad posterior, el expediente se anula y se
+              abre el correcto, dejando los dos en el histórico.
+            </p>
+          }
+        </ui-modal>
       }
 
       <!-- Paso 2 · Equipos preparados: los que pueden abrir un ciclo (ET PREPARADO + F0288 firmado) -->
@@ -820,7 +933,7 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
                     } @else {
                       <b>No hay solicitudes disponibles para crear Expediente único.</b>
                       <div class="mt-1">Solo se muestran solicitudes que ya tienen un equipo preparado y asignado al usuario final.</div>
-                      <a class="btn btn-outline btn-sm mt-2" routerLink="/asignacion" (click)="buscarSolAbierto.set(false)">Ir a Asignación de equipo</a>
+                      <a class="btn btn-outline btn-sm mt-2" routerLink="/solicitudes" (click)="buscarSolAbierto.set(false)">Ver solicitudes</a>
                     }
                   </td></tr>
                 }
@@ -833,7 +946,7 @@ import { SelectorSoporteComponent } from '../../shared/selector-soporte.componen
       <!-- Paso 3 · Selección del técnico de configuración, filtrada por la Dirección/Registro del requerimiento -->
       @if (buscarTecnicoAbierto()) {
         <app-selector-soporte
-          titulo="Seleccionar Técnico de Configuración"
+          [titulo]="designando() ? 'Reasignar Técnico de Configuración' : 'Seleccionar Técnico de Configuración'"
           [sub]="'Responsables de ' + dirUnidadTexto() + ', con su carga de trabajo'"
           nota="El Técnico de Configuración sale de la Distribución de Soportes: en San Salvador, el responsable de esa Dirección/Registro; en los demás departamentos, el responsable del Departamento completo. Quien no responde por el requerimiento no aparece en esta lista."
           [vacio]="data.MSG_SIN_DISTRIBUCION"
@@ -857,6 +970,7 @@ export class ExpedienteUnicoComponent {
   private readonly toast = inject(ToastService);
   private readonly casoActivo = inject(CasoActivoService);
   private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
 
   /** Llega como query param desde Servicio de garantía («Ver expediente»). */
   readonly expediente = input<string>();
@@ -997,10 +1111,17 @@ export class ExpedienteUnicoComponent {
   // Creación (solo Encargado de Soporte)
   // Si el último caso activo (p. ej. recién asignado en Asignación de equipo) todavía no
   // tiene Expediente único, se precarga aquí para no tener que volver a buscarlo.
+  /**
+   * Solicitud en curso. Llega del caso activo o del enlace `?solicitud=` con el que Solicitudes
+   * manda aquí —antes mandaba a la pantalla de Asignación, que ya no existe—.
+   */
   protected procesoSel = signal(
-    this.casoActivo.expediente() && !this.data.expedienteUnicoDe(this.casoActivo.expediente())
-      ? this.casoActivo.expediente()
-      : ''
+    (() => {
+      const porEnlace = this.ruta.snapshot.queryParamMap.get('solicitud') ?? '';
+      if (porEnlace && !this.data.expedienteUnicoDe(porEnlace)) return porEnlace;
+      const activo = this.casoActivo.expediente();
+      return activo && !this.data.expedienteUnicoDe(activo) ? activo : '';
+    })()
   );
   protected tecnicoConfig = signal('');
   /** Buscadores de los pasos 1 y 3: el select largo se sustituyó por catálogos con detalle. */
@@ -1032,12 +1153,6 @@ export class ExpedienteUnicoComponent {
    * asignación al usuario final se registra después, ya con el EU creado.
    */
   protected equipoSel = signal('');
-  /**
-   * El ciclo se abre sin requerimiento externo. Es el caso del DER «reingreso interno»: tras un
-   * descargo y su reingreso a Hardware, un Encargado abre ciclo nuevo sin que nadie haya pedido
-   * nada — y no se fabrica una solicitud falsa para poder hacerlo.
-   */
-  protected cicloInterno = signal(false);
   protected readonly equipoProceso = computed(() => {
     const inv = this.equipoSel()
       || this.proceso()?.equipoInventario
@@ -1052,7 +1167,10 @@ export class ExpedienteUnicoComponent {
   });
   /** Equipos preparados sin Expediente único: la lista del paso 2. */
   protected readonly equiposDisponibles = computed(() => {
-    const tipo = this.cicloInterno() ? undefined : this.proceso()?.tipoEquipo;
+    const enEdicion = this.editando();
+    const tipo = enEdicion
+      ? this.data.solicitud(enEdicion.expediente)?.tipoEquipo
+      : this.proceso()?.tipoEquipo;
     const lista = this.data.equiposParaExpedienteUnico();
     // Un requerimiento de CPU no se abre con una laptop: se ofrece solo lo compatible.
     return tipo ? lista.filter((e) => e.tipo === tipo) : lista;
@@ -1067,9 +1185,17 @@ export class ExpedienteUnicoComponent {
    * Tres pasos visibles, no seis. El expediente técnico y el F0288 no son un paso propio: se
    * completan al elegir el equipo preparado, así que se muestran como resultado del paso 2.
    */
+  /** Área del usuario final según la solicitud: el nivel del DER al que pertenece la persona. */
+  protected areaTexto(): string {
+    const cadena = this.data.cadenaOrganizativaDeSolicitud(this.procesoSel());
+    return cadena.areaCatalogo?.nombre ?? cadena.areaUnidad?.nombreEspecifico ?? '—';
+  }
+
   protected readonly pasos = computed(() => [
     { lbl: 'Solicitud', done: !!this.proceso() },
     { lbl: 'Equipo preparado', done: !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' },
+    { lbl: 'Asignación', done: !!this.proceso() && !!this.equipoProceso() },
+    { lbl: 'Técnico de configuración', done: !!this.tecnicoConfig() },
     { lbl: 'Confirmación', done: this.puedeCrear() }
   ]);
 
@@ -1084,10 +1210,13 @@ export class ExpedienteUnicoComponent {
    */
   protected readonly puedeCrear = computed(() =>
     this.esEncSoporte() &&
-    // O hay requerimiento con su correo, o el ciclo se declara interno: el DER admite las dos.
-    ((!!this.proceso() && !!this.proceso()?.correoDestinatario) || this.cicloInterno()) &&
+    // La solicitud es condición, no alternativa: no hay expediente único sin ella.
+    !!this.proceso() && !!this.proceso()?.correoDestinatario &&
     !!this.equipoProceso() && this.expTecProceso()?.estado === 'Preparado' && this.f0288Listo() &&
     !this.data.expedienteUnicoDe(this.procesoSel()) &&
+    // El técnico se designa en el mismo paso: la creación registra también ASIGNACION_CONFIGURACION.
+    !!this.tecnicoConfig() &&
+    this.data.atiendeDireccionUnidad(this.tecnicoConfig(), this.dirUnidad().direccion, this.dirUnidad().unidad) &&
     !this.data.bloqueoExpedienteUnico(this.procesoSel(), '', this.equipoProceso()?.inventario ?? '')
   );
 
@@ -1108,13 +1237,15 @@ export class ExpedienteUnicoComponent {
    * repetía la regla completa aunque solo faltara un dato.
    */
   protected readonly validaciones = computed(() => [
-    { lbl: 'Origen del ciclo definido', falta: 'elegir un requerimiento o declarar el ciclo interno',
-      ok: !!this.proceso() || this.cicloInterno() },
+    { lbl: 'Solicitud seleccionada', falta: 'seleccionar la solicitud que origina el ciclo', ok: !!this.proceso() },
     { lbl: 'Equipo preparado seleccionado', falta: 'elegir un equipo preparado', ok: !!this.equipoProceso() },
     { lbl: 'Expediente técnico completado', falta: 'un expediente técnico completado', ok: this.expTecProceso()?.estado === 'Preparado' },
     { lbl: 'F0288 firmado', falta: 'finalizar y firmar el F0288 del equipo', ok: this.f0288Listo() },
     { lbl: 'Ese Expediente técnico no tiene ya un Expediente único', falta: 'un ciclo sin expediente único previo',
-      ok: !!this.expTecProceso() && !this.data.expedienteUnicoDeExpTecnico(this.expTecProceso()!.codigo) }
+      ok: !!this.expTecProceso() && !this.data.expedienteUnicoDeExpTecnico(this.expTecProceso()!.codigo) },
+    { lbl: 'Técnico de configuración seleccionado', falta: 'seleccionar el Técnico de Configuración', ok: !!this.tecnicoConfig() },
+    { lbl: 'El técnico responde por esa Dirección/Registro', falta: 'un técnico de la distribución de esa Dirección/Registro',
+      ok: !!this.tecnicoConfig() && this.data.atiendeDireccionUnidad(this.tecnicoConfig(), this.dirUnidad().direccion, this.dirUnidad().unidad) }
   ]);
 
   /**
@@ -1124,7 +1255,7 @@ export class ExpedienteUnicoComponent {
   protected falta(): string {
     if (this.puedeCrear()) return '';
     if (!this.esEncSoporte()) return 'Solo el Encargado de Soporte puede crear el Expediente único.';
-    if (!this.proceso() && !this.cicloInterno()) return 'Seleccione la solicitud o declare el ciclo interno.';
+    if (!this.proceso()) return this.data.MSG_SIN_SOLICITUD;
     if (this.data.expedienteUnicoDe(this.procesoSel())) return 'Esta solicitud ya tiene un Expediente único.';
     if (!this.equipoProceso()) {
       return 'Elija el equipo preparado con el que se abre este ciclo.';
@@ -1132,6 +1263,7 @@ export class ExpedienteUnicoComponent {
     if (!this.f0288Listo()) return 'El F0288 del equipo debe estar finalizado y firmado.';
     if (this.expTecProceso()?.estado !== 'Preparado') return 'El Expediente técnico del equipo aún no está PREPARADO.';
     if (!this.proceso()?.correoDestinatario) return 'La solicitud no tiene correo institucional del usuario final.';
+    if (!this.tecnicoConfig()) return 'Seleccione el Técnico de Configuración.';
     return 'Revise las condiciones del ciclo.';
   }
 
@@ -1265,31 +1397,82 @@ export class ExpedienteUnicoComponent {
    */
   protected designando = signal<ExpedienteUnico | null>(null);
 
-  /**
-   * Expedientes que ya tienen su equipo asignado a un usuario final y **todavía no tienen Técnico
-   * de Configuración**. Es exactamente el hueco que el DER coloca entre ASIGNACION y
-   * ASIGNACION_CONFIGURACION.
-   */
-  protected readonly pendientesConfiguracion = computed(() =>
-    this.data.expedientesUnicos().filter((x) =>
-      !x.fechaCierre && x.estado !== 'Cerrado' &&
-      this.data.asignaciones().some((a) => a.expedienteUnico === x.codigoUnico) &&
-      !this.data.asignacionConfiguracionVigente(x.codigoUnico))
-  );
-
   protected asignacionDeEu(x: ExpedienteUnico) {
     return this.data.asignaciones().find((a) => a.expedienteUnico === x.codigoUnico);
   }
 
-  protected abrirDesignacion(x: ExpedienteUnico): void {
+  /** Expediente cuya edición se retoma al cerrar el selector: dos modales apilados no se leen. */
+  private volverAEditar = signal<string>('');
+
+  /**
+   * Abre el selector para **reasignar** el Técnico de Configuración de un expediente que ya lo
+   * tiene. No existe «designar más tarde»: el técnico se elige antes de crear el expediente, y
+   * esto es la corrección de ese dato, no un paso pendiente del flujo.
+   */
+  protected abrirReasignacion(x: ExpedienteUnico): void {
     this.designando.set(x);
     this.tecnicoConfig.set('');
+    // El selector se abre solo: el modal de edición se aparta y vuelve al cerrarlo.
+    if (this.editando()) {
+      this.volverAEditar.set(x.codigoUnico);
+      this.editando.set(null);
+    }
     this.buscarTecnicoAbierto.set(true);
+  }
+
+  // ---------------------------------------------------------------- edición administrativa
+  protected editando = signal<ExpedienteUnico | null>(null);
+  protected motivoEdicion = signal('');
+  protected equipoCorreccion = signal('');
+  protected observacionEdicion = signal('');
+
+  /** Qué admite corregir el expediente abierto, según cuánto proceso lleva encima. */
+  protected readonly permisos = computed(() => {
+    const x = this.editando();
+    return x ? this.data.edicionPermitida(x.codigoUnico) : null;
+  });
+
+  protected abrirEdicion(x: ExpedienteUnico): void {
+    this.editando.set(x);
+    this.motivoEdicion.set('');
+    this.equipoCorreccion.set('');
+    this.observacionEdicion.set('');
+  }
+
+  protected tecnicoVigente(x: ExpedienteUnico): string {
+    return this.data.asignacionConfiguracionVigente(x.codigoUnico)?.tecnico.split('—')[0].trim() ?? '';
+  }
+  /** Todas las designaciones del expediente, vigentes y canceladas: el histórico no se pierde. */
+  protected historialTecnicos(x: ExpedienteUnico) {
+    return this.data.asignacionesConfiguracionDe(x.codigoUnico);
+  }
+
+  protected corregirEquipo(x: ExpedienteUnico): void {
+    const u = this.auth.usuario();
+    const error = this.data.corregirEquipoDeExpedienteUnico(
+      x.codigoUnico, this.equipoCorreccion(), this.motivoEdicion(), `${u?.nombre} — ${u?.rol}`);
+    if (error) { this.toast.error('No se pudo sustituir el equipo', error); return; }
+    this.toast.ok('Equipo sustituido', `${x.codigoUnico}: queda el registro del equipo anterior.`);
+    this.editando.set(this.data.expedienteUnicoPorCodigo(x.codigoUnico) ?? null);
+    this.equipoCorreccion.set('');
+  }
+
+  protected guardarObservacion(x: ExpedienteUnico): void {
+    const u = this.auth.usuario();
+    const error = this.data.observarExpedienteUnico(x.codigoUnico, this.observacionEdicion(), `${u?.nombre} — ${u?.rol}`);
+    if (error) { this.toast.error('No se pudo registrar la observación', error); return; }
+    this.toast.ok('Observación registrada', 'Queda en el expediente y en la trazabilidad.');
+    this.observacionEdicion.set('');
   }
 
   protected cerrarSelectorTecnico(): void {
     this.buscarTecnicoAbierto.set(false);
     this.designando.set(null);
+    const volver = this.volverAEditar();
+    if (volver) {
+      this.editando.set(this.data.expedienteUnicoPorCodigo(volver) ?? null);
+      this.volverAEditar.set('');
+    }
   }
 
   protected seleccionarTecnico(nombreRol: string): void {
@@ -1297,12 +1480,14 @@ export class ExpedienteUnicoComponent {
     if (objetivo) {
       // Designación posterior a la asignación: la valida y la ejecuta el servicio.
       const u = this.auth.usuario();
-      const error = this.data.designarConfiguracion(objetivo.codigoUnico, nombreRol, `${u?.nombre} — ${u?.rol}`);
+      const error = this.data.designarConfiguracion(
+        objetivo.codigoUnico, nombreRol, `${u?.nombre} — ${u?.rol}`, this.motivoEdicion());
       if (error) {
         this.toast.error('No se pudo designar al Técnico de Configuración', error);
       } else {
         this.toast.ok('Técnico de Configuración designado',
-          `${objetivo.codigoUnico}: configuración F0302 habilitada para ${nombreRol.split('—')[0].trim()}.`);
+          `${objetivo.codigoUnico}: ${nombreRol.split('—')[0].trim()} queda responsable; iniciará la configuración desde su módulo.`);
+        this.motivoEdicion.set('');
       }
       this.cerrarSelectorTecnico();
       return;
@@ -1317,8 +1502,7 @@ export class ExpedienteUnicoComponent {
       this.toast.error('Acción no permitida', 'Solo el Encargado de Soporte crea el Expediente único.');
       return;
     }
-    // Un ciclo interno no tiene solicitud: exigir `p` aquí lo habría bloqueado siempre.
-    if (!this.puedeCrear()) {
+    if (!p || !this.puedeCrear()) {
       // La Dirección/Registro tiene su propio mensaje: decir «falta un dato» cuando el problema es
       // que el técnico no atiende esa Dirección/Registro no explica qué hacer.
       const bloqueo = this.bloqueo();
@@ -1335,7 +1519,7 @@ export class ExpedienteUnicoComponent {
     // El equipo va explícito: el EU nace del ET del equipo. **Sin técnico de configuración**: ese
     // se designa después de la asignación, que es el orden del DER.
     const creado = this.data.crearExpedienteUnico(
-      p?.expediente ?? '', quien, this.equipoProceso()?.inventario ?? '');
+      p.expediente, quien, this.equipoProceso()?.inventario ?? '', this.tecnicoConfig());
     if (creado) {
       this.toast.ok(`${creado.codigoUnico} creado`, 'Configuración F0302 habilitada.');
       this.detalle.set(creado);
@@ -1344,7 +1528,6 @@ export class ExpedienteUnicoComponent {
       this.verDetalle.set(false);
       this.procesoSel.set('');
       this.equipoSel.set('');
-      this.cicloInterno.set(false);
       this.tecnicoConfig.set('');
     } else {
       this.toast.error('No fue posible crear el Expediente único', 'Verifique el equipo preparado y los datos del proceso.');

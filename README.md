@@ -35,6 +35,16 @@ error fácil:
 | el ET **de un proceso o expediente** | `expTecnicoDeExpedienteUnico(eu)` · `codigoEtDeProceso(expediente)` | buscar por equipo |
 | el histórico completo | `ciclosDeEquipo(inventario)` → `CicloEquipo[]` | ordenar ET por fecha |
 
+**Todo Expediente único nace de una solicitud**, con esta cardinalidad:
+
+```text
+SOLICITUD (0,1) ── origina ── (1,1) EXPEDIENTE_UNICO
+```
+
+Puede haber solicitudes que todavía no tienen expediente; un expediente sin solicitud no existe.
+Un reingreso a Hardware es historia física del equipo y **no sustituye al requerimiento**: el ciclo
+siguiente necesita su propia solicitud, distinta de la del ciclo anterior.
+
 El flujo completo del DER es:
 
 ```text
@@ -158,7 +168,7 @@ src/app/
     models/        models.ts (interfaces TypeScript)
     services/      data.service.ts (almacén y operaciones simuladas)
                    auth.service.ts · toast.service.ts
-  features/        auth · dashboard · guia-proceso · solicitudes · inventario-hardware · asignacion
+  features/        auth · dashboard · guia-proceso · solicitudes · inventario-hardware
                    expediente-tecnico · expediente-unico · preparacion-tecnica (F0288)
                    configuracion (F0302) · entrega-aceptacion · formulario-conformidad (vista externa)
                    garantia · generador-documentos · reporte-final · trazabilidad · administracion
@@ -577,8 +587,11 @@ completado ni F0288 finalizado** · técnicos no asignan (responsable bloqueado)
 solo Encargado de Soporte asigna · no asignar CPU nuevo por Hardware sin autorización y
 observación · técnicos no crean expediente técnico · no crear expediente técnico sobre un
 equipo que ya tiene uno · solo Encargado de Soporte crea el Expediente único · no crear
-Expediente único sin solicitud, equipo preparado, expediente técnico completado (F0288
-finalizado) ni técnico de configuración · no enviar conformidad sin F0302 · no cerrar
+Expediente único sin solicitud, equipo preparado y expediente técnico completado (F0288
+finalizado y firmado) · **no asignar un equipo cuyo ciclo todavía no tiene Expediente único**
+· **no crear un Expediente único sin Técnico de Configuración** (se elige antes de crearlo, no
+después) · no enviar conformidad sin
+asignación, sin técnico designado ni sin F0302 · no cerrar
 expediente sin respuesta del usuario · no iniciar garantía sin aceptación · inconformidad ⇒
 expediente pendiente de revisión · la aceptación deja el expediente **disponible para casos de
 garantía**. Las validaciones aparecen cuando el usuario intenta la acción, no como reglas fijas

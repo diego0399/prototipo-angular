@@ -253,10 +253,12 @@ en el caso; `id`, `casoGarantiaId`, `usuarioId` en el comentario. La garantía g
   originó qué ET— pero ahora **apunta a su movimiento** (`movimiento`), y MOVIMIENTO_EQUIPO queda
   como la bitácora histórica principal, con un `INGRESO_INICIAL` por equipo.
 
-## 6. EU sin solicitud, y EU ↔ ET coherentes
+## 6. EU ↔ ET coherentes
 
-- `ExpedienteUnico.origenCiclo` (`Solicitud` | `Reingreso interno`): el DER no obliga a inventar un
-  requerimiento falso para abrir un ciclo tras un reingreso. La pantalla muestra el origen.
+> **Superado el 18/09/2026** — lo que sigue sobre «EU sin solicitud» dejó de ser válido: todo
+> Expediente único pertenece obligatoriamente a una solicitud. Ver la cuarta pasada al final.
+
+- ~~`ExpedienteUnico.origenCiclo` (`Solicitud` | `Reingreso interno`)~~: eliminado.
 - El equipo del EU se toma **del ET** (`EU → ET → EQUIPO`), y las validaciones comprueban que
   `EU.inventario === ET.inventario`: nunca puede quedar un EU apuntando a un equipo y su ET a otro.
 
@@ -345,8 +347,7 @@ Configuración designado. Antes solo lo impedía la pantalla.
 
 ### Ciclo interno sin solicitud
 
-La pantalla ofrece «Ciclo interno (sin requerimiento)». El EU se abre con `origenCiclo:
-'Reingreso interno'` y `expediente: ''`, sin fabricar una solicitud falsa.
+> **Superado el 18/09/2026**: esta opción se eliminó por completo. Ver la cuarta pasada.
 
 ## Datos corregidos
 
@@ -387,3 +388,306 @@ asignación*, y 0/0/0/0 en las cuatro entidades posteriores.
 
 `ng build` en verde tras cada bloque. 20/20 rutas sin errores de consola. Auditoría sobre el estado
 en ejecución —no sobre los JSON— : 0 problemas.
+
+---
+
+# Cuarta pasada — 18 de septiembre de 2026
+
+## Regla corregida: todo Expediente único pertenece a una solicitud
+
+```text
+SOLICITUD (0,1) ── origina ── (1,1) EXPEDIENTE_UNICO
+```
+
+Puede haber solicitudes que todavía no tienen expediente; **un expediente sin solicitud no
+existe**. La tercera pasada había interpretado que un reingreso a Hardware podía abrir un ciclo por
+sí mismo; no es así. El reingreso es historia **física** del equipo y no sustituye al requerimiento:
+el ciclo siguiente necesita su propia solicitud, distinta de la del anterior.
+
+Esto **no** revierte el orden ya corregido. Sigue vigente:
+
+```text
+SOLICITUD + ET PREPARADO + F0288 FIRMADO
+        ↓
+   EXPEDIENTE_UNICO
+        ↓
+     ASIGNACION
+        ↓
+ ASIGNACION_CONFIGURACION → FORM_CONFIGURACION → F0302
+```
+
+La solicitud es **precondición** del expediente; la asignación sigue ocurriendo **después**.
+
+## Dónde se permitía crear un EU sin solicitud
+
+1. `crearExpedienteUnico` aceptaba `id = ''` y seguía adelante con `s` indefinido.
+2. `validacionesExpedienteUnico` trataba la solicitud como opcional: la validación de tipo era
+   `!s || equipo.tipo === s.tipoEquipo` —o sea, **se daba por buena cuando no había solicitud**— y
+   la de duplicado, `!id || !expedienteUnicoDe(id)`.
+3. `bloqueoExpedienteUnico` no comprobaba la solicitud en absoluto.
+4. La pantalla ofrecía el botón «Ciclo interno (sin requerimiento)» con su rama completa.
+5. `ExpedienteUnico.origenCiclo` daba nombre y respaldo conceptual al caso.
+6. `dirUnidadDeExpedienteUnico` tenía un camino alternativo para resolver la Dirección desde el
+   área del usuario final cuando no había solicitud.
+
+## Cambios
+
+**`models.ts`** — `OrigenCiclo` eliminado; `ExpedienteUnico.expediente` documentado como obligatorio
+con su cardinalidad; `Asignacion.expediente` deja de admitir vacío.
+
+**`data.service.ts`** — `crearExpedienteUnico` rechaza de entrada `!id || !solicitud`;
+`validacionesExpedienteUnico` añade «Existe una solicitud válida» y convierte las dos validaciones
+permisivas en exigentes; `bloqueoExpedienteUnico` responde `MSG_SIN_SOLICITUD` antes que nada;
+`dirUnidadDeExpedienteUnico` se reduce a leer la solicitud del expediente.
+
+**`expediente-unico.component.ts`** — fuera el botón, el signal `cicloInterno`, su rama `@else if`,
+el texto que afirmaba que el DER lo permitía y las validaciones alternativas. El paso 1 vuelve a ser
+la solicitud, obligatoria: sin ella no se muestra el paso 2 ni el botón de crear. La ficha del
+expediente muestra «Solicitud que lo origina» en lugar de «Origen del ciclo».
+
+**`tools/auditar-ciclos.py`** — reglas nuevas: EU sin solicitud, solicitud inexistente, una
+solicitud con más de un EU, y `origenCiclo` distinto de `Solicitud`.
+
+## Verificación
+
+Los datos sembrados **ya cumplían** la regla (0 expedientes sin solicitud), así que no se tocaron.
+
+| Prueba | Resultado |
+|---|---|
+| Auditoría `tools/auditar-ciclos.py` | 0 problemas |
+| `ng build` | verde (3 warnings de presupuesto, preexistentes) |
+| 20 rutas en navegador | 20/20, 0 errores de consola |
+| Auditoría sobre el estado **en ejecución** | 0 problemas |
+
+**Sin solicitud** — no hay botón «Ciclo interno», el paso 2 no se ofrece, no se renderiza el botón
+de crear y el número de expedientes no cambia (20 → 20).
+
+**Con solicitud** (`SOL-2026-0159` + `EXP-PT-2026-0107` PREPARADO + F0288 firmado):
+
+| Momento | EU | ASIGNACION | ASIG_CONFIG | FORM_CONFIG | F0302 |
+|---|---|---|---|---|---|
+| EU creado | `EXP-2026-0020` · *Pendiente de asignación* | **0** | **0** | **0** | **0** |
+| Tras asignar | *Asignado · pendiente de configuración* | 1 | **0** | **0** | **0** |
+| Tras designar técnico | *En configuración* | 1 | 1 | 1 | 1 |
+
+**Multiciclo** (`2201-1300-2026`) — la solicitud del ciclo 1 **no** se ofrece para reutilizar:
+
+| Ciclo | ET | EU | Solicitud | Estado EU | Asignaciones |
+|---|---|---|---|---|---|
+| 1 | `EXP-PT-2026-0093` | `EXP-2026-0010` | `SOL-2026-0150` | Cerrado | 1 |
+| 2 | `EXP-PT-2026-0094` | `EXP-2026-0020` | `SOL-2026-0159` *(nueva)* | Pendiente de asignación | 0 |
+
+---
+
+# Quinta pasada — 18 de septiembre de 2026
+
+## Simplificación: el Expediente único como centro del proceso
+
+El orden del DER no cambia. Lo que cambia es **cuántas pantallas hace falta recorrer** para
+cumplirlo. La asignación del equipo no aportaba ninguna decisión nueva —el usuario final ya venía
+de la solicitud y el equipo ya estaba elegido—, así que obligaba a teclear en otra pantalla algo
+que el sistema ya sabía.
+
+Ahora un solo clic registra los **tres hechos del DER, en su orden**:
+
+```text
+CREAR EXPEDIENTE ÚNICO
+   ├─ (1) EXPEDIENTE_UNICO
+   ├─ (2) ASIGNACION                  ← usuario final derivado de la solicitud
+   └─ (3) ASIGNACION_CONFIGURACION    ← el técnico queda responsable
+```
+
+Y **ahí se detiene**. `FORM_CONFIGURACION` y el `F0302` **no** se crean: nacen cuando el técnico
+designado pulsa «Iniciar configuración» en su módulo. Esa es exactamente la distinción que el DER
+hace entre las tres entidades: *quién es responsable* no es lo mismo que *ya está trabajando*.
+
+## La pantalla
+
+Cinco pasos: **Solicitud → Equipo preparado → Asignación → Técnico de Configuración →
+Confirmación**. El paso 3 no pregunta nada: muestra el usuario final, su Dirección y su área tal
+como salen de la solicitud, y confirma. El paso 4 lista solo a los técnicos de la distribución
+vigente de esa Dirección/Registro, con su carga.
+
+## Transacción
+
+Las tres entidades se guardan o no se guarda ninguna. Antes de escribir se toma una foto de las
+cinco colecciones implicadas y, si algún paso falla, se restaura: un expediente sin asignación, o
+una asignación sin designación, sería un ciclo a medio abrir.
+
+## Estados del Expediente único
+
+```text
+Asignado · pendiente de configuración   (al crearse: ya tiene asignación y técnico)
+        ↓  el técnico pulsa «Iniciar configuración»
+En configuración                        (nacen FORM_CONFIGURACION y F0302)
+        ↓
+Entregado → Cerrado (solo por descarga)
+```
+
+## «Asignación de equipo» desaparece del flujo
+
+Fuera del menú, de la guía del proceso, de la trazabilidad y de Solicitudes. La ruta `/asignacion`
+**redirige** a `/expediente-unico` para que ningún enlace guardado quede roto, y el componente
+—1 042 líneas ya sin referencias— se eliminó. **La entidad `ASIGNACION` sigue intacta**: se sigue
+creando, guardando y consultando como manda el DER; lo que desapareció es la pantalla que obligaba
+a registrarla aparte.
+
+## Editar Expediente único
+
+Corregir no es reescribir. Qué admite cada expediente depende de **cuánto proceso lleva encima**:
+
+| Ya ocurrió | Técnico | Equipo | Solicitud |
+|---|---|---|---|
+| nada todavía | sí | sí | sí |
+| configuración iniciada | sí (reasignación) | no | no |
+| equipo entregado | no | no | no |
+
+Reasignar al técnico **no borra** la designación anterior: queda `Cancelada` con su fecha de cierre
+y su motivo, y la nueva nace aparte. El cambio de equipo apila una entrada en el historial de la
+asignación con el equipo anterior, el nuevo, el motivo, quién y cuándo.
+
+## Dato de demostración añadido
+
+La distribución de soportes es N:N por diseño —«una Dirección/Registro puede tener varios técnicos
+responsables»—, pero la semilla tenía **un solo responsable por Dirección**, con lo que una
+reasignación no podía demostrarse. Se añadió a Diana Portillo como segunda responsable del Registro
+de la Propiedad Raíz e Hipotecas de San Salvador.
+
+## Verificación
+
+| Prueba | Resultado |
+|---|---|
+| `ng build` | verde (3 warnings de presupuesto, preexistentes) |
+| 19 rutas en navegador | 19/19, 0 errores de consola |
+| `/asignacion` | redirige a `/expediente-unico` |
+| «Asignación de equipo» en el menú | ausente |
+| Auditoría `tools/auditar-ciclos.py` | 0 problemas |
+
+**Creación en un clic** (`SOL-2026-0159` + `EXP-PT-2026-0107`):
+
+| Momento | Estado | ASIGNACION | ASIG_CONFIG | FORM_CONFIG | F0302 |
+|---|---|---|---|---|---|
+| Tras crear | *Asignado · pendiente de configuración* | **1** | **1** | **0** | **0** |
+| Tras «Iniciar configuración» | *En configuración* | 1 | 1 | **1** | **1** |
+
+Con `ASIGNACION.expedienteUnico = ASIGNACION_CONFIGURACION.expedienteUnico = EXP-2026-0020`.
+
+**Tres hechos, un clic** — la trazabilidad los conserva separados:
+
+```text
+21:32  Expediente único EXP-2026-0020 creado sobre el Expediente técnico EXP-PT-2026-0107
+21:32  Equipo 2201-1331-2026 asignado al usuario final Karla Rivas
+21:32  Técnico de configuración designado: Mateo Martínez
+```
+
+**Reasignación de técnico** antes de iniciar:
+
+| Designación | Técnico | Estado | Cierre | Motivo |
+|---|---|---|---|---|
+| `AC-2026-0002` | Diana Portillo | Vigente | — | Vacaciones del técnico |
+| `AC-2026-0001` | Mateo Martínez | **Cancelada** | 2026-09-18 | Vacaciones del técnico |
+
+Evento: *«Técnico de configuración reasignado: de Mateo Martínez a Diana Portillo»*, con el motivo.
+`FORM_CONFIGURACION` sigue en 0: reasignar no inicia el trabajo.
+
+---
+
+# Sexta pasada — 18 de septiembre de 2026
+
+## El Técnico de Configuración es obligatorio al crear el expediente
+
+La pasada anterior dejó una puerta abierta: el técnico podía quedar pendiente y designarse después
+desde una tarjeta del propio módulo. Eso creaba un estado —«expediente sin técnico»— que el flujo
+no necesita: quién configurará el equipo se sabe antes de abrir el ciclo, igual que se sabe el
+usuario final. Esa tarjeta **se eliminó**.
+
+## Dónde existía la designación posterior
+
+| Lugar | Qué era |
+|---|---|
+| `expediente-unico.component.ts` | tarjeta «Designar Técnico de Configuración» con su tabla y su botón |
+| ídem | `pendientesConfiguracion()` — los expedientes que «esperaban técnico» |
+| ídem | `abrirDesignacion()` |
+| `data.service.ts` | `EU_PENDIENTE_ASIGNACION` y `EU_PENDIENTE_CONFIGURACION`, dos estados que significaban «falta algo que ahora se decide antes» |
+| ídem | `crearExpedienteUnico` aceptaba `tecnicoConfiguracion = ''` |
+| `tools/auditar-ciclos.py` | daba por buenos los dos estados anteriores |
+
+## Cómo queda
+
+Cinco pasos, y el botón **deshabilitado** hasta que los cinco están completos:
+
+```text
+Solicitud → Equipo preparado → Asignación → Técnico de Configuración → Confirmación
+                                                                            ↓
+                                                          [ CREAR EXPEDIENTE ÚNICO ]
+```
+
+Un clic, tres entidades, en el orden del DER y como una transacción:
+
+```text
+(1) EXPEDIENTE_UNICO
+(2) ASIGNACION                 usuario final derivado de la solicitud
+(3) ASIGNACION_CONFIGURACION   el técnico queda responsable
+```
+
+Y **ahí para**. `FORM_CONFIGURACION` y `F0302` no existen todavía: nacen cuando el técnico pulsa
+«Iniciar configuración» en su módulo. `designarConfiguracion` dejó de crearlos; eso vive en
+`iniciarTrabajoConfiguracion`.
+
+`crearExpedienteUnico` rechaza ahora, en el servicio, un técnico vacío o que no atienda la
+Dirección/Registro de la solicitud. Si cualquiera de los tres pasos falla, se restauran las cinco
+colecciones implicadas: no quedan expedientes sin asignación ni asignaciones sin designación.
+
+## Estados
+
+```text
+Pendiente de iniciar configuración   (al crearse: ya tiene asignación y técnico)
+        ↓  el técnico pulsa «Iniciar configuración»
+En configuración
+        ↓
+Entregado → Cerrado (solo por descarga)
+```
+
+Desaparecen `Pendiente de asignación` y `Asignado · pendiente de configuración`. (El estado
+homónimo de `ReprocesoF0288` es de otra entidad y no se tocó.)
+
+## Reasignar, que no es designar
+
+El cambio de técnico vive solo en **Editar Expediente único**, y se llama por lo que es: una
+corrección. La designación anterior queda `Cancelada` con su fecha de cierre y su motivo; la nueva
+nace aparte. Reasignar no inicia el trabajo.
+
+## Datos de demostración adaptados
+
+Bajo la regla nueva, un expediente sin técnico designado es un dato imposible. La semilla tenía:
+
+- **9 expedientes** en el estado antiguo → reetiquetados a `Pendiente de iniciar configuración`;
+- **7 asignaciones** con `tecnicoConfiguracion: 'Por asignar'` → completadas con el responsable que
+  la distribución ya señalaba para su Dirección/Registro;
+- **1 expediente en Cabañas** que no podía tener técnico porque **el departamento no tenía ningún
+  responsable de soporte**. El bloqueo por falta de distribución es una regla del sistema, no un
+  error, pero un expediente ya creado allí es incoherente: se añadió el responsable del
+  departamento (Cabañas se lleva por departamento, no por Registro).
+
+`reconstruirEncargosTecnicos` crea ahora la designación aunque todavía no haya F0302 —tomando el
+técnico de la asignación—, porque el trabajo no iniciado ya no implica técnico ausente.
+
+## Verificación
+
+| Caso | Resultado |
+|---|---|
+| **1** · solicitud + equipo, **sin técnico** | botón **BLOQUEADO**; expedientes 20 → 20 |
+| **2** · con técnico | EU 1 · ASIGNACION 1 · ASIG_CONFIG 1 · **FORM_CONFIG 0** · **F0302 0** · estado *Pendiente de iniciar configuración* |
+| **3** · el técnico pulsa «Iniciar configuración» | FORM_CONFIG **1** · F0302 **1** · estado *En configuración* |
+| **4** · reasignación antes de iniciar | `AC-2026-0001` Mateo Martínez **Cancelada** (cierre 2026-09-18) · `AC-2026-0002` Diana Portillo **Vigente** · FORM_CONFIG sigue en 0 |
+
+`ng build` verde. 19/19 rutas sin errores de consola. `/asignacion` sigue redirigiendo a
+`/expediente-unico`. Auditoría: **0 problemas**. Sin rastro en pantalla de «Designar técnico».
+
+Los tres hechos siguen separados en la trazabilidad aunque vengan del mismo clic:
+
+```text
+21:55  Expediente único EXP-2026-0020 creado sobre el Expediente técnico EXP-PT-2026-0107
+21:55  Equipo 2201-1331-2026 asignado al usuario final Karla Rivas
+21:55  Técnico de configuración designado: Mateo Martínez
+```

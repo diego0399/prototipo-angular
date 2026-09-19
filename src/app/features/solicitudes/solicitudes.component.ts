@@ -254,6 +254,7 @@ export class SolicitudesComponent {
   });
 
   protected enviarAsignacion(s: Solicitud): void {
-    this.router.navigate(['/asignacion'], { queryParams: { solicitud: s.expediente } });
+    // La asignación se registra dentro del Expediente único; allí va la solicitud.
+    this.router.navigate(['/expediente-unico'], { queryParams: { solicitud: s.expediente } });
   }
 }

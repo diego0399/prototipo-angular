@@ -205,7 +205,7 @@ export class GuiaProcesoComponent {
       { titulo: 'Ingresar equipo', ruta: '/inventario-hardware' },
       { titulo: 'Crear Expediente técnico', ruta: '/expediente-tecnico' },
       { titulo: 'Continuar preparación F0288', ruta: '/preparacion-tecnica' },
-      { titulo: 'Asignar equipo', ruta: '/asignacion' },
+      { titulo: 'Asignar equipo', ruta: '/expediente-unico' },
       { titulo: 'Crear Expediente único', ruta: '/expediente-unico' },
       { titulo: 'Continuar Configuración F0302', ruta: '/configuracion' },
       { titulo: 'Entrega y conformidad', ruta: '/entrega-aceptacion' },
@@ -276,7 +276,7 @@ export class GuiaProcesoComponent {
         n: 6, titulo: 'Asignación de equipo',
         estado: asig ? 'Finalizado' : (preparado ? 'Disponible' : 'Bloqueado'),
         detalle: asig ? `Asignado a ${asig.usuarioFinal} el ${asig.fecha}.` : 'Un Encargado asigna el equipo preparado a la solicitud.',
-        ruta: '/asignacion', accion: asig ? 'Ver asignación' : 'Asignar equipo'
+        ruta: '/expediente-unico', accion: asig ? 'Ver asignación' : 'Crear Expediente único'
       },
       {
         n: 7, titulo: 'Expediente único',

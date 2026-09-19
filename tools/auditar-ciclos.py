@@ -24,6 +24,7 @@ ets_l = L('expedientes-tecnicos'); ets = {t['codigo']: t for t in ets_l}
 preps_l = L('preparaciones-f0288'); preps = {p['expedienteTecnico']: p for p in preps_l}
 eus = L('expedientes'); asigs = L('asignaciones'); ents = L('entregas')
 confs = L('conformidades'); gars = L('garantias'); descs = L('descargos'); confg = L('configuraciones-f0302')
+sols = {x['expediente']: x for x in L('solicitudes')}
 
 def fin288(p): return (p.get('firma') or {}).get('fecha') or p.get('fecha', '')
 def mas(f, n=1):
@@ -66,21 +67,23 @@ for eu in eus:
         if FIX: d['fechaDescargo'] = mas(cf['fechaRespuesta'][:10], 1); arreglos += 1
         else: problemas.append(f"{eu['codigoUnico']}: DESCARGA({d['fechaDescargo']}) < CONF({cf['fechaRespuesta'][:10]})")
 
-    # ---- estados (regla 22)
+    # ---- estados
+    # Todo Expediente único nace con su asignación y su técnico designados: no existen los estados
+    # «pendiente de asignación» ni «pendiente de designar técnico». Lo único que puede faltarle a un
+    # expediente recién creado es que el técnico abra el trabajo.
     tiene_asig = a is not None
-    tiene_ac = c is not None            # en la semilla, el F0302 implica designación
+    trabajo_iniciado = c is not None     # en la semilla, el F0302 prueba que la ejecución arrancó
+    if not tiene_asig:
+        problemas.append(f"{eu['codigoUnico']}: sin ASIGNACION — todo expediente nace con la suya")
     if eu['estado'] not in ('Cerrado',):
-        esperado = ('En configuración' if tiene_ac else
-                    'Asignado · pendiente de configuración' if tiene_asig else
-                    'Pendiente de asignación')
+        esperado = 'En configuración' if trabajo_iniciado else 'Pendiente de iniciar configuración'
         if e and cf and cf.get('estado') == 'Aceptado':
             esperado = 'Entregado'
         if eu['estado'] != esperado:
             if FIX:
                 eu['estado'] = esperado
                 eu['resumenEstado'] = {
-                    'Pendiente de asignación': 'Pendiente de asignar el equipo al usuario final',
-                    'Asignado · pendiente de configuración': 'Asignado; pendiente de designar Técnico de Configuración',
+                    'Pendiente de iniciar configuración': 'Técnico de configuración designado; pendiente de que inicie el F0302',
                     'En configuración': 'En configuración',
                     'Entregado': 'Entregado y aceptado por el usuario final',
                 }[esperado]
@@ -92,7 +95,7 @@ for eu in eus:
     if eu['estado'] == 'Cerrado' and not d:
         vivo = a and a.get('vigente')
         esperado = 'Entregado' if (cf and cf.get('estado') == 'Aceptado') else (
-            'En configuración' if c else 'Asignado · pendiente de configuración' if a else 'Pendiente de asignación')
+            'En configuración' if c else 'Pendiente de iniciar configuración')
         if FIX:
             eu['estado'] = esperado
             eu['fechaCierre'] = ''
@@ -103,6 +106,24 @@ for eu in eus:
             problemas.append(f"{eu['codigoUnico']}: Cerrado sin descarga"
                              + (' y con asignación vigente' if vivo else '')
                              + f" — corresponde «{esperado}»")
+
+# ---------------------------------------------------------------- SOLICITUD → EXPEDIENTE_UNICO
+# `SOLICITUD (0,1) ── origina ── (1,1) EXPEDIENTE_UNICO`: puede haber solicitudes todavía sin
+# expediente, pero **ningún expediente sin solicitud**. Un reingreso a Hardware es historia física
+# del equipo y no sustituye al requerimiento que abre el ciclo siguiente.
+for eu in eus:
+    sol_id = eu.get('expediente') or ''
+    if not sol_id:
+        problemas.append(f"{eu['codigoUnico']}: Expediente único sin solicitud")
+    elif sol_id not in sols:
+        problemas.append(f"{eu['codigoUnico']}: referencia solicitud inexistente {sol_id}")
+    if eu.get('origenCiclo') and eu['origenCiclo'] != 'Solicitud':
+        problemas.append(f"{eu['codigoUnico']}: origenCiclo «{eu['origenCiclo']}» — el único origen válido es la solicitud")
+
+# Una solicitud no puede originar más de un expediente único.
+for sol_id, n in collections.Counter(x.get('expediente') for x in eus if x.get('expediente')).items():
+    if n > 1:
+        problemas.append(f"SOLICITUD {sol_id}: origina {n} expedientes únicos (debe ser uno)")
 
 # ---------------------------------------------------------------- FK de la asignación
 eu_cod = {x['codigoUnico']: x for x in eus}

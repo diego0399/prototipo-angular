@@ -29,7 +29,9 @@ export const routes: Routes = [
       { path: 'solicitudes', canActivate: [roleGuard], loadComponent: () => import('./features/solicitudes/solicitudes.component').then((m) => m.SolicitudesComponent) },
       { path: 'inventario-hardware', canActivate: [roleGuard], loadComponent: () => import('./features/inventario-hardware/inventario.component').then((m) => m.InventarioHardwareComponent) },
       { path: 'catalogo-software', canActivate: [roleGuard], loadComponent: () => import('./features/catalogo-software/catalogo-software.component').then((m) => m.CatalogoSoftwareComponent) },
-      { path: 'asignacion', canActivate: [roleGuard], loadComponent: () => import('./features/asignacion/asignacion.component').then((m) => m.AsignacionComponent) },
+      // La asignación ya no es un paso propio del flujo: se registra dentro del Expediente único.
+      // La ruta redirige allí para que ningún enlace guardado quede roto.
+      { path: 'asignacion', redirectTo: 'expediente-unico' },
       { path: 'expediente-tecnico', loadComponent: () => import('./features/expediente-tecnico/expediente-tecnico.component').then((m) => m.ExpedienteTecnicoComponent) },
       { path: 'expediente-unico', canActivate: [roleGuard], loadComponent: () => import('./features/expediente-unico/expediente-unico.component').then((m) => m.ExpedienteUnicoComponent) },
       { path: 'preparacion-tecnica', loadComponent: () => import('./features/preparacion-tecnica/preparacion.component').then((m) => m.PreparacionComponent) },

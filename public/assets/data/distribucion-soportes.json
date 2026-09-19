@@ -199,5 +199,41 @@
   "desactivadaPor": "Carlos González — Encargado de Soporte",
   "fechaDesactivacion": "2026-07-31",
   "motivoDesactivacion": "Ahuachapán quedó pendiente de reasignación al concentrarse la carga de la Zona Occidental en Santa Ana y Sonsonate."
+ },
+ {
+  "id": "DIST-2026-0012",
+  "tecnicoId": "diana-portillo",
+  "tipoAsignacion": "DIRECCION_REGISTRO",
+  "zonaId": "ZCEN",
+  "departamentoId": "SS",
+  "direccionRegistroId": "SS-RPRH",
+  "direccionId": "SS",
+  "unidadId": "SS::SS-RPRH",
+  "direccion": "San Salvador",
+  "unidad": "Registro de la Propiedad Raíz e Hipotecas",
+  "tecnico": "Diana Portillo — Técnico de Soporte",
+  "asignadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-02-02",
+  "hora": "09:15",
+  "activo": true,
+  "observacion": "Segunda responsable del Registro de la Propiedad Raíz e Hipotecas: la distribución es N:N y permite relevos."
+ },
+ {
+  "id": "DIST-2026-0013",
+  "tecnicoId": "diana-portillo",
+  "tipoAsignacion": "DEPARTAMENTO",
+  "zonaId": "ZCEN",
+  "departamentoId": "CAB",
+  "direccionRegistroId": null,
+  "direccionId": "CAB",
+  "unidadId": "CAB::*",
+  "direccion": "Cabañas",
+  "unidad": "Todo el departamento",
+  "tecnico": "Diana Portillo — Técnico de Soporte",
+  "asignadoPor": "Carlos González — Encargado de Soporte",
+  "fecha": "2026-02-10",
+  "hora": "08:40",
+  "activo": true,
+  "observacion": "Responsable de todo el departamento de Cabañas: se lleva por departamento, no por Registro."
  }
 ]
